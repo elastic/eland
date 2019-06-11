@@ -39,4 +39,4 @@ Naming is difficult, but as we had to call it something:
 * eland = elastic and data
 * eland = 'Elk/Moose' in Dutch (Alces alces)
 * Elandsgracht = Amsterdam street near Elastic's Amsterdam office where historically hides from, among others, Elk were worked
-* The Leathermarket = the last Prelert office prior to aquisition
+
