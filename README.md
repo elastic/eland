@@ -9,9 +9,6 @@ For example, to explore data in a large elasticsearch index, simply create an el
 
 >>> df = ed.read_es(url='http://localhost:9200', index='reviews') 
 
->>> type(df)
-<class 'eland.core.frame.DataFrame'>
-
 >>> df.head()
    reviewerId  vendorId  rating              date
 0           0         0       5  2006-04-07 17:08
