@@ -12,6 +12,10 @@ class DataFrame():
         self.index_pattern = index_pattern
         
         self.client.indices().exists(index_pattern)
+
+    @staticmethod
+    def _flatten_results(prefix, results, result):
+        # TODO
         
     @staticmethod
     def _es_results_to_pandas(results):
