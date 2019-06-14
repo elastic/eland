@@ -3,6 +3,8 @@ import eland
 from elasticsearch import Elasticsearch
 from elasticsearch_dsl import Search
 
+import json
+
 import pandas as pd
 
 class DataFrame():
@@ -16,19 +18,21 @@ class DataFrame():
     @staticmethod
     def _flatten_results(prefix, results, result):
         # TODO
+        return prefix
         
     @staticmethod
     def _es_results_to_pandas(results):
         # TODO - resolve nested fields
         rows = []
         for hit in results['hits']['hits']:
-            row = {}
-            for k in hit.keys():
-                if k == '_source':
-                    row.update(hit['_source'])
+            row = hit['_source']
             rows.append(row)
-        return pd.DataFrame(data=rows)
-    
+        #return pd.DataFrame(data=rows)
+        # Converting the list of dicts to a dataframe doesn't convert datetimes
+        # effectively compared to read_json. TODO - https://github.com/elastic/eland/issues/2
+        json_rows = json.dumps(rows)
+        return pd.read_json(json_rows)
+
     @staticmethod
     def _flatten_mapping(prefix, properties, result):
         for k, v in properties.items():
@@ -59,7 +63,7 @@ class DataFrame():
         
     def head(self, n=5):
         results = self.client.search(index=self.index_pattern, size=n)
-        
+
         return DataFrame._es_results_to_pandas(results)
     
     def describe(self):

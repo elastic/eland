@@ -11,4 +11,7 @@
 .idea/
 
 # pytest files
-.pytest_cache/1
+.pytest_cache/
+
+# Ignore MacOSX files
+.DS_Store
