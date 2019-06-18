@@ -29,6 +29,28 @@ min         0.000000       0.000000       0.000000
 max    400140.000000     246.000000       5.000000
 ```
 
+## Development Setup
+
+1. Create a virtual environment in Python 
+
+For example, 
+
+```
+python3 -m venv env
+```
+
+2. Activate the virtual environment
+
+```
+source env/bin/activate
+```
+
+3. Install dependencies from the `requirements.txt` file
+
+```
+pip install -r requirements.txt
+```
+
 ## Why eland?
 
 Naming is difficult, but as we had to call it something:
