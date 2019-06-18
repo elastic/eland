@@ -1,5 +1,10 @@
 # File called _pytest for PyCharm compatability
-from eland.tests.dataframe.common import TestData
+from eland.tests.frame.common import TestData
+
+from eland.tests import *
+
+import eland as ed
+import pandas as pd
 
 from pandas.util.testing import (
     assert_almost_equal, assert_frame_equal, assert_series_equal)
@@ -15,10 +20,9 @@ class TestDataFrameIndexing(TestData):
         pd_ecommerce_head = self.pd_ecommerce().head()
         ed_ecommerce_head = self.ed_ecommerce().head()
 
-        #print(pd_ecommerce_head.dtypes)
-        #print(ed_ecommerce_head.dtypes)
-
         assert_frame_equal(pd_ecommerce_head, ed_ecommerce_head)
 
-        
+    def test_mappings(self):
+        test_mapping1 = ed.read_es(ELASTICSEARCH_HOST, TEST_MAPPING1_INDEX_NAME)
+        assert_frame_equal(TEST_MAPPING1_EXPECTED_DF, test_mapping1.fields)
 

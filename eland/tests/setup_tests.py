@@ -2,23 +2,18 @@ import pandas as pd
 from elasticsearch import Elasticsearch
 from elasticsearch import helpers
 
-from eland.tests import FLIGHTS_FILE_NAME, FLIGHTS_INDEX_NAME, ECOMMERCE_FILE_NAME, ECOMMERCE_INDEX_NAME
-
+from eland.tests import *
 
 DATA_LIST = [
     (FLIGHTS_FILE_NAME, FLIGHTS_INDEX_NAME),
     (ECOMMERCE_FILE_NAME, ECOMMERCE_INDEX_NAME)
 ]
 
-if __name__ == '__main__':
-
+def _setup_data(es):
     # Read json file and index records into Elasticsearch
     for data in DATA_LIST:
         json_file_name = data[0]
         index_name = data[1]
-
-        # Create connection to Elasticsearch - use defaults1
-        es = Elasticsearch()
 
         # Delete index
         print("Deleting index:", index_name)
@@ -49,3 +44,15 @@ if __name__ == '__main__':
         actions = []
 
         print("Done", index_name)
+
+def _setup_test_mappings(es):
+    # Create a complex mapping containing many Elasticsearch features
+    es.indices.delete(index=TEST_MAPPING1_INDEX_NAME, ignore=[400, 404])
+    es.indices.create(index=TEST_MAPPING1_INDEX_NAME, body=TEST_MAPPING1)
+
+if __name__ == '__main__':
+    # Create connection to Elasticsearch - use defaults
+    es = Elasticsearch(ELASTICSEARCH_HOST)
+
+    _setup_data(es)
+    _setup_test_mappings(es)

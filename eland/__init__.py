@@ -1,3 +1,3 @@
 from .utils import *
-from .DataFrame import *
-from .Client import *
+from .frame import *
+from .client import *
