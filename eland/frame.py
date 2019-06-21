@@ -23,7 +23,7 @@ Similarly, only Elasticsearch searchable fields can be searched or filtered, and
 only Elasticsearch aggregatable fields can be aggregated or grouped.
 
 """
-import eland
+import eland as ed
 
 from elasticsearch import Elasticsearch
 from elasticsearch_dsl import Search
@@ -66,93 +66,178 @@ class DataFrame():
     If the Elasticsearch index is deleted or index mappings are changed after this
     object is created, the object is not rebuilt and so inconsistencies can occur.
 
-    Mapping Elasticsearch types to pandas dtypes
-    --------------------------------------------
-
-    Elasticsearch field datatype              | Pandas dtype
-    --
-    text                                      | object
-    keyword                                   | object
-    long, integer, short, byte, binary        | int64
-    double, float, half_float, scaled_float   | float64
-    date, date_nanos                          | datetime64[ns]
-    boolean                                   | bool
-    TODO - add additional mapping types
     """
     def __init__(self, client, index_pattern):
-        self.client = eland.Client(client)
+        self.client = ed.Client(client)
         self.index_pattern = index_pattern
 
-        # Get and persist mappings, this allows use to correctly
+        # Get and persist mappings, this allows us to correctly
         # map returned types from Elasticsearch to pandas datatypes
-        mapping = self.client.indices().get_mapping(index=self.index_pattern)
-        #field_caps = self.client.field_caps(index=self.index_pattern, fields='*')
-
-        #self.fields, self.aggregatable_fields, self.searchable_fields = \
-        #    DataFrame._es_mappings_to_pandas(mapping, field_caps)
-        self.fields = DataFrame._es_mappings_to_pandas(mapping)
-
-    @staticmethod
-    def _flatten_results(prefix, results, result):
-        # TODO
-        return prefix
+        self.mappings = ed.Mappings(self.client, self.index_pattern)
 
     def _es_results_to_pandas(self, results):
-        # TODO - resolve nested fields
+        """
+        Parameters
+        ----------
+        results: dict
+            Elasticsearch results from self.client.search
+
+        Returns
+        -------
+        df: pandas.DataFrame
+            _source values extracted from results and mapped to pandas DataFrame
+            dtypes are mapped via Mapping object
+
+        Notes
+        -----
+        Fields containing lists in Elasticsearch don't map easily to pandas.DataFrame
+        For example, an index with mapping:
+        ```
+        "mappings" : {
+          "properties" : {
+            "group" : {
+              "type" : "keyword"
+            },
+            "user" : {
+              "type" : "nested",
+              "properties" : {
+                "first" : {
+                  "type" : "keyword"
+                },
+                "last" : {
+                  "type" : "keyword"
+                }
+              }
+            }
+          }
+        }
+        ```
+        Adding a document:
+        ```
+        "_source" : {
+          "group" : "amsterdam",
+          "user" : [
+            {
+              "first" : "John",
+              "last" : "Smith"
+            },
+            {
+              "first" : "Alice",
+              "last" : "White"
+            }
+          ]
+        }
+        ```
+        (https://www.elastic.co/guide/en/elasticsearch/reference/current/nested.html)
+        this would be transformed internally (in Elasticsearch) into a document that looks more like this:
+        ```
+        {
+          "group" :        "amsterdam",
+          "user.first" : [ "alice", "john" ],
+          "user.last" :  [ "smith", "white" ]
+        }
+        ```
+        When mapping this a pandas data frame we mimic this transformation.
+
+        Similarly, if a list is added to Elasticsearch:
+        ```
+        PUT my_index/_doc/1
+        {
+          "list" : [
+            0, 1, 2
+          ]
+        }
+        ```
+        The mapping is:
+        ```
+        "mappings" : {
+          "properties" : {
+            "user" : {
+              "type" : "long"
+            }
+          }
+        }
+        ```
+        TODO - explain how lists are handled (https://www.elastic.co/guide/en/elasticsearch/reference/current/array.html)
+        TODO - an option here is to use Elasticsearch's multi-field matching instead of pandas treatment of lists (which isn't great)
+        NOTE - using this lists is generally not a good way to use this API
+        """
+        def flatten_dict(y):
+            out = {}
+
+            def flatten(x, name=''):
+                # We flatten into source fields e.g. if type=geo_point
+                # location: {lat=52.38, lon=4.90}
+                if name == '':
+                    is_source_field = False
+                    pd_dtype = 'object'
+                else:
+                    is_source_field, pd_dtype = self.mappings.is_source_field(name[:-1])
+
+                if not is_source_field and type(x) is dict:
+                    for a in x:
+                        flatten(x[a], name + a + '.')
+                elif not is_source_field and type(x) is list:
+                    for a in x:
+                        flatten(a, name)
+                else:
+                    field_name = name[:-1]
+
+                    # Coerce type
+                    if pd_dtype == 'datetime64':
+                        x = pd.to_datetime(x)
+                        print(field_name, pd_dtype, x, type(x))
+
+                    # Elasticsearch can have multiple values for a field. These are represented as lists, so
+                    # create lists for this pivot (see notes above)
+                    if field_name in out:
+                        if type(out[field_name]) is not list:
+                            l = [out[field_name]]
+                            out[field_name] = l
+                        out[field_name].append(x)
+                    else:
+                        out[field_name] = x
+
+            flatten(y)
+
+            return out
+
         rows = []
+        i = 0
         for hit in results['hits']['hits']:
             row = hit['_source']
-            rows.append(row)
 
+            # flatten row to map correctly to 2D DataFrame
+            rows.append(flatten_dict(row))
+
+            i = i + 1
+            if i % 100 == 0:
+                print(i)
+
+        # Create pandas DataFrame
         df = pd.DataFrame(data=rows)
 
+        """
+        # Coerce types
+        pd_dtypes = self.mappings.source_fields_pd_dtypes()
+
+        # This returns types such as:
+        # {
+        # 'bool': Index(['Cancelled', 'FlightDelay'], dtype='object'),
+        # 'datetime64[ns]': Index(['timestamp'], dtype='object'),
+        # 'float64': Index(['AvgTicketPrice', 'DistanceKilometers', 'DistanceMiles',...
+        # }
+
+        for pd_dtype, value in pd_dtypes.items():
+            # Types generally convert well e.g. 1,2,3 -> int64, 1.1,2.2,3.3 -> float64
+            # so to minimise work we only convert special types.
+            # TODO - add option to force all conversion
+            if pd_dtype == 'datetime64':
+                print(df.loc[:,value.tolist()])
+                df.loc[:,value.tolist()] = df.loc[:,value.tolist()].astype('datetime64')
+        """
+
         return df
-
-    @staticmethod
-    def _extract_types_from_mapping(y):
-        """
-        Extract data types from mapping for DataFrame columns.
-
-        Elasticsearch _source data is transformed into pandas DataFrames. This strategy is not compatible
-        with all Elasticsearch configurations. Notes:
-
-        - This strategy is not compatible with all Elasticsearch configurations. If _source is disabled
-        (https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-source-field.html#disable-source-field)
-        no data values will be populated
-        - Sub-fields (e.g. english.text in {"mappings":{"properties":{"text":{"type":"text","fields":{"english":{"type":"text","analyzer":"english"}}}}}})
-        are not be used
-        """
-        out = {}
-
-        # Recurse until we get a 'type: xxx' - ignore sub-fields
-        def flatten(x, name=''):
-            if type(x) is dict:
-                for a in x:
-                    if a == 'type' and type(x[a]) is str: # 'type' can be a name of a field
-                        out[name[:-1]] = x[a]
-                    if a == 'properties' or a == 'fields':
-                        flatten(x[a], name)
-                    else:
-                        flatten(x[a], name + a + '.')
-
-        flatten(y)
-
-        return out
-
-    @staticmethod
-    def _es_mappings_to_pandas(mappings):
-        fields = {}
-        for index in mappings:
-            if 'properties' in mappings[index]['mappings']:
-                properties = mappings[index]['mappings']['properties']
-                
-                datatypes = DataFrame._extract_types_from_mapping(properties)
-
-                # Note there could be conflicts here - e.g. the same field name with different semantics in
-                # different indexes - currently the last one wins TODO: review this
-                fields.update(datatypes)
-
-        return pd.DataFrame.from_dict(data=fields, orient='index', columns=['datatype'])
 
     def head(self, n=5):
         results = self.client.search(index=self.index_pattern, size=n)
@@ -161,8 +246,6 @@ class DataFrame():
     
     def describe(self):
         # First get all types
-        #mapping = self.client.indices().get_mapping(index=self.index_pattern)
-        mapping = self.client.indices().get_mapping(index=self.index_pattern)
 
         fields = DataFrame._es_mappings_to_pandas(mapping)
         

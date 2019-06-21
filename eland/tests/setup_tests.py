@@ -5,8 +5,8 @@ from elasticsearch import helpers
 from eland.tests import *
 
 DATA_LIST = [
-    (FLIGHTS_FILE_NAME, FLIGHTS_INDEX_NAME),
-    (ECOMMERCE_FILE_NAME, ECOMMERCE_INDEX_NAME)
+    (FLIGHTS_FILE_NAME, FLIGHTS_INDEX_NAME, FLIGHTS_MAPPING),
+    (ECOMMERCE_FILE_NAME, ECOMMERCE_INDEX_NAME, ECOMMERCE_MAPPING)
 ]
 
 def _setup_data(es):
@@ -14,10 +14,13 @@ def _setup_data(es):
     for data in DATA_LIST:
         json_file_name = data[0]
         index_name = data[1]
+        mapping = data[2]
 
         # Delete index
         print("Deleting index:", index_name)
         es.indices.delete(index=index_name, ignore=[400, 404])
+        print("Creating index:", index_name)
+        es.indices.create(index=index_name, body=mapping)
 
         df = pd.read_json(json_file_name, lines=True)
 
@@ -50,9 +53,16 @@ def _setup_test_mappings(es):
     es.indices.delete(index=TEST_MAPPING1_INDEX_NAME, ignore=[400, 404])
     es.indices.create(index=TEST_MAPPING1_INDEX_NAME, body=TEST_MAPPING1)
 
+def _setup_test_nested(es):
+    es.indices.delete(index=TEST_NESTED_USER_GROUP_INDEX_NAME, ignore=[400, 404])
+    es.indices.create(index=TEST_NESTED_USER_GROUP_INDEX_NAME, body=TEST_NESTED_USER_GROUP_MAPPING)
+
+    helpers.bulk(es, TEST_NESTED_USER_GROUP_DOCS)
+
 if __name__ == '__main__':
     # Create connection to Elasticsearch - use defaults
     es = Elasticsearch(ELASTICSEARCH_HOST)
 
     _setup_data(es)
     _setup_test_mappings(es)
+    _setup_test_nested(es)
