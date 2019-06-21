@@ -58,7 +58,7 @@ FLIGHTS_MAPPING = { "mappings" : {
           "type" : "keyword"
         },
         "FlightTimeHour" : {
-          "type" : "keyword"
+          "type" : "float"
         },
         "FlightTimeMin" : {
           "type" : "float"
@@ -93,6 +93,7 @@ FLIGHTS_MAPPING = { "mappings" : {
       }
     } }
 FLIGHTS_FILE_NAME = ROOT_DIR + '/flights.json.gz'
+FLIGHTS_DF_FILE_NAME = ROOT_DIR + '/flights_df.json.gz'
 
 ECOMMERCE_INDEX_NAME = 'ecommerce'
 ECOMMERCE_MAPPING = { "mappings" : {
@@ -294,7 +295,6 @@ ECOMMERCE_MAPPING = { "mappings" : {
     } }
 ECOMMERCE_FILE_NAME = ROOT_DIR + '/ecommerce.json.gz'
 ECOMMERCE_DF_FILE_NAME = ROOT_DIR + '/ecommerce_df.json.gz'
-ECOMMERCE_DATETIME_FIELD = 'order_date'
 
 TEST_MAPPING1 = {
       'mappings': {

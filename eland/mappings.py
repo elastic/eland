@@ -227,8 +227,8 @@ class Mappings():
             'half_float': 'float64',
             'scaled_float': 'float64',
 
-            'date': 'datetime64',
-            'date_nanos': 'datetime64',
+            'date': 'datetime64[ns]',
+            'date_nanos': 'datetime64[ns]',
 
             'boolean': 'bool'
         }
@@ -248,8 +248,8 @@ class Mappings():
         """
         return self.mappings_capabilities.index.tolist()
 
-    def source_fields_pd_dtypes(self):
-        """
+    """
+    def pd_dtypes_groupby_source_fields(self):
         Returns
         -------
         groups: dict
@@ -260,8 +260,10 @@ class Mappings():
                 'datetime64[ns]': Index(['timestamp'], dtype='object'),
                 'float64': Index(['AvgTicketPrice', 'DistanceKilometers', 'DistanceMiles',...
             }
-        """
         return self.mappings_capabilities[self.mappings_capabilities._source == True].groupby('pd_dtype').groups
+
+    def pd_dtype
+    """
 
     def is_source_field(self, field_name):
         """
@@ -284,3 +286,15 @@ class Mappings():
             pd_dtype = self.source_field_pd_dtypes[field_name]
 
         return is_source_field, pd_dtype
+
+    def numeric_source_fields(self):
+        """
+        Returns
+        -------
+        numeric_source_fields: list of str
+            List of source fields where pd_dtype == (int64 or float64)
+        """
+        return self.mappings_capabilities[(self.mappings_capabilities._source == True) &
+                                          ((self.mappings_capabilities.pd_dtype == 'int64') |
+                                           (self.mappings_capabilities.pd_dtype == 'float64'))].index.tolist()
+

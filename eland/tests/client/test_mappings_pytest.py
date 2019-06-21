@@ -18,3 +18,5 @@ class TestMapping():
 
         assert_frame_equal(TEST_MAPPING1_EXPECTED_DF, pd.DataFrame(mapping.mappings_capabilities['es_dtype']))
 
+
+

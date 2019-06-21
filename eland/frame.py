@@ -48,10 +48,10 @@ class DataFrame():
     Examples
     --------
 
-    >>> import eland as ed
-    >>> client = ed.Client(Elasticsearch())
-    >>> df = ed.DataFrame(client, 'reviews')
-    >>> df.head()
+    import eland as ed
+    client = ed.Client(Elasticsearch())
+    df = ed.DataFrame(client, 'reviews')
+    df.head()
        reviewerId  vendorId  rating              date
     0           0         0       5  2006-04-07 17:08
     1           1         1       5  2006-05-04 12:16
@@ -183,10 +183,9 @@ class DataFrame():
                 else:
                     field_name = name[:-1]
 
-                    # Coerce type
-                    if pd_dtype == 'datetime64':
+                    # Coerce types - for now just datetime
+                    if pd_dtype == 'datetime64[ns]':
                         x = pd.to_datetime(x)
-                        print(field_name, pd_dtype, x, type(x))
 
                     # Elasticsearch can have multiple values for a field. These are represented as lists, so
                     # create lists for this pivot (see notes above)
@@ -203,39 +202,14 @@ class DataFrame():
             return out
 
         rows = []
-        i = 0
         for hit in results['hits']['hits']:
             row = hit['_source']
 
             # flatten row to map correctly to 2D DataFrame
             rows.append(flatten_dict(row))
 
-            i = i + 1
-            if i % 100 == 0:
-                print(i)
-
         # Create pandas DataFrame
         df = pd.DataFrame(data=rows)
-
-        """
-        # Coerce types
-        pd_dtypes = self.mappings.source_fields_pd_dtypes()
-
-        # This returns types such as:
-        # {
-        # 'bool': Index(['Cancelled', 'FlightDelay'], dtype='object'),
-        # 'datetime64[ns]': Index(['timestamp'], dtype='object'),
-        # 'float64': Index(['AvgTicketPrice', 'DistanceKilometers', 'DistanceMiles',...
-        # }
-
-        for pd_dtype, value in pd_dtypes.items():
-            # Types generally convert well e.g. 1,2,3 -> int64, 1.1,2.2,3.3 -> float64
-            # so to minimise work we only convert special types.
-            # TODO - add option to force all conversion
-            if pd_dtype == 'datetime64':
-                print(df.loc[:,value.tolist()])
-                df.loc[:,value.tolist()] = df.loc[:,value.tolist()].astype('datetime64')
-        """
 
         return df
 
@@ -245,28 +219,21 @@ class DataFrame():
         return self._es_results_to_pandas(results)
     
     def describe(self):
-        # First get all types
+        numeric_source_fields = self.mappings.numeric_source_fields()
 
-        fields = DataFrame._es_mappings_to_pandas(mapping)
-        
-        # Get numeric types (https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#the-where-method-and-masking)
-        # https://www.elastic.co/guide/en/elasticsearch/reference/current/number.html
-        # TODO refactor this list out of method
-        numeric_fields = fields.query('datatype == ["long", "integer", "short", "byte", "double", "float", "half_float", "scaled_float"]')
-                
-        # for each field we copute:
+        # for each field we compute:
         # count, mean, std, min, 25%, 50%, 75%, max
-        search = search(using=self.client, index=self.index_pattern).extra(size=0)
+        search = Search(using=self.client, index=self.index_pattern).extra(size=0)
 
-        for field in numeric_fields.field:
+        for field in numeric_source_fields:
             search.aggs.metric('extended_stats_'+field, 'extended_stats', field=field)
             search.aggs.metric('percentiles_'+field, 'percentiles', field=field)
 
         response = search.execute()
 
-        results = pd.dataframe(index=['count', 'mean', 'std', 'min', '25%', '50%', '75%', 'max'])
-        
-        for field in numeric_fields.field:
+        results = {}
+
+        for field in numeric_source_fields:
             values = []
             values.append(response.aggregations['extended_stats_'+field]['count'])
             values.append(response.aggregations['extended_stats_'+field]['avg'])
@@ -279,6 +246,8 @@ class DataFrame():
             
             # if not None
             if (values.count(None) < len(values)):
-                results = results.assign(**{field: values})
+                results[field] = values
+
+        df = pd.DataFrame(data=results, index=['count', 'mean', 'std', 'min', '25%', '50%', '75%', 'max'])
             
-        return results
+        return df
