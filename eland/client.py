@@ -9,7 +9,7 @@ class Client():
             self.es = es
         else:
             self.es = Elasticsearch(es)
-
+            
     def info(self):
         return self.es.info()
     
