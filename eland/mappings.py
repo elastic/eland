@@ -298,3 +298,21 @@ class Mappings():
                                           ((self.mappings_capabilities.pd_dtype == 'int64') |
                                            (self.mappings_capabilities.pd_dtype == 'float64'))].index.tolist()
 
+    def source_fields(self):
+        """
+        Returns
+        -------
+        source_fields: list of str
+            List of source fields
+        """
+        return self.mappings_capabilities[self.mappings_capabilities._source == True].index.tolist()
+
+    def count_source_fields(self):
+        """
+        Returns
+        -------
+        count_source_fields: int
+            Number of source fields in mapping
+        """
+        return len(self.mappings_capabilities[self.mappings_capabilities._source == True].index)
+

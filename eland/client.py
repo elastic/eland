@@ -21,3 +21,8 @@ class Client():
 
     def field_caps(self, **kwargs):
         return self.es.field_caps(**kwargs)
+
+    def count(self, **kwargs):
+        count_json = self.es.count(**kwargs)
+        return count_json['count']
+

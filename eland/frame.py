@@ -30,6 +30,8 @@ from elasticsearch_dsl import Search
 
 import pandas as pd
 
+from pandas.core.arrays.sparse import BlockIndex
+
 class DataFrame():
     """
     pandas.DataFrame like API that proxies into Elasticsearch index(es).
@@ -251,3 +253,71 @@ class DataFrame():
         df = pd.DataFrame(data=results, index=['count', 'mean', 'std', 'min', '25%', '50%', '75%', 'max'])
             
         return df
+
+    @property
+    def shape(self):
+        """
+        Return a tuple representing the dimensionality of the DataFrame.
+
+        Returns
+        -------
+        shape: tuple
+            0 - number of rows
+            1 - number of columns
+        """
+        num_rows = len(self)
+        num_columns = self.columns
+
+        return num_rows, num_columns
+
+    @property
+    def columns(self):
+        return self.mappings.source_fields()
+
+    def __getitem__(self, item):
+        if isinstance(item, str):
+            if item not in self.mappings.is_source_field(item):
+                raise TypeError('Column does not exist: [{0}]'.format(item))
+            return Column(item)
+        elif isinstance(item, BooleanFilter):
+            self._filter = item.build()
+            return self
+        else:
+            raise TypeError('Unsupported expr: [{0}]'.format(item))
+
+    def __len__(self):
+        """
+        Returns length of info axis, but here we use the index.
+        """
+        return self.client.count(index=self.index_pattern)
+
+    # ----------------------------------------------------------------------
+    # Rendering Methods
+
+    def __repr__(self):
+        # The return for this is display.options.max_rows
+        max_rows = 60
+        head_rows = max_rows / 2
+        tail_rows = max_rows - head_rows
+
+        head = self.head(max_rows)
+
+        num_rows = len(self)
+
+        if (num_rows > max_rows):
+            # If we have a lot of rows, create a SparseDataFrame and use
+            # pandas to_string logic
+            # NOTE: this sparse DataFrame can't be used as the middle
+            # section is all NaNs. However, it gives us potentially a nice way
+            # to use the pandas IO methods.
+            sdf = pd.DataFrame({item: pd.SparseArray(data=head[item],
+                                                     sparse_index=
+                                                     BlockIndex(
+                                                         num_rows, [0, num_rows-tail_rows], [head_rows, tail_rows]))
+                                for item in self.columns})
+
+            # TODO - don't hard code max_rows - use pandas default/ES default
+            return sdf.to_string(max_rows=max_rows)
+
+        return head.to_string(max_rows=max_rows)
+

@@ -52,3 +52,10 @@ class TestDataFrameIndexing(TestData):
         # don't match the mapping types. This is mainly because the products field is
         # nested and so can be treated as a multi-field in ES, but not in pandas
 
+    def test_size(self):
+        assert self.pd_flights().shape == self.ed_flights().shape
+        assert len(self.pd_flights()) == len(self.ed_flights())
+
+    def test_to_string(self):
+        print(self.ed_flights())
+
