@@ -26,7 +26,11 @@ class Mappings():
         origin_location.lat             True    text        object      True        False
 
     """
-    def __init__(self, client, index_pattern):
+    def __init__(self,
+                 client=None,
+                 index_pattern=None,
+                 mappings=None,
+                 columns=None):
         """
         Parameters
         ----------
@@ -35,29 +39,38 @@ class Mappings():
 
         index_pattern: str
             Elasticsearch index pattern
+
+        Copy constructor arguments
+
+        mappings: Mappings
+            Object to copy
+
+        columns: list of str
+            Columns to copy
         """
-        # persist index_pattern for debugging
-        self.index_pattern = index_pattern
+        if (client is not None) and (index_pattern is not None):
+            get_mapping = client.indices().get_mapping(index=index_pattern)
 
-        mappings = client.indices().get_mapping(index=index_pattern)
+            # Get all fields (including all nested) and then field_caps
+            # for these names (fields=* doesn't appear to work effectively...)
+            all_fields = Mappings._extract_fields_from_mapping(get_mapping)
+            all_fields_caps = client.field_caps(index=index_pattern, fields=list(all_fields.keys()))
 
-        # Get all fields (including all nested) and then field_caps
-        # for these names (fields=* doesn't appear to work effectively...)
-        all_fields = Mappings._extract_fields_from_mapping(mappings)
-        all_fields_caps = client.field_caps(index=index_pattern, fields=list(all_fields.keys()))
+            # Get top level (not sub-field multifield) mappings
+            source_fields = Mappings._extract_fields_from_mapping(get_mapping, source_only=True)
 
-        # Get top level (not sub-field multifield) mappings
-        source_fields = Mappings._extract_fields_from_mapping(mappings, source_only=True)
-
-        # Populate capability matrix of fields
-        # field_name, es_dtype, pd_dtype, is_searchable, is_aggregtable, is_source
-        self.mappings_capabilities = Mappings._create_capability_matrix(all_fields, source_fields, all_fields_caps)
+            # Populate capability matrix of fields
+            # field_name, es_dtype, pd_dtype, is_searchable, is_aggregtable, is_source
+            self.mappings_capabilities = Mappings._create_capability_matrix(all_fields, source_fields, all_fields_caps)
+        else:
+            # Copy object and restrict mapping columns
+            self.mappings_capabilities = mappings.mappings_capabilities.loc[columns]
 
         # Cache source field types for efficient lookup
         # (this massively improves performance of DataFrame.flatten)
         self.source_field_pd_dtypes = {}
 
-        for field_name in source_fields:
+        for field_name in self.source_fields():
             pd_dtype = self.mappings_capabilities.loc[field_name]['pd_dtype']
             self.source_field_pd_dtypes[field_name] = pd_dtype
 
@@ -265,7 +278,7 @@ class Mappings():
     def pd_dtype
     """
 
-    def is_source_field(self, field_name):
+    def source_field_pd_dtype(self, field_name):
         """
         Parameters
         ----------
@@ -286,6 +299,24 @@ class Mappings():
             pd_dtype = self.source_field_pd_dtypes[field_name]
 
         return is_source_field, pd_dtype
+
+    def is_source_field(self, field_name):
+        """
+        Parameters
+        ----------
+        field_name: str
+
+        Returns
+        -------
+        is_source_field: bool
+            Is this field name a top-level source field?
+        """
+        is_source_field = False
+
+        if field_name in self.source_field_pd_dtypes:
+            is_source_field = True
+
+        return is_source_field
 
     def numeric_source_fields(self):
         """

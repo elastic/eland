@@ -7,6 +7,8 @@ class Client():
     def __init__(self, es=None):
         if isinstance(es, Elasticsearch):
             self.es = es
+        elif isinstance(es, Client):
+            self.es = es.es
         else:
             self.es = Elasticsearch(es)
             

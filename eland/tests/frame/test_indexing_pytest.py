@@ -59,3 +59,40 @@ class TestDataFrameIndexing(TestData):
     def test_to_string(self):
         print(self.ed_flights())
 
+    def test_get_item(self):
+        # Test 1 attribute
+        ed_carrier = self.ed_flights()['Carrier']
+
+        carrier_head = ed_carrier.head(5)
+
+        carrier_head_expected = pd.DataFrame(
+            {'Carrier':[
+                'Kibana Airlines',
+                'Logstash Airways',
+                'Logstash Airways',
+                'Kibana Airlines',
+                'Kibana Airlines'
+            ]})
+
+        assert_frame_equal(carrier_head_expected, carrier_head)
+
+        #carrier_to_string = ed_carrier.to_string()
+        #print(carrier_to_string)
+
+        # Test multiple attributes (out of order)
+        ed_3_items = self.ed_flights()['Dest','Carrier','FlightDelay']
+
+        ed_3_items_head = ed_3_items.head(5)
+
+        ed_3_items_expected = pd.DataFrame(dict(
+            Dest={0: 'Sydney Kingsford Smith International Airport', 1: 'Venice Marco Polo Airport',
+                  2: 'Venice Marco Polo Airport', 3: "Treviso-Sant'Angelo Airport",
+                  4: "Xi'an Xianyang International Airport"},
+            Carrier={0: 'Kibana Airlines', 1: 'Logstash Airways', 2: 'Logstash Airways', 3: 'Kibana Airlines',
+                     4: 'Kibana Airlines'},
+            FlightDelay={0: False, 1: False, 2: False, 3: True, 4: False}))
+
+        assert_frame_equal(ed_3_items_expected, ed_3_items_head)
+
+        #ed_3_items_to_string = ed_3_items.to_string()
+        #print(ed_3_items_to_string)

@@ -44,6 +44,9 @@ class DataFrame():
     index_pattern : str
         An Elasticsearch index pattern. This can contain wildcards (e.g. filebeat-*).
 
+    operations: list of operation
+        A list of Elasticsearch analytics operations e.g. filter, aggregations etc.
+
     See Also
     --------
 
@@ -69,13 +72,26 @@ class DataFrame():
     object is created, the object is not rebuilt and so inconsistencies can occur.
 
     """
-    def __init__(self, client, index_pattern):
+    def __init__(self,
+                 client,
+                 index_pattern,
+                 mappings=None,
+                 operations=None):
         self.client = ed.Client(client)
         self.index_pattern = index_pattern
 
         # Get and persist mappings, this allows us to correctly
         # map returned types from Elasticsearch to pandas datatypes
-        self.mappings = ed.Mappings(self.client, self.index_pattern)
+        if mappings is None:
+            self.mappings = ed.Mappings(self.client, self.index_pattern)
+        else:
+            self.mappings = mappings
+
+        # Initialise a list of 'operations'
+        # these are filters
+        self.operations = []
+        if operations is not None:
+            self.operations.extend(operations)
 
     def _es_results_to_pandas(self, results):
         """
@@ -174,7 +190,7 @@ class DataFrame():
                     is_source_field = False
                     pd_dtype = 'object'
                 else:
-                    is_source_field, pd_dtype = self.mappings.is_source_field(name[:-1])
+                    is_source_field, pd_dtype = self.mappings.source_field_pd_dtype(name[:-1])
 
                 if not is_source_field and type(x) is dict:
                     for a in x:
@@ -182,7 +198,7 @@ class DataFrame():
                 elif not is_source_field and type(x) is list:
                     for a in x:
                         flatten(a, name)
-                else:
+                elif is_source_field == True: # only print source fields from mappings (TODO - not so efficient for large number of fields and filtered mapping)
                     field_name = name[:-1]
 
                     # Coerce types - for now just datetime
@@ -212,6 +228,19 @@ class DataFrame():
 
         # Create pandas DataFrame
         df = pd.DataFrame(data=rows)
+
+        # _source may not contain all columns in the mapping
+        # therefore, fill in missing columns
+        # (note this returns self.columns NOT IN df.columns)
+        missing_columns = list(set(self.columns) - set(df.columns))
+
+        for missing in missing_columns:
+            is_source_field, pd_dtype = self.mappings.source_field_pd_dtype(missing)
+            df[missing] = None
+            df[missing].astype(pd_dtype)
+
+        # Sort columns in mapping order
+        df = df[self.columns]
 
         return df
 
@@ -266,7 +295,7 @@ class DataFrame():
             1 - number of columns
         """
         num_rows = len(self)
-        num_columns = self.columns
+        num_columns = len(self.columns)
 
         return num_rows, num_columns
 
@@ -275,15 +304,28 @@ class DataFrame():
         return self.mappings.source_fields()
 
     def __getitem__(self, item):
+        # df['a'] -> item == str
+        # df['a', 'b'] -> item == (str, str) tuple
+        columns = []
         if isinstance(item, str):
-            if item not in self.mappings.is_source_field(item):
+            if not self.mappings.is_source_field(item):
                 raise TypeError('Column does not exist: [{0}]'.format(item))
-            return Column(item)
+            columns.append(item)
+        elif isinstance(item, tuple):
+            columns.extend(list(item))
+
+        if len(columns) > 0:
+            # Return new eland.DataFrame with modified mappings
+            mappings = ed.Mappings(mappings=self.mappings, columns=columns)
+
+            return DataFrame(self.client, self.index_pattern, mappings=mappings)
+        """
         elif isinstance(item, BooleanFilter):
             self._filter = item.build()
             return self
         else:
             raise TypeError('Unsupported expr: [{0}]'.format(item))
+        """
 
     def __len__(self):
         """
@@ -295,6 +337,10 @@ class DataFrame():
     # Rendering Methods
 
     def __repr__(self):
+        return self.to_string()
+
+
+    def to_string(self):
         # The return for this is display.options.max_rows
         max_rows = 60
         head_rows = max_rows / 2
@@ -310,6 +356,8 @@ class DataFrame():
             # NOTE: this sparse DataFrame can't be used as the middle
             # section is all NaNs. However, it gives us potentially a nice way
             # to use the pandas IO methods.
+            # TODO - if data is indexed by time series, return top/bottom of
+            #   time series, rather than first max_rows items
             sdf = pd.DataFrame({item: pd.SparseArray(data=head[item],
                                                      sparse_index=
                                                      BlockIndex(
@@ -320,4 +368,3 @@ class DataFrame():
             return sdf.to_string(max_rows=max_rows)
 
         return head.to_string(max_rows=max_rows)
-
