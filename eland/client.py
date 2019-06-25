@@ -7,6 +7,8 @@ class Client():
     def __init__(self, es=None):
         if isinstance(es, Elasticsearch):
             self.es = es
+        elif isinstance(es, Client):
+            self.es = es.es
         else:
             self.es = Elasticsearch(es)
             
@@ -21,3 +23,8 @@ class Client():
 
     def field_caps(self, **kwargs):
         return self.es.field_caps(**kwargs)
+
+    def count(self, **kwargs):
+        count_json = self.es.count(**kwargs)
+        return count_json['count']
+
