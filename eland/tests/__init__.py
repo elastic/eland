@@ -438,7 +438,11 @@ TEST_MAPPING1_EXPECTED = {
 }
 
 TEST_MAPPING1_EXPECTED_DF = pd.DataFrame.from_dict(data=TEST_MAPPING1_EXPECTED, orient='index', columns=['es_dtype'])
-TEST_MAPPING1_EXPECTED_SOURCE_FIELD_COUNT = len(TEST_MAPPING1_EXPECTED_DF.index) - 4
+TEST_MAPPING1_EXPECTED_SOURCE_FIELD_DF = TEST_MAPPING1_EXPECTED_DF.drop(index=['city.raw',
+                                                   'origin_location.lat.keyword',
+                                                   'origin_location.lon.keyword',
+                                                   'text.english'])
+TEST_MAPPING1_EXPECTED_SOURCE_FIELD_COUNT = len(TEST_MAPPING1_EXPECTED_SOURCE_FIELD_DF.index)
 
 TEST_NESTED_USER_GROUP_INDEX_NAME = 'nested_user_group'
 TEST_NESTED_USER_GROUP_MAPPING = {

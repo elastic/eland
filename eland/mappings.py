@@ -1,5 +1,7 @@
 import warnings
+
 import pandas as pd
+
 
 class Mappings():
     """
@@ -26,6 +28,7 @@ class Mappings():
         origin_location.lat             True    text        object      True        False
 
     """
+
     def __init__(self,
                  client=None,
                  index_pattern=None,
@@ -63,14 +66,14 @@ class Mappings():
             # field_name, es_dtype, pd_dtype, is_searchable, is_aggregtable, is_source
             self.mappings_capabilities = Mappings._create_capability_matrix(all_fields, source_fields, all_fields_caps)
         else:
-            # Copy object and restrict mapping columns
+            # Reference object and restrict mapping columns
             self.mappings_capabilities = mappings.mappings_capabilities.loc[columns]
 
         # Cache source field types for efficient lookup
         # (this massively improves performance of DataFrame.flatten)
         self.source_field_pd_dtypes = {}
 
-        for field_name in self.source_fields():
+        for field_name in self.mappings_capabilities[self.mappings_capabilities._source == True].index:
             pd_dtype = self.mappings_capabilities.loc[field_name]['pd_dtype']
             self.source_field_pd_dtypes[field_name] = pd_dtype
 
@@ -336,7 +339,7 @@ class Mappings():
         source_fields: list of str
             List of source fields
         """
-        return self.mappings_capabilities[self.mappings_capabilities._source == True].index.tolist()
+        return self.source_field_pd_dtypes.keys()
 
     def count_source_fields(self):
         """
@@ -345,5 +348,25 @@ class Mappings():
         count_source_fields: int
             Number of source fields in mapping
         """
-        return len(self.mappings_capabilities[self.mappings_capabilities._source == True].index)
+        return len(self.source_fields())
 
+    def dtypes(self):
+        """
+        Returns
+        -------
+        dtypes: pd.Series
+            Source field name + pd_dtype
+        """
+        return pd.Series(self.source_field_pd_dtypes)
+
+    def get_dtype_counts(self):
+        """
+        Return counts of unique dtypes in this object.
+
+        Returns
+        -------
+        get_dtype_counts : Series
+            Series with the count of columns with each dtype.
+        """
+        return pd.Series(self.mappings_capabilities[self.mappings_capabilities._source == True].groupby('pd_dtype')[
+                             '_source'].count().to_dict())
