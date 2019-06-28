@@ -64,18 +64,22 @@ class Mappings():
 
             # Populate capability matrix of fields
             # field_name, es_dtype, pd_dtype, is_searchable, is_aggregtable, is_source
-            self.mappings_capabilities = Mappings._create_capability_matrix(all_fields, source_fields, all_fields_caps)
+            self._mappings_capabilities = Mappings._create_capability_matrix(all_fields, source_fields, all_fields_caps)
         else:
-            # Reference object and restrict mapping columns
-            self.mappings_capabilities = mappings.mappings_capabilities.loc[columns]
+            if columns is not None:
+                # Reference object and restrict mapping columns
+                self._mappings_capabilities = mappings._mappings_capabilities.loc[columns]
+            else:
+                # straight copy
+                self._mappings_capabilities = mappings._mappings_capabilities.copy()
 
         # Cache source field types for efficient lookup
         # (this massively improves performance of DataFrame.flatten)
-        self.source_field_pd_dtypes = {}
+        self._source_field_pd_dtypes = {}
 
-        for field_name in self.mappings_capabilities[self.mappings_capabilities._source == True].index:
-            pd_dtype = self.mappings_capabilities.loc[field_name]['pd_dtype']
-            self.source_field_pd_dtypes[field_name] = pd_dtype
+        for field_name in self._mappings_capabilities[self._mappings_capabilities._source == True].index:
+            pd_dtype = self._mappings_capabilities.loc[field_name]['pd_dtype']
+            self._source_field_pd_dtypes[field_name] = pd_dtype
 
     def _extract_fields_from_mapping(mappings, source_only=False):
         """
@@ -262,24 +266,29 @@ class Mappings():
         all_fields: list
             All typed fields in the index mapping
         """
-        return self.mappings_capabilities.index.tolist()
+        return self._mappings_capabilities.index.tolist()
 
-    """
-    def pd_dtypes_groupby_source_fields(self):
+    def field_capabilities(self, field_name):
+        """
+        Parameters
+        ----------
+        field_name: str
+
         Returns
         -------
-        groups: dict
-            Calls pandas.core.groupby.GroupBy.groups for _source fields
-            E.g.
-            {
-                'bool': Index(['Cancelled', 'FlightDelay'], dtype='object'),
-                'datetime64[ns]': Index(['timestamp'], dtype='object'),
-                'float64': Index(['AvgTicketPrice', 'DistanceKilometers', 'DistanceMiles',...
-            }
-        return self.mappings_capabilities[self.mappings_capabilities._source == True].groupby('pd_dtype').groups
-
-    def pd_dtype
-    """
+        mappings_capabilities: pd.Series with index values:
+            _source: bool
+                Is this field name a top-level source field?
+            ed_dtype: str
+                The Elasticsearch data type
+            pd_dtype: str
+                The pandas data type
+            searchable: bool
+                Is the field searchable in Elasticsearch?
+            aggregatable: bool
+                Is the field aggregatable in Elasticsearch?
+        """
+        return self._mappings_capabilities.loc[field_name]
 
     def source_field_pd_dtype(self, field_name):
         """
@@ -297,9 +306,9 @@ class Mappings():
         pd_dtype = 'object'
         is_source_field = False
 
-        if field_name in self.source_field_pd_dtypes:
+        if field_name in self._source_field_pd_dtypes:
             is_source_field = True
-            pd_dtype = self.source_field_pd_dtypes[field_name]
+            pd_dtype = self._source_field_pd_dtypes[field_name]
 
         return is_source_field, pd_dtype
 
@@ -316,7 +325,7 @@ class Mappings():
         """
         is_source_field = False
 
-        if field_name in self.source_field_pd_dtypes:
+        if field_name in self._source_field_pd_dtypes:
             is_source_field = True
 
         return is_source_field
@@ -328,9 +337,9 @@ class Mappings():
         numeric_source_fields: list of str
             List of source fields where pd_dtype == (int64 or float64)
         """
-        return self.mappings_capabilities[(self.mappings_capabilities._source == True) &
-                                          ((self.mappings_capabilities.pd_dtype == 'int64') |
-                                           (self.mappings_capabilities.pd_dtype == 'float64'))].index.tolist()
+        return self._mappings_capabilities[(self._mappings_capabilities._source == True) &
+                                          ((self._mappings_capabilities.pd_dtype == 'int64') |
+                                           (self._mappings_capabilities.pd_dtype == 'float64'))].index.tolist()
 
     def source_fields(self):
         """
@@ -339,7 +348,7 @@ class Mappings():
         source_fields: list of str
             List of source fields
         """
-        return self.source_field_pd_dtypes.keys()
+        return self._source_field_pd_dtypes.keys()
 
     def count_source_fields(self):
         """
@@ -357,7 +366,7 @@ class Mappings():
         dtypes: pd.Series
             Source field name + pd_dtype
         """
-        return pd.Series(self.source_field_pd_dtypes)
+        return pd.Series(self._source_field_pd_dtypes)
 
     def get_dtype_counts(self):
         """
@@ -368,5 +377,5 @@ class Mappings():
         get_dtype_counts : Series
             Series with the count of columns with each dtype.
         """
-        return pd.Series(self.mappings_capabilities[self.mappings_capabilities._source == True].groupby('pd_dtype')[
+        return pd.Series(self._mappings_capabilities[self._mappings_capabilities._source == True].groupby('pd_dtype')[
                              '_source'].count().to_dict())

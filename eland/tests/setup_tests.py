@@ -33,7 +33,8 @@ def _setup_data(es):
             # make timestamp datetime 2018-01-01T12:09:35
             #values['timestamp'] = datetime.strptime(values['timestamp'], '%Y-%m-%dT%H:%M:%S')
 
-            action = {'_index': index_name, '_source': values}
+            # Use integer as id field for repeatable results
+            action = {'_index': index_name, '_source': values, '_id': str(n)}
 
             actions.append(action)
 

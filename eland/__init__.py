@@ -1,4 +1,5 @@
 from .utils import *
-from .frame import *
+from .dataframe import *
 from .client import *
 from .mappings import *
+from .index import *
