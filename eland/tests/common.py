@@ -16,6 +16,7 @@ from eland.tests import FLIGHTS_DF_FILE_NAME, FLIGHTS_INDEX_NAME,\
 _pd_flights = pd.read_json(FLIGHTS_DF_FILE_NAME).sort_index()
 _pd_flights['timestamp'] = \
     pd.to_datetime(_pd_flights['timestamp'])
+_pd_flights.index = _pd_flights.index.map(str) # make index 'object' not int
 _ed_flights = ed.read_es(ELASTICSEARCH_HOST, FLIGHTS_INDEX_NAME)
 
 _pd_ecommerce = pd.read_json(ECOMMERCE_DF_FILE_NAME).sort_index()
@@ -24,6 +25,7 @@ _pd_ecommerce['order_date'] = \
 _pd_ecommerce['products.created_on'] = \
     _pd_ecommerce['products.created_on'].apply(lambda x: pd.to_datetime(x))
 _pd_ecommerce.insert(2, 'customer_birth_date', None)
+_pd_ecommerce.index = _pd_ecommerce.index.map(str) # make index 'object' not int
 _pd_ecommerce['customer_birth_date'].astype('datetime64')
 _ed_ecommerce = ed.read_es(ELASTICSEARCH_HOST, ECOMMERCE_INDEX_NAME)
 

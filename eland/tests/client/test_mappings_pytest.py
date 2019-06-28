@@ -69,3 +69,22 @@ class TestMapping(TestData):
         expected_get_dtype_counts = pd.Series({'datetime64[ns]': 1, 'float64': 1, 'int64': 5, 'object': 11})
 
         assert_series_equal(expected_get_dtype_counts, mappings.get_dtype_counts())
+
+    def test_mapping_capabilities(self):
+        mappings = ed.Mappings(ed.Client(ELASTICSEARCH_HOST), TEST_MAPPING1_INDEX_NAME)
+
+        field_capabilities = mappings.field_capabilities('city')
+
+        assert True == field_capabilities['_source']
+        assert 'text' == field_capabilities['es_dtype']
+        assert 'object' == field_capabilities['pd_dtype']
+        assert True == field_capabilities['searchable']
+        assert False == field_capabilities['aggregatable']
+
+        field_capabilities = mappings.field_capabilities('city.raw')
+
+        assert False == field_capabilities['_source']
+        assert 'keyword' == field_capabilities['es_dtype']
+        assert 'object' == field_capabilities['pd_dtype']
+        assert True == field_capabilities['searchable']
+        assert True == field_capabilities['aggregatable']

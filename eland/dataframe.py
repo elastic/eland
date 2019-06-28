@@ -23,21 +23,19 @@ Similarly, only Elasticsearch searchable fields can be searched or filtered, and
 only Elasticsearch aggregatable fields can be aggregated or grouped.
 
 """
-import eland as ed
-
-from elasticsearch import Elasticsearch
-from elasticsearch_dsl import Search
+import sys
 
 import pandas as pd
-
-from pandas.core.arrays.sparse import BlockIndex
-
+from elasticsearch_dsl import Search
+from pandas.compat import StringIO
+from pandas.core import common as com
+from pandas.io.common import _expand_user, _stringify_path
 from pandas.io.formats import format as fmt
 from pandas.io.formats.printing import pprint_thing
+from pandas.io.formats import console
 
-from io import StringIO
+import eland as ed
 
-import sys
 
 class DataFrame():
     """
@@ -79,26 +77,24 @@ class DataFrame():
     object is created, the object is not rebuilt and so inconsistencies can occur.
 
     """
+
     def __init__(self,
                  client,
                  index_pattern,
                  mappings=None,
-                 operations=None):
-        self.client = ed.Client(client)
-        self.index_pattern = index_pattern
+                 index_field=None):
+
+        self._client = ed.Client(client)
+        self._index_pattern = index_pattern
 
         # Get and persist mappings, this allows us to correctly
         # map returned types from Elasticsearch to pandas datatypes
         if mappings is None:
-            self.mappings = ed.Mappings(self.client, self.index_pattern)
+            self._mappings = ed.Mappings(self._client, self._index_pattern)
         else:
-            self.mappings = mappings
+            self._mappings = mappings
 
-        # Initialise a list of 'operations'
-        # these are filters
-        self.operations = []
-        if operations is not None:
-            self.operations.extend(operations)
+        self._index = ed.Index(index_field)
 
     def _es_results_to_pandas(self, results):
         """
@@ -187,6 +183,7 @@ class DataFrame():
         TODO - an option here is to use Elasticsearch's multi-field matching instead of pandas treatment of lists (which isn't great)
         NOTE - using this lists is generally not a good way to use this API
         """
+
         def flatten_dict(y):
             out = {}
 
@@ -197,7 +194,7 @@ class DataFrame():
                     is_source_field = False
                     pd_dtype = 'object'
                 else:
-                    is_source_field, pd_dtype = self.mappings.source_field_pd_dtype(name[:-1])
+                    is_source_field, pd_dtype = self._mappings.source_field_pd_dtype(name[:-1])
 
                 if not is_source_field and type(x) is dict:
                     for a in x:
@@ -205,7 +202,7 @@ class DataFrame():
                 elif not is_source_field and type(x) is list:
                     for a in x:
                         flatten(a, name)
-                elif is_source_field == True: # only print source fields from mappings (TODO - not so efficient for large number of fields and filtered mapping)
+                elif is_source_field == True:  # only print source fields from mappings (TODO - not so efficient for large number of fields and filtered mapping)
                     field_name = name[:-1]
 
                     # Coerce types - for now just datetime
@@ -227,14 +224,22 @@ class DataFrame():
             return out
 
         rows = []
+        index = []
         for hit in results['hits']['hits']:
             row = hit['_source']
+
+            # get index value - can be _id or can be field value in source
+            if self._index.is_source_field:
+                index_field = row[self._index.index_field]
+            else:
+                index_field = hit[self._index.index_field]
+            index.append(index_field)
 
             # flatten row to map correctly to 2D DataFrame
             rows.append(flatten_dict(row))
 
         # Create pandas DataFrame
-        df = pd.DataFrame(data=rows)
+        df = pd.DataFrame(data=rows, index=index)
 
         # _source may not contain all columns in the mapping
         # therefore, fill in missing columns
@@ -242,7 +247,7 @@ class DataFrame():
         missing_columns = list(set(self.columns) - set(df.columns))
 
         for missing in missing_columns:
-            is_source_field, pd_dtype = self.mappings.source_field_pd_dtype(missing)
+            is_source_field, pd_dtype = self._mappings.source_field_pd_dtype(missing)
             df[missing] = None
             df[missing].astype(pd_dtype)
 
@@ -252,20 +257,32 @@ class DataFrame():
         return df
 
     def head(self, n=5):
-        results = self.client.search(index=self.index_pattern, size=n)
+        sort_params = self._index.sort_field + ":asc"
+
+        results = self._client.search(index=self._index_pattern, size=n, sort=sort_params)
 
         return self._es_results_to_pandas(results)
-    
+
+    def tail(self, n=5):
+        sort_params = self._index.sort_field + ":desc"
+
+        results = self._client.search(index=self._index_pattern, size=n, sort=sort_params)
+
+        df = self._es_results_to_pandas(results)
+
+        # reverse order (index ascending)
+        return df.sort_index()
+
     def describe(self):
-        numeric_source_fields = self.mappings.numeric_source_fields()
+        numeric_source_fields = self._mappings.numeric_source_fields()
 
         # for each field we compute:
         # count, mean, std, min, 25%, 50%, 75%, max
-        search = Search(using=self.client, index=self.index_pattern).extra(size=0)
+        search = Search(using=self._client, index=self._index_pattern).extra(size=0)
 
         for field in numeric_source_fields:
-            search.aggs.metric('extended_stats_'+field, 'extended_stats', field=field)
-            search.aggs.metric('percentiles_'+field, 'percentiles', field=field)
+            search.aggs.metric('extended_stats_' + field, 'extended_stats', field=field)
+            search.aggs.metric('percentiles_' + field, 'percentiles', field=field)
 
         response = search.execute()
 
@@ -273,21 +290,21 @@ class DataFrame():
 
         for field in numeric_source_fields:
             values = []
-            values.append(response.aggregations['extended_stats_'+field]['count'])
-            values.append(response.aggregations['extended_stats_'+field]['avg'])
-            values.append(response.aggregations['extended_stats_'+field]['std_deviation'])
-            values.append(response.aggregations['extended_stats_'+field]['min'])
-            values.append(response.aggregations['percentiles_'+field]['values']['25.0'])
-            values.append(response.aggregations['percentiles_'+field]['values']['50.0'])
-            values.append(response.aggregations['percentiles_'+field]['values']['75.0'])
-            values.append(response.aggregations['extended_stats_'+field]['max'])
-            
+            values.append(response.aggregations['extended_stats_' + field]['count'])
+            values.append(response.aggregations['extended_stats_' + field]['avg'])
+            values.append(response.aggregations['extended_stats_' + field]['std_deviation'])
+            values.append(response.aggregations['extended_stats_' + field]['min'])
+            values.append(response.aggregations['percentiles_' + field]['values']['25.0'])
+            values.append(response.aggregations['percentiles_' + field]['values']['50.0'])
+            values.append(response.aggregations['percentiles_' + field]['values']['75.0'])
+            values.append(response.aggregations['extended_stats_' + field]['max'])
+
             # if not None
             if (values.count(None) < len(values)):
                 results[field] = values
 
         df = pd.DataFrame(data=results, index=['count', 'mean', 'std', 'min', '25%', '50%', '75%', 'max'])
-            
+
         return df
 
     def info(self, verbose=None, buf=None, max_cols=None, memory_usage=None,
@@ -305,12 +322,10 @@ class DataFrame():
         if buf is None:  # pragma: no cover
             buf = sys.stdout
 
-        fake_df = self.__fake_dataframe__()
-
         lines = []
 
         lines.append(str(type(self)))
-        lines.append(fake_df.index._summary())
+        lines.append(self.index_summary())
 
         if len(self.columns) == 0:
             lines.append('Empty {name}'.format(name=type(self).__name__))
@@ -322,7 +337,7 @@ class DataFrame():
         # hack
         if max_cols is None:
             max_cols = pd.get_option('display.max_info_columns',
-                                  len(self.columns) + 1)
+                                     len(self.columns) + 1)
 
         max_rows = pd.get_option('display.max_info_rows', len(self) + 1)
 
@@ -404,7 +419,6 @@ class DataFrame():
 
         fmt.buffer_put_lines(buf, lines)
 
-
     @property
     def shape(self):
         """
@@ -423,14 +437,32 @@ class DataFrame():
 
     @property
     def columns(self):
-        return pd.Index(self.mappings.source_fields())
+        return pd.Index(self._mappings.source_fields())
+
+    @property
+    def index(self):
+        return self._index
+
+    def set_index(self, index_field):
+        copy = self.copy()
+        copy._index = ed.Index(index_field)
+        return copy
+
+    def index_summary(self):
+        head = self.head(1).index[0]
+        tail = self.tail(1).index[0]
+        index_summary = ', %s to %s' % (pprint_thing(head),
+                                        pprint_thing(tail))
+
+        name = "Index"
+        return '%s: %s entries%s' % (name, len(self), index_summary)
 
     @property
     def dtypes(self):
-        return self.mappings.dtypes()
+        return self._mappings.dtypes()
 
     def get_dtype_counts(self):
-        return self.mappings.get_dtype_counts()
+        return self._mappings.get_dtype_counts()
 
     def count(self):
         """
@@ -446,63 +478,155 @@ class DataFrame():
         for a single document.
         """
         counts = {}
-        for field in self.mappings.source_fields():
-            exists_query = {"query":{"exists":{"field":field}}}
-            field_exists_count = self.client.count(index=self.index_pattern, body=exists_query)
+        for field in self._mappings.source_fields():
+            exists_query = {"query": {"exists": {"field": field}}}
+            field_exists_count = self._client.count(index=self._index_pattern, body=exists_query)
             counts[field] = field_exists_count
 
-        count = pd.Series(data=counts, index=self.mappings.source_fields())
+        count = pd.Series(data=counts, index=self._mappings.source_fields())
 
         return count
 
+    def index_count(self):
+        """
+        Returns
+        -------
+        index_count: int
+            Count of docs where index_field exists
+        """
+        exists_query = {"query": {"exists": {"field": self._index.index_field}}}
 
-    def __getitem__(self, item):
-        # df['a'] -> item == str
-        # df['a', 'b'] -> item == (str, str) tuple
+        index_count = self._client.count(index=self._index_pattern, body=exists_query)
+
+        return index_count
+
+    def _filter_by_columns(self, columns):
+        # Return new eland.DataFrame with modified mappings
+        mappings = ed.Mappings(mappings=self._mappings, columns=columns)
+
+        return DataFrame(self._client, self._index_pattern, mappings=mappings)
+
+    def __getitem__(self, key):
+        # NOTE: there is a difference between pandas here.
+        # e.g. df['a'] returns pd.Series, df[['a','b']] return pd.DataFrame
+        # we always return DataFrame - TODO maybe create eland.Series at some point...
+
+        # Implementation mainly copied from pandas v0.24.2
+        # (https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html)
+        key = com.apply_if_callable(key, self)
+
+        # TODO - add slice capabilities - need to add index features first
+        #   e.g. set index etc.
+        # Do we have a slicer (on rows)?
+        """
+        indexer = convert_to_index_sliceable(self, key)
+        if indexer is not None:
+            return self._slice(indexer, axis=0)
+        # Do we have a (boolean) DataFrame?
+        if isinstance(key, DataFrame):
+            return self._getitem_frame(key)
+        """
+
+        # Do we have a (boolean) 1d indexer?
+        """
+        if com.is_bool_indexer(key):
+            return self._getitem_bool_array(key)
+        """
+
+        # We are left with two options: a single key, and a collection of keys,
         columns = []
-        if isinstance(item, str):
-            if not self.mappings.is_source_field(item):
-                raise TypeError('Column does not exist: [{0}]'.format(item))
-            columns.append(item)
-        elif isinstance(item, tuple):
-            columns.extend(list(item))
-        elif isinstance(item, list):
-            columns.extend(item)
-
-        if len(columns) > 0:
-            # Return new eland.DataFrame with modified mappings
-            mappings = ed.Mappings(mappings=self.mappings, columns=columns)
-
-            return DataFrame(self.client, self.index_pattern, mappings=mappings)
-        """
-        elif isinstance(item, BooleanFilter):
-            self._filter = item.build()
-            return self
+        if isinstance(key, str):
+            if not self._mappings.is_source_field(key):
+                raise TypeError('Column does not exist: [{0}]'.format(key))
+            columns.append(key)
+        elif isinstance(key, list):
+            columns.extend(key)
         else:
-            raise TypeError('Unsupported expr: [{0}]'.format(item))
-        """
+            raise TypeError('__getitem__ arguments invalid: [{0}]'.format(key))
+
+        return self._filter_by_columns(columns)
 
     def __len__(self):
         """
         Returns length of info axis, but here we use the index.
         """
-        return self.client.count(index=self.index_pattern)
+        return self._client.count(index=self._index_pattern)
+
+    def copy(self):
+        # TODO - test and validate...may need deep copying
+        return ed.DataFrame(self._client,
+                 self._index_pattern,
+                 self._mappings,
+                 self._index)
 
     # ----------------------------------------------------------------------
     # Rendering Methods
-
     def __repr__(self):
         """
-        Return a string representation for a particular DataFrame.
+        From pandas
         """
-        return self.to_string()
+        buf = StringIO()
+
+        max_rows = pd.get_option("display.max_rows")
+        max_cols = pd.get_option("display.max_columns")
+        show_dimensions = pd.get_option("display.show_dimensions")
+        if pd.get_option("display.expand_frame_repr"):
+            width, _ = console.get_console_size()
+        else:
+            width = None
+        self.to_string(buf=buf, max_rows=max_rows, max_cols=max_cols,
+                       line_width=width, show_dimensions=show_dimensions)
+
+        return buf.getvalue()
+
+    def to_string(self, buf=None, columns=None, col_space=None, header=True,
+                  index=True, na_rep='NaN', formatters=None, float_format=None,
+                  sparsify=None, index_names=True, justify=None,
+                  max_rows=None, max_cols=None, show_dimensions=True,
+                  decimal='.', line_width=None):
+        """
+        From pandas
+        """
+        if max_rows == None:
+            max_rows = pd.get_option('display.max_rows')
+
+        sdf = self.__fake_dataframe__(max_rows=max_rows+1)
+
+        _show_dimensions = show_dimensions
+
+        if buf is not None:
+            _buf = _expand_user(_stringify_path(buf))
+        else:
+            _buf = StringIO()
+
+        sdf.to_string(buf=_buf, columns=columns,
+                      col_space=col_space, na_rep=na_rep,
+                      formatters=formatters,
+                      float_format=float_format,
+                      sparsify=sparsify, justify=justify,
+                      index_names=index_names,
+                      header=header, index=index,
+                      max_rows=max_rows,
+                      max_cols=max_cols,
+                      show_dimensions=False, # print this outside of this call
+                      decimal=decimal,
+                      line_width=line_width)
+
+        if _show_dimensions:
+            _buf.write("\n\n[{nrows} rows x {ncols} columns]"
+                      .format(nrows=self.index_count(), ncols=len(self.columns)))
+
+        if buf is None:
+            result = _buf.getvalue()
+            return result
 
 
     def __fake_dataframe__(self, max_rows=1):
-        head_rows = max_rows / 2 + 1
+        head_rows = int(max_rows / 2) + max_rows % 2
         tail_rows = max_rows - head_rows
 
-        head = self.head(max_rows)
+        head = self.head(head_rows)
+        tail = self.tail(tail_rows)
 
         num_rows = len(self)
 
@@ -514,8 +638,9 @@ class DataFrame():
             # to use the pandas IO methods.
             # TODO - if data is indexed by time series, return top/bottom of
             #   time series, rather than first max_rows items
+            """
             if tail_rows > 0:
-                locations = [0, num_rows-tail_rows]
+                locations = [0, num_rows - tail_rows]
                 lengths = [head_rows, tail_rows]
             else:
                 locations = [0]
@@ -526,21 +651,13 @@ class DataFrame():
                                                      BlockIndex(
                                                          num_rows, locations, lengths))
                                 for item in self.columns})
-
-            return sdf
-
-        return head
+            """
+            return pd.concat([head, tail])
 
 
-    def to_string(self):
-        # TODO - this doesn't return 'notebook' friendly results yet..
-        # TODO - don't hard code max_rows - use pandas default/ES default
-        max_rows = 60
-
-        df = self.__fake_dataframe__(max_rows=max_rows)
-
-        return df.to_string(max_rows=max_rows, show_dimensions=True)
+        return pd.concat([head, tail])
 
 
+# From pandas.DataFrame
 def _put_str(s, space):
     return '{s}'.format(s=s)[:space].ljust(space)

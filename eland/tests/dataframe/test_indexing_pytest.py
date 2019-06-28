@@ -10,8 +10,8 @@ from pandas.util.testing import (
 class TestDataFrameIndexing(TestData):
 
     def test_mapping(self):
-        ed_flights_mappings = pd.DataFrame(self.ed_flights().mappings.mappings_capabilities
-                                           [self.ed_flights().mappings.mappings_capabilities._source==True]
+        ed_flights_mappings = pd.DataFrame(self.ed_flights()._mappings._mappings_capabilities
+                                           [self.ed_flights()._mappings._mappings_capabilities._source==True]
                                            ['pd_dtype'])
         pd_flights_mappings = pd.DataFrame(self.pd_flights().dtypes, columns = ['pd_dtype'])
 
@@ -25,6 +25,8 @@ class TestDataFrameIndexing(TestData):
         pd_flights_head = self.pd_flights().head()
         ed_flights_head = self.ed_flights().head()
 
+        print(ed_flights_head)
+
         assert_frame_equal(pd_flights_head, ed_flights_head)
 
         pd_ecommerce_head = self.pd_ecommerce().head()
@@ -32,9 +34,24 @@ class TestDataFrameIndexing(TestData):
 
         assert_frame_equal(pd_ecommerce_head, ed_ecommerce_head)
 
+    def test_tail(self):
+        pd_flights_tail = self.pd_flights().tail()
+        ed_flights_tail = self.ed_flights().tail()
+
+        print(ed_flights_tail)
+
+        assert_frame_equal(pd_flights_tail, ed_flights_tail)
+
+        pd_ecommerce_tail = self.pd_ecommerce().tail()
+        ed_ecommerce_tail = self.ed_ecommerce().tail()
+
+        assert_frame_equal(pd_ecommerce_tail, ed_ecommerce_tail)
+
     def test_describe(self):
         pd_flights_describe = self.pd_flights().describe()
         ed_flights_describe = self.ed_flights().describe()
+
+        print(ed_flights_describe)
 
         # TODO - this fails now as ES aggregations are approximate
         #        if ES percentile agg uses
@@ -47,6 +64,8 @@ class TestDataFrameIndexing(TestData):
         pd_ecommerce_describe = self.pd_ecommerce().describe()
         ed_ecommerce_describe = self.ed_ecommerce().describe()
 
+        print(ed_ecommerce_describe)
+
         # We don't compare ecommerce here as the default dtypes in pandas from read_json
         # don't match the mapping types. This is mainly because the products field is
         # nested and so can be treated as a multi-field in ES, but not in pandas
@@ -57,52 +76,7 @@ class TestDataFrameIndexing(TestData):
 
     def test_to_string(self):
         print(self.ed_flights())
-
-    def test_getitem(self):
-        # Test 1 attribute
-        ed_carrier = self.ed_flights()['Carrier']
-
-        carrier_head = ed_carrier.head(5)
-
-        carrier_head_expected = pd.DataFrame(
-            {'Carrier':[
-                'Kibana Airlines',
-                'Logstash Airways',
-                'Logstash Airways',
-                'Kibana Airlines',
-                'Kibana Airlines'
-            ]})
-
-        assert_frame_equal(carrier_head_expected, carrier_head)
-
-        #carrier_to_string = ed_carrier.to_string()
-        #print(carrier_to_string)
-
-        # Test multiple attributes (out of order)
-        ed_3_items = self.ed_flights()['Dest','Carrier','FlightDelay']
-
-        ed_3_items_head = ed_3_items.head(5)
-
-        ed_3_items_expected = pd.DataFrame(dict(
-            Dest={0: 'Sydney Kingsford Smith International Airport', 1: 'Venice Marco Polo Airport',
-                  2: 'Venice Marco Polo Airport', 3: "Treviso-Sant'Angelo Airport",
-                  4: "Xi'an Xianyang International Airport"},
-            Carrier={0: 'Kibana Airlines', 1: 'Logstash Airways', 2: 'Logstash Airways', 3: 'Kibana Airlines',
-                     4: 'Kibana Airlines'},
-            FlightDelay={0: False, 1: False, 2: False, 3: True, 4: False}))
-
-        assert_frame_equal(ed_3_items_expected, ed_3_items_head)
-
-        #ed_3_items_to_string = ed_3_items.to_string()
-        #print(ed_3_items_to_string)
-
-        # Test numerics
-        numerics = ['DistanceMiles', 'AvgTicketPrice', 'FlightTimeMin']
-        ed_numerics = self.ed_flights()[numerics]
-
-        # just test headers
-        ed_numerics_describe = ed_numerics.describe()
-        assert ed_numerics_describe.columns.tolist() == numerics
+        print(self.ed_flights().to_string())
 
     def test_info(self):
         ed_flights_info_buf = io.StringIO()
@@ -110,6 +84,8 @@ class TestDataFrameIndexing(TestData):
 
         self.ed_flights().info(buf=ed_flights_info_buf)
         self.pd_flights().info(buf=pd_flights_info_buf)
+
+        print(ed_flights_info_buf.getvalue())
 
         ed_flights_info = (ed_flights_info_buf.getvalue().splitlines())
         pd_flights_info = (pd_flights_info_buf.getvalue().splitlines())
@@ -148,7 +124,7 @@ class TestDataFrameIndexing(TestData):
 
         assert_series_equal(pd_flights_get_dtype_counts, ed_flights_get_dtype_counts)
 
-    def test_properties(self):
+    def test_get_properties(self):
         pd_flights_shape = self.pd_flights().shape
         ed_flights_shape = self.ed_flights().shape
 
@@ -163,4 +139,17 @@ class TestDataFrameIndexing(TestData):
         ed_flights_dtypes = self.ed_flights().dtypes
 
         assert_series_equal(pd_flights_dtypes, ed_flights_dtypes)
+
+    def test_index(self):
+        pd_flights = self.pd_flights()
+        pd_flights_timestamp = pd_flights.set_index('timestamp')
+        pd_flights.info()
+        pd_flights_timestamp.info()
+        pd_flights.info()
+
+        ed_flights = self.ed_flights()
+        ed_flights_timestamp = ed_flights.set_index('timestamp')
+        ed_flights.info()
+        ed_flights_timestamp.info()
+        ed_flights.info()
 
