@@ -16,7 +16,7 @@ class TestMapping(TestData):
 
         assert TEST_MAPPING1_EXPECTED_DF.index.tolist() == mappings.all_fields()
 
-        assert_frame_equal(TEST_MAPPING1_EXPECTED_DF, pd.DataFrame(mappings.mappings_capabilities['es_dtype']))
+        assert_frame_equal(TEST_MAPPING1_EXPECTED_DF, pd.DataFrame(mappings._mappings_capabilities['es_dtype']))
 
         assert TEST_MAPPING1_EXPECTED_SOURCE_FIELD_COUNT == mappings.count_source_fields()
 
@@ -24,7 +24,7 @@ class TestMapping(TestData):
         mappings = ed.Mappings(ed.Client(ELASTICSEARCH_HOST), TEST_MAPPING1_INDEX_NAME)
 
         assert TEST_MAPPING1_EXPECTED_DF.index.tolist() == mappings.all_fields()
-        assert_frame_equal(TEST_MAPPING1_EXPECTED_DF, pd.DataFrame(mappings.mappings_capabilities['es_dtype']))
+        assert_frame_equal(TEST_MAPPING1_EXPECTED_DF, pd.DataFrame(mappings._mappings_capabilities['es_dtype']))
         assert TEST_MAPPING1_EXPECTED_SOURCE_FIELD_COUNT == mappings.count_source_fields()
 
         # Pick 1 source field
@@ -43,7 +43,7 @@ class TestMapping(TestData):
 
         # Check original is still ok
         assert TEST_MAPPING1_EXPECTED_DF.index.tolist() == mappings.all_fields()
-        assert_frame_equal(TEST_MAPPING1_EXPECTED_DF, pd.DataFrame(mappings.mappings_capabilities['es_dtype']))
+        assert_frame_equal(TEST_MAPPING1_EXPECTED_DF, pd.DataFrame(mappings._mappings_capabilities['es_dtype']))
         assert TEST_MAPPING1_EXPECTED_SOURCE_FIELD_COUNT == mappings.count_source_fields()
 
     def test_dtypes(self):

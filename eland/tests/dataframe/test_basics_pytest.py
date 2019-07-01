@@ -7,7 +7,7 @@ import io
 from pandas.util.testing import (
     assert_series_equal, assert_frame_equal)
 
-class TestDataFrameIndexing(TestData):
+class TestDataFrameBasics(TestData):
 
     def test_mapping(self):
         ed_flights_mappings = pd.DataFrame(self.ed_flights()._mappings._mappings_capabilities
