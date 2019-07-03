@@ -7,7 +7,7 @@ import io
 from pandas.util.testing import (
     assert_series_equal, assert_frame_equal)
 
-class TestDataFrameIndexing(TestData):
+class TestDataFrameBasics(TestData):
 
     def test_mapping(self):
         ed_flights_mappings = pd.DataFrame(self.ed_flights()._mappings._mappings_capabilities
@@ -153,3 +153,7 @@ class TestDataFrameIndexing(TestData):
         ed_flights_timestamp.info()
         ed_flights.info()
 
+    def test_to_pandas(self):
+        ed_ecommerce_pd_df = self.ed_ecommerce().to_pandas()
+
+        assert_frame_equal(self.pd_ecommerce(), ed_ecommerce_pd_df)

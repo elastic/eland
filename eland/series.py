@@ -1,50 +1,36 @@
 """
-DataFrame
+Series
 ---------
-An efficient 2D container for potentially mixed-type time series or other
-labeled data series.
+One-dimensional ndarray with axis labels (including time series).
 
 The underlying data resides in Elasticsearch and the API aligns as much as
 possible with pandas.DataFrame API.
 
-This allows the eland.DataFrame to access large datasets stored in Elasticsearch,
+This allows the eland.Series to access large datasets stored in Elasticsearch,
 without storing the dataset in local memory.
 
 Implementation Details
 ----------------------
-
-Elasticsearch indexes can be configured in many different ways, and these indexes
-utilise different data structures to pandas.DataFrame.
-
-eland.DataFrame operations that return individual rows (e.g. df.head()) return
-_source data. If _source is not enabled, this data is not accessible.
-
-Similarly, only Elasticsearch searchable fields can be searched or filtered, and
-only Elasticsearch aggregatable fields can be aggregated or grouped.
+Based on NDFrame which underpins eland.1DataFrame
 
 """
 import sys
 
 import pandas as pd
-
+import pandas.compat as compat
+from pandas.compat import StringIO
+from pandas.core.dtypes.common import (
+    is_categorical_dtype)
 from pandas.io.formats import format as fmt
 from pandas.io.formats.printing import pprint_thing
-from pandas.compat import StringIO
-from pandas.io.common import _expand_user, _stringify_path
-from pandas.io.formats import console
-from pandas.core import common as com
 
-from eland import NDFrame
 from eland import Index
-from eland import Series
+from eland import NDFrame
 
 
-
-
-
-class DataFrame(NDFrame):
+class Series(NDFrame):
     """
-    pandas.DataFrame like API that proxies into Elasticsearch index(es).
+    pandas.Series like API that proxies into Elasticsearch index(es).
 
     Parameters
     ----------
@@ -54,6 +40,9 @@ class DataFrame(NDFrame):
     index_pattern : str
         An Elasticsearch index pattern. This can contain wildcards (e.g. filebeat-*).
 
+    field_name : str
+        The field to base the series on
+
     See Also
     --------
 
@@ -62,7 +51,7 @@ class DataFrame(NDFrame):
 
     import eland as ed
     client = ed.Client(Elasticsearch())
-    df = ed.DataFrame(client, 'reviews')
+    s = ed.DataFrame(client, 'reviews', 'date')
     df.head()
        reviewerId  vendorId  rating              date
     0           0         0       5  2006-04-07 17:08
@@ -83,16 +72,23 @@ class DataFrame(NDFrame):
     def __init__(self,
                  client,
                  index_pattern,
+                 field_name=None,
                  mappings=None,
                  index_field=None):
         # python 3 syntax
         super().__init__(client, index_pattern, mappings=mappings, index_field=index_field)
 
+        # now select column (field_name)
+        if field_name is not None:
+            self._mappings = self._filter_mappings([field_name])
+        elif len(self._mappings.source_fields()) != 1:
+            raise TypeError('Series must have 1 field: [{0}]'.format(len(self._mappings.source_fields())))
+
     def head(self, n=5):
-        return super()._head(n)
+        return self._df_to_series(super()._head(n))
 
     def tail(self, n=5):
-        return super()._tail(n)
+        return self._df_to_series(super()._tail(n))
 
     def info(self, verbose=None, buf=None, max_cols=None, memory_usage=None,
              null_counts=None):
@@ -152,7 +148,7 @@ class DataFrame(NDFrame):
                 tmpl = "{count} non-null {dtype}"
 
             dtypes = self.dtypes
-            for i, col in enumerate(self.columns):
+            for i, col in enumerate(self._columns):
                 dtype = dtypes.iloc[i]
                 col = pprint_thing(col)
 
@@ -164,7 +160,7 @@ class DataFrame(NDFrame):
                                                                 dtype=dtype))
 
         def _non_verbose_repr():
-            lines.append(self.columns._summary(name='Columns'))
+            lines.append(self._columns._summary(name='Columns'))
 
         def _sizeof_fmt(num, size_qualifier):
             # returns size in human readable format
@@ -207,6 +203,10 @@ class DataFrame(NDFrame):
         fmt.buffer_put_lines(buf, lines)
 
     @property
+    def name(self):
+        return list(self._mappings.source_fields())[0]
+
+    @property
     def shape(self):
         """
         Return a tuple representing the dimensionality of the DataFrame.
@@ -218,10 +218,11 @@ class DataFrame(NDFrame):
             1 - number of columns
         """
         num_rows = len(self)
-        num_columns = len(self.columns)
+        num_columns = len(self._columns)
 
         return num_rows, num_columns
 
+    @property
     def set_index(self, index_field):
         copy = self.copy()
         copy._index = Index(index_field)
@@ -262,68 +263,8 @@ class DataFrame(NDFrame):
     def describe(self):
         return super()._describe()
 
-
-    def __getitem__(self, key):
-        # NOTE: there is a difference between pandas here.
-        # e.g. df['a'] returns pd.Series, df[['a','b']] return pd.DataFrame
-
-        # Implementation mainly copied from pandas v0.24.2
-        # (https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html)
-        key = com.apply_if_callable(key, self)
-
-        # TODO - add slice capabilities - need to add index features first
-        #   e.g. set index etc.
-        # Do we have a slicer (on rows)?
-        """
-        indexer = convert_to_index_sliceable(self, key)
-        if indexer is not None:
-            return self._slice(indexer, axis=0)
-        # Do we have a (boolean) DataFrame?
-        if isinstance(key, DataFrame):
-            return self._getitem_frame(key)
-        """
-
-        # Do we have a (boolean) 1d indexer?
-        """
-        if com.is_bool_indexer(key):
-            return self._getitem_bool_array(key)
-        """
-
-        # We are left with two options: a single key, and a collection of keys,
-        columns = []
-        is_single_key = False
-        if isinstance(key, str):
-            if not self._mappings.is_source_field(key):
-                raise TypeError('Column does not exist: [{0}]'.format(key))
-            columns.append(key)
-            is_single_key = True
-        elif isinstance(key, list):
-            columns.extend(key)
-        else:
-            raise TypeError('__getitem__ arguments invalid: [{0}]'.format(key))
-
-        mappings = self._filter_mappings(columns)
-
-        # Return new eland.DataFrame with modified mappings
-        if is_single_key:
-            return Series(self._client, self._index_pattern, mappings=mappings)
-        else:
-            return DataFrame(self._client, self._index_pattern, mappings=mappings)
-
-
-    def __getattr__(self, name):
-        # Note: obj.x will always call obj.__getattribute__('x') prior to
-        # calling obj.__getattr__('x').
-        mappings = self._filter_mappings([name])
-
-        return Series(self._client, self._index_pattern, mappings=mappings)
-
-    def copy(self):
-        # TODO - test and validate...may need deep copying
-        return DataFrame(self._client,
-                 self._index_pattern,
-                 self._mappings,
-                 self._index)
+    def _df_to_series(self, df):
+        return df[self.name]
 
     # ----------------------------------------------------------------------
     # Rendering Methods
@@ -334,61 +275,128 @@ class DataFrame(NDFrame):
         buf = StringIO()
 
         max_rows = pd.get_option("display.max_rows")
-        max_cols = pd.get_option("display.max_columns")
-        show_dimensions = pd.get_option("display.show_dimensions")
-        if pd.get_option("display.expand_frame_repr"):
-            width, _ = console.get_console_size()
-        else:
-            width = None
-        self.to_string(buf=buf, max_rows=max_rows, max_cols=max_cols,
-                       line_width=width, show_dimensions=show_dimensions)
+
+        self.to_string(buf=buf, na_rep='NaN', float_format=None, header=True, index=True, length=True,
+                       dtype=True, name=True, max_rows=max_rows)
 
         return buf.getvalue()
 
-    def to_string(self, buf=None, columns=None, col_space=None, header=True,
-                  index=True, na_rep='NaN', formatters=None, float_format=None,
-                  sparsify=None, index_names=True, justify=None,
-                  max_rows=None, max_cols=None, show_dimensions=True,
-                  decimal='.', line_width=None):
+    def to_string(self, buf=None, na_rep='NaN',
+                  float_format=None, header=True,
+                  index=True, length=True, dtype=True,
+                  name=True, max_rows=None):
         """
-        From pandas
+        From pandas 0.24.2
+
+        Render a string representation of the Series.
+
+        Parameters
+        ----------
+        buf : StringIO-like, optional
+            buffer to write to
+        na_rep : string, optional
+            string representation of NAN to use, default 'NaN'
+        float_format : one-parameter function, optional
+            formatter function to apply to columns' elements if they are floats
+            default None
+        header : boolean, default True
+            Add the Series header (index name)
+        index : bool, optional
+            Add index (row) labels, default True
+        length : boolean, default False
+            Add the Series length
+        dtype : boolean, default False
+            Add the Series dtype
+        name : boolean, default False
+            Add the Series name if not None
+        max_rows : int, optional
+            Maximum number of rows to show before truncating. If None, show
+            all.
+
+        Returns
+        -------
+        formatted : string (if not buffer passed)
         """
         if max_rows == None:
-            max_rows = pd.get_option('display.max_rows')
+            max_rows = pd.get_option("display.max_rows")
 
-        df = self._fake_head_tail_df(max_rows=max_rows+1)
+        df = self._fake_head_tail_df(max_rows=max_rows + 1)
 
-        if buf is not None:
-            _buf = _expand_user(_stringify_path(buf))
-        else:
-            _buf = StringIO()
+        s = self._df_to_series(df)
 
-        df.to_string(buf=_buf, columns=columns,
-                     col_space=col_space, na_rep=na_rep,
-                     formatters=formatters,
-                     float_format=float_format,
-                     sparsify=sparsify, justify=justify,
-                     index_names=index_names,
-                     header=header, index=index,
-                     max_rows=max_rows,
-                     max_cols=max_cols,
-                     show_dimensions=False,  # print this outside of this call
-                     decimal=decimal,
-                     line_width=line_width)
+        formatter = Series.SeriesFormatter(s, len(self), name=name, length=length,
+                                           header=header, index=index,
+                                           dtype=dtype, na_rep=na_rep,
+                                           float_format=float_format,
+                                           max_rows=max_rows)
+        result = formatter.to_string()
 
-        # Our fake dataframe has incorrect number of rows (max_rows*2+1) - write out
-        # the correct number of rows
-        if show_dimensions:
-            _buf.write("\n\n[{nrows} rows x {ncols} columns]"
-                       .format(nrows=self._index_count(), ncols=len(self.columns)))
+        # catch contract violations
+        if not isinstance(result, compat.text_type):
+            raise AssertionError("result must be of type unicode, type"
+                                 " of result is {0!r}"
+                                 "".format(result.__class__.__name__))
 
         if buf is None:
-            result = _buf.getvalue()
             return result
+        else:
+            try:
+                buf.write(result)
+            except AttributeError:
+                with open(buf, 'w') as f:
+                    f.write(result)
 
-    def to_pandas(selfs):
-        return super()._to_pandas()
+    class SeriesFormatter(fmt.SeriesFormatter):
+        """
+        A hacked overridden version of pandas.io.formats.SeriesFormatter that writes correct length
+        """
+        def __init__(self, series, series_length, buf=None, length=True, header=True, index=True,
+                     na_rep='NaN', name=False, float_format=None, dtype=True,
+                     max_rows=None):
+            super().__init__(series, buf=buf, length=length, header=header, index=index,
+                             na_rep=na_rep, name=name, float_format=float_format, dtype=dtype,
+                             max_rows=max_rows)
+            self._series_length = series_length
 
-# From pandas.DataFrame
-def _put_str(s, space):
-    return '{s}'.format(s=s)[:space].ljust(space)
+        def _get_footer(self):
+            """
+            Overridden with length change
+            (from pandas 0.24.2 io.formats.SeriesFormatter)
+            """
+            name = self.series.name
+            footer = ''
+
+            if getattr(self.series.index, 'freq', None) is not None:
+                footer += 'Freq: {freq}'.format(freq=self.series.index.freqstr)
+
+            if self.name is not False and name is not None:
+                if footer:
+                    footer += ', '
+
+                series_name = pprint_thing(name,
+                                           escape_chars=('\t', '\r', '\n'))
+                footer += ("Name: {sname}".format(sname=series_name)
+                           if name is not None else "")
+
+            if (self.length is True or
+                    (self.length == 'truncate' and self.truncate_v)):
+                if footer:
+                    footer += ', '
+                footer += 'Length: {length}'.format(length=self._series_length)
+
+            if self.dtype is not False and self.dtype is not None:
+                name = getattr(self.tr_series.dtype, 'name', None)
+                if name:
+                    if footer:
+                        footer += ', '
+                    footer += 'dtype: {typ}'.format(typ=pprint_thing(name))
+
+            # level infos are added to the end and in a new line, like it is done
+            # for Categoricals
+            if is_categorical_dtype(self.tr_series.dtype):
+                level_info = self.tr_series._values._repr_categories_info()
+                if footer:
+                    footer += "\n"
+                footer += level_info
+
+            return compat.text_type(footer)

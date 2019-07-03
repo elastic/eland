@@ -1,5 +1,6 @@
 # File called _pytest for PyCharm compatability
 
+import numpy as np
 from pandas.util.testing import (
     assert_series_equal, assert_frame_equal)
 
@@ -16,7 +17,7 @@ class TestMapping(TestData):
 
         assert TEST_MAPPING1_EXPECTED_DF.index.tolist() == mappings.all_fields()
 
-        assert_frame_equal(TEST_MAPPING1_EXPECTED_DF, pd.DataFrame(mappings.mappings_capabilities['es_dtype']))
+        assert_frame_equal(TEST_MAPPING1_EXPECTED_DF, pd.DataFrame(mappings._mappings_capabilities['es_dtype']))
 
         assert TEST_MAPPING1_EXPECTED_SOURCE_FIELD_COUNT == mappings.count_source_fields()
 
@@ -24,7 +25,7 @@ class TestMapping(TestData):
         mappings = ed.Mappings(ed.Client(ELASTICSEARCH_HOST), TEST_MAPPING1_INDEX_NAME)
 
         assert TEST_MAPPING1_EXPECTED_DF.index.tolist() == mappings.all_fields()
-        assert_frame_equal(TEST_MAPPING1_EXPECTED_DF, pd.DataFrame(mappings.mappings_capabilities['es_dtype']))
+        assert_frame_equal(TEST_MAPPING1_EXPECTED_DF, pd.DataFrame(mappings._mappings_capabilities['es_dtype']))
         assert TEST_MAPPING1_EXPECTED_SOURCE_FIELD_COUNT == mappings.count_source_fields()
 
         # Pick 1 source field
@@ -43,7 +44,7 @@ class TestMapping(TestData):
 
         # Check original is still ok
         assert TEST_MAPPING1_EXPECTED_DF.index.tolist() == mappings.all_fields()
-        assert_frame_equal(TEST_MAPPING1_EXPECTED_DF, pd.DataFrame(mappings.mappings_capabilities['es_dtype']))
+        assert_frame_equal(TEST_MAPPING1_EXPECTED_DF, pd.DataFrame(mappings._mappings_capabilities['es_dtype']))
         assert TEST_MAPPING1_EXPECTED_SOURCE_FIELD_COUNT == mappings.count_source_fields()
 
     def test_dtypes(self):
@@ -88,3 +89,36 @@ class TestMapping(TestData):
         assert 'object' == field_capabilities['pd_dtype']
         assert True == field_capabilities['searchable']
         assert True == field_capabilities['aggregatable']
+
+    def test_generate_es_mappings(self):
+        df = pd.DataFrame(data={'A': np.random.rand(3),
+                                'B': 1,
+                                'C': 'foo',
+                                'D': pd.Timestamp('20190102'),
+                                'E': [1.0, 2.0, 3.0],
+                                'F': False,
+                                'G': [1, 2, 3]},
+                          index=['0','1','2'])
+
+        expected_mappings = {'mappings': {
+            'properties': {'A': {'type': 'double'},
+                           'B': {'type': 'long'},
+                           'C': {'type': 'keyword'},
+                           'D': {'type': 'date'},
+                           'E': {'type': 'double'},
+                           'F': {'type': 'boolean'},
+                           'G': {'type': 'long'}}}}
+
+        mappings = ed.Mappings._generate_es_mappings(df)
+
+        assert expected_mappings == mappings
+
+        # Now create index
+        index_name = 'eland_test_generate_es_mappings'
+
+        ed.pandas_to_es(df, ELASTICSEARCH_HOST, index_name, if_exists="replace", refresh=True)
+
+        ed_df = ed.DataFrame(ELASTICSEARCH_HOST, index_name)
+        ed_df_head = ed_df.head()
+
+        assert_frame_equal(df, ed_df_head)

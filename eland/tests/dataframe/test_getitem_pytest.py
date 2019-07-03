@@ -15,7 +15,7 @@ class TestDataFrameGetItem(TestData):
         ed_carrier = self.ed_flights()['Carrier']
 
         # pandas returns a Series here
-        assert_frame_equal(pd.DataFrame(pd_carrier.head(100)), ed_carrier.head(100))
+        assert_series_equal(pd_carrier.head(100), ed_carrier.head(100))
 
         pd_3_items = self.pd_flights()[['Dest','Carrier','FlightDelay']]
         ed_3_items = self.ed_flights()[['Dest','Carrier','FlightDelay']]
@@ -36,28 +36,12 @@ class TestDataFrameGetItem(TestData):
     def test_getattr_basic(self):
         # Test 1 attribute
         pd_carrier = self.pd_flights().Carrier
-        #ed_carrier = self.ed_flights().Carrier
+        ed_carrier = self.ed_flights().Carrier
 
-        print(type(pd_carrier))
-        print(pd_carrier)
+        assert_series_equal(pd_carrier.head(100), ed_carrier.head(100))
 
-    def test_boolean(self):
-        # Test 1 attribute
-        pd_carrier = self.pd_flights()['Carrier == "Kibana Airlines"']
-        #ed_carrier = self.ed_flights().Carrier
+        pd_avgticketprice = self.pd_flights().AvgTicketPrice
+        ed_avgticketprice = self.ed_flights().AvgTicketPrice
 
-        print(type(pd_carrier))
-        print(pd_carrier)
-
-
-    def test_loc(self):
-        pd = self.pd_flights().loc[10:15, ['Dest', 'Carrier']]
-
-        print(type(pd))
-        print(pd)
-
-        pd = self.pd_flights().loc[10]
-
-        print(type(pd))
-        print(pd)
+        assert_series_equal(pd_avgticketprice.head(100), ed_avgticketprice.head(100))
 

@@ -2,6 +2,7 @@ import warnings
 
 import pandas as pd
 
+from pandas.core.dtypes.common import (is_float_dtype, is_bool_dtype, is_integer_dtype, is_datetime_or_timedelta_dtype, is_string_dtype)
 
 class Mappings():
     """
@@ -217,6 +218,7 @@ class Mappings():
 
         return capability_matrix_df.sort_index()
 
+    @staticmethod
     def _es_dtype_to_pd_dtype(es_dtype):
         """
         Mapping Elasticsearch types to pandas dtypes
@@ -258,6 +260,84 @@ class Mappings():
 
         # Return 'object' for all unsupported TODO - investigate how different types could be supported
         return 'object'
+
+    @staticmethod
+    def _pd_dtype_to_es_dtype(pd_dtype):
+        """
+        Mapping pandas dtypes to Elasticsearch dtype
+        --------------------------------------------
+
+        ```
+        Pandas dtype	Python type	NumPy type	Usage
+        object	str	string_, unicode_	Text
+        int64	int	int_, int8, int16, int32, int64, uint8, uint16, uint32, uint64	Integer numbers
+        float64	float	float_, float16, float32, float64	Floating point numbers
+        bool	bool	bool_	True/False values
+        datetime64	NA	datetime64[ns]	Date and time values
+        timedelta[ns]	NA	NA	Differences between two datetimes
+        category	NA	NA	Finite list of text values
+        ```
+        """
+        es_dtype = None
+
+        # Map all to 64-bit - TODO map to specifics: int32 -> int etc.
+        if is_float_dtype(pd_dtype):
+            es_dtype = 'double'
+        elif is_integer_dtype(pd_dtype):
+            es_dtype = 'long'
+        elif is_bool_dtype(pd_dtype):
+            es_dtype = 'boolean'
+        elif is_string_dtype(pd_dtype):
+            es_dtype = 'keyword'
+        elif is_datetime_or_timedelta_dtype(pd_dtype):
+            es_dtype = 'date'
+        else:
+            warnings.warn('No mapping for pd_dtype: [{0}], using default mapping'.format(pd_dtype))
+
+        return es_dtype
+
+    @staticmethod
+    def _generate_es_mappings(dataframe):
+        """Given a pandas dataframe, generate the associated Elasticsearch mapping
+
+        Parameters
+        ----------
+            dataframe : pandas.DataFrame
+                pandas.DataFrame to create schema from
+
+        Returns
+        -------
+            mapping : str
+        """
+
+        """
+        "mappings" : {
+          "properties" : {
+            "AvgTicketPrice" : {
+              "type" : "float"
+            },
+            "Cancelled" : {
+              "type" : "boolean"
+            },
+            "Carrier" : {
+              "type" : "keyword"
+            },
+            "Dest" : {
+              "type" : "keyword"
+            }
+          }
+        }
+        """
+
+        mappings = {}
+        mappings['properties'] = {}
+        for column_name, dtype in dataframe.dtypes.iteritems():
+            es_dtype = Mappings._pd_dtype_to_es_dtype(dtype)
+
+            mappings['properties'][column_name] = {}
+            mappings['properties'][column_name]['type'] = es_dtype
+
+        return {"mappings": mappings}
 
     def all_fields(self):
         """
@@ -379,3 +459,14 @@ class Mappings():
         """
         return pd.Series(self._mappings_capabilities[self._mappings_capabilities._source == True].groupby('pd_dtype')[
                              '_source'].count().to_dict())
+
+    def to_pandas(self):
+        """
+
+        Returns
+        -------
+        df : pd.DataFrame
+            pandas DaraFrame representing this index
+        """
+
+
