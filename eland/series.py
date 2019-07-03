@@ -72,14 +72,17 @@ class Series(NDFrame):
     def __init__(self,
                  client,
                  index_pattern,
-                 field_name,
+                 field_name=None,
                  mappings=None,
                  index_field=None):
         # python 3 syntax
         super().__init__(client, index_pattern, mappings=mappings, index_field=index_field)
 
         # now select column (field_name)
-        self._mappings = self._filter_mappings([field_name])
+        if field_name is not None:
+            self._mappings = self._filter_mappings([field_name])
+        elif len(self._mappings.source_fields()) != 1:
+            raise TypeError('Series must have 1 field: [{0}]'.format(len(self._mappings.source_fields())))
 
     def head(self, n=5):
         return self._df_to_series(super()._head(n))
@@ -200,6 +203,10 @@ class Series(NDFrame):
         fmt.buffer_put_lines(buf, lines)
 
     @property
+    def name(self):
+        return list(self._mappings.source_fields())[0]
+
+    @property
     def shape(self):
         """
         Return a tuple representing the dimensionality of the DataFrame.
@@ -257,7 +264,7 @@ class Series(NDFrame):
         return super()._describe()
 
     def _df_to_series(self, df):
-        return df.iloc[:, 0]
+        return df[self.name]
 
     # ----------------------------------------------------------------------
     # Rendering Methods
@@ -269,8 +276,8 @@ class Series(NDFrame):
 
         max_rows = pd.get_option("display.max_rows")
 
-        self.to_string(buf=buf, na_rep='NaN', float_format=None, header=True, index=True, length=False,
-                       dtype=False, name=False, max_rows=max_rows)
+        self.to_string(buf=buf, na_rep='NaN', float_format=None, header=True, index=True, length=True,
+                       dtype=True, name=True, max_rows=max_rows)
 
         return buf.getvalue()
 
@@ -279,7 +286,7 @@ class Series(NDFrame):
                   index=True, length=True, dtype=True,
                   name=True, max_rows=None):
         """
-        From pandas
+        From pandas 0.24.2
 
         Render a string representation of the Series.
 
@@ -343,7 +350,6 @@ class Series(NDFrame):
         """
         A hacked overridden version of pandas.io.formats.SeriesFormatter that writes correct length
         """
-
         def __init__(self, series, series_length, buf=None, length=True, header=True, index=True,
                      na_rep='NaN', name=False, float_format=None, dtype=True,
                      max_rows=None):

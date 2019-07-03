@@ -153,3 +153,7 @@ class TestDataFrameBasics(TestData):
         ed_flights_timestamp.info()
         ed_flights.info()
 
+    def test_to_pandas(self):
+        ed_ecommerce_pd_df = self.ed_ecommerce().to_pandas()
+
+        assert_frame_equal(self.pd_ecommerce(), ed_ecommerce_pd_df)

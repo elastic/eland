@@ -32,9 +32,14 @@ from pandas.io.formats.printing import pprint_thing
 from pandas.compat import StringIO
 from pandas.io.common import _expand_user, _stringify_path
 from pandas.io.formats import console
+from pandas.core import common as com
 
 from eland import NDFrame
 from eland import Index
+from eland import Series
+
+
+
 
 
 class DataFrame(NDFrame):
@@ -217,10 +222,6 @@ class DataFrame(NDFrame):
 
         return num_rows, num_columns
 
-    @property
-    def columns(self):
-        return super()._columns
-
     def set_index(self, index_field):
         copy = self.copy()
         copy._index = Index(index_field)
@@ -265,7 +266,6 @@ class DataFrame(NDFrame):
     def __getitem__(self, key):
         # NOTE: there is a difference between pandas here.
         # e.g. df['a'] returns pd.Series, df[['a','b']] return pd.DataFrame
-        # we always return DataFrame - TODO maybe create eland.Series at some point...
 
         # Implementation mainly copied from pandas v0.24.2
         # (https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html)
@@ -291,10 +291,12 @@ class DataFrame(NDFrame):
 
         # We are left with two options: a single key, and a collection of keys,
         columns = []
+        is_single_key = False
         if isinstance(key, str):
             if not self._mappings.is_source_field(key):
                 raise TypeError('Column does not exist: [{0}]'.format(key))
             columns.append(key)
+            is_single_key = True
         elif isinstance(key, list):
             columns.extend(key)
         else:
@@ -303,7 +305,18 @@ class DataFrame(NDFrame):
         mappings = self._filter_mappings(columns)
 
         # Return new eland.DataFrame with modified mappings
-        return DataFrame(self._client, self._index_pattern, mappings=mappings)
+        if is_single_key:
+            return Series(self._client, self._index_pattern, mappings=mappings)
+        else:
+            return DataFrame(self._client, self._index_pattern, mappings=mappings)
+
+
+    def __getattr__(self, name):
+        # Note: obj.x will always call obj.__getattribute__('x') prior to
+        # calling obj.__getattr__('x').
+        mappings = self._filter_mappings([name])
+
+        return Series(self._client, self._index_pattern, mappings=mappings)
 
     def copy(self):
         # TODO - test and validate...may need deep copying
@@ -373,7 +386,8 @@ class DataFrame(NDFrame):
             result = _buf.getvalue()
             return result
 
-
+    def to_pandas(selfs):
+        return super()._to_pandas()
 
 # From pandas.DataFrame
 def _put_str(s, space):

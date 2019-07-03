@@ -1,4 +1,5 @@
 from elasticsearch import Elasticsearch
+from elasticsearch import helpers
 
 class Client():
     """
@@ -17,7 +18,13 @@ class Client():
     
     def indices(self):
         return self.es.indices
-    
+
+    def bulk(self, actions, refresh=False):
+        return helpers.bulk(self.es, actions, refresh=refresh)
+
+    def scan(self, **kwargs):
+        return helpers.scan(self.es, **kwargs)
+
     def search(self, **kwargs):
         return self.es.search(**kwargs)
 

@@ -23,9 +23,13 @@ only Elasticsearch aggregatable fields can be aggregated or grouped.
 
 """
 import pandas as pd
+import functools
 from elasticsearch_dsl import Search
 
 import eland as ed
+
+from pandas.core.generic import NDFrame as pd_NDFrame
+from pandas._libs import Timestamp, iNaT, properties
 
 
 class NDFrame():
@@ -44,7 +48,6 @@ class NDFrame():
     --------
 
     """
-
     def __init__(self,
                  client,
                  index_pattern,
@@ -191,7 +194,12 @@ class NDFrame():
 
         rows = []
         index = []
-        for hit in results['hits']['hits']:
+        if isinstance(results, dict):
+            iterator = results['hits']['hits']
+        else:
+            iterator = results
+
+        for hit in iterator:
             row = hit['_source']
 
             # get index value - can be _id or can be field value in source
@@ -255,6 +263,23 @@ class NDFrame():
         # reverse order (index ascending)
         return df.sort_index()
 
+    def _to_pandas(self):
+        """
+        Protected method that returns all data as pandas.DataFrame.
+
+        Returns
+        -------
+        df
+            pandas.DataFrame of all values
+        """
+        sort_params = self._index.sort_field + ":asc"
+
+        results = self._client.scan(index=self._index_pattern)
+
+        # We sort here rather than in scan - once everything is in core this
+        # should be faster
+        return self._es_results_to_pandas(results)
+
     def _describe(self):
         numeric_source_fields = self._mappings.numeric_source_fields()
 
@@ -295,6 +320,10 @@ class NDFrame():
         return mappings
 
     @property
+    def columns(self):
+        return self._columns
+
+    @property
     def index(self):
         return self._index
 
@@ -308,7 +337,6 @@ class NDFrame():
 
     def get_dtype_counts(self):
         return self._mappings.get_dtype_counts()
-
 
     def _index_count(self):
         """
