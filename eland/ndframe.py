@@ -60,17 +60,18 @@ class NDFrame(BasePandasDataset):
         # Overriden version of BasePandasDataset._build_repr_df
         # to avoid issues with concat
         if len(self.index) <= num_rows:
-            return self.to_pandas()
+            return self._to_pandas()
 
-        num_rows = num_rows + 1
+        num_rows = num_rows
 
         head_rows = int(num_rows / 2) + num_rows % 2
         tail_rows = num_rows - head_rows
 
-        head = self.head(head_rows).to_pandas()
-        tail = self.tail(tail_rows).to_pandas()
+        head = self.head(head_rows)._to_pandas()
+        tail = self.tail(tail_rows)._to_pandas()
 
         return head.append(tail)
 
-    def to_pandas(self):
+    def _to_pandas(self):
         return self._query_compiler.to_pandas()
+

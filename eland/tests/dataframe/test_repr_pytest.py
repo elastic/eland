@@ -1,0 +1,43 @@
+# File called _pytest for PyCharm compatability
+
+from eland.tests.common import TestData
+
+
+class TestDataFrameHeadTail(TestData):
+
+    def test_to_string1(self):
+        ed_flights = self.ed_flights()
+        pd_flights = self.pd_flights()
+
+        ed_head_101 = ed_flights.head(101)
+        pd_head_101 = pd_flights.head(101)
+
+        # This sets max_rows=60 by default
+        ed_head_101_str = ed_head_101.to_string()
+        pd_head_101_str = pd_head_101.to_string(max_rows=60)
+
+        assert pd_head_101_str == ed_head_101_str
+
+    def test_to_string2(self):
+        ed_flights = self.ed_flights()
+        pd_flights = self.pd_flights()
+
+        ed_head_11 = ed_flights.head(11)
+        pd_head_11 = pd_flights.head(11)
+
+        ed_head_11_str = ed_head_11.to_string(max_rows=60)
+        pd_head_11_str = pd_head_11.to_string(max_rows=60)
+
+        assert pd_head_11_str == ed_head_11_str
+
+    def test_to_repr(self):
+        ed_ecommerce = self.ed_ecommerce()
+        pd_ecommerce = self.pd_ecommerce()
+
+        ed_head_18 = ed_ecommerce.head(18)
+        pd_head_18 = pd_ecommerce.head(18)
+
+        ed_head_18_repr = repr(ed_head_18)
+        pd_head_18_repr = repr(pd_head_18)
+
+        assert ed_head_18_repr == pd_head_18_repr

@@ -129,7 +129,6 @@ class Operations:
     @staticmethod
     def _apply_df_post_processing(df, post_processing):
         for action in post_processing:
-            print(action)
             if action == 'sort_index':
                 df = df.sort_index()
             elif action[0] == 'head':
