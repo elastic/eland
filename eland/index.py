@@ -18,9 +18,11 @@ class Index:
     ID_INDEX_FIELD = '_id'
     ID_SORT_FIELD = '_doc' # if index field is _id, sort by _doc
 
-    def __init__(self, index_field=None):
+    def __init__(self, query_compiler, index_field=None):
         # Calls setter
         self.index_field = index_field
+
+        self._query_compiler = query_compiler
 
     @property
     def sort_field(self):
@@ -38,9 +40,12 @@ class Index:
 
     @index_field.setter
     def index_field(self, index_field):
-        if index_field == None:
+        if index_field == None or index_field == Index.ID_INDEX_FIELD:
             self._index_field = Index.ID_INDEX_FIELD
             self._is_source_field = False
         else:
             self._index_field = index_field
             self._is_source_field = True
+
+    def __len__(self):
+        return self._query_compiler._index_count()

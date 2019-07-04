@@ -2,8 +2,10 @@ from eland import Client
 from eland import DataFrame
 from eland import Mappings
 
+
 def read_es(es_params, index_pattern):
     return DataFrame(client=es_params, index_pattern=index_pattern)
+
 
 def pandas_to_es(df, es_params, destination_index, if_exists='fail', chunk_size=10000, refresh=False):
     """
@@ -45,8 +47,8 @@ def pandas_to_es(df, es_params, destination_index, if_exists='fail', chunk_size=
         elif if_exists == "replace":
             client.indices().delete(destination_index)
             client.indices().create(destination_index, mapping)
-        #elif if_exists == "append":
-            # TODO validate mapping is compatible
+        # elif if_exists == "append":
+        # TODO validate mapping is compatible
     else:
         client.indices().create(destination_index, mapping)
 
@@ -70,4 +72,3 @@ def pandas_to_es(df, es_params, destination_index, if_exists='fail', chunk_size=
             actions = []
 
     client.bulk(actions, refresh=refresh)
-

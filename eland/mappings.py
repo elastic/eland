@@ -4,7 +4,7 @@ import pandas as pd
 
 from pandas.core.dtypes.common import (is_float_dtype, is_bool_dtype, is_integer_dtype, is_datetime_or_timedelta_dtype, is_string_dtype)
 
-class Mappings():
+class Mappings:
     """
     General purpose to manage Elasticsearch to/from pandas mappings
 
@@ -53,7 +53,7 @@ class Mappings():
             Columns to copy
         """
         if (client is not None) and (index_pattern is not None):
-            get_mapping = client.indices().get_mapping(index=index_pattern)
+            get_mapping = client.get_mapping(index=index_pattern)
 
             # Get all fields (including all nested) and then field_caps
             # for these names (fields=* doesn't appear to work effectively...)
@@ -67,12 +67,8 @@ class Mappings():
             # field_name, es_dtype, pd_dtype, is_searchable, is_aggregtable, is_source
             self._mappings_capabilities = Mappings._create_capability_matrix(all_fields, source_fields, all_fields_caps)
         else:
-            if columns is not None:
-                # Reference object and restrict mapping columns
-                self._mappings_capabilities = mappings._mappings_capabilities.loc[columns]
-            else:
-                # straight copy
-                self._mappings_capabilities = mappings._mappings_capabilities.copy()
+            # straight copy
+            self._mappings_capabilities = mappings._mappings_capabilities.copy()
 
         # Cache source field types for efficient lookup
         # (this massively improves performance of DataFrame.flatten)
