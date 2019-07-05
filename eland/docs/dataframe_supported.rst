@@ -3,7 +3,7 @@ pandas.DataFrame supported APIs
 
 The following table lists both implemented and not implemented methods. If you have need
 of an operation that is listed as not implemented, feel free to open an issue on the
-`GitHub repository`_, or give a thumbs up to already created issues. Contributions are
+http://github/elastic/eland, or give a thumbs up to already created issues. Contributions are
 also welcome!
 
 The following table is structured as follows: The first column contains the method name.
