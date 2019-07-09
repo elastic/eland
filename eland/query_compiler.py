@@ -6,6 +6,9 @@ from eland import Index
 from eland import Mappings
 from eland import Operations
 
+from pandas.core.indexes.numeric import Int64Index
+from pandas.core.indexes.range import RangeIndex
+
 
 class ElandQueryCompiler(BaseQueryCompiler):
 
@@ -29,13 +32,24 @@ class ElandQueryCompiler(BaseQueryCompiler):
         else:
             self._operations = operations
 
+        if columns is not None:
+            self.columns = columns
+
     def _get_index(self):
         return self._index
 
     def _get_columns(self):
-        return pd.Index(self._mappings.source_fields())
+        columns = self._operations.get_columns()
+        if columns is None:
+            # default to all
+            columns = self._mappings.source_fields()
 
-    columns = property(_get_columns)
+        return pd.Index(columns)
+
+    def _set_columns(self, columns):
+        self._operations.set_columns(columns)
+
+    columns = property(_get_columns, _set_columns)
     index = property(_get_index)
 
     # END Index, columns, and dtypes objects
@@ -218,7 +232,7 @@ class ElandQueryCompiler(BaseQueryCompiler):
         return self.__constructor__(
             client=self._client,
             index_pattern=self._index_pattern,
-            columns=self.columns,
+            columns=None,   # columns are embedded in operations
             index_field=self._index.index_field,
             operations=self._operations.copy()
         )
@@ -245,3 +259,46 @@ class ElandQueryCompiler(BaseQueryCompiler):
             Pandas DataFrame
         """
         return self._operations.to_pandas(self)
+
+    # __getitem__ methods
+    def getitem_column_array(self, key, numeric=False):
+        """Get column data for target labels.
+
+        Args:
+            key: Target labels by which to retrieve data.
+            numeric: A boolean representing whether or not the key passed in represents
+                the numeric index or the named index.
+
+        Returns:
+            A new QueryCompiler.
+        """
+        result = self.copy()
+
+        if numeric:
+            raise NotImplementedError("Not implemented yet...")
+
+        result._operations.set_columns(key)
+
+        return result
+
+    def squeeze(self, axis=None):
+        result = self.copy()
+
+        result._operations.squeeze(axis)
+
+        return result
+
+    def view(self, index=None, columns=None):
+        result = self.copy()
+
+        result._operations.iloc(index, columns)
+
+        return result
+
+    def info_es(self, buf):
+        buf.write("index_pattern: {index_pattern}\n".format(index_pattern=self._index_pattern))
+
+        self._index.info_es(buf)
+        self._mappings.info_es(buf)
+        self._operations.info_es(buf)
+

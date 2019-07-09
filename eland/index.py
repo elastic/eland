@@ -49,3 +49,16 @@ class Index:
 
     def __len__(self):
         return self._query_compiler._index_count()
+
+    # Make iterable
+    def __next__(self):
+        # TODO resolve this hack to make this 'iterable'
+        raise StopIteration()
+
+    def __iter__(self):
+        return self
+
+    def info_es(self, buf):
+        buf.write("Index:\n")
+        buf.write("\tindex_field: {0}\n".format(self.index_field))
+        buf.write("\tis_source_field: {0}\n".format(self.is_source_field))

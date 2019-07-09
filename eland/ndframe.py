@@ -24,6 +24,7 @@ only Elasticsearch aggregatable fields can be aggregated or grouped.
 """
 
 from modin.pandas.base import BasePandasDataset
+from modin.pandas.indexing import _iLocIndexer
 
 from eland import ElandQueryCompiler
 
@@ -51,6 +52,7 @@ class NDFrame(BasePandasDataset):
                                                 index_field=index_field)
         self._query_compiler = query_compiler
 
+
     def _get_index(self):
         return self._query_compiler.index
 
@@ -72,6 +74,30 @@ class NDFrame(BasePandasDataset):
 
         return head.append(tail)
 
-    def _to_pandas(self):
-        return self._query_compiler.to_pandas()
+    def __getattr__(self, key):
+        """After regular attribute access, looks up the name in the columns
+
+        Args:
+            key (str): Attribute name.
+
+        Returns:
+            The value of the attribute.
+        """
+        print(key)
+        try:
+            return object.__getattribute__(self, key)
+        except AttributeError as e:
+            if key in self.columns:
+                return self[key]
+            raise e
+
+    @property
+    def iloc(self):
+        """Purely integer-location based indexing for selection by position.
+
+        """
+        return _iLocIndexer(self)
+
+    def info_es(self, buf):
+        self._query_compiler.info_es(buf)
 

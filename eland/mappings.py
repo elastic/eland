@@ -456,13 +456,7 @@ class Mappings:
         return pd.Series(self._mappings_capabilities[self._mappings_capabilities._source == True].groupby('pd_dtype')[
                              '_source'].count().to_dict())
 
-    def to_pandas(self):
-        """
-
-        Returns
-        -------
-        df : pd.DataFrame
-            pandas DaraFrame representing this index
-        """
-
+    def info_es(self, buf):
+        buf.write("Mappings:\n")
+        buf.write("\tcapabilities: {0}\n".format(self._mappings_capabilities))
 

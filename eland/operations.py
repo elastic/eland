@@ -1,5 +1,10 @@
 from enum import Enum
 
+from pandas.core.indexes.numeric import Int64Index
+from pandas.core.indexes.range import RangeIndex
+
+import copy
+
 
 class Operations:
     """
@@ -39,9 +44,16 @@ class Operations:
         @staticmethod
         def to_string(order):
             if order == Operations.SortOrder.ASC:
-                return ":asc"
+                return "asc"
 
-            return ":desc"
+            return "desc"
+
+        def from_string(order):
+            if order == "asc":
+                return Operations.SortOrder.ASC
+
+            return Operations.SortOrder.DESC
+
 
     def __init__(self, tasks=None):
         if tasks == None:
@@ -53,7 +65,7 @@ class Operations:
         return type(self)(*args, **kwargs)
 
     def copy(self):
-        return self.__constructor__(tasks=self._tasks.copy())
+        return self.__constructor__(tasks=copy.deepcopy(self._tasks))
 
     def head(self, index, n):
         # Add a task that is an ascending sort with size=n
@@ -61,13 +73,24 @@ class Operations:
         self._tasks.append(task)
 
     def tail(self, index, n):
-
         # Add a task that is descending sort with size=n
         task = ('tail', (index.sort_field, n))
         self._tasks.append(task)
 
     def set_columns(self, columns):
-        self._tasks['columns'] = columns
+        # Setting columns at different phases of the task list may result in different
+        # operations. So instead of setting columns once, set when it happens in call chain
+        # TODO - column renaming
+        # TODO - validate we are setting columns to a subset of last columns?
+        task = ('columns', columns)
+        self._tasks.append(task)
+
+    def get_columns(self):
+        # Iterate backwards through task list looking for last 'columns' task
+        for task in reversed(self._tasks):
+            if task[0] == 'columns':
+                return task[1]
+        return None
 
     def __repr__(self):
         return repr(self._tasks)
@@ -77,14 +100,37 @@ class Operations:
 
         size, sort_params = Operations._query_to_params(query)
 
-        es_results = query_compiler._client.search(
-            index=query_compiler._index_pattern,
-            size=size,
-            sort=sort_params)
+        # Only return requested columns
+        columns = self.get_columns()
+
+        # If size=None use scan not search - then post sort results when in df
+        # If size>10000 use scan
+        if size is not None and size <= 10000:
+            es_results = query_compiler._client.search(
+                index=query_compiler._index_pattern,
+                size=size,
+                sort=sort_params,
+                _source=columns)
+        else:
+            es_results = query_compiler._client.scan(
+                index=query_compiler._index_pattern,
+                _source=columns)
+            # create post sort
+            if sort_params is not None:
+                post_processing.append(self._sort_params_to_postprocessing(sort_params))
 
         df = query_compiler._es_results_to_pandas(es_results)
 
         return self._apply_df_post_processing(df, post_processing)
+
+    def iloc(self, index, columns):
+        # index and columns are indexers
+        task = ('iloc', (index, columns))
+        self._tasks.append(task)
+
+    def squeeze(self, axis):
+        task = ('squeeze', axis)
+        self._tasks.append(task)
 
     def to_count(self, query_compiler):
         query, post_processing = self._to_es_query()
@@ -107,10 +153,22 @@ class Operations:
         return query_compiler._client.count(index=query_compiler._index_pattern, body=exists_query)
 
     @staticmethod
+    def _sort_params_to_postprocessing(input):
+        # Split string
+        sort_params = input.split(":")
+
+        query_sort_field = sort_params[0]
+        query_sort_order = Operations.SortOrder.from_string(sort_params[1])
+
+        task = ('sort_field', (query_sort_field, query_sort_order))
+
+        return task
+
+    @staticmethod
     def _query_to_params(query):
         sort_params = None
         if query['query_sort_field'] and query['query_sort_order']:
-            sort_params = query['query_sort_field'] + Operations.SortOrder.to_string(query['query_sort_order'])
+            sort_params = query['query_sort_field'] + ":" + Operations.SortOrder.to_string(query['query_sort_order'])
 
         size = query['query_size']
 
@@ -135,6 +193,25 @@ class Operations:
                 df = df.head(action[1][1])
             elif action[0] == 'tail':
                 df = df.tail(action[1][1])
+            elif action[0] == 'sort_field':
+                sort_field = action[1][0]
+                sort_order = action[1][1]
+                if sort_order == Operations.SortOrder.ASC:
+                    df = df.sort_values(sort_field, True)
+                else:
+                    df = df.sort_values(sort_field, False)
+            elif action[0] == 'iloc':
+                    index_indexer = action[1][0]
+                    column_indexer = action[1][1]
+                    if index_indexer is None:
+                        index_indexer = slice(None)
+                    if column_indexer is None:
+                        column_indexer = slice(None)
+                    df = df.iloc[index_indexer, column_indexer]
+            elif action[0] == 'squeeze':
+                print(df)
+                df = df.squeeze(axis=action[1])
+                print(df)
 
         return df
 
@@ -145,7 +222,8 @@ class Operations:
         # other operations require in-core post-processing of results
         query = {"query_sort_field": None,
                  "query_sort_order": None,
-                 "query_size": None}
+                 "query_size": None,
+                 "query_fields": None}
 
         post_processing = []
 
@@ -154,6 +232,10 @@ class Operations:
                 query, post_processing = self._resolve_head(task, query, post_processing)
             elif task[0] == 'tail':
                 query, post_processing = self._resolve_tail(task, query, post_processing)
+            elif task[0] == 'iloc':
+                query, post_processing = self._resolve_iloc(task, query, post_processing)
+            else: # a lot of operations simply post-process the dataframe - put these straight through
+                query, post_processing = self._resolve_post_processing_task(task, query, post_processing)
 
         return query, post_processing
 
@@ -229,3 +311,44 @@ class Operations:
         post_processing.append(('sort_index'))
 
         return query, post_processing
+
+    def _resolve_iloc(self, item, query, post_processing):
+        # tail - sort desc, size n, post-process sort asc
+        # |---4--7-9---------|
+
+        # This is a list of items we return via an integer index
+        int_index = item[1][0]
+        if int_index is not None:
+            last_item = int_index.max()
+
+            # If we have a query_size we do this post processing
+            if query['query_size'] is not None:
+                post_processing.append(item)
+                return query, post_processing
+
+            # size should be > last item
+            query['query_size'] = last_item + 1
+        post_processing.append(item)
+
+        return query, post_processing
+
+    def _resolve_post_processing_task(self, item, query, post_processing):
+        # Just do this in post-processing
+        post_processing.append(item)
+
+        return query, post_processing
+
+    def info_es(self, buf):
+        buf.write("Operations:\n")
+        buf.write("\ttasks: {0}\n".format(self._tasks))
+
+        query, post_processing = self._to_es_query()
+        size, sort_params = Operations._query_to_params(query)
+        columns = self.get_columns()
+
+        buf.write("\tsize: {0}\n".format(size))
+        buf.write("\tsort_params: {0}\n".format(sort_params))
+        buf.write("\tcolumns: {0}\n".format(columns))
+        buf.write("\tpost_processing: {0}\n".format(post_processing))
+
+

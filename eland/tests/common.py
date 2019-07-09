@@ -1,10 +1,9 @@
 import pytest
 
 import eland as ed
-
 import pandas as pd
 
-from pandas.util.testing import (assert_frame_equal)
+from pandas.util.testing import (assert_frame_equal, assert_series_equal)
 
 import os
 
@@ -47,14 +46,26 @@ class TestData:
 
 def assert_pandas_eland_frame_equal(left, right):
     if not isinstance(left, pd.DataFrame):
-        raise AssertionError("Expected type {exp_type}, found {act_type} instead",
-                             exp_type=type(pd.DataFrame), act_type=type(left))
+        raise AssertionError("Expected type {exp_type}, found {act_type} instead".format(
+                             exp_type='pd.DataFrame', act_type=type(left)))
 
     if not isinstance(right, ed.DataFrame):
-        raise AssertionError("Expected type {exp_type}, found {act_type} instead",
-                             exp_type=type(ed.DataFrame), act_type=type(right))
+        raise AssertionError("Expected type {exp_type}, found {act_type} instead".format(
+                             exp_type='ed.DataFrame', act_type=type(right)))
 
     # Use pandas tests to check similarity
     assert_frame_equal(left, right._to_pandas())
 
+
+def assert_pandas_eland_series_equal(left, right):
+    if not isinstance(left, pd.Series):
+        raise AssertionError("Expected type {exp_type}, found {act_type} instead".format(
+                             exp_type='pd.Series', act_type=type(left)))
+
+    if not isinstance(right, ed.Series):
+        raise AssertionError("Expected type {exp_type}, found {act_type} instead".format(
+                             exp_type='ed.Series', act_type=type(right)))
+
+    # Use pandas tests to check similarity
+    assert_series_equal(left, right._to_pandas())
 

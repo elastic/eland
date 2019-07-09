@@ -1,11 +1,18 @@
 import warnings
+import sys
 
 import pandas as pd
+import numpy as np
+
 from pandas.compat import StringIO
+from pandas.core.common import apply_if_callable, is_bool_indexer
 from pandas.io.common import _expand_user, _stringify_path
 from pandas.io.formats import console
+from pandas.io.formats import format as fmt
+from pandas.io.formats.printing import pprint_thing
 
 from eland import NDFrame
+from eland import Series
 
 
 class DataFrame(NDFrame):
@@ -67,13 +74,22 @@ class DataFrame(NDFrame):
 
         return buf.getvalue()
 
+    def info_es(self):
+        buf = StringIO()
+
+        super().info_es(buf)
+
+        return buf.getvalue()
+
+
+
     def to_string(self, buf=None, columns=None, col_space=None, header=True,
                   index=True, na_rep='NaN', formatters=None, float_format=None,
                   sparsify=None, index_names=True, justify=None,
                   max_rows=None, max_cols=None, show_dimensions=False,
                   decimal='.', line_width=None):
         """
-        From pandas - except we set max_rows default to avoid careless
+        From pandas - except we set max_rows default to avoid careless extraction of entire index
         """
         if max_rows is None:
             warnings.warn("DataFrame.to_string called without max_rows set "
@@ -111,3 +127,82 @@ class DataFrame(NDFrame):
         if buf is None:
             result = _buf.getvalue()
             return result
+
+    def _getitem(self, key):
+        """Get the column specified by key for this DataFrame.
+
+        Args:
+            key : The column name.
+
+        Returns:
+            A Pandas Series representing the value for the column.
+        """
+        key = apply_if_callable(key, self)
+        # Shortcut if key is an actual column
+        try:
+            if key in self.columns:
+                return self._getitem_column(key)
+        except (KeyError, ValueError, TypeError):
+            pass
+        if isinstance(key, (Series, np.ndarray, pd.Index, list)):
+            return self._getitem_array(key)
+        elif isinstance(key, DataFrame):
+            return self.where(key)
+        else:
+            return self._getitem_column(key)
+
+    def _getitem_column(self, key):
+        if key not in self.columns:
+            raise KeyError("{}".format(key))
+        s = self._reduce_dimension(self._query_compiler.getitem_column_array([key]))
+        s._parent = self
+        return s
+
+    def _getitem_array(self, key):
+        if isinstance(key, Series):
+            key = key._to_pandas()
+        if is_bool_indexer(key):
+            if isinstance(key, pd.Series) and not key.index.equals(self.index):
+                warnings.warn(
+                    "Boolean Series key will be reindexed to match DataFrame index.",
+                    PendingDeprecationWarning,
+                    stacklevel=3,
+                )
+            elif len(key) != len(self.index):
+                raise ValueError(
+                    "Item wrong length {} instead of {}.".format(
+                        len(key), len(self.index)
+                    )
+                )
+            key = check_bool_indexer(self.index, key)
+            # We convert to a RangeIndex because getitem_row_array is expecting a list
+            # of indices, and RangeIndex will give us the exact indices of each boolean
+            # requested.
+            key = pd.RangeIndex(len(self.index))[key]
+            if len(key):
+                return DataFrame(
+                    query_compiler=self._query_compiler.getitem_row_array(key)
+                )
+            else:
+                return DataFrame(columns=self.columns)
+        else:
+            if any(k not in self.columns for k in key):
+                raise KeyError(
+                    "{} not index".format(
+                        str([k for k in key if k not in self.columns]).replace(",", "")
+                    )
+                )
+            return DataFrame(
+                query_compiler=self._query_compiler.getitem_column_array(key)
+            )
+
+    def _reduce_dimension(self, query_compiler):
+        return Series(query_compiler=query_compiler)
+
+    def _to_pandas(self):
+        return self._query_compiler.to_pandas()
+
+    def squeeze(self, axis=None):
+        return DataFrame(
+            query_compiler=self._query_compiler.squeeze(axis)
+        )
