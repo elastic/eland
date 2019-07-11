@@ -1,37 +1,43 @@
 from elasticsearch import Elasticsearch
 from elasticsearch import helpers
 
-class Client():
+class Client:
     """
     eland client - implemented as facade to control access to Elasticsearch methods
     """
     def __init__(self, es=None):
         if isinstance(es, Elasticsearch):
-            self.es = es
+            self._es = es
         elif isinstance(es, Client):
-            self.es = es.es
+            self._es = es._es
         else:
-            self.es = Elasticsearch(es)
-            
-    def info(self):
-        return self.es.info()
-    
-    def indices(self):
-        return self.es.indices
+            self._es = Elasticsearch(es)
+
+    def index_create(self, **kwargs):
+        return self._es.indices.create(**kwargs)
+
+    def index_delete(self, **kwargs):
+        return self._es.indices.delete(**kwargs)
+
+    def index_exists(self, **kwargs):
+        return self._es.indices.exists(**kwargs)
+
+    def get_mapping(self, **kwargs):
+        return self._es.indices.get_mapping(**kwargs)
 
     def bulk(self, actions, refresh=False):
-        return helpers.bulk(self.es, actions, refresh=refresh)
+        return helpers.bulk(self._es, actions, refresh=refresh)
 
     def scan(self, **kwargs):
-        return helpers.scan(self.es, **kwargs)
+        return helpers.scan(self._es, **kwargs)
 
     def search(self, **kwargs):
-        return self.es.search(**kwargs)
+        return self._es.search(**kwargs)
 
     def field_caps(self, **kwargs):
-        return self.es.field_caps(**kwargs)
+        return self._es.field_caps(**kwargs)
 
     def count(self, **kwargs):
-        count_json = self.es.count(**kwargs)
+        count_json = self._es.count(**kwargs)
         return count_json['count']
 

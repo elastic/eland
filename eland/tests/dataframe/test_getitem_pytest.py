@@ -1,47 +1,55 @@
 # File called _pytest for PyCharm compatability
-from eland.tests.common import TestData
-
 import pandas as pd
-import io
 
-from pandas.util.testing import (
-    assert_series_equal, assert_frame_equal)
+from eland.tests.common import TestData
+from eland.tests.common import (
+    assert_pandas_eland_frame_equal,
+    assert_pandas_eland_series_equal
+)
+
+
 
 class TestDataFrameGetItem(TestData):
 
-    def test_getitem_basic(self):
-        # Test 1 attribute
-        pd_carrier = self.pd_flights()['Carrier']
-        ed_carrier = self.ed_flights()['Carrier']
+    def test_getitem1(self):
+        ed_flights = self.ed_flights().head(103)
+        pd_flights = self.pd_flights().head(103)
 
-        # pandas returns a Series here
-        assert_series_equal(pd_carrier.head(100), ed_carrier.head(100))
+        ed_flights_OriginAirportID = ed_flights['OriginAirportID']
+        pd_flights_OriginAirportID = pd_flights['OriginAirportID']
 
-        pd_3_items = self.pd_flights()[['Dest','Carrier','FlightDelay']]
-        ed_3_items = self.ed_flights()[['Dest','Carrier','FlightDelay']]
+        assert_pandas_eland_series_equal(pd_flights_OriginAirportID, ed_flights_OriginAirportID)
 
-        assert_frame_equal(pd_3_items.head(100), ed_3_items.head(100))
+    def test_getitem2(self):
+        ed_flights = self.ed_flights().head(42)
+        pd_flights = self.pd_flights().head(42)
 
-        # Test numerics
-        numerics = ['DistanceMiles', 'AvgTicketPrice', 'FlightTimeMin']
-        ed_numerics = self.ed_flights()[numerics]
-        pd_numerics = self.pd_flights()[numerics]
+        ed_flights_slice = ed_flights[['OriginAirportID', 'AvgTicketPrice', 'Carrier']]
+        pd_flights_slice = pd_flights[['OriginAirportID', 'AvgTicketPrice', 'Carrier']]
 
-        assert_frame_equal(pd_numerics.head(100), ed_numerics.head(100))
+        assert_pandas_eland_frame_equal(pd_flights_slice, ed_flights_slice)
 
-        # just test headers
-        ed_numerics_describe = ed_numerics.describe()
-        assert ed_numerics_describe.columns.tolist() == numerics
+    def test_getitem3(self):
+        ed_flights = self.ed_flights().head(89)
+        pd_flights = self.pd_flights().head(89)
 
-    def test_getattr_basic(self):
-        # Test 1 attribute
-        pd_carrier = self.pd_flights().Carrier
-        ed_carrier = self.ed_flights().Carrier
+        ed_flights_OriginAirportID = ed_flights.OriginAirportID
+        pd_flights_OriginAirportID = pd_flights.OriginAirportID
 
-        assert_series_equal(pd_carrier.head(100), ed_carrier.head(100))
+        assert_pandas_eland_series_equal(pd_flights_OriginAirportID, ed_flights_OriginAirportID)
 
-        pd_avgticketprice = self.pd_flights().AvgTicketPrice
-        ed_avgticketprice = self.ed_flights().AvgTicketPrice
+    def test_getitem4(self):
+        ed_flights = self.ed_flights().head(89)
+        pd_flights = self.pd_flights().head(89)
 
-        assert_series_equal(pd_avgticketprice.head(100), ed_avgticketprice.head(100))
+        ed_col0 = ed_flights[['DestCityName', 'DestCountry', 'DestLocation', 'DestRegion']]
+        try:
+            ed_col1 = ed_col0['Carrier']
+        except KeyError:
+            pass
+
+        pd_col1 = pd_flights['DestCountry']
+        ed_col1 = ed_col0['DestCountry']
+
+        assert_pandas_eland_series_equal(pd_col1, ed_col1)
 

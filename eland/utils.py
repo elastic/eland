@@ -2,8 +2,10 @@ from eland import Client
 from eland import DataFrame
 from eland import Mappings
 
+
 def read_es(es_params, index_pattern):
     return DataFrame(client=es_params, index_pattern=index_pattern)
+
 
 def pandas_to_es(df, es_params, destination_index, if_exists='fail', chunk_size=10000, refresh=False):
     """
@@ -34,7 +36,7 @@ def pandas_to_es(df, es_params, destination_index, if_exists='fail', chunk_size=
     mapping = Mappings._generate_es_mappings(df)
 
     # If table exists, check if_exists parameter
-    if client.indices().exists(destination_index):
+    if client.index_exists(index=destination_index):
         if if_exists == "fail":
             raise ValueError(
                 "Could not create the index [{0}] because it "
@@ -43,12 +45,12 @@ def pandas_to_es(df, es_params, destination_index, if_exists='fail', chunk_size=
                 "'append' or 'replace' data.".format(destination_index)
             )
         elif if_exists == "replace":
-            client.indices().delete(destination_index)
-            client.indices().create(destination_index, mapping)
-        #elif if_exists == "append":
-            # TODO validate mapping is compatible
+            client.index_delete(index=destination_index)
+            client.index_create(index=destination_index, mapping=mapping)
+        # elif if_exists == "append":
+        # TODO validate mapping is compatible
     else:
-        client.indices().create(destination_index, mapping)
+        client.index_create(index=destination_index, mapping=mapping)
 
     # Now add data
     actions = []
@@ -70,4 +72,3 @@ def pandas_to_es(df, es_params, destination_index, if_exists='fail', chunk_size=
             actions = []
 
     client.bulk(actions, refresh=refresh)
-

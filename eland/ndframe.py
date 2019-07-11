@@ -22,350 +22,211 @@ Similarly, only Elasticsearch searchable fields can be searched or filtered, and
 only Elasticsearch aggregatable fields can be aggregated or grouped.
 
 """
+
+import sys
+
 import pandas as pd
-import functools
-from elasticsearch_dsl import Search
+from modin.pandas.base import BasePandasDataset
+from modin.pandas.indexing import _iLocIndexer
+from pandas.util._validators import validate_bool_kwarg
+from pandas.core.dtypes.common import is_list_like
 
-import eland as ed
-
-from pandas.core.generic import NDFrame as pd_NDFrame
-from pandas._libs import Timestamp, iNaT, properties
+from eland import ElandQueryCompiler
 
 
-class NDFrame():
-    """
-    pandas.DataFrame/Series like API that proxies into Elasticsearch index(es).
+class NDFrame(BasePandasDataset):
 
-    Parameters
-    ----------
-    client : eland.Client
-        A reference to a Elasticsearch python client
-
-    index_pattern : str
-        An Elasticsearch index pattern. This can contain wildcards (e.g. filebeat-*).
-
-    See Also
-    --------
-
-    """
     def __init__(self,
-                 client,
-                 index_pattern,
-                 mappings=None,
-                 index_field=None):
-
-        self._client = ed.Client(client)
-        self._index_pattern = index_pattern
-
-        # Get and persist mappings, this allows us to correctly
-        # map returned types from Elasticsearch to pandas datatypes
-        if mappings is None:
-            self._mappings = ed.Mappings(self._client, self._index_pattern)
-        else:
-            self._mappings = mappings
-
-        self._index = ed.Index(index_field)
-
-    def _es_results_to_pandas(self, results):
+                 client=None,
+                 index_pattern=None,
+                 columns=None,
+                 index_field=None,
+                 query_compiler=None):
         """
+        pandas.DataFrame/Series like API that proxies into Elasticsearch index(es).
+
         Parameters
         ----------
-        results: dict
-            Elasticsearch results from self.client.search
-
-        Returns
-        -------
-        df: pandas.DataFrame
-            _source values extracted from results and mapped to pandas DataFrame
-            dtypes are mapped via Mapping object
-
-        Notes
-        -----
-        Fields containing lists in Elasticsearch don't map easily to pandas.DataFrame
-        For example, an index with mapping:
-        ```
-        "mappings" : {
-          "properties" : {
-            "group" : {
-              "type" : "keyword"
-            },
-            "user" : {
-              "type" : "nested",
-              "properties" : {
-                "first" : {
-                  "type" : "keyword"
-                },
-                "last" : {
-                  "type" : "keyword"
-                }
-              }
-            }
-          }
-        }
-        ```
-        Adding a document:
-        ```
-        "_source" : {
-          "group" : "amsterdam",
-          "user" : [
-            {
-              "first" : "John",
-              "last" : "Smith"
-            },
-            {
-              "first" : "Alice",
-              "last" : "White"
-            }
-          ]
-        }
-        ```
-        (https://www.elastic.co/guide/en/elasticsearch/reference/current/nested.html)
-        this would be transformed internally (in Elasticsearch) into a document that looks more like this:
-        ```
-        {
-          "group" :        "amsterdam",
-          "user.first" : [ "alice", "john" ],
-          "user.last" :  [ "smith", "white" ]
-        }
-        ```
-        When mapping this a pandas data frame we mimic this transformation.
-
-        Similarly, if a list is added to Elasticsearch:
-        ```
-        PUT my_index/_doc/1
-        {
-          "list" : [
-            0, 1, 2
-          ]
-        }
-        ```
-        The mapping is:
-        ```
-        "mappings" : {
-          "properties" : {
-            "user" : {
-              "type" : "long"
-            }
-          }
-        }
-        ```
-        TODO - explain how lists are handled (https://www.elastic.co/guide/en/elasticsearch/reference/current/array.html)
-        TODO - an option here is to use Elasticsearch's multi-field matching instead of pandas treatment of lists (which isn't great)
-        NOTE - using this lists is generally not a good way to use this API
+        client : eland.Client
+            A reference to a Elasticsearch python client
         """
-        def flatten_dict(y):
-            out = {}
+        if query_compiler is None:
+            query_compiler = ElandQueryCompiler(client=client,
+                                                index_pattern=index_pattern,
+                                                columns=columns,
+                                                index_field=index_field)
+        self._query_compiler = query_compiler
 
-            def flatten(x, name=''):
-                # We flatten into source fields e.g. if type=geo_point
-                # location: {lat=52.38, lon=4.90}
-                if name == '':
-                    is_source_field = False
-                    pd_dtype = 'object'
-                else:
-                    is_source_field, pd_dtype = self._mappings.source_field_pd_dtype(name[:-1])
+    def _get_index(self):
+        return self._query_compiler.index
 
-                if not is_source_field and type(x) is dict:
-                    for a in x:
-                        flatten(x[a], name + a + '.')
-                elif not is_source_field and type(x) is list:
-                    for a in x:
-                        flatten(a, name)
-                elif is_source_field == True:  # only print source fields from mappings (TODO - not so efficient for large number of fields and filtered mapping)
-                    field_name = name[:-1]
-
-                    # Coerce types - for now just datetime
-                    if pd_dtype == 'datetime64[ns]':
-                        x = pd.to_datetime(x)
-
-                    # Elasticsearch can have multiple values for a field. These are represented as lists, so
-                    # create lists for this pivot (see notes above)
-                    if field_name in out:
-                        if type(out[field_name]) is not list:
-                            l = [out[field_name]]
-                            out[field_name] = l
-                        out[field_name].append(x)
-                    else:
-                        out[field_name] = x
-
-            flatten(y)
-
-            return out
-
-        rows = []
-        index = []
-        if isinstance(results, dict):
-            iterator = results['hits']['hits']
-        else:
-            iterator = results
-
-        for hit in iterator:
-            row = hit['_source']
-
-            # get index value - can be _id or can be field value in source
-            if self._index.is_source_field:
-                index_field = row[self._index.index_field]
-            else:
-                index_field = hit[self._index.index_field]
-            index.append(index_field)
-
-            # flatten row to map correctly to 2D DataFrame
-            rows.append(flatten_dict(row))
-
-        # Create pandas DataFrame
-        df = pd.DataFrame(data=rows, index=index)
-
-        # _source may not contain all columns in the mapping
-        # therefore, fill in missing columns
-        # (note this returns self.columns NOT IN df.columns)
-        missing_columns = list(set(self._columns) - set(df.columns))
-
-        for missing in missing_columns:
-            is_source_field, pd_dtype = self._mappings.source_field_pd_dtype(missing)
-            df[missing] = None
-            df[missing].astype(pd_dtype)
-
-        # Sort columns in mapping order
-        df = df[self._columns]
-
-        return df
-
-    def _head(self, n=5):
-        """
-        Protected method that returns head as pandas.DataFrame.
-
-        Returns
-        -------
-        _head
-            pandas.DataFrame of top N values
-        """
-        sort_params = self._index.sort_field + ":asc"
-
-        results = self._client.search(index=self._index_pattern, size=n, sort=sort_params)
-
-        return self._es_results_to_pandas(results)
-
-    def _tail(self, n=5):
-        """
-        Protected method that returns tail as pandas.DataFrame.
-
-        Returns
-        -------
-        _tail
-            pandas.DataFrame of last N values
-        """
-        sort_params = self._index.sort_field + ":desc"
-
-        results = self._client.search(index=self._index_pattern, size=n, sort=sort_params)
-
-        df = self._es_results_to_pandas(results)
-
-        # reverse order (index ascending)
-        return df.sort_index()
-
-    def _to_pandas(self):
-        """
-        Protected method that returns all data as pandas.DataFrame.
-
-        Returns
-        -------
-        df
-            pandas.DataFrame of all values
-        """
-        sort_params = self._index.sort_field + ":asc"
-
-        results = self._client.scan(index=self._index_pattern)
-
-        # We sort here rather than in scan - once everything is in core this
-        # should be faster
-        return self._es_results_to_pandas(results)
-
-    def _describe(self):
-        numeric_source_fields = self._mappings.numeric_source_fields()
-
-        # for each field we compute:
-        # count, mean, std, min, 25%, 50%, 75%, max
-        search = Search(using=self._client, index=self._index_pattern).extra(size=0)
-
-        for field in numeric_source_fields:
-            search.aggs.metric('extended_stats_' + field, 'extended_stats', field=field)
-            search.aggs.metric('percentiles_' + field, 'percentiles', field=field)
-
-        response = search.execute()
-
-        results = {}
-
-        for field in numeric_source_fields:
-            values = list()
-            values.append(response.aggregations['extended_stats_' + field]['count'])
-            values.append(response.aggregations['extended_stats_' + field]['avg'])
-            values.append(response.aggregations['extended_stats_' + field]['std_deviation'])
-            values.append(response.aggregations['extended_stats_' + field]['min'])
-            values.append(response.aggregations['percentiles_' + field]['values']['25.0'])
-            values.append(response.aggregations['percentiles_' + field]['values']['50.0'])
-            values.append(response.aggregations['percentiles_' + field]['values']['75.0'])
-            values.append(response.aggregations['extended_stats_' + field]['max'])
-
-            # if not None
-            if values.count(None) < len(values):
-                results[field] = values
-
-        df = pd.DataFrame(data=results, index=['count', 'mean', 'std', 'min', '25%', '50%', '75%', 'max'])
-
-        return df
-
-    def _filter_mappings(self, columns):
-        mappings = ed.Mappings(mappings=self._mappings, columns=columns)
-
-        return mappings
-
-    @property
-    def columns(self):
-        return self._columns
-
-    @property
-    def index(self):
-        return self._index
+    index = property(_get_index)
 
     @property
     def dtypes(self):
-        return self._mappings.dtypes()
-
-    @property
-    def _columns(self):
-        return pd.Index(self._mappings.source_fields())
+        return self._query_compiler.dtypes
 
     def get_dtype_counts(self):
-        return self._mappings.get_dtype_counts()
+        return self._query_compiler.get_dtype_counts()
 
-    def _index_count(self):
-        """
-        Returns
-        -------
-        index_count: int
-            Count of docs where index_field exists
-        """
-        exists_query = {"query": {"exists": {"field": self._index.index_field}}}
+    def _build_repr_df(self, num_rows, num_cols):
+        # Overriden version of BasePandasDataset._build_repr_df
+        # to avoid issues with concat
+        if len(self.index) <= num_rows:
+            return self._to_pandas()
 
-        index_count = self._client.count(index=self._index_pattern, body=exists_query)
+        num_rows = num_rows
 
-        return index_count
+        head_rows = int(num_rows / 2) + num_rows % 2
+        tail_rows = num_rows - head_rows
 
-    def __len__(self):
-        """
-        Returns length of info axis, but here we use the index.
-        """
-        return self._client.count(index=self._index_pattern)
-
-    def _fake_head_tail_df(self, max_rows=1):
-        """
-        Create a 'fake' pd.DataFrame of the entire ed.DataFrame
-        by concat head and tail. Used for display.
-        """
-        head_rows = int(max_rows / 2) + max_rows % 2
-        tail_rows = max_rows - head_rows
-
-        head = self._head(head_rows)
-        tail = self._tail(tail_rows)
+        head = self.head(head_rows)._to_pandas()
+        tail = self.tail(tail_rows)._to_pandas()
 
         return head.append(tail)
+
+    def __getattr__(self, key):
+        """After regular attribute access, looks up the name in the columns
+
+        Args:
+            key (str): Attribute name.
+
+        Returns:
+            The value of the attribute.
+        """
+        print(key)
+        try:
+            return object.__getattribute__(self, key)
+        except AttributeError as e:
+            if key in self.columns:
+                return self[key]
+            raise e
+
+    def __sizeof__(self):
+        # Don't default to pandas, just return approximation TODO - make this more accurate
+        return sys.getsizeof(self._query_compiler)
+
+    @property
+    def iloc(self):
+        """Purely integer-location based indexing for selection by position.
+
+        """
+        return _iLocIndexer(self)
+
+    def info_es(self, buf):
+        self._query_compiler.info_es(buf)
+
+    def drop(
+            self,
+            labels=None,
+            axis=0,
+            index=None,
+            columns=None,
+            level=None,
+            inplace=False,
+            errors="raise",
+    ):
+        """Return new object with labels in requested axis removed.
+        Args:
+            labels: Index or column labels to drop.
+            axis: Whether to drop labels from the index (0 / 'index') or
+                columns (1 / 'columns').
+            index, columns: Alternative to specifying axis (labels, axis=1 is
+                equivalent to columns=labels).
+            level: For MultiIndex
+            inplace: If True, do operation inplace and return None.
+            errors: If 'ignore', suppress error and existing labels are
+                dropped.
+        Returns:
+            dropped : type of caller
+
+        (derived from modin.base.BasePandasDataset)
+        """
+        # Level not supported
+        if level is not None:
+            raise NotImplementedError("level not supported {}".format(level))
+
+        inplace = validate_bool_kwarg(inplace, "inplace")
+        if labels is not None:
+            if index is not None or columns is not None:
+                raise ValueError("Cannot specify both 'labels' and 'index'/'columns'")
+            axis = pd.DataFrame()._get_axis_name(axis)
+            axes = {axis: labels}
+        elif index is not None or columns is not None:
+            axes, _ = pd.DataFrame()._construct_axes_from_arguments(
+                (index, columns), {}
+            )
+        else:
+            raise ValueError(
+                "Need to specify at least one of 'labels', 'index' or 'columns'"
+            )
+
+        # TODO Clean up this error checking
+        if "index" not in axes:
+            axes["index"] = None
+        elif axes["index"] is not None:
+            if not is_list_like(axes["index"]):
+                axes["index"] = [axes["index"]]
+            if errors == "raise":
+                # Check if axes['index'] values exists in index
+                count = self._query_compiler._index_matches_count(axes["index"])
+                if count != len(axes["index"]):
+                    raise ValueError(
+                        "number of labels {}!={} not contained in axis".format(count, len(axes["index"]))
+                    )
+            else:
+                """
+                axes["index"] = self._query_compiler.index_matches(axes["index"])
+                # If the length is zero, we will just do nothing
+                if not len(axes["index"]):
+                    axes["index"] = None
+                """
+                raise NotImplementedError()
+
+        if "columns" not in axes:
+            axes["columns"] = None
+        elif axes["columns"] is not None:
+            if not is_list_like(axes["columns"]):
+                axes["columns"] = [axes["columns"]]
+            if errors == "raise":
+                non_existant = [
+                    obj for obj in axes["columns"] if obj not in self.columns
+                ]
+                if len(non_existant):
+                    raise ValueError(
+                        "labels {} not contained in axis".format(non_existant)
+                    )
+            else:
+                axes["columns"] = [
+                    obj for obj in axes["columns"] if obj in self.columns
+                ]
+                # If the length is zero, we will just do nothing
+                if not len(axes["columns"]):
+                    axes["columns"] = None
+
+        new_query_compiler = self._query_compiler.drop(
+            index=axes["index"], columns=axes["columns"]
+        )
+        return self._create_or_update_from_compiler(new_query_compiler, inplace)
+
+    # TODO implement arguments
+    def mean(self):
+        return self._query_compiler.mean()
+
+    def sum(self, numeric_only=True):
+        if numeric_only == False:
+            raise NotImplementedError("Only sum of numeric fields is implemented")
+        return self._query_compiler.sum()
+
+    def min(self, numeric_only=True):
+        if numeric_only == False:
+            raise NotImplementedError("Only sum of numeric fields is implemented")
+        return self._query_compiler.min()
+
+    def max(self, numeric_only=True):
+        if numeric_only == False:
+            raise NotImplementedError("Only sum of numeric fields is implemented")
+        return self._query_compiler.max()
+
+    def describe(self):
+        return self._query_compiler.describe()

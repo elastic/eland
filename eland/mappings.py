@@ -1,10 +1,11 @@
 import warnings
 
 import pandas as pd
+from pandas.core.dtypes.common import (is_float_dtype, is_bool_dtype, is_integer_dtype, is_datetime_or_timedelta_dtype,
+                                       is_string_dtype)
 
-from pandas.core.dtypes.common import (is_float_dtype, is_bool_dtype, is_integer_dtype, is_datetime_or_timedelta_dtype, is_string_dtype)
 
-class Mappings():
+class Mappings:
     """
     General purpose to manage Elasticsearch to/from pandas mappings
 
@@ -33,8 +34,7 @@ class Mappings():
     def __init__(self,
                  client=None,
                  index_pattern=None,
-                 mappings=None,
-                 columns=None):
+                 mappings=None):
         """
         Parameters
         ----------
@@ -48,12 +48,9 @@ class Mappings():
 
         mappings: Mappings
             Object to copy
-
-        columns: list of str
-            Columns to copy
         """
         if (client is not None) and (index_pattern is not None):
-            get_mapping = client.indices().get_mapping(index=index_pattern)
+            get_mapping = client.get_mapping(index=index_pattern)
 
             # Get all fields (including all nested) and then field_caps
             # for these names (fields=* doesn't appear to work effectively...)
@@ -67,12 +64,8 @@ class Mappings():
             # field_name, es_dtype, pd_dtype, is_searchable, is_aggregtable, is_source
             self._mappings_capabilities = Mappings._create_capability_matrix(all_fields, source_fields, all_fields_caps)
         else:
-            if columns is not None:
-                # Reference object and restrict mapping columns
-                self._mappings_capabilities = mappings._mappings_capabilities.loc[columns]
-            else:
-                # straight copy
-                self._mappings_capabilities = mappings._mappings_capabilities.copy()
+            # straight copy
+            self._mappings_capabilities = mappings._mappings_capabilities.copy()
 
         # Cache source field types for efficient lookup
         # (this massively improves performance of DataFrame.flatten)
@@ -207,11 +200,11 @@ class Mappings():
 
                     if 'non_aggregatable_indices' in vv:
                         warnings.warn("Field {} has conflicting aggregatable fields across indexes {}",
-                                      format(field_name, vv['non_aggregatable_indices']),
+                                      format(field, vv['non_aggregatable_indices']),
                                       UserWarning)
                     if 'non_searchable_indices' in vv:
                         warnings.warn("Field {} has conflicting searchable fields across indexes {}",
-                                      format(field_name, vv['non_searchable_indices']),
+                                      format(field, vv['non_searchable_indices']),
                                       UserWarning)
 
         capability_matrix_df = pd.DataFrame.from_dict(capability_matrix, orient='index', columns=columns)
@@ -410,16 +403,23 @@ class Mappings():
 
         return is_source_field
 
-    def numeric_source_fields(self):
+    def numeric_source_fields(self, columns):
         """
         Returns
         -------
         numeric_source_fields: list of str
-            List of source fields where pd_dtype == (int64 or float64)
+            List of source fields where pd_dtype == (int64 or float64 or bool)
         """
-        return self._mappings_capabilities[(self._mappings_capabilities._source == True) &
-                                          ((self._mappings_capabilities.pd_dtype == 'int64') |
-                                           (self._mappings_capabilities.pd_dtype == 'float64'))].index.tolist()
+        if columns is not None:
+            return self._mappings_capabilities[(self._mappings_capabilities._source == True) &
+                                               ((self._mappings_capabilities.pd_dtype == 'int64') |
+                                                (self._mappings_capabilities.pd_dtype == 'float64') |
+                                                (self._mappings_capabilities.pd_dtype == 'bool'))].loc[columns].index.tolist()
+        else:
+            return self._mappings_capabilities[(self._mappings_capabilities._source == True) &
+                                               ((self._mappings_capabilities.pd_dtype == 'int64') |
+                                                (self._mappings_capabilities.pd_dtype == 'float64') |
+                                                (self._mappings_capabilities.pd_dtype == 'bool'))].index.tolist()
 
     def source_fields(self):
         """
@@ -439,16 +439,20 @@ class Mappings():
         """
         return len(self.source_fields())
 
-    def dtypes(self):
+    def dtypes(self, columns=None):
         """
         Returns
         -------
         dtypes: pd.Series
             Source field name + pd_dtype
         """
+        if columns is not None:
+            return pd.Series(
+                {key: self._source_field_pd_dtypes[key] for key in columns})
+
         return pd.Series(self._source_field_pd_dtypes)
 
-    def get_dtype_counts(self):
+    def get_dtype_counts(self, columns=None):
         """
         Return counts of unique dtypes in this object.
 
@@ -457,16 +461,17 @@ class Mappings():
         get_dtype_counts : Series
             Series with the count of columns with each dtype.
         """
-        return pd.Series(self._mappings_capabilities[self._mappings_capabilities._source == True].groupby('pd_dtype')[
-                             '_source'].count().to_dict())
 
-    def to_pandas(self):
-        """
+        if columns is not None:
+            return pd.Series(self._mappings_capabilities[self._mappings_capabilities._source == True]
+                             .loc[columns]
+                             .groupby('pd_dtype')['_source']
+                             .count().to_dict())
 
-        Returns
-        -------
-        df : pd.DataFrame
-            pandas DaraFrame representing this index
-        """
+        return pd.Series(self._mappings_capabilities[self._mappings_capabilities._source == True]
+                         .groupby('pd_dtype')['_source']
+                         .count().to_dict())
 
-
+    def info_es(self, buf):
+        buf.write("Mappings:\n")
+        buf.write("\tcapabilities: {0}\n".format(self._mappings_capabilities))

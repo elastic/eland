@@ -3,6 +3,10 @@ import pandas as pd
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
+# Set modin to pandas to avoid starting ray or other
+os.environ["MODIN_ENGINE"] = 'python'
+os.environ["MODIN_BACKEND"] = 'pandas'
+
 # Define test files and indices
 ELASTICSEARCH_HOST = 'localhost' # TODO externalise this
 
