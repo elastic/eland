@@ -2,7 +2,6 @@ import copy
 from enum import Enum
 
 import pandas as pd
-from elasticsearch_dsl import Search
 
 from eland import Index
 from eland import Query
@@ -290,7 +289,7 @@ class Operations:
         if field == Index.ID_INDEX_FIELD:
             body.ids(items, must=True)
         else:
-            body.terms(items, must=True)
+            body.terms(field, items, must=True)
 
         return query_compiler._client.count(index=query_compiler._index_pattern, body=body.to_count_body())
 
@@ -333,8 +332,6 @@ class Operations:
         size = query_params['query_size']
 
         return size, sort_params
-
-    1
 
     @staticmethod
     def _count_post_processing(post_processing):
