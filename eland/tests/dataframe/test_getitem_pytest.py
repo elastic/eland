@@ -37,3 +37,19 @@ class TestDataFrameGetItem(TestData):
         pd_flights_OriginAirportID = pd_flights.OriginAirportID
 
         assert_pandas_eland_series_equal(pd_flights_OriginAirportID, ed_flights_OriginAirportID)
+
+    def test_getitem4(self):
+        ed_flights = self.ed_flights().head(89)
+        pd_flights = self.pd_flights().head(89)
+
+        ed_col0 = ed_flights[['DestCityName', 'DestCountry', 'DestLocation', 'DestRegion']]
+        try:
+            ed_col1 = ed_col0['Carrier']
+        except KeyError:
+            pass
+
+        pd_col1 = pd_flights['DestCountry']
+        ed_col1 = ed_col0['DestCountry']
+
+        assert_pandas_eland_series_equal(pd_col1, ed_col1)
+

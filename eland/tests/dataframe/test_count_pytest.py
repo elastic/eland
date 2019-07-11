@@ -5,9 +5,15 @@ from eland.tests.common import TestData
 
 class TestDataFrameCount(TestData):
 
-    def test_to_string1(self):
-        ed_flights = self.ed_flights()
-        pd_flights = self.pd_flights()
+    def test_to_count1(self):
+        pd_ecommerce = self.pd_ecommerce()
+        ed_ecommerce = self.ed_ecommerce()
 
-        #ed_count = ed_flights.count()
+        pd_count = pd_ecommerce.count()
+        ed_count = ed_ecommerce.count()
+
+        print(pd_count)
+        print(ed_count)
+
+
 

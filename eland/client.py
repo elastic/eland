@@ -12,7 +12,16 @@ class Client:
             self._es = es._es
         else:
             self._es = Elasticsearch(es)
-            
+
+    def index_create(self, **kwargs):
+        return self._es.indices.create(**kwargs)
+
+    def index_delete(self, **kwargs):
+        return self._es.indices.delete(**kwargs)
+
+    def index_exists(self, **kwargs):
+        return self._es.indices.exists(**kwargs)
+
     def get_mapping(self, **kwargs):
         return self._es.indices.get_mapping(**kwargs)
 

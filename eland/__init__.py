@@ -7,6 +7,7 @@ os.environ["MODIN_BACKEND"] = 'pandas'
 from .client import *
 from .index import *
 from .mappings import *
+from .query import *
 from .operations import *
 from .query_compiler import *
 from .ndframe import *

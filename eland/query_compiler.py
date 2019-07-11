@@ -52,6 +52,17 @@ class ElandQueryCompiler(BaseQueryCompiler):
     columns = property(_get_columns, _set_columns)
     index = property(_get_index)
 
+    @property
+    def dtypes(self):
+        columns = self._operations.get_columns()
+
+        return self._mappings.dtypes(columns)
+
+    def get_dtype_counts(self):
+        columns = self._operations.get_columns()
+
+        return self._mappings.get_dtype_counts(columns)
+
     # END Index, columns, and dtypes objects
 
     def _es_results_to_pandas(self, results):
@@ -226,7 +237,25 @@ class ElandQueryCompiler(BaseQueryCompiler):
         index_count: int
             Count of docs where index_field exists
         """
-        return self._operations.to_count(self)
+        return self._operations.index_count(self, self.index.index_field)
+
+    def _index_matches_count(self, items):
+        """
+        Returns
+        -------
+        index_count: int
+            Count of docs where items exist
+        """
+        return self._operations.index_matches_count(self, self.index.index_field, items)
+
+    def _index_matches(self, items):
+        """
+        Returns
+        -------
+        index_count: int
+            Count of list of the items that match
+        """
+        return self._operations.index_matches(self, self.index.index_field, items)
 
     def copy(self):
         return self.__constructor__(
@@ -295,6 +324,31 @@ class ElandQueryCompiler(BaseQueryCompiler):
 
         return result
 
+    def drop(self, index=None, columns=None):
+        result = self.copy()
+
+        # Drop gets all columns and removes drops
+        if columns is not None:
+            # columns is a pandas.Index so we can use pandas drop feature
+            new_columns = self.columns.drop(columns)
+            result._operations.set_columns(new_columns.to_list())
+
+        if index is not None:
+            result._operations.drop_index_values(self, self.index.index_field, index)
+
+        return result
+
+    def count(self):
+        return self._operations.count(self)
+    def mean(self):
+        return self._operations.mean(self)
+    def sum(self):
+        return self._operations.sum(self)
+    def min(self):
+        return self._operations.min(self)
+    def max(self):
+        return self._operations.max(self)
+
     def info_es(self, buf):
         buf.write("index_pattern: {index_pattern}\n".format(index_pattern=self._index_pattern))
 
@@ -302,3 +356,5 @@ class ElandQueryCompiler(BaseQueryCompiler):
         self._mappings.info_es(buf)
         self._operations.info_es(buf)
 
+    def describe(self):
+        return self._operations.describe(self)

@@ -16,7 +16,7 @@ from eland import Series
 
 
 class DataFrame(NDFrame):
-    # TODO create effectively 2 constructors
+    # This is effectively 2 constructors
     # 1. client, index_pattern, columns, index_field
     # 2. query_compiler
     def __init__(self,
@@ -74,6 +74,22 @@ class DataFrame(NDFrame):
 
         return buf.getvalue()
 
+    def count(self):
+        """
+        Count non-NA cells for each column (TODO row)
+
+        Counts are based on exists queries against ES
+
+        This is inefficient, as it creates N queries (N is number of fields).
+
+        An alternative approach is to use value_count aggregations. However, they have issues in that:
+        1. They can only be used with aggregatable fields (e.g. keyword not text)
+        2. For list fields they return multiple counts. E.g. tags=['elastic', 'ml'] returns value_count=2
+        for a single document.
+        """
+        return self._query_compiler.count()
+
+
     def info_es(self):
         buf = StringIO()
 
@@ -81,6 +97,130 @@ class DataFrame(NDFrame):
 
         return buf.getvalue()
 
+    def _index_summary(self):
+        head = self.head(1)._to_pandas().index[0]
+        tail = self.tail(1)._to_pandas().index[0]
+        index_summary = ', %s to %s' % (pprint_thing(head),
+                                        pprint_thing(tail))
+
+        name = "Index"
+        return '%s: %s entries%s' % (name, len(self), index_summary)
+
+    def info(self, verbose=None, buf=None, max_cols=None, memory_usage=None,
+             null_counts=None):
+        """
+        Print a concise summary of a DataFrame.
+
+        This method prints information about a DataFrame including
+        the index dtype and column dtypes, non-null values and memory usage.
+
+        This copies a lot of code from pandas.DataFrame.info as it is difficult
+        to split out the appropriate code or creating a SparseDataFrame gives
+        incorrect results on types and counts.
+        """
+        if buf is None:  # pragma: no cover
+            buf = sys.stdout
+
+        lines = []
+
+        lines.append(str(type(self)))
+        lines.append(self._index_summary())
+
+        if len(self.columns) == 0:
+            lines.append('Empty {name}'.format(name=type(self).__name__))
+            fmt.buffer_put_lines(buf, lines)
+            return
+
+        cols = self.columns
+
+        # hack
+        if max_cols is None:
+            max_cols = pd.get_option('display.max_info_columns',
+                                     len(self.columns) + 1)
+
+        max_rows = pd.get_option('display.max_info_rows', len(self) + 1)
+
+        if null_counts is None:
+            show_counts = ((len(self.columns) <= max_cols) and
+                           (len(self) < max_rows))
+        else:
+            show_counts = null_counts
+        exceeds_info_cols = len(self.columns) > max_cols
+
+        # From pandas.DataFrame
+        def _put_str(s, space):
+            return '{s}'.format(s=s)[:space].ljust(space)
+
+        def _verbose_repr():
+            lines.append('Data columns (total %d columns):' %
+                         len(self.columns))
+            space = max(len(pprint_thing(k)) for k in self.columns) + 4
+            counts = None
+
+            tmpl = "{count}{dtype}"
+            if show_counts:
+                counts = self.count()
+                if len(cols) != len(counts):  # pragma: no cover
+                    raise AssertionError(
+                        'Columns must equal counts '
+                        '({cols:d} != {counts:d})'.format(
+                            cols=len(cols), counts=len(counts)))
+                tmpl = "{count} non-null {dtype}"
+
+            dtypes = self.dtypes
+            for i, col in enumerate(self.columns):
+                dtype = dtypes.iloc[i]
+                col = pprint_thing(col)
+
+                count = ""
+                if show_counts:
+                    count = counts.iloc[i]
+
+                lines.append(_put_str(col, space) + tmpl.format(count=count,
+                                                                dtype=dtype))
+
+        def _non_verbose_repr():
+            lines.append(self.columns._summary(name='Columns'))
+
+        def _sizeof_fmt(num, size_qualifier):
+            # returns size in human readable format
+            for x in ['bytes', 'KB', 'MB', 'GB', 'TB']:
+                if num < 1024.0:
+                    return ("{num:3.1f}{size_q} "
+                            "{x}".format(num=num, size_q=size_qualifier, x=x))
+                num /= 1024.0
+            return "{num:3.1f}{size_q} {pb}".format(num=num,
+                                                    size_q=size_qualifier,
+                                                    pb='PB')
+
+        if verbose:
+            _verbose_repr()
+        elif verbose is False:  # specifically set to False, not nesc None
+            _non_verbose_repr()
+        else:
+            if exceeds_info_cols:
+                _non_verbose_repr()
+            else:
+                _verbose_repr()
+
+        counts = self.get_dtype_counts()
+        dtypes = ['{k}({kk:d})'.format(k=k[0], kk=k[1]) for k
+                  in sorted(counts.items())]
+        lines.append('dtypes: {types}'.format(types=', '.join(dtypes)))
+
+        if memory_usage is None:
+            memory_usage = pd.get_option('display.memory_usage')
+        if memory_usage:
+            # append memory usage of df to display
+            size_qualifier = ''
+
+            # TODO - this is different from pd.DataFrame as we shouldn't
+            #   really hold much in memory. For now just approximate with getsizeof + ignore deep
+            mem_usage = sys.getsizeof(self)
+            lines.append("memory usage: {mem}\n".format(
+                mem=_sizeof_fmt(mem_usage, size_qualifier)))
+
+        fmt.buffer_put_lines(buf, lines)
 
 
     def to_string(self, buf=None, columns=None, col_space=None, header=True,
@@ -153,7 +293,7 @@ class DataFrame(NDFrame):
 
     def _getitem_column(self, key):
         if key not in self.columns:
-            raise KeyError("{}".format(key))
+            raise KeyError("Requested column is not in the DataFrame {}".format(key))
         s = self._reduce_dimension(self._query_compiler.getitem_column_array([key]))
         s._parent = self
         return s
@@ -195,6 +335,17 @@ class DataFrame(NDFrame):
             return DataFrame(
                 query_compiler=self._query_compiler.getitem_column_array(key)
             )
+
+    def _create_or_update_from_compiler(self, new_query_compiler, inplace=False):
+        """Returns or updates a DataFrame given new query_compiler"""
+        assert (
+                isinstance(new_query_compiler, type(self._query_compiler))
+                or type(new_query_compiler) in self._query_compiler.__class__.__bases__
+        ), "Invalid Query Compiler object: {}".format(type(new_query_compiler))
+        if not inplace:
+            return DataFrame(query_compiler=new_query_compiler)
+        else:
+            self._query_compiler=new_query_compiler
 
     def _reduce_dimension(self, query_compiler):
         return Series(query_compiler=query_compiler)

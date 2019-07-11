@@ -12,28 +12,6 @@ import numpy as np
 
 class TestDataFrameiLoc(TestData):
 
-    def test_range(self):
-        columns = ['a', 'b', 'c', 'd', 'e']
-
-        r = pd.RangeIndex(0, 3, 1)
-
-        i = pd.Int64Index([1, 2])
-
-        dates = pd.date_range('1/1/2000', periods=8)
-
-        df = pd.DataFrame(np.random.randn(8, 4), index = dates, columns = ['A', 'B', 'C', 'D'])
-
-        print(df)
-
-        print("STEVE ", df.squeeze())
-
-        ii = slice(None)
-        rr = slice(None)
-
-        print(df.iloc[:, 0:3])
-        print(df.iloc[i, r])
-        print(df.iloc[ii, rr])
-
     def test_iloc1(self):
         ed_flights = self.ed_flights()
         pd_flights = self.pd_flights()
