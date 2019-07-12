@@ -53,7 +53,6 @@ class Index:
     # Make iterable
     def __next__(self):
         # TODO resolve this hack to make this 'iterable'
-        print("In Index.__next__")
         raise StopIteration()
 
     def __iter__(self):

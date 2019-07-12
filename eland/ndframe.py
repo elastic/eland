@@ -94,7 +94,6 @@ class NDFrame(BasePandasDataset):
         Returns:
             The value of the attribute.
         """
-        print(key)
         try:
             return object.__getattribute__(self, key)
         except AttributeError as e:
@@ -228,5 +227,26 @@ class NDFrame(BasePandasDataset):
             raise NotImplementedError("Only sum of numeric fields is implemented")
         return self._query_compiler.max()
 
+    def _hist(self, interval)
+        return self._query_compiler._hist(interval)
+
     def describe(self):
         return self._query_compiler.describe()
+
+    def get(self, key, default=None):
+        """Get item from object for given key (DataFrame column, Panel
+                slice, etc.). Returns default value if not found.
+
+                Args:
+                    key (DataFrame column, Panel slice) : the key for which value
+                    to get
+
+                Returns:
+                    value (type of items contained in object) : A value that is
+                    stored at the key
+                """
+        if key in self.keys():
+            return self.__getitem__(key)
+        else:
+            return default
+

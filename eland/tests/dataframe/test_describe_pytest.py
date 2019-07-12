@@ -13,6 +13,9 @@ class TestDataFrameInfo(TestData):
         pd_describe = pd_flights.describe()
         ed_describe = ed_flights.describe()
 
+        print(pd_describe)
+        print(ed_describe)
+
         # TODO - this fails now as ES aggregations are approximate
         #        if ES percentile agg uses
         #        "hdr": {

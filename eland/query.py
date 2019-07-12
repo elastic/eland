@@ -68,6 +68,19 @@ class Query:
         }
         self._aggs[name] = agg
 
+    def hist_aggs(self, name, field, min_aggs, max_aggs, bins):
+        """
+        Add histogram agg e.g.
+        "aggs": {
+            "name": {
+                "histogram": {
+                    "field": "AvgTicketPrice"
+                    "interval": (max_aggs[field] - min_aggs[field])/bins
+                }
+            }
+        }
+        """
+
     def to_search_body(self):
         body = {"query": self._query, "aggs": self._aggs}
         return body

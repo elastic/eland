@@ -152,6 +152,8 @@ class ElandQueryCompiler(BaseQueryCompiler):
         TODO - an option here is to use Elasticsearch's multi-field matching instead of pandas treatment of lists (which isn't great)
         NOTE - using this lists is generally not a good way to use this API
         """
+        if results is None:
+            return self._empty_pd_ef()
 
         def flatten_dict(y):
             out = {}
@@ -257,6 +259,13 @@ class ElandQueryCompiler(BaseQueryCompiler):
         """
         return self._operations.index_matches(self, self.index.index_field, items)
 
+    def _empty_pd_ef(self):
+        # Return an empty dataframe with correct columns and dtypes
+        df = pd.DataFrame()
+        for c, d in zip(self.columns, self.dtypes):
+            df[c] = pd.Series(dtype=d)
+        return df
+
     def copy(self):
         return self.__constructor__(
             client=self._client,
@@ -348,6 +357,8 @@ class ElandQueryCompiler(BaseQueryCompiler):
         return self._operations.min(self)
     def max(self):
         return self._operations.max(self)
+    def nunique(self):
+        return self._operations.nunique(self)
 
     def info_es(self, buf):
         buf.write("index_pattern: {index_pattern}\n".format(index_pattern=self._index_pattern))
@@ -358,3 +369,6 @@ class ElandQueryCompiler(BaseQueryCompiler):
 
     def describe(self):
         return self._operations.describe(self)
+
+    def _hist(self, interval):
+        return self._operations.hist(self, interval)

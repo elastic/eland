@@ -403,7 +403,7 @@ class Mappings:
 
         return is_source_field
 
-    def numeric_source_fields(self, columns):
+    def numeric_source_fields(self, columns, include_bool=True):
         """
         Returns
         -------
