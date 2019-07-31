@@ -227,8 +227,8 @@ class NDFrame(BasePandasDataset):
             raise NotImplementedError("Only sum of numeric fields is implemented")
         return self._query_compiler.max()
 
-    def _hist(self, interval)
-        return self._query_compiler._hist(interval)
+    def _hist(self, num_bins):
+        return self._query_compiler._hist(num_bins)
 
     def describe(self):
         return self._query_compiler.describe()

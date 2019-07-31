@@ -166,8 +166,8 @@ class Operations:
             results[field] = response['aggregations'][field]['value']
 
         # Return single value if this is a series
-        if len(numeric_source_fields) == 1:
-            return np.float64(results[numeric_source_fields[0]])
+        #if len(numeric_source_fields) == 1:
+        #    return np.float64(results[numeric_source_fields[0]])
 
         s = pd.Series(data=results, index=numeric_source_fields)
 
@@ -203,7 +203,8 @@ class Operations:
 
         return s
 
-    def _hist_aggs(self, query_compiler, bins):
+    def _hist_aggs(self, query_compiler, num_bins):
+        # Get histogram bins and weights for numeric columns
         query_params, post_processing = self._resolve_tasks()
 
         size = self._size(query_params, post_processing)
@@ -220,21 +221,59 @@ class Operations:
         max_aggs = self._metric_aggs(query_compiler, 'max')
 
         for field in numeric_source_fields:
-            body.hist_aggs(field, min_aggs, max_aggs, bins)
+            body.hist_aggs(field, field, min_aggs, max_aggs, num_bins)
 
         response = query_compiler._client.search(
             index=query_compiler._index_pattern,
             size=0,
             body=body.to_search_body())
 
-        results = {}
+        # results are like
+        # "aggregations" : {
+        #     "DistanceKilometers" : {
+        #       "buckets" : [
+        #         {
+        #           "key" : 0.0,
+        #           "doc_count" : 2956
+        #         },
+        #         {
+        #           "key" : 1988.1482421875,
+        #           "doc_count" : 768
+        #         },
+        #         ...
 
+        bins = {}
+        weights = {}
+
+        # There is one more bin that weights
+        # len(bins) = len(weights) + 1
+
+        # bins = [  0.  36.  72. 108. 144. 180. 216. 252. 288. 324. 360.]
+        # len(bins) == 11
+        # weights = [10066.,   263.,   386.,   264.,   273.,   390.,   324.,   438.,   261.,   394.]
+        # len(weights) == 10
+
+        # ES returns
+        # weights = [10066.,   263.,   386.,   264.,   273.,   390.,   324.,   438.,   261.,   252.,    142.]
+        # So sum last 2 buckets
         for field in numeric_source_fields:
-            results[field] = response['aggregations'][field]['value']
+            buckets = response['aggregations'][field]['buckets']
 
-        s = pd.Series(data=results, index=numeric_source_fields)
+            bins[field] = []
+            weights[field] = []
 
-        return s
+            for bucket in buckets:
+                bins[field].append(bucket['key'])
+
+                if bucket == buckets[-1]:
+                    weights[field][-1] += bucket['doc_count']
+                else:
+                    weights[field].append(bucket['doc_count'])
+
+        df_bins = pd.DataFrame(data=bins)
+        df_weights = pd.DataFrame(data=weights)
+
+        return df_bins, df_weights
 
     def describe(self, query_compiler):
         query_params, post_processing = self._resolve_tasks()

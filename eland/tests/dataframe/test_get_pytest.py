@@ -10,7 +10,7 @@ from eland.tests.common import (
 
 import numpy as np
 
-class TestDataFrameiLoc(TestData):
+class TestDataFrameGet(TestData):
 
     def test_get1(self):
         ed_flights = self.ed_flights()

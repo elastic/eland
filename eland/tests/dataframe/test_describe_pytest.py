@@ -4,7 +4,7 @@ from io import StringIO
 from eland.tests.common import TestData
 
 
-class TestDataFrameInfo(TestData):
+class TestDataFrameDescribe(TestData):
 
     def test_to_describe1(self):
         pd_flights = self.pd_flights()

@@ -370,5 +370,5 @@ class ElandQueryCompiler(BaseQueryCompiler):
     def describe(self):
         return self._operations.describe(self)
 
-    def _hist(self, interval):
-        return self._operations.hist(self, interval)
+    def _hist(self, num_bins):
+        return self._operations.hist(self, num_bins)

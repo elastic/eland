@@ -7,40 +7,63 @@ from pandas.plotting._core import (
     _raise_if_no_mpl, _converter, grouped_hist, _subplots, _flatten, _set_ticks_props)
 
 
-def hist_frame(ed_df, column=None, by=None, grid=True, xlabelsize=None,
+def ed_hist_frame(ed_df, column=None, by=None, grid=True, xlabelsize=None,
                xrot=None, ylabelsize=None, yrot=None, ax=None, sharex=False,
                sharey=False, figsize=None, layout=None, bins=10, **kwds):
     """
     Derived from pandas.plotting._core.hist_frame 0.24.2
+
+    Ideally, we'd call hist_frame directly with histogram data,
+    but weights are applied to ALL series. For example, we can
+    plot a histogram of pre-binned data via:
+
+    counts, bins = np.histogram(data)
+    plt.hist(bins[:-1], bins, weights=counts)
+
+    However,
+
+    ax.hist(data[col].dropna().values, bins=bins, **kwds)
+
+    is for [col] and weights are a single array.
+
+    We therefore cut/paste code.
     """
     # Start with empty pandas data frame derived from
-    empty_pd_df = ed_df._empty_pd_df()
+    ed_df_bins, ed_df_weights = ed_df._hist(num_bins=bins)
 
     _raise_if_no_mpl()
     _converter._WARN = False
     if by is not None:
-        axes = grouped_hist(empty_pd_df, column=column, by=by, ax=ax, grid=grid,
+        raise NotImplementedError("TODO")
+        """
+        axes = grouped_hist(data, column=column, by=by, ax=ax, grid=grid,
                             figsize=figsize, sharex=sharex, sharey=sharey,
                             layout=layout, bins=bins, xlabelsize=xlabelsize,
                             xrot=xrot, ylabelsize=ylabelsize,
                             yrot=yrot, **kwds)
+        """
         return axes
 
     if column is not None:
         if not isinstance(column, (list, np.ndarray, ABCIndexClass)):
             column = [column]
-        empty_pd_df = empty_pd_df[column]
-    data = empty_pd_df._get_numeric_data()
-    naxes = len(empty_pd_df.columns)
+        ed_df_bins = ed_df_bins[column]
+        ed_df_weights = ed_df_weights[column]
+    naxes = len(ed_df_bins.columns)
 
     fig, axes = _subplots(naxes=naxes, ax=ax, squeeze=False,
                           sharex=sharex, sharey=sharey, figsize=figsize,
                           layout=layout)
     _axes = _flatten(axes)
 
-    for i, col in enumerate(com.try_sort(data.columns)):
+    for i, col in enumerate(com.try_sort(ed_df_bins.columns)):
         ax = _axes[i]
-        ax.hist(empty_pd_df[col].dropna().values, bins=bins, **kwds)
+
+        # pandas code
+        # pandas / plotting / _core.py: 2410
+        # ax.hist(data[col].dropna().values, bins=bins, **kwds)
+
+        ax.hist(ed_df_bins[col][:-1], bins=ed_df_bins[col], weights=ed_df_weights[col])
         ax.set_title(col)
         ax.grid(grid)
 

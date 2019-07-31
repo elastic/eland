@@ -13,7 +13,8 @@ from pandas.io.formats.printing import pprint_thing
 
 from eland import NDFrame
 from eland import Series
-from eland import hist_frame
+
+import eland.plotting as gfx
 
 class DataFrame(NDFrame):
     # This is effectively 2 constructors
@@ -457,4 +458,4 @@ class DataFrame(NDFrame):
     def keys(self):
         return self.columns
 
-    hist = hist_frame
+    hist = gfx.ed_hist_frame
