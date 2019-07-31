@@ -3,7 +3,7 @@
 from eland.tests.common import TestData
 
 
-class TestDataFrameInfo(TestData):
+class TestDataFrameInfoEs(TestData):
 
     def test_to_info1(self):
         ed_flights = self.ed_flights()

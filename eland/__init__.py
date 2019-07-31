@@ -10,6 +10,7 @@ from .mappings import *
 from .query import *
 from .operations import *
 from .query_compiler import *
+from .plotting import *
 from .ndframe import *
 from .series import *
 from .dataframe import *

@@ -2,7 +2,7 @@ import copy
 from enum import Enum
 
 import pandas as pd
-from elasticsearch_dsl import Search
+import numpy as np
 
 from eland import Index
 from eland import Query
@@ -127,6 +127,12 @@ class Operations:
     def min(self, query_compiler):
         return self._metric_aggs(query_compiler, 'min')
 
+    def nunique(self, query_compiler):
+        return self._terms_aggs(query_compiler, 'cardinality')
+
+    def hist(self, query_compiler, bins):
+        return self._hist_aggs(query_compiler, bins)
+
     def _metric_aggs(self, query_compiler, func):
         query_params, post_processing = self._resolve_tasks()
 
@@ -159,9 +165,115 @@ class Operations:
         for field in numeric_source_fields:
             results[field] = response['aggregations'][field]['value']
 
+        # Return single value if this is a series
+        #if len(numeric_source_fields) == 1:
+        #    return np.float64(results[numeric_source_fields[0]])
+
         s = pd.Series(data=results, index=numeric_source_fields)
 
         return s
+
+    def _terms_aggs(self, query_compiler, func):
+        query_params, post_processing = self._resolve_tasks()
+
+        size = self._size(query_params, post_processing)
+        if size is not None:
+            raise NotImplementedError("Can not count field matches if size is set {}".format(size))
+
+        columns = self.get_columns()
+
+        numeric_source_fields = query_compiler._mappings.numeric_source_fields(columns)
+
+        body = Query(query_params['query'])
+
+        for field in numeric_source_fields:
+            body.metric_aggs(field, func, field)
+
+        response = query_compiler._client.search(
+            index=query_compiler._index_pattern,
+            size=0,
+            body=body.to_search_body())
+
+        results = {}
+
+        for field in numeric_source_fields:
+            results[field] = response['aggregations'][field]['value']
+
+        s = pd.Series(data=results, index=numeric_source_fields)
+
+        return s
+
+    def _hist_aggs(self, query_compiler, num_bins):
+        # Get histogram bins and weights for numeric columns
+        query_params, post_processing = self._resolve_tasks()
+
+        size = self._size(query_params, post_processing)
+        if size is not None:
+            raise NotImplementedError("Can not count field matches if size is set {}".format(size))
+
+        columns = self.get_columns()
+
+        numeric_source_fields = query_compiler._mappings.numeric_source_fields(columns)
+
+        body = Query(query_params['query'])
+
+        min_aggs = self._metric_aggs(query_compiler, 'min')
+        max_aggs = self._metric_aggs(query_compiler, 'max')
+
+        for field in numeric_source_fields:
+            body.hist_aggs(field, field, min_aggs, max_aggs, num_bins)
+
+        response = query_compiler._client.search(
+            index=query_compiler._index_pattern,
+            size=0,
+            body=body.to_search_body())
+
+        # results are like
+        # "aggregations" : {
+        #     "DistanceKilometers" : {
+        #       "buckets" : [
+        #         {
+        #           "key" : 0.0,
+        #           "doc_count" : 2956
+        #         },
+        #         {
+        #           "key" : 1988.1482421875,
+        #           "doc_count" : 768
+        #         },
+        #         ...
+
+        bins = {}
+        weights = {}
+
+        # There is one more bin that weights
+        # len(bins) = len(weights) + 1
+
+        # bins = [  0.  36.  72. 108. 144. 180. 216. 252. 288. 324. 360.]
+        # len(bins) == 11
+        # weights = [10066.,   263.,   386.,   264.,   273.,   390.,   324.,   438.,   261.,   394.]
+        # len(weights) == 10
+
+        # ES returns
+        # weights = [10066.,   263.,   386.,   264.,   273.,   390.,   324.,   438.,   261.,   252.,    142.]
+        # So sum last 2 buckets
+        for field in numeric_source_fields:
+            buckets = response['aggregations'][field]['buckets']
+
+            bins[field] = []
+            weights[field] = []
+
+            for bucket in buckets:
+                bins[field].append(bucket['key'])
+
+                if bucket == buckets[-1]:
+                    weights[field][-1] += bucket['doc_count']
+                else:
+                    weights[field].append(bucket['doc_count'])
+
+        df_bins = pd.DataFrame(data=bins)
+        df_weights = pd.DataFrame(data=weights)
+
+        return df_bins, df_weights
 
     def describe(self, query_compiler):
         query_params, post_processing = self._resolve_tasks()
@@ -181,8 +293,6 @@ class Operations:
         for field in numeric_source_fields:
             body.metric_aggs('extended_stats_' + field, 'extended_stats', field)
             body.metric_aggs('percentiles_' + field, 'percentiles', field)
-
-        print(body.to_search_body())
 
         response = query_compiler._client.search(
             index=query_compiler._index_pattern,
@@ -220,15 +330,18 @@ class Operations:
         # Only return requested columns
         columns = self.get_columns()
 
+        es_results = None
+
         # If size=None use scan not search - then post sort results when in df
         # If size>10000 use scan
         if size is not None and size <= 10000:
-            es_results = query_compiler._client.search(
-                index=query_compiler._index_pattern,
-                size=size,
-                sort=sort_params,
-                body=body.to_search_body(),
-                _source=columns)
+            if size > 0:
+                es_results = query_compiler._client.search(
+                    index=query_compiler._index_pattern,
+                    size=size,
+                    sort=sort_params,
+                    body=body.to_search_body(),
+                    _source=columns)
         else:
             es_results = query_compiler._client.scan(
                 index=query_compiler._index_pattern,
@@ -290,7 +403,7 @@ class Operations:
         if field == Index.ID_INDEX_FIELD:
             body.ids(items, must=True)
         else:
-            body.terms(items, must=True)
+            body.terms(field, items, must=True)
 
         return query_compiler._client.count(index=query_compiler._index_pattern, body=body.to_count_body())
 
@@ -333,8 +446,6 @@ class Operations:
         size = query_params['query_size']
 
         return size, sort_params
-
-    1
 
     @staticmethod
     def _count_post_processing(post_processing):

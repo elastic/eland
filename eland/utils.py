@@ -46,11 +46,11 @@ def pandas_to_es(df, es_params, destination_index, if_exists='fail', chunk_size=
             )
         elif if_exists == "replace":
             client.index_delete(index=destination_index)
-            client.index_create(index=destination_index, mapping=mapping)
+            client.index_create(index=destination_index, body=mapping)
         # elif if_exists == "append":
         # TODO validate mapping is compatible
     else:
-        client.index_create(index=destination_index, mapping=mapping)
+        client.index_create(index=destination_index, body=mapping)
 
     # Now add data
     actions = []

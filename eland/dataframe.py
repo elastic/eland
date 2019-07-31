@@ -1,9 +1,9 @@
-import warnings
 import sys
+import warnings
 
-import pandas as pd
 import numpy as np
-
+import pandas as pd
+from distutils.version import LooseVersion
 from pandas.compat import StringIO
 from pandas.core.common import apply_if_callable, is_bool_indexer
 from pandas.io.common import _expand_user, _stringify_path
@@ -14,6 +14,7 @@ from pandas.io.formats.printing import pprint_thing
 from eland import NDFrame
 from eland import Series
 
+import eland.plotting as gfx
 
 class DataFrame(NDFrame):
     # This is effectively 2 constructors
@@ -74,6 +75,46 @@ class DataFrame(NDFrame):
 
         return buf.getvalue()
 
+    def _info_repr(self):
+        """
+        True if the repr should show the info view.
+        """
+        info_repr_option = (pd.get_option("display.large_repr") == "info")
+        return info_repr_option and not (self._repr_fits_horizontal_() and
+                                         self._repr_fits_vertical_())
+
+    def _repr_html_(self):
+        """
+        From pandas
+        """
+        try:
+            import IPython
+        except ImportError:
+            pass
+        else:
+            if LooseVersion(IPython.__version__) < LooseVersion('3.0'):
+                if console.in_qtconsole():
+                    # 'HTML output is disabled in QtConsole'
+                    return None
+
+        if self._info_repr():
+            buf = StringIO(u(""))
+            self.info(buf=buf)
+            # need to escape the <class>, should be the first line.
+            val = buf.getvalue().replace('<', r'&lt;', 1)
+            val = val.replace('>', r'&gt;', 1)
+            return '<pre>' + val + '</pre>'
+
+        if pd.get_option("display.notebook_repr_html"):
+            max_rows = pd.get_option("display.max_rows")
+            max_cols = pd.get_option("display.max_columns")
+            show_dimensions = pd.get_option("display.show_dimensions")
+
+            return self.to_html(max_rows=max_rows, max_cols=max_cols,
+                                show_dimensions=show_dimensions, notebook=True)
+        else:
+            return None
+
     def count(self):
         """
         Count non-NA cells for each column (TODO row)
@@ -88,7 +129,6 @@ class DataFrame(NDFrame):
         for a single document.
         """
         return self._query_compiler.count()
-
 
     def info_es(self):
         buf = StringIO()
@@ -222,6 +262,45 @@ class DataFrame(NDFrame):
 
         fmt.buffer_put_lines(buf, lines)
 
+    def to_html(self, buf=None, columns=None, col_space=None, header=True,
+                index=True, na_rep='NaN', formatters=None, float_format=None,
+                sparsify=None, index_names=True, justify=None, max_rows=None,
+                max_cols=None, show_dimensions=False, decimal='.',
+                bold_rows=True, classes=None, escape=True, notebook=False,
+                border=None, table_id=None, render_links=False):
+        """
+        From pandas - except we set max_rows default to avoid careless extraction of entire index
+        """
+        if max_rows is None:
+            warnings.warn("DataFrame.to_string called without max_rows set "
+                          "- this will return entire index results. "
+                          "Setting max_rows=60, overwrite if different behaviour is required.")
+            max_rows = 60
+
+        # Create a slightly bigger dataframe than display
+        df = self._build_repr_df(max_rows + 1, max_cols)
+
+        if buf is not None:
+            _buf = _expand_user(_stringify_path(buf))
+        else:
+            _buf = StringIO()
+
+        df.to_html(buf=_buf, columns=columns, col_space=col_space, header=header,
+                index=index, na_rep=na_rep, formatters=formatters, float_format=float_format,
+                sparsify=sparsify, index_names=index_names, justify=justify, max_rows=max_rows,
+                max_cols=max_cols, show_dimensions=False, decimal=decimal,
+                bold_rows=bold_rows, classes=classes, escape=escape, notebook=notebook,
+                border=border, table_id=table_id, render_links=render_links)
+
+        # Our fake dataframe has incorrect number of rows (max_rows*2+1) - write out
+        # the correct number of rows
+        if show_dimensions:
+            _buf.write("\n<p>{nrows} rows x {ncols} columns</p>"
+                       .format(nrows=len(self.index), ncols=len(self.columns)))
+
+        if buf is None:
+            result = _buf.getvalue()
+            return result
 
     def to_string(self, buf=None, columns=None, col_space=None, header=True,
                   index=True, na_rep='NaN', formatters=None, float_format=None,
@@ -238,7 +317,7 @@ class DataFrame(NDFrame):
             max_rows = 60
 
         # Create a slightly bigger dataframe than display
-        df = self._build_repr_df(max_rows+1, max_cols)
+        df = self._build_repr_df(max_rows + 1, max_cols)
 
         if buf is not None:
             _buf = _expand_user(_stringify_path(buf))
@@ -295,7 +374,6 @@ class DataFrame(NDFrame):
         if key not in self.columns:
             raise KeyError("Requested column is not in the DataFrame {}".format(key))
         s = self._reduce_dimension(self._query_compiler.getitem_column_array([key]))
-        s._parent = self
         return s
 
     def _getitem_array(self, key):
@@ -345,7 +423,7 @@ class DataFrame(NDFrame):
         if not inplace:
             return DataFrame(query_compiler=new_query_compiler)
         else:
-            self._query_compiler=new_query_compiler
+            self._query_compiler = new_query_compiler
 
     def _reduce_dimension(self, query_compiler):
         return Series(query_compiler=query_compiler)
@@ -353,7 +431,31 @@ class DataFrame(NDFrame):
     def _to_pandas(self):
         return self._query_compiler.to_pandas()
 
+    def _empty_pd_df(self):
+        return self._query_compiler._empty_pd_ef()
+
     def squeeze(self, axis=None):
         return DataFrame(
             query_compiler=self._query_compiler.squeeze(axis)
         )
+
+    @property
+    def shape(self):
+        """
+        Return a tuple representing the dimensionality of the DataFrame.
+
+        Returns
+        -------
+        shape: tuple
+            0 - number of rows
+            1 - number of columns
+        """
+        num_rows = len(self)
+        num_columns = len(self.columns)
+
+        return num_rows, num_columns
+
+    def keys(self):
+        return self.columns
+
+    hist = gfx.ed_hist_frame

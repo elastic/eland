@@ -80,3 +80,10 @@ class TestDataFrameHeadTail(TestData):
         pd_head_4 = pd_tail_5.head(4)
         assert_pandas_eland_frame_equal(pd_head_4, ed_head_4)
 
+    def test_head_0(self):
+        ed_flights = self.ed_flights()
+        pd_flights = self.pd_flights()
+
+        ed_head_0 = ed_flights.head(0)
+        pd_head_0 = pd_flights.head(0)
+        assert_pandas_eland_frame_equal(pd_head_0, ed_head_0)

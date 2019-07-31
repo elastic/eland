@@ -6,7 +6,7 @@ from eland.tests.common import TestData
 from pandas.util.testing import assert_series_equal
 
 
-class TestDataFrameMean(TestData):
+class TestDataFrameMetrics(TestData):
 
     def test_to_mean(self):
         pd_flights = self.pd_flights()

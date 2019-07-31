@@ -4,7 +4,7 @@ from io import StringIO
 from eland.tests.common import TestData
 
 
-class TestDataFrameInfo(TestData):
+class TestDataFrameDescribe(TestData):
 
     def test_to_describe1(self):
         pd_flights = self.pd_flights()
@@ -12,6 +12,9 @@ class TestDataFrameInfo(TestData):
 
         pd_describe = pd_flights.describe()
         ed_describe = ed_flights.describe()
+
+        print(pd_describe)
+        print(ed_describe)
 
         # TODO - this fails now as ES aggregations are approximate
         #        if ES percentile agg uses
