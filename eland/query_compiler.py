@@ -315,7 +315,7 @@ class ElandQueryCompiler(BaseQueryCompiler):
         if numeric:
             raise NotImplementedError("Not implemented yet...")
 
-        result._operations.set_columns(key)
+        result._operations.set_columns(list(key))
 
         return result
 
