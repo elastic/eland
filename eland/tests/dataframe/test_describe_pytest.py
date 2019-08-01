@@ -36,6 +36,7 @@ class TestDataFrameDescribe(TestData):
         ed_flights = self.ed_flights().head()
 
         pd_describe = pd_flights.describe()
+        # This fails as we can not run 'describe' on a truncate ed dataframe
         ed_describe = ed_flights.describe()
 
         print(pd_describe)

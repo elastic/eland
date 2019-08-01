@@ -22,4 +22,6 @@ class TestDataFrameInfo(TestData):
 
         assert pd_buf_lines[1:] == ed_buf_lines[1:]
 
+        # NOTE: info does not work on truncated data frames (e.g. head/tail) TODO
+
         print(self.ed_ecommerce().info())

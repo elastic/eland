@@ -1,9 +1,9 @@
 import sys
 import warnings
+from distutils.version import LooseVersion
 
 import numpy as np
 import pandas as pd
-from distutils.version import LooseVersion
 from pandas.compat import StringIO
 from pandas.core.common import apply_if_callable, is_bool_indexer
 from pandas.io.common import _expand_user, _stringify_path
@@ -11,10 +11,10 @@ from pandas.io.formats import console
 from pandas.io.formats import format as fmt
 from pandas.io.formats.printing import pprint_thing
 
+import eland.plotting as gfx
 from eland import NDFrame
 from eland import Series
 
-import eland.plotting as gfx
 
 class DataFrame(NDFrame):
     # This is effectively 2 constructors
@@ -138,6 +138,9 @@ class DataFrame(NDFrame):
         return buf.getvalue()
 
     def _index_summary(self):
+        # Print index summary e.g.
+        # Index: 103 entries, 0 to 102
+        # Do this by getting head and tail of dataframe
         head = self.head(1)._to_pandas().index[0]
         tail = self.tail(1)._to_pandas().index[0]
         index_summary = ', %s to %s' % (pprint_thing(head),
@@ -286,11 +289,11 @@ class DataFrame(NDFrame):
             _buf = StringIO()
 
         df.to_html(buf=_buf, columns=columns, col_space=col_space, header=header,
-                index=index, na_rep=na_rep, formatters=formatters, float_format=float_format,
-                sparsify=sparsify, index_names=index_names, justify=justify, max_rows=max_rows,
-                max_cols=max_cols, show_dimensions=False, decimal=decimal,
-                bold_rows=bold_rows, classes=classes, escape=escape, notebook=notebook,
-                border=border, table_id=table_id, render_links=render_links)
+                   index=index, na_rep=na_rep, formatters=formatters, float_format=float_format,
+                   sparsify=sparsify, index_names=index_names, justify=justify, max_rows=max_rows,
+                   max_cols=max_cols, show_dimensions=False, decimal=decimal,
+                   bold_rows=bold_rows, classes=classes, escape=escape, notebook=notebook,
+                   border=border, table_id=table_id, render_links=render_links)
 
         # Our fake dataframe has incorrect number of rows (max_rows*2+1) - write out
         # the correct number of rows
@@ -438,6 +441,14 @@ class DataFrame(NDFrame):
         return DataFrame(
             query_compiler=self._query_compiler.squeeze(axis)
         )
+
+    def select_dtypes(self, include=None, exclude=None):
+        # get empty df
+        empty_df = self._empty_pd_df()
+
+        empty_df = empty_df.select_dtypes(include=include, exclude=exclude)
+
+        return self._getitem_array(empty_df.columns)
 
     @property
     def shape(self):
