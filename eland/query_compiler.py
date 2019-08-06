@@ -11,6 +11,36 @@ from pandas.core.indexes.range import RangeIndex
 
 
 class ElandQueryCompiler(BaseQueryCompiler):
+    """
+    Some notes on what can and can not be mapped:
+
+    1. df.head(10)
+
+    /_search?size=10
+
+    2. df.tail(10)
+
+    /_search?size=10&sort=_doc:desc
+    + post_process results (sort_index)
+
+    3. df[['OriginAirportID', 'AvgTicketPrice', 'Carrier']]
+
+    /_search
+    { '_source': ['OriginAirportID', 'AvgTicketPrice', 'Carrier']}
+
+    4. df.drop(['1', '2'])
+
+    /_search
+    {'query': {'bool': {'must': [], 'must_not': [{'ids': {'values': ['1', '2']}}]}}, 'aggs': {}}
+
+    This doesn't work is size is set (e.g. head/tail) as we don't know in Elasticsearch if values '1' or '2' are
+    in the first/last n fields.
+
+    A way to mitigate this would be to post process this drop - TODO
+
+
+
+    """
 
     def __init__(self,
                  client=None,
@@ -155,45 +185,6 @@ class ElandQueryCompiler(BaseQueryCompiler):
         if results is None:
             return self._empty_pd_ef()
 
-        def flatten_dict(y):
-            out = {}
-
-            def flatten(x, name=''):
-                # We flatten into source fields e.g. if type=geo_point
-                # location: {lat=52.38, lon=4.90}
-                if name == '':
-                    is_source_field = False
-                    pd_dtype = 'object'
-                else:
-                    is_source_field, pd_dtype = self._mappings.source_field_pd_dtype(name[:-1])
-
-                if not is_source_field and type(x) is dict:
-                    for a in x:
-                        flatten(x[a], name + a + '.')
-                elif not is_source_field and type(x) is list:
-                    for a in x:
-                        flatten(a, name)
-                elif is_source_field == True:  # only print source fields from mappings (TODO - not so efficient for large number of fields and filtered mapping)
-                    field_name = name[:-1]
-
-                    # Coerce types - for now just datetime
-                    if pd_dtype == 'datetime64[ns]':
-                        x = pd.to_datetime(x)
-
-                    # Elasticsearch can have multiple values for a field. These are represented as lists, so
-                    # create lists for this pivot (see notes above)
-                    if field_name in out:
-                        if type(out[field_name]) is not list:
-                            l = [out[field_name]]
-                            out[field_name] = l
-                        out[field_name].append(x)
-                    else:
-                        out[field_name] = x
-
-            flatten(y)
-
-            return out
-
         rows = []
         index = []
         if isinstance(results, dict):
@@ -212,7 +203,7 @@ class ElandQueryCompiler(BaseQueryCompiler):
             index.append(index_field)
 
             # flatten row to map correctly to 2D DataFrame
-            rows.append(flatten_dict(row))
+            rows.append(self._flatten_dict(row))
 
         # Create pandas DataFrame
         df = pd.DataFrame(data=rows, index=index)
@@ -231,6 +222,100 @@ class ElandQueryCompiler(BaseQueryCompiler):
         df = df[self.columns]
 
         return df
+
+    def _to_csv(self, results, **kwargs):
+        # Very similar to _es_results_to_pandas except we create partial pandas.DataFrame
+        # and write these to csv
+
+        # Use chunksize in kwargs do determine size of partial data frame
+        if 'chunksize' in kwargs:
+            chunksize = kwargs['chunksize']
+        else:
+            # If no default chunk, set to 1000
+            chunksize = 1000
+
+        if results is None:
+            return self._empty_pd_ef()
+
+        rows = []
+        index = []
+        if isinstance(results, dict):
+            iterator = results['hits']['hits']
+        else:
+            iterator = results
+
+        i = 0
+        for hit in iterator:
+            row = hit['_source']
+
+            # get index value - can be _id or can be field value in source
+            if self._index.is_source_field:
+                index_field = row[self._index.index_field]
+            else:
+                index_field = hit[self._index.index_field]
+            index.append(index_field)
+
+            # flatten row to map correctly to 2D DataFrame
+            rows.append(self._flatten_dict(row))
+
+            i = i + 1
+            if i % chunksize == 0:
+                # Create pandas DataFrame
+                df = pd.DataFrame(data=rows, index=index)
+
+                # _source may not contain all columns in the mapping
+                # therefore, fill in missing columns
+                # (note this returns self.columns NOT IN df.columns)
+                missing_columns = list(set(self.columns) - set(df.columns))
+
+                for missing in missing_columns:
+                    is_source_field, pd_dtype = self._mappings.source_field_pd_dtype(missing)
+                    df[missing] = None
+                    df[missing].astype(pd_dtype)
+
+                # Sort columns in mapping order
+                df = df[self.columns]
+
+        return df
+
+    def _flatten_dict(self, y):
+        out = {}
+
+        def flatten(x, name=''):
+            # We flatten into source fields e.g. if type=geo_point
+            # location: {lat=52.38, lon=4.90}
+            if name == '':
+                is_source_field = False
+                pd_dtype = 'object'
+            else:
+                is_source_field, pd_dtype = self._mappings.source_field_pd_dtype(name[:-1])
+
+            if not is_source_field and type(x) is dict:
+                for a in x:
+                    flatten(x[a], name + a + '.')
+            elif not is_source_field and type(x) is list:
+                for a in x:
+                    flatten(a, name)
+            elif is_source_field == True:  # only print source fields from mappings (TODO - not so efficient for large number of fields and filtered mapping)
+                field_name = name[:-1]
+
+                # Coerce types - for now just datetime
+                if pd_dtype == 'datetime64[ns]':
+                    x = pd.to_datetime(x)
+
+                # Elasticsearch can have multiple values for a field. These are represented as lists, so
+                # create lists for this pivot (see notes above)
+                if field_name in out:
+                    if type(out[field_name]) is not list:
+                        l = [out[field_name]]
+                        out[field_name] = l
+                    out[field_name].append(x)
+                else:
+                    out[field_name] = x
+
+        flatten(y)
+
+        return out
 
     def _index_count(self):
         """

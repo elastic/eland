@@ -5,7 +5,7 @@ from eland.tests.common import TestData
 from matplotlib.testing.decorators import check_figures_equal
 
 @check_figures_equal(extensions=['png'])
-def test_plot(fig_test, fig_ref):
+def test_plot_hist(fig_test, fig_ref):
     test_data = TestData()
 
     pd_flights = test_data.pd_flights()[['DistanceKilometers', 'DistanceMiles', 'FlightDelayMin', 'FlightTimeHour']]
@@ -16,4 +16,3 @@ def test_plot(fig_test, fig_ref):
 
     ed_ax = fig_test.subplots()
     ed_flights.hist(ax=ed_ax)
-

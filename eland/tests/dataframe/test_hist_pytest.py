@@ -30,3 +30,15 @@ class TestDataFrameHist(TestData):
         # Numbers are slightly different
         assert_almost_equal(pd_bins, ed_bins)
         assert_almost_equal(pd_weights, ed_weights)
+
+    def test_hist2(self):
+        pd_df = self.pd_flights()[['DistanceKilometers', 'DistanceMiles', 'FlightDelayMin', 'FlightTimeHour']]
+        ed_df = self.ed_flights()[['DistanceKilometers', 'DistanceMiles', 'FlightDelayMin', 'FlightTimeHour']]
+
+        num_bins = 10
+
+        ed_bins, ed_weights = ed_df._hist(num_bins=num_bins)
+
+        print(ed_bins)
+
+

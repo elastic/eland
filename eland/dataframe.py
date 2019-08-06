@@ -469,4 +469,53 @@ class DataFrame(NDFrame):
     def keys(self):
         return self.columns
 
+    def to_csv(
+        self,
+        path_or_buf=None,
+        sep=",",
+        na_rep="",
+        float_format=None,
+        columns=None,
+        header=True,
+        index=True,
+        index_label=None,
+        mode="w",
+        encoding=None,
+        compression="infer",
+        quoting=None,
+        quotechar='"',
+        line_terminator=None,
+        chunksize=None,
+        tupleize_cols=None,
+        date_format=None,
+        doublequote=True,
+        escapechar=None,
+        decimal=".",
+        *args,
+        **kwargs
+    ):
+        kwargs = {
+            "path_or_buf": path_or_buf,
+            "sep": sep,
+            "na_rep": na_rep,
+            "float_format": float_format,
+            "columns": columns,
+            "header": header,
+            "index": index,
+            "index_label": index_label,
+            "mode": mode,
+            "encoding": encoding,
+            "compression": compression,
+            "quoting": quoting,
+            "quotechar": quotechar,
+            "line_terminator": line_terminator,
+            "chunksize": chunksize,
+            "tupleize_cols": tupleize_cols,
+            "date_format": date_format,
+            "doublequote": doublequote,
+            "escapechar": escapechar,
+            "decimal": decimal,
+        }
+
+
     hist = gfx.ed_hist_frame

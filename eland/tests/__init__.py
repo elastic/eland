@@ -99,6 +99,11 @@ FLIGHTS_MAPPING = { "mappings" : {
 FLIGHTS_FILE_NAME = ROOT_DIR + '/flights.json.gz'
 FLIGHTS_DF_FILE_NAME = ROOT_DIR + '/flights_df.json.gz'
 
+FLIGHTS_SMALL_INDEX_NAME = 'flights_small'
+FLIGHTS_SMALL_MAPPING = FLIGHTS_MAPPING
+FLIGHTS_SMALL_FILE_NAME = ROOT_DIR + '/flights_small.json.gz'
+FLIGHTS_SMALL_DF_FILE_NAME = ROOT_DIR + '/flights_small_df.json.gz'
+
 ECOMMERCE_INDEX_NAME = 'ecommerce'
 ECOMMERCE_MAPPING = { "mappings" : {
       "properties" : {
