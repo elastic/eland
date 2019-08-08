@@ -31,14 +31,5 @@ class TestDataFrameDescribe(TestData):
         # don't match the mapping types. This is mainly because the products field is
         # nested and so can be treated as a multi-field in ES, but not in pandas
 
-    def test_to_describe2(self):
-        pd_flights = self.pd_flights().head()
-        ed_flights = self.ed_flights().head()
-
-        pd_describe = pd_flights.describe()
-        # This fails as we can not run 'describe' on a truncate ed dataframe
-        ed_describe = ed_flights.describe()
-
-        print(pd_describe)
-        print(ed_describe)
+        # We can not also run 'describe' on a truncate ed dataframe
 

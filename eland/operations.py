@@ -70,6 +70,9 @@ class Operations:
     def set_columns(self, columns):
         # Setting columns at different phases of the task list may result in different
         # operations. So instead of setting columns once, set when it happens in call chain
+        if type(columns) is not list:
+            columns = list(columns)
+
         # TODO - column renaming
         # TODO - validate we are setting columns to a subset of last columns?
         task = ('columns', columns)
@@ -483,6 +486,7 @@ class Operations:
                 df = df.iloc[index_indexer, column_indexer]
             elif action[0] == 'squeeze':
                 df = df.squeeze(axis=action[1])
+            # columns could be in here (and we ignore it)
 
         return df
 
