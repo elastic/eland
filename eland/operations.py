@@ -324,6 +324,48 @@ class Operations:
         return df
 
     def to_pandas(self, query_compiler):
+        class PandasDataFrameCollector:
+            def collect(self, df):
+                self.df = df
+            def batch_size(self):
+                return None
+
+        collector = PandasDataFrameCollector()
+
+        self._es_results(query_compiler, collector)
+
+        return collector.df
+
+    def to_csv(self, query_compiler, **kwargs):
+        class PandasToCSVCollector:
+            def __init__(self, **kwargs):
+                self.kwargs = kwargs
+                self.ret = None
+                self.first_time = True
+            def collect(self, df):
+                # If this is the first time we collect results, then write header, otherwise don't write header
+                # and append results
+                if self.first_time:
+                    self.first_time = False
+                    df.to_csv(**self.kwargs)
+                else:
+                    # Don't write header, and change mode to append
+                    self.kwargs['header'] = False
+                    self.kwargs['mode'] = 'a'
+                    df.to_csv(**self.kwargs)
+
+            def batch_size(self):
+                # By default read 10000 docs to csv
+                batch_size = 10000
+                return batch_size
+
+        collector = PandasToCSVCollector(**kwargs)
+
+        self._es_results(query_compiler, collector)
+
+        return collector.ret
+
+    def _es_results(self, query_compiler, collector):
         query_params, post_processing = self._resolve_tasks()
 
         size, sort_params = Operations._query_params_to_size_and_sort(query_params)
@@ -337,6 +379,7 @@ class Operations:
 
         # If size=None use scan not search - then post sort results when in df
         # If size>10000 use scan
+        is_scan = False
         if size is not None and size <= 10000:
             if size > 0:
                 es_results = query_compiler._client.search(
@@ -346,6 +389,7 @@ class Operations:
                     body=body.to_search_body(),
                     _source=columns)
         else:
+            is_scan = True
             es_results = query_compiler._client.scan(
                 index=query_compiler._index_pattern,
                 query=body.to_search_body(),
@@ -354,9 +398,17 @@ class Operations:
             if sort_params is not None:
                 post_processing.append(self._sort_params_to_postprocessing(sort_params))
 
-        df = query_compiler._es_results_to_pandas(es_results)
-
-        return self._apply_df_post_processing(df, post_processing)
+        if is_scan:
+            while True:
+                partial_result, df = query_compiler._es_results_to_pandas(es_results, collector.batch_size())
+                df = self._apply_df_post_processing(df, post_processing)
+                collector.collect(df)
+                if partial_result == False:
+                    break
+        else:
+            partial_result, df = query_compiler._es_results_to_pandas(es_results)
+            df = self._apply_df_post_processing(df, post_processing)
+            collector.collect(df)
 
     def iloc(self, index, columns):
         # index and columns are indexers
@@ -639,7 +691,8 @@ class Operations:
 
     def _resolve_post_processing_task(self, item, query_params, post_processing):
         # Just do this in post-processing
-        post_processing.append(item)
+        if item[0] != 'columns':
+            post_processing.append(item)
 
         return query_params, post_processing
 
