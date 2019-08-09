@@ -6,6 +6,9 @@ import numpy as np
 import pandas as pd
 from pandas.compat import StringIO
 from pandas.core.common import apply_if_callable, is_bool_indexer
+from pandas.core.dtypes.common import (
+    is_list_like
+)
 from pandas.io.common import _expand_user, _stringify_path
 from pandas.io.formats import console
 from pandas.io.formats import format as fmt
@@ -431,6 +434,36 @@ class DataFrame(NDFrame):
     def _reduce_dimension(self, query_compiler):
         return Series(query_compiler=query_compiler)
 
+    def to_csv(self, path_or_buf=None, sep=",", na_rep='', float_format=None,
+               columns=None, header=True, index=True, index_label=None,
+               mode='w', encoding=None, compression='infer', quoting=None,
+               quotechar='"', line_terminator=None, chunksize=None,
+               tupleize_cols=None, date_format=None, doublequote=True,
+               escapechar=None, decimal='.'):
+        kwargs = {
+            "path_or_buf": path_or_buf,
+            "sep": sep,
+            "na_rep": na_rep,
+            "float_format": float_format,
+            "columns": columns,
+            "header": header,
+            "index": index,
+            "index_label": index_label,
+            "mode": mode,
+            "encoding": encoding,
+            "compression": compression,
+            "quoting": quoting,
+            "quotechar": quotechar,
+            "line_terminator": line_terminator,
+            "chunksize": chunksize,
+            "tupleize_cols": tupleize_cols,
+            "date_format": date_format,
+            "doublequote": doublequote,
+            "escapechar": escapechar,
+            "decimal": decimal,
+        }
+        return self._query_compiler.to_csv(**kwargs)
+
     def _to_pandas(self):
         return self._query_compiler.to_pandas()
 
@@ -469,53 +502,45 @@ class DataFrame(NDFrame):
     def keys(self):
         return self.columns
 
-    def to_csv(
-        self,
-        path_or_buf=None,
-        sep=",",
-        na_rep="",
-        float_format=None,
-        columns=None,
-        header=True,
-        index=True,
-        index_label=None,
-        mode="w",
-        encoding=None,
-        compression="infer",
-        quoting=None,
-        quotechar='"',
-        line_terminator=None,
-        chunksize=None,
-        tupleize_cols=None,
-        date_format=None,
-        doublequote=True,
-        escapechar=None,
-        decimal=".",
-        *args,
-        **kwargs
-    ):
-        kwargs = {
-            "path_or_buf": path_or_buf,
-            "sep": sep,
-            "na_rep": na_rep,
-            "float_format": float_format,
-            "columns": columns,
-            "header": header,
-            "index": index,
-            "index_label": index_label,
-            "mode": mode,
-            "encoding": encoding,
-            "compression": compression,
-            "quoting": quoting,
-            "quotechar": quotechar,
-            "line_terminator": line_terminator,
-            "chunksize": chunksize,
-            "tupleize_cols": tupleize_cols,
-            "date_format": date_format,
-            "doublequote": doublequote,
-            "escapechar": escapechar,
-            "decimal": decimal,
-        }
 
+    def aggregate(self, func, axis=0, *args, **kwargs):
+        """
+        Aggregate using one or more operations over the specified axis.
+
+        Parameters
+        ----------
+        func : function, str, list or dict
+            Function to use for aggregating the data. If a function, must either
+            work when passed a %(klass)s or when passed to %(klass)s.apply.
+
+            Accepted combinations are:
+
+            - function
+            - string function name
+            - list of functions and/or function names, e.g. ``[np.sum, 'mean']``
+            - dict of axis labels -> functions, function names or list of such.
+        %(axis)s
+        *args
+            Positional arguments to pass to `func`.
+        **kwargs
+            Keyword arguments to pass to `func`.
+
+        Returns
+        -------
+        DataFrame, Series or scalar
+            if DataFrame.agg is called with a single function, returns a Series
+            if DataFrame.agg is called with several functions, returns a DataFrame
+            if Series.agg is called with single function, returns a scalar
+            if Series.agg is called with several functions, returns a Series
+        """
+        axis = self._get_axis_number(axis)
+
+        if axis == 1:
+            raise NotImplementedError("Aggregating via index not currently implemented - needs index transform")
+
+        # currently we only support a subset of functions that aggregate columns.
+        # ['count', 'mad', 'max', 'mean', 'median', 'min', 'mode', 'quantile', 'rank', 'sem', 'skew', 'sum', 'std', 'var', 'nunique']
+
+    agg = aggregate
 
     hist = gfx.ed_hist_frame

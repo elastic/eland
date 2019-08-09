@@ -6,6 +6,10 @@ from eland import Index
 from eland import Mappings
 from eland import Operations
 
+from pandas.core.dtypes.common import (
+    is_list_like
+)
+
 from pandas.core.indexes.numeric import Int64Index
 from pandas.core.indexes.range import RangeIndex
 
@@ -37,9 +41,6 @@ class ElandQueryCompiler(BaseQueryCompiler):
     in the first/last n fields.
 
     A way to mitigate this would be to post process this drop - TODO
-
-
-
     """
 
     def __init__(self,
@@ -95,7 +96,7 @@ class ElandQueryCompiler(BaseQueryCompiler):
 
     # END Index, columns, and dtypes objects
 
-    def _es_results_to_pandas(self, results):
+    def _es_results_to_pandas(self, results, batch_size=None):
         """
         Parameters
         ----------
@@ -182,17 +183,25 @@ class ElandQueryCompiler(BaseQueryCompiler):
         TODO - an option here is to use Elasticsearch's multi-field matching instead of pandas treatment of lists (which isn't great)
         NOTE - using this lists is generally not a good way to use this API
         """
+        partial_result = False
+
         if results is None:
-            return self._empty_pd_ef()
+            return partial_result, self._empty_pd_ef()
 
         rows = []
         index = []
         if isinstance(results, dict):
             iterator = results['hits']['hits']
+
+            if batch_size is not None:
+                raise NotImplementedError("Can not specify batch_size with dict results")
         else:
             iterator = results
 
+        i = 0
         for hit in iterator:
+            i = i + 1
+
             row = hit['_source']
 
             # get index value - can be _id or can be field value in source
@@ -204,6 +213,11 @@ class ElandQueryCompiler(BaseQueryCompiler):
 
             # flatten row to map correctly to 2D DataFrame
             rows.append(self._flatten_dict(row))
+
+            if batch_size is not None:
+                if i >= batch_size:
+                    partial_result = True
+                    break
 
         # Create pandas DataFrame
         df = pd.DataFrame(data=rows, index=index)
@@ -221,62 +235,7 @@ class ElandQueryCompiler(BaseQueryCompiler):
         # Sort columns in mapping order
         df = df[self.columns]
 
-        return df
-
-    def _to_csv(self, results, **kwargs):
-        # Very similar to _es_results_to_pandas except we create partial pandas.DataFrame
-        # and write these to csv
-
-        # Use chunksize in kwargs do determine size of partial data frame
-        if 'chunksize' in kwargs:
-            chunksize = kwargs['chunksize']
-        else:
-            # If no default chunk, set to 1000
-            chunksize = 1000
-
-        if results is None:
-            return self._empty_pd_ef()
-
-        rows = []
-        index = []
-        if isinstance(results, dict):
-            iterator = results['hits']['hits']
-        else:
-            iterator = results
-
-        i = 0
-        for hit in iterator:
-            row = hit['_source']
-
-            # get index value - can be _id or can be field value in source
-            if self._index.is_source_field:
-                index_field = row[self._index.index_field]
-            else:
-                index_field = hit[self._index.index_field]
-            index.append(index_field)
-
-            # flatten row to map correctly to 2D DataFrame
-            rows.append(self._flatten_dict(row))
-
-            i = i + 1
-            if i % chunksize == 0:
-                # Create pandas DataFrame
-                df = pd.DataFrame(data=rows, index=index)
-
-                # _source may not contain all columns in the mapping
-                # therefore, fill in missing columns
-                # (note this returns self.columns NOT IN df.columns)
-                missing_columns = list(set(self.columns) - set(df.columns))
-
-                for missing in missing_columns:
-                    is_source_field, pd_dtype = self._mappings.source_field_pd_dtype(missing)
-                    df[missing] = None
-                    df[missing].astype(pd_dtype)
-
-                # Sort columns in mapping order
-                df = df[self.columns]
-
-        return df
+        return partial_result, df
 
     def _flatten_dict(self, y):
         out = {}
@@ -301,6 +260,13 @@ class ElandQueryCompiler(BaseQueryCompiler):
 
                 # Coerce types - for now just datetime
                 if pd_dtype == 'datetime64[ns]':
+                    # TODO  - this doesn't work for certain ES date formats
+                    #   e.g. "@timestamp" : {
+                    #           "type" : "date",
+                    #           "format" : "epoch_millis"
+                    #         }
+                    #   1484053499256 - we need to check ES type and format and add conversions like:
+                    #   pd.to_datetime(x, unit='ms')
                     x = pd.to_datetime(x)
 
                 # Elasticsearch can have multiple values for a field. These are represented as lists, so
@@ -383,6 +349,15 @@ class ElandQueryCompiler(BaseQueryCompiler):
         """
         return self._operations.to_pandas(self)
 
+    # To CSV
+    def to_csv(self, **kwargs):
+        """Serialises Eland Dataframe to CSV
+
+        Returns:
+            If path_or_buf is None, returns the resulting csv format as a string. Otherwise returns None.
+        """
+        return self._operations.to_csv(self, **kwargs)
+
     # __getitem__ methods
     def getitem_column_array(self, key, numeric=False):
         """Get column data for target labels.
@@ -457,3 +432,33 @@ class ElandQueryCompiler(BaseQueryCompiler):
 
     def _hist(self, num_bins):
         return self._operations.hist(self, num_bins)
+
+    def apply(self, func, axis, *args, **kwargs):
+        """Apply func across given axis.
+
+        Args:
+            func: The function to apply.
+            axis: Target axis to apply the function along.
+
+        Returns:
+            A new QueryCompiler.
+        """
+        """Apply func across given axis.
+
+                Args:
+                    func: The function to apply.
+                    axis: Target axis to apply the function along.
+
+                Returns:
+                    A new PandasQueryCompiler.
+                """
+        if callable(func):
+            return self._callable_func(func, axis, *args, **kwargs)
+        elif isinstance(func, dict):
+            return self._dict_func(func, axis, *args, **kwargs)
+        elif is_list_like(func):
+            return self._list_like_func(func, axis, *args, **kwargs)
+        else:
+            pass
+
+
