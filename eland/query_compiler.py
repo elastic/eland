@@ -407,6 +407,9 @@ class ElandQueryCompiler(BaseQueryCompiler):
 
         return result
 
+    def aggs(self, func):
+        return self._operations.aggs(self, func)
+
     def count(self):
         return self._operations.count(self)
     def mean(self):
@@ -460,5 +463,12 @@ class ElandQueryCompiler(BaseQueryCompiler):
             return self._list_like_func(func, axis, *args, **kwargs)
         else:
             pass
+
+    def _update_query(self, boolean_filter):
+        result = self.copy()
+
+        result._operations.update_query(boolean_filter)
+
+        return result
 
 

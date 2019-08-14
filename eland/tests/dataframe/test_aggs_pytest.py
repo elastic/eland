@@ -2,6 +2,7 @@
 
 import numpy as np
 import pandas as pd
+from pandas.util.testing import (assert_almost_equal)
 
 from eland.tests.common import TestData
 
@@ -12,52 +13,18 @@ class TestDataFrameAggs(TestData):
         pd_flights = self.pd_flights()
         ed_flights = self.ed_flights()
 
-        pd_numerics = pd_flights.select_dtypes(include=[np.number])
-        print(pd_numerics.columns)
-        print(pd_numerics.agg('abs')) # all rows
-        print(pd_numerics.agg('all')) # columns True/False
-        print(pd_numerics.agg('any')) # columns True/False
-        print(pd_numerics.agg('corr')) # matrix col/col
-        print(pd_numerics.agg('count')) # columns count
-        print(pd_numerics.agg('cov')) # matrix col/col
-        print(pd_numerics.agg('cummax')) # all rows
-        print(pd_numerics.agg('cummin')) # all rows
-        print(pd_numerics.agg('cumprod')) # all rows
-        print(pd_numerics.agg('cumsum')) # all rows
-        print(pd_numerics.agg('describe')) # describe
-        print(pd_numerics.agg('diff'))  # all rows
-        print(pd_numerics.agg('kurt')) # ?>
-        print(pd_numerics.agg('mad')) # col
-        print('MAX')
-        print(pd_numerics.agg('max')) # col
-        print(pd_numerics.agg('mean')) # col
-        print(pd_numerics.agg('median')) # col
-        print(pd_numerics.agg('min')) # col
-        print(pd_numerics.agg('mode')) # col
-        print(pd_numerics.agg('pct_change')) # all rows
-        print(pd_numerics.agg('prod')) # all rows
-        print(pd_numerics.agg('quantile')) # col
-        print(pd_numerics.agg('rank')) # col
-        print(pd_numerics.agg('round')) # all rows
-        print('SEM')
-        print(pd_numerics.agg('sem')) # col
-        print(pd_numerics.agg('skew')) # col
-        print(pd_numerics.agg('sum')) # col
-        print(pd_numerics.agg('std')) # col
-        print(pd_numerics.agg('var')) # col
-        print(pd_numerics.agg('nunique')) # col
-
-        print(pd_numerics.aggs(np.sqrt)) # all rows
-
-
-        return
-
         pd_sum_min = pd_flights.select_dtypes(include=[np.number]).agg(['sum', 'min'])
-        print(type(pd_sum_min))
-        with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-            print(pd_sum_min)
-
         ed_sum_min = ed_flights.select_dtypes(include=[np.number]).agg(['sum', 'min'])
-        print(type(ed_sum_min))
-        with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-            print(ed_sum_min)
+
+        # Eland returns all float values for all metric aggs, pandas can return int
+        # TODO - investigate this more
+        pd_sum_min = pd_sum_min.astype('float64')
+        assert_almost_equal(pd_sum_min, ed_sum_min)
+
+        pd_sum_min_std = pd_flights.select_dtypes(include=[np.number]).agg(['sum', 'min', 'std'])
+        ed_sum_min_std = ed_flights.select_dtypes(include=[np.number]).agg(['sum', 'min', 'std'])
+
+        print(pd_sum_min_std.dtypes)
+        print(ed_sum_min_std.dtypes)
+
+        assert_almost_equal(pd_sum_min_std, ed_sum_min_std, check_less_precise=True)

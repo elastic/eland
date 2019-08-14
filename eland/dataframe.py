@@ -4,6 +4,8 @@ from distutils.version import LooseVersion
 
 import numpy as np
 import pandas as pd
+import pandas.compat as compat
+import six
 from pandas.compat import StringIO
 from pandas.core.common import apply_if_callable, is_bool_indexer
 from pandas.core.dtypes.common import (
@@ -17,6 +19,7 @@ from pandas.io.formats.printing import pprint_thing
 import eland.plotting as gfx
 from eland import NDFrame
 from eland import Series
+from eland.operators import BooleanFilter, ScriptFilter
 
 
 class DataFrame(NDFrame):
@@ -373,6 +376,10 @@ class DataFrame(NDFrame):
             return self._getitem_array(key)
         elif isinstance(key, DataFrame):
             return self.where(key)
+        elif isinstance(key, BooleanFilter):
+            return DataFrame(
+                query_compiler=self._query_compiler._update_query(key)
+            )
         else:
             return self._getitem_column(key)
 
@@ -502,6 +509,11 @@ class DataFrame(NDFrame):
     def keys(self):
         return self.columns
 
+    def groupby(self, by=None, axis=0, *args, **kwargs):
+        axis = self._get_axis_number(axis)
+
+        if axis == 1:
+            raise NotImplementedError("Aggregating via index not currently implemented - needs index transform")
 
     def aggregate(self, func, axis=0, *args, **kwargs):
         """
@@ -540,7 +552,31 @@ class DataFrame(NDFrame):
 
         # currently we only support a subset of functions that aggregate columns.
         # ['count', 'mad', 'max', 'mean', 'median', 'min', 'mode', 'quantile', 'rank', 'sem', 'skew', 'sum', 'std', 'var', 'nunique']
+        if isinstance(func, compat.string_types):
+            # wrap in list
+            func = [func]
+            return self._query_compiler.aggs(func)
+        elif is_list_like(func):
+            # we have a list!
+            return self._query_compiler.aggs(func)
 
     agg = aggregate
 
     hist = gfx.ed_hist_frame
+
+    def query(self, expr, inplace=False, **kwargs):
+        """Queries the Dataframe with a boolean expression
+
+        Returns:
+            A new DataFrame if inplace=False
+        """
+        if isinstance(expr, BooleanFilter):
+            return DataFrame(
+                query_compiler=self._query_compiler._update_query(key)
+            )
+        elif isinstance(expr, six.string_types):
+            return DataFrame(
+                query_compiler=self._query_compiler._update_query(ScriptFilter(expr))
+            )
+        else:
+            raise NotImplementedError(expr, type(expr))
