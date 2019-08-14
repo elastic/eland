@@ -1,6 +1,8 @@
 import warnings
 from copy import deepcopy
 
+from eland.operators import BooleanFilter, NotNull, IsNull, IsIn
+
 
 class Query:
     """
@@ -12,7 +14,7 @@ class Query:
 
     def __init__(self, query=None):
         if query is None:
-            self._query = self._query_template()
+            self._query = BooleanFilter()
             self._aggs = {}
         else:
             # Deep copy the incoming query so we can change it
@@ -25,9 +27,15 @@ class Query:
         https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-exists-query.html
         """
         if must:
-            self._query['bool']['must'].append({'exists': {'field': field}})
+            if self._query.empty():
+                self._query = NotNull(field)
+            else:
+                self._query = self._query & NotNull(field)
         else:
-            self._query['bool']['must_not'].append({'exists': {'field': field}})
+            if self._query.empty():
+                self._query = IsNull(field)
+            else:
+                self._query = self._query & IsNull(field)
 
     def ids(self, items, must=True):
         """
@@ -35,9 +43,15 @@ class Query:
         https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-ids-query.html
         """
         if must:
-            self._query['bool']['must'].append({'ids': {'values': items}})
+            if self._query.empty():
+                self._query = IsIn('ids', items)
+            else:
+                self._query = self._query & IsIn('ids', items)
         else:
-            self._query['bool']['must_not'].append({'ids': {'values': items}})
+            if self._query.empty():
+                self._query = ~(IsIn('ids', items))
+            else:
+                self._query = self._query & ~(IsIn('ids', items))
 
     def terms(self, field, items, must=True):
         """
@@ -45,9 +59,15 @@ class Query:
         https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-terms-query.html
         """
         if must:
-            self._query['bool']['must'].append({'terms': {field: items}})
+            if self._query.empty():
+                self._query = IsIn(field, items)
+            else:
+                self._query = self._query & IsIn(field, items)
         else:
-            self._query['bool']['must_not'].append({'terms': {field: items}})
+            if self._query.empty():
+                self._query = ~(IsIn(field, items))
+            else:
+                self._query = self._query & ~(IsIn(field, items))
 
     def metric_aggs(self, name, func, field):
         """
@@ -83,7 +103,7 @@ class Query:
         min = min_aggs[field]
         max = max_aggs[field]
 
-        interval = (max - min)/num_bins
+        interval = (max - min) / num_bins
 
         agg = {
             "histogram": {
@@ -94,25 +114,27 @@ class Query:
         self._aggs[name] = agg
 
     def to_search_body(self):
-        body = {"query": self._query, "aggs": self._aggs}
+        if self._query.empty():
+            body = {"aggs": self._aggs}
+        else:
+            body = {"query": self._query.build(), "aggs": self._aggs}
         return body
 
     def to_count_body(self):
         if len(self._aggs) > 0:
             warnings.warn('Requesting count for agg query {}', self)
-        body = {"query": self._query}
+        if self._query.empty():
+            body = None
+        else:
+            body = {"query": self._query.build()}
 
         return body
 
+    def update_boolean_filter(self, boolean_filter):
+        if self._query.empty():
+            self._query = boolean_filter
+        else:
+            self._query = self._query & boolean_filter
+
     def __repr__(self):
         return repr(self.to_search_body())
-
-    @staticmethod
-    def _query_template():
-        template = {
-            "bool": {
-                "must": [],
-                "must_not": []
-            }
-        }
-        return deepcopy(template)

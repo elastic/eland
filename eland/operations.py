@@ -1,5 +1,6 @@
 import copy
 from enum import Enum
+from io import StringIO
 
 import pandas as pd
 import numpy as np
@@ -277,6 +278,128 @@ class Operations:
         df_weights = pd.DataFrame(data=weights)
 
         return df_bins, df_weights
+
+    @staticmethod
+    def _map_pd_aggs_to_es_aggs(pd_aggs):
+        """
+        Args:
+            pd_aggs - list of pandas aggs (e.g. ['mad', 'min', 'std'] etc.)
+
+        Returns:
+            ed_aggs - list of corresponding es_aggs (e.g. ['median_absolute_deviation', 'min', 'std'] etc.)
+
+        Pandas supports a lot of options here, and these options generally work on text and numerics in pandas.
+        Elasticsearch has metric aggs and terms aggs so will have different behaviour.
+
+        Pandas aggs that return columns (as opposed to transformed rows):
+
+        all
+        any
+        count
+        mad
+        max
+        mean
+        median
+        min
+        mode
+        quantile
+        rank
+        sem
+        skew
+        sum
+        std
+        var
+        nunique
+        """
+        ed_aggs = []
+        for pd_agg in pd_aggs:
+            if pd_agg == 'count':
+                ed_aggs.append('count')
+            elif pd_agg == 'mad':
+                ed_aggs.append('median_absolute_deviation')
+            elif pd_agg == 'max':
+                ed_aggs.append('max')
+            elif pd_agg == 'mean':
+                ed_aggs.append('avg')
+            elif pd_agg == 'median':
+                ed_aggs.append(('percentiles', '50.0'))
+            elif pd_agg == 'min':
+                ed_aggs.append('min')
+            elif pd_agg == 'mode':
+                # We could do this via top term
+                raise NotImplementedError(pd_agg, " not currently implemented")
+            elif pd_agg == 'quantile':
+                # TODO
+                raise NotImplementedError(pd_agg, " not currently implemented")
+            elif pd_agg == 'rank':
+                # TODO
+                raise NotImplementedError(pd_agg, " not currently implemented")
+            elif pd_agg == 'sem':
+                # TODO
+                raise NotImplementedError(pd_agg, " not currently implemented")
+            elif pd_agg == 'sum':
+                ed_aggs.append('sum')
+            elif pd_agg == 'std':
+                ed_aggs.append(('extended_stats', 'std_deviation'))
+            elif pd_agg == 'var':
+                ed_aggs.append(('extended_stats', 'variance'))
+            else:
+                raise NotImplementedError(pd_agg, " not currently implemented")
+
+        # TODO - we can optimise extended_stats here as if we have 'count' and 'std' extended_stats would
+        #   return both in one call
+
+        return ed_aggs
+
+    def aggs(self, query_compiler, pd_aggs):
+        query_params, post_processing = self._resolve_tasks()
+
+        size = self._size(query_params, post_processing)
+        if size is not None:
+            raise NotImplementedError("Can not count field matches if size is set {}".format(size))
+
+        columns = self.get_columns()
+
+        body = Query(query_params['query'])
+
+        # convert pandas aggs to ES equivalent
+        es_aggs = self._map_pd_aggs_to_es_aggs(pd_aggs)
+
+        for field in columns:
+            for es_agg in es_aggs:
+                # If we have multiple 'extended_stats' etc. here we simply NOOP on 2nd call
+                if isinstance(es_agg, tuple):
+                    body.metric_aggs(es_agg[0] + '_' + field, es_agg[0], field)
+                else:
+                    body.metric_aggs(es_agg + '_' + field, es_agg, field)
+
+        response = query_compiler._client.search(
+            index=query_compiler._index_pattern,
+            size=0,
+            body=body.to_search_body())
+
+        """
+        Results are like (for 'sum', 'min')
+        
+             AvgTicketPrice  DistanceKilometers  DistanceMiles  FlightDelayMin
+        sum    8.204365e+06        9.261629e+07   5.754909e+07          618150
+        min    1.000205e+02        0.000000e+00   0.000000e+00               0
+        """
+        results = {}
+
+        for field in columns:
+            values = list()
+            for es_agg in es_aggs:
+                if isinstance(es_agg, tuple):
+                        values.append(response['aggregations'][es_agg[0] + '_' + field][es_agg[1]])
+                else:
+                    values.append(response['aggregations'][es_agg + '_' + field]['value'])
+
+            results[field] = values
+
+        df = pd.DataFrame(data=results, index=pd_aggs)
+
+        return df
 
     def describe(self, query_compiler):
         query_params, post_processing = self._resolve_tasks()
@@ -566,6 +689,8 @@ class Operations:
                 query_params, post_processing = self._resolve_query_ids(task, query_params, post_processing)
             elif task[0] == 'query_terms':
                 query_params, post_processing = self._resolve_query_terms(task, query_params, post_processing)
+            elif task[0] == 'boolean_filter':
+                query_params, post_processing = self._resolve_boolean_filter(task, query_params, post_processing)
             else:  # a lot of operations simply post-process the dataframe - put these straight through
                 query_params, post_processing = self._resolve_post_processing_task(task, query_params, post_processing)
 
@@ -689,6 +814,14 @@ class Operations:
 
         return query_params, post_processing
 
+    def _resolve_boolean_filter(self, item, query_params, post_processing):
+        # task = ('boolean_filter', object)
+        boolean_filter = item[1]
+
+        query_params['query'].update_boolean_filter(boolean_filter)
+
+        return query_params, post_processing
+
     def _resolve_post_processing_task(self, item, query_params, post_processing):
         # Just do this in post-processing
         if item[0] != 'columns':
@@ -722,3 +855,7 @@ class Operations:
         buf.write("\tsort_params: {0}\n".format(sort_params))
         buf.write("\tcolumns: {0}\n".format(columns))
         buf.write("\tpost_processing: {0}\n".format(post_processing))
+
+    def update_query(self, boolean_filter):
+        task = ('boolean_filter', boolean_filter)
+        self._tasks.append(task)

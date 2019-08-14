@@ -15,10 +15,12 @@ Based on NDFrame which underpins eland.1DataFrame
 
 """
 
-import pandas as pd
 import warnings
 
+import pandas as pd
+
 from eland import NDFrame
+from eland.operators import Equal, Greater, ScriptFilter
 
 
 class Series(NDFrame):
@@ -130,7 +132,7 @@ class Series(NDFrame):
             max_rows = 60
 
         # Create a slightly bigger dataframe than display
-        temp_df = self._build_repr_df(max_rows+1, None)
+        temp_df = self._build_repr_df(max_rows + 1, None)
         if isinstance(temp_df, pd.DataFrame):
             temp_df = temp_df[self.name]
         temp_str = repr(temp_df)
@@ -151,3 +153,23 @@ class Series(NDFrame):
 
     def _to_pandas(self):
         return self._query_compiler.to_pandas()[self.name]
+
+    def __gt__(self, other):
+        if isinstance(other, Series):
+            # Need to use scripted query to compare to values
+            painless = "doc['{}'].value > doc['{}'].value".format(self.name, other.name)
+            return ScriptFilter(painless)
+        elif isinstance(other, (int, float)):
+            return Greater(field=self.name, value=other)
+        else:
+            raise NotImplementedError(other, type(other))
+
+    def __eq__(self, other):
+        if isinstance(other, Series):
+            # Need to use scripted query to compare to values
+            painless = "doc['{}'].value == doc['{}'].value".format(self.name, other.name)
+            return ScriptFilter(painless)
+        elif isinstance(other, (int, float)):
+            return Equal(field=self.name, value=other)
+        else:
+            raise NotImplementedError(other, type(other))
