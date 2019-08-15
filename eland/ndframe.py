@@ -227,6 +227,9 @@ class NDFrame(BasePandasDataset):
             raise NotImplementedError("Only sum of numeric fields is implemented")
         return self._query_compiler.max()
 
+    def nunique(self):
+        return self._query_compiler.nunique()
+
     def _hist(self, num_bins):
         return self._query_compiler._hist(num_bins)
 

@@ -39,10 +39,8 @@ class TestDataFrameQuery(TestData):
         assert_pandas_eland_frame_equal(pd_q2, ed_q2)
         assert_pandas_eland_frame_equal(pd_q3, ed_q3)
 
-    def test_query2(self):
-        ed_flights = self.ed_flights()
-        pd_flights = self.pd_flights()
+        pd_q4 = pd_df[(pd_df.A > 2) & (pd_df.B > 3)]
+        ed_q4 = ed_df[(ed_df.A > 2) & (ed_df.B > 3)]
 
-        cancelled = pd_flights[pd_flights.Cancelled == True]
+        assert_pandas_eland_frame_equal(pd_q4, ed_q4)
 
-        print(cancelled.groupby(['DestWeather']).count())

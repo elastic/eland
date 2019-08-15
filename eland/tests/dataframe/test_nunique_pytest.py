@@ -13,13 +13,10 @@ import numpy as np
 class TestDataFrameNUnique(TestData):
 
     def test_nunique1(self):
-        ed_ecommerce = self.ed_ecommerce()
-        pd_ecommerce = self.pd_ecommerce()
+        ed_flights = self.ed_flights()
+        pd_flights = self.pd_flights()
 
-        print(pd_ecommerce.dtypes)
-        print(ed_ecommerce.dtypes)
-        #ed_nunique = ed_ecommerce.nunique()
-        pd_selection = pd_ecommerce.drop(columns=['category'])
-        pd_nunique = pd_selection.nunique(axis=1)
+        print(pd_flights.dtypes)
+        print(ed_flights.dtypes)
+        print(ed_flights.nunique())
 
-        print(pd_nunique, type(pd_nunique))

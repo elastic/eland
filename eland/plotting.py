@@ -63,7 +63,7 @@ def ed_hist_frame(ed_df, column=None, by=None, grid=True, xlabelsize=None,
         # pandas / plotting / _core.py: 2410
         # ax.hist(data[col].dropna().values, bins=bins, **kwds)
 
-        ax.hist(ed_df_bins[col][:-1], bins=ed_df_bins[col], weights=ed_df_weights[col])
+        ax.hist(ed_df_bins[col][:-1], bins=ed_df_bins[col], weights=ed_df_weights[col], **kwds)
         ax.set_title(col)
         ax.grid(grid)
 
