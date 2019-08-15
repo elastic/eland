@@ -471,4 +471,6 @@ class ElandQueryCompiler(BaseQueryCompiler):
 
         return result
 
+    #def isna(self):
+
 

@@ -33,6 +33,9 @@ class BooleanFilter(object):
             return True
         return False
 
+    def __repr__(self):
+        return str(self._filter)
+
     @property
     def subtree(self):
         if 'bool' in self._filter:

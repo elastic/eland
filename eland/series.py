@@ -20,7 +20,7 @@ import warnings
 import pandas as pd
 
 from eland import NDFrame
-from eland.operators import Equal, Greater, ScriptFilter
+from eland.operators import NotFilter, Equal, Greater, Less, GreaterEqual, LessEqual, ScriptFilter
 
 
 class Series(NDFrame):
@@ -164,6 +164,37 @@ class Series(NDFrame):
         else:
             raise NotImplementedError(other, type(other))
 
+    def __lt__(self, other):
+        if isinstance(other, Series):
+            # Need to use scripted query to compare to values
+            painless = "doc['{}'].value < doc['{}'].value".format(self.name, other.name)
+            return ScriptFilter(painless)
+        elif isinstance(other, (int, float)):
+            return Less(field=self.name, value=other)
+        else:
+            raise NotImplementedError(other, type(other))
+
+    def __ge__(self, other):
+        if isinstance(other, Series):
+            # Need to use scripted query to compare to values
+            painless = "doc['{}'].value >= doc['{}'].value".format(self.name, other.name)
+            return ScriptFilter(painless)
+        elif isinstance(other, (int, float)):
+            return GreaterEqual(field=self.name, value=other)
+        else:
+            raise NotImplementedError(other, type(other))
+
+    def __le__(self, other):
+        if isinstance(other, Series):
+            # Need to use scripted query to compare to values
+            painless = "doc['{}'].value <= doc['{}'].value".format(self.name, other.name)
+            return ScriptFilter(painless)
+        elif isinstance(other, (int, float)):
+            return LessEqual(field=self.name, value=other)
+        else:
+            raise NotImplementedError(other, type(other))
+
+
     def __eq__(self, other):
         if isinstance(other, Series):
             # Need to use scripted query to compare to values
@@ -171,5 +202,19 @@ class Series(NDFrame):
             return ScriptFilter(painless)
         elif isinstance(other, (int, float)):
             return Equal(field=self.name, value=other)
+        elif isinstance(other, str):
+            return Equal(field=self.name, value=other)
+        else:
+            raise NotImplementedError(other, type(other))
+
+    def __ne__(self, other):
+        if isinstance(other, Series):
+            # Need to use scripted query to compare to values
+            painless = "doc['{}'].value != doc['{}'].value".format(self.name, other.name)
+            return ScriptFilter(painless)
+        elif isinstance(other, (int, float)):
+            return NotFilter(Equal(field=self.name, value=other))
+        elif isinstance(other, str):
+            return NotFilter(Equal(field=self.name, value=other))
         else:
             raise NotImplementedError(other, type(other))

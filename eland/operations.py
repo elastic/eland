@@ -185,12 +185,12 @@ class Operations:
             raise NotImplementedError("Can not count field matches if size is set {}".format(size))
 
         columns = self.get_columns()
-
-        numeric_source_fields = query_compiler._mappings.numeric_source_fields(columns)
+        if columns is None:
+            columns = query_compiler._mappings.source_fields()
 
         body = Query(query_params['query'])
 
-        for field in numeric_source_fields:
+        for field in columns:
             body.metric_aggs(field, func, field)
 
         response = query_compiler._client.search(
@@ -200,10 +200,10 @@ class Operations:
 
         results = {}
 
-        for field in numeric_source_fields:
+        for field in columns:
             results[field] = response['aggregations'][field]['value']
 
-        s = pd.Series(data=results, index=numeric_source_fields)
+        s = pd.Series(data=results, index=columns)
 
         return s
 
