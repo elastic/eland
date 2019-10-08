@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import pandas.compat as compat
 import six
-from pandas.compat import StringIO
+from io import StringIO
 from pandas.core.common import apply_if_callable, is_bool_indexer
 from pandas.core.dtypes.common import (
     is_list_like
@@ -19,7 +19,7 @@ from pandas.io.formats.printing import pprint_thing
 import eland.plotting as gfx
 from eland import NDFrame
 from eland import Series
-from eland.operators import BooleanFilter, ScriptFilter
+from eland.filter import BooleanFilter, ScriptFilter
 
 
 class DataFrame(NDFrame):
