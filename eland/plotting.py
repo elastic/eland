@@ -3,8 +3,6 @@ import numpy as np
 import pandas.core.common as com
 from pandas.core.dtypes.generic import (
     ABCIndexClass)
-from pandas.plotting._core import (
-    _raise_if_no_mpl, _converter, grouped_hist, _subplots, _flatten, _set_ticks_props)
 
 
 def ed_hist_frame(ed_df, column=None, by=None, grid=True, xlabelsize=None,

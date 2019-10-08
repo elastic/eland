@@ -20,7 +20,7 @@ import warnings
 import pandas as pd
 
 from eland import NDFrame
-from eland.operators import NotFilter, Equal, Greater, Less, GreaterEqual, LessEqual, ScriptFilter
+from eland.filter import NotFilter, Equal, Greater, Less, GreaterEqual, LessEqual, ScriptFilter
 
 
 class Series(NDFrame):

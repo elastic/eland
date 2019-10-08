@@ -1,8 +1,7 @@
 import warnings
 from copy import deepcopy
 
-from eland.operators import BooleanFilter, NotNull, IsNull, IsIn
-
+from eland.filter import BooleanFilter, NotNull, IsNull, IsIn
 
 class Query:
     """
