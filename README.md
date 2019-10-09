@@ -7,7 +7,7 @@ For example, to explore data in a large elasticsearch index, simply create an el
 ```
 >>> import eland as ed
 
->>> df = ed.read_es(url='http://localhost:9200', index='reviews') 
+>>> df = ed.read_es('http://localhost:9200', 'reviews') 
 
 >>> df.head()
    reviewerId  vendorId  rating              date
