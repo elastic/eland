@@ -15,6 +15,8 @@ setup(name='eland',
       install_requires=[
           'elasticsearch',
           'elasticsearch_dsl',
-          'pandas'
+          'pandas',
+          'modin',
+          'py'
       ],
       zip_safe=False)
