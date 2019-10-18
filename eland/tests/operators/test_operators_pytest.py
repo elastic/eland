@@ -1,5 +1,5 @@
 # -*- coding: UTF-8 -*-
-from eland.operators import *
+from eland.filter import *
 
 
 class TestOperators():
@@ -20,11 +20,6 @@ class TestOperators():
         assert ScriptFilter('doc["num1"].value > params.param1', params={'param1': 5}).build() == {
             'script': {'script': {'inline': 'doc["num1"].value > params.param1', 'params': {'param1': 5}}}}
         assert IsIn('ids', [1, 2, 3]).build() == {'ids': {'values': [1, 2, 3]}}
-
-    def test_and_none(self):
-        exp = None
-        exp = exp & Less('b', 3)
-        print(exp.build())
 
     def test_and_filter1(self):
         exp = GreaterEqual('a', 2) & Less('b', 3)

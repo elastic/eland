@@ -463,7 +463,6 @@ class DataFrame(NDFrame):
             "quotechar": quotechar,
             "line_terminator": line_terminator,
             "chunksize": chunksize,
-            "tupleize_cols": tupleize_cols,
             "date_format": date_format,
             "doublequote": doublequote,
             "escapechar": escapechar,
@@ -552,7 +551,7 @@ class DataFrame(NDFrame):
 
         # currently we only support a subset of functions that aggregate columns.
         # ['count', 'mad', 'max', 'mean', 'median', 'min', 'mode', 'quantile', 'rank', 'sem', 'skew', 'sum', 'std', 'var', 'nunique']
-        if isinstance(func, compat.string_types):
+        if isinstance(func, str):
             # wrap in list
             func = [func]
             return self._query_compiler.aggs(func)

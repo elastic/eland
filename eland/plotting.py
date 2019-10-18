@@ -3,13 +3,14 @@ import numpy as np
 import pandas.core.common as com
 from pandas.core.dtypes.generic import (
     ABCIndexClass)
+from pandas.plotting._matplotlib.tools import _flatten, _set_ticks_props, _subplots
 
 
 def ed_hist_frame(ed_df, column=None, by=None, grid=True, xlabelsize=None,
                xrot=None, ylabelsize=None, yrot=None, ax=None, sharex=False,
                sharey=False, figsize=None, layout=None, bins=10, **kwds):
     """
-    Derived from pandas.plotting._core.hist_frame 0.24.2
+    Derived from pandas.plotting._core.hist_frame 0.24.2 - TODO update to 0.25.1
 
     Ideally, we'd call hist_frame directly with histogram data,
     but weights are applied to ALL series. For example, we can
@@ -29,8 +30,6 @@ def ed_hist_frame(ed_df, column=None, by=None, grid=True, xlabelsize=None,
     # Start with empty pandas data frame derived from
     ed_df_bins, ed_df_weights = ed_df._hist(num_bins=bins)
 
-    _raise_if_no_mpl()
-    _converter._WARN = False
     if by is not None:
         raise NotImplementedError("TODO")
         """

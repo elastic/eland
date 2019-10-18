@@ -13,8 +13,7 @@ setup(name='eland',
       license='ELASTIC LICENSE',
       packages=['eland'],
       install_requires=[
-          'elasticsearch',
-          'elasticsearch_dsl',
-          'pandas'
+          'elasticsearch>=7.0.5',
+          'pandas==0.25.1'
       ],
       zip_safe=False)

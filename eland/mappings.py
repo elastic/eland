@@ -290,7 +290,7 @@ class Mappings:
         return es_dtype
 
     @staticmethod
-    def _generate_es_mappings(dataframe):
+    def _generate_es_mappings(dataframe, geo_points=None):
         """Given a pandas dataframe, generate the associated Elasticsearch mapping
 
         Parameters
@@ -325,7 +325,10 @@ class Mappings:
         mappings = {}
         mappings['properties'] = {}
         for column_name, dtype in dataframe.dtypes.iteritems():
-            es_dtype = Mappings._pd_dtype_to_es_dtype(dtype)
+            if geo_points is not None and column_name in geo_points:
+                es_dtype = 'geo_point'
+            else:
+                es_dtype = Mappings._pd_dtype_to_es_dtype(dtype)
 
             mappings['properties'][column_name] = {}
             mappings['properties'][column_name]['type'] = es_dtype
