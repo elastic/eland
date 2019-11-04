@@ -7,7 +7,8 @@ def read_es(es_params, index_pattern):
     return DataFrame(client=es_params, index_pattern=index_pattern)
 
 
-def pandas_to_es(df, es_params, destination_index, if_exists='fail', chunk_size=10000, refresh=False):
+def pandas_to_es(df, es_params, destination_index, if_exists='fail', chunk_size=10000, refresh=False, dropna=False,
+                 geo_points=None):
     """
     Append a pandas DataFrame to an Elasticsearch index.
     Mainly used in testing.
@@ -30,10 +31,19 @@ def pandas_to_es(df, es_params, destination_index, if_exists='fail', chunk_size=
             If table exists, drop it, recreate it, and insert data.
         ``'append'``
                 If table exists, insert data. Create if does not exist.
+
+    dropna : bool
+        ``'True'``
+            Remove missing values (see pandas.Series.dropna)
+        ``'False;``
+            Include missing values - may cause bulk to fail
+
+    geo_points : list or None
+        List of columns to map to geo_point data type
     """
     client = Client(es_params)
 
-    mapping = Mappings._generate_es_mappings(df)
+    mapping = Mappings._generate_es_mappings(df, geo_points)
 
     # If table exists, check if_exists parameter
     if client.index_exists(index=destination_index):
@@ -58,7 +68,11 @@ def pandas_to_es(df, es_params, destination_index, if_exists='fail', chunk_size=
     for row in df.iterrows():
         # Use index as _id
         id = row[0]
-        values = row[1].to_dict()
+
+        if dropna:
+            values = row[1].dropna().to_dict()
+        else:
+            values = row[1].to_dict()
 
         # Use integer as id field for repeatable results
         action = {'_index': destination_index, '_source': values, '_id': str(id)}

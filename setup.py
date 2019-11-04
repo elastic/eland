@@ -1,8 +1,10 @@
 from setuptools import setup
 
+
 def readme():
     with open('README.rst') as f:
         return f.read()
+
 
 setup(name='eland',
       version='0.1',
@@ -13,8 +15,7 @@ setup(name='eland',
       license='ELASTIC LICENSE',
       packages=['eland'],
       install_requires=[
-          'elasticsearch',
-          'elasticsearch_dsl',
-          'pandas'
+          'elasticsearch>=7.0.5',
+          'pandas==0.25.1'
       ],
       zip_safe=False)

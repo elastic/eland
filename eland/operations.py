@@ -1,9 +1,7 @@
 import copy
 from enum import Enum
-from io import StringIO
 
 import pandas as pd
-import numpy as np
 
 from eland import Index
 from eland import Query
@@ -170,7 +168,7 @@ class Operations:
             results[field] = response['aggregations'][field]['value']
 
         # Return single value if this is a series
-        #if len(numeric_source_fields) == 1:
+        # if len(numeric_source_fields) == 1:
         #    return np.float64(results[numeric_source_fields[0]])
 
         s = pd.Series(data=results, index=numeric_source_fields)
@@ -391,7 +389,7 @@ class Operations:
             values = list()
             for es_agg in es_aggs:
                 if isinstance(es_agg, tuple):
-                        values.append(response['aggregations'][es_agg[0] + '_' + field][es_agg[1]])
+                    values.append(response['aggregations'][es_agg[0] + '_' + field][es_agg[1]])
                 else:
                     values.append(response['aggregations'][es_agg + '_' + field]['value'])
 
@@ -410,7 +408,7 @@ class Operations:
 
         columns = self.get_columns()
 
-        numeric_source_fields = query_compiler._mappings.numeric_source_fields(columns)
+        numeric_source_fields = query_compiler._mappings.numeric_source_fields(columns, include_bool=False)
 
         # for each field we compute:
         # count, mean, std, min, 25%, 50%, 75%, max
@@ -450,6 +448,7 @@ class Operations:
         class PandasDataFrameCollector:
             def collect(self, df):
                 self.df = df
+
             def batch_size(self):
                 return None
 
@@ -465,6 +464,7 @@ class Operations:
                 self.kwargs = kwargs
                 self.ret = None
                 self.first_time = True
+
             def collect(self, df):
                 # If this is the first time we collect results, then write header, otherwise don't write header
                 # and append results

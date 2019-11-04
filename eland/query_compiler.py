@@ -1,20 +1,15 @@
 import pandas as pd
-from modin.backends.base.query_compiler import BaseQueryCompiler
+from pandas.core.dtypes.common import (
+    is_list_like
+)
 
 from eland import Client
 from eland import Index
 from eland import Mappings
 from eland import Operations
 
-from pandas.core.dtypes.common import (
-    is_list_like
-)
 
-from pandas.core.indexes.numeric import Int64Index
-from pandas.core.indexes.range import RangeIndex
-
-
-class ElandQueryCompiler(BaseQueryCompiler):
+class ElandQueryCompiler:
     """
     Some notes on what can and can not be mapped:
 
@@ -318,10 +313,10 @@ class ElandQueryCompiler(BaseQueryCompiler):
         return df
 
     def copy(self):
-        return self.__constructor__(
+        return ElandQueryCompiler(
             client=self._client,
             index_pattern=self._index_pattern,
-            columns=None,   # columns are embedded in operations
+            columns=None,  # columns are embedded in operations
             index_field=self._index.index_field,
             operations=self._operations.copy()
         )
@@ -412,14 +407,19 @@ class ElandQueryCompiler(BaseQueryCompiler):
 
     def count(self):
         return self._operations.count(self)
+
     def mean(self):
         return self._operations.mean(self)
+
     def sum(self):
         return self._operations.sum(self)
+
     def min(self):
         return self._operations.min(self)
+
     def max(self):
         return self._operations.max(self)
+
     def nunique(self):
         return self._operations.nunique(self)
 
@@ -471,6 +471,4 @@ class ElandQueryCompiler(BaseQueryCompiler):
 
         return result
 
-    #def isna(self):
-
-
+    # def isna(self):

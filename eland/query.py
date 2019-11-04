@@ -3,6 +3,7 @@ from copy import deepcopy
 
 from eland.filter import BooleanFilter, NotNull, IsNull, IsIn
 
+
 class Query:
     """
     Simple class to manage building Elasticsearch queries.

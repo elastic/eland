@@ -26,15 +26,13 @@ only Elasticsearch aggregatable fields can be aggregated or grouped.
 import sys
 
 import pandas as pd
-from modin.pandas.base import BasePandasDataset
-from modin.pandas.indexing import _iLocIndexer
-from pandas.util._validators import validate_bool_kwarg
 from pandas.core.dtypes.common import is_list_like
+from pandas.util._validators import validate_bool_kwarg
 
 from eland import ElandQueryCompiler
 
 
-class NDFrame(BasePandasDataset):
+class NDFrame:
 
     def __init__(self,
                  client=None,
@@ -85,6 +83,9 @@ class NDFrame(BasePandasDataset):
 
         return head.append(tail)
 
+    def __getitem__(self, key):
+        return self._getitem(key)
+
     def __getattr__(self, key):
         """After regular attribute access, looks up the name in the columns
 
@@ -104,6 +105,14 @@ class NDFrame(BasePandasDataset):
     def __sizeof__(self):
         # Don't default to pandas, just return approximation TODO - make this more accurate
         return sys.getsizeof(self._query_compiler)
+
+    def __len__(self):
+        """Gets the length of the DataFrame.
+
+        Returns:
+            Returns an integer length of the DataFrame object.
+        """
+        return len(self.index)
 
     @property
     def iloc(self):
@@ -235,21 +244,3 @@ class NDFrame(BasePandasDataset):
 
     def describe(self):
         return self._query_compiler.describe()
-
-    def get(self, key, default=None):
-        """Get item from object for given key (DataFrame column, Panel
-                slice, etc.). Returns default value if not found.
-
-                Args:
-                    key (DataFrame column, Panel slice) : the key for which value
-                    to get
-
-                Returns:
-                    value (type of items contained in object) : A value that is
-                    stored at the key
-                """
-        if key in self.keys():
-            return self.__getitem__(key)
-        else:
-            return default
-

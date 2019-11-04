@@ -1,5 +1,4 @@
 # File called _pytest for PyCharm compatability
-import pandas as pd
 
 from eland.tests.common import TestData
 from eland.tests.common import (
@@ -8,10 +7,9 @@ from eland.tests.common import (
 )
 
 
-
 class TestDataFrameGetItem(TestData):
 
-    def test_getitem1(self):
+    def test_getitem_one_attribute(self):
         ed_flights = self.ed_flights().head(103)
         pd_flights = self.pd_flights().head(103)
 
@@ -20,7 +18,7 @@ class TestDataFrameGetItem(TestData):
 
         assert_pandas_eland_series_equal(pd_flights_OriginAirportID, ed_flights_OriginAirportID)
 
-    def test_getitem2(self):
+    def test_getitem_attribute_list(self):
         ed_flights = self.ed_flights().head(42)
         pd_flights = self.pd_flights().head(42)
 
@@ -29,7 +27,7 @@ class TestDataFrameGetItem(TestData):
 
         assert_pandas_eland_frame_equal(pd_flights_slice, ed_flights_slice)
 
-    def test_getitem3(self):
+    def test_getitem_one_argument(self):
         ed_flights = self.ed_flights().head(89)
         pd_flights = self.pd_flights().head(89)
 
@@ -38,7 +36,7 @@ class TestDataFrameGetItem(TestData):
 
         assert_pandas_eland_series_equal(pd_flights_OriginAirportID, ed_flights_OriginAirportID)
 
-    def test_getitem4(self):
+    def test_getitem_multiple_calls(self):
         ed_flights = self.ed_flights().head(89)
         pd_flights = self.pd_flights().head(89)
 
@@ -52,4 +50,3 @@ class TestDataFrameGetItem(TestData):
         ed_col1 = ed_col0['DestCountry']
 
         assert_pandas_eland_series_equal(pd_col1, ed_col1)
-

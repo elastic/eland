@@ -1,8 +1,7 @@
 # File called _pytest for PyCharm compatability
 
-from eland.tests.common import TestData
-
 from eland import Query
+from eland.tests.common import TestData
 
 
 class TestQueryCopy(TestData):
@@ -22,6 +21,3 @@ class TestQueryCopy(TestData):
 
         print(q.to_search_body())
         print(q1.to_search_body())
-
-
-

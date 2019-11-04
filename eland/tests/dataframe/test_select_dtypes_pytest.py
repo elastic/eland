@@ -1,5 +1,4 @@
 # File called _pytest for PyCharm compatability
-import pandas as pd
 import numpy as np
 
 from eland.tests.common import TestData
@@ -8,10 +7,9 @@ from eland.tests.common import (
 )
 
 
-
 class TestDataFrameSelectDTypes(TestData):
 
-    def test_select_dtypes1(self):
+    def test_select_dtypes_include_number(self):
         ed_flights = self.ed_flights()
         pd_flights = self.pd_flights()
 
@@ -20,7 +18,7 @@ class TestDataFrameSelectDTypes(TestData):
 
         assert_pandas_eland_frame_equal(pd_flights_numeric.head(103), ed_flights_numeric.head(103))
 
-    def test_select_dtypes2(self):
+    def test_select_dtypes_exclude_number(self):
         ed_flights = self.ed_flights()
         pd_flights = self.pd_flights()
 
@@ -28,4 +26,3 @@ class TestDataFrameSelectDTypes(TestData):
         pd_flights_non_numeric = pd_flights.select_dtypes(exclude=[np.number])
 
         assert_pandas_eland_frame_equal(pd_flights_non_numeric.head(103), ed_flights_non_numeric.head(103))
-

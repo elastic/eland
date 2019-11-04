@@ -10,7 +10,7 @@ from eland.tests.common import assert_pandas_eland_frame_equal
 
 class TestDataFrameQuery(TestData):
 
-    def test_query1(self):
+    def test_query(self):
         # Examples from:
         # https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.query.html
         pd_df = pd.DataFrame({'A': range(1, 6), 'B': range(10, 0, -2), 'C': range(10, 5, -1)},
@@ -43,4 +43,3 @@ class TestDataFrameQuery(TestData):
         ed_q4 = ed_df[(ed_df.A > 2) & (ed_df.B > 3)]
 
         assert_pandas_eland_frame_equal(pd_q4, ed_q4)
-

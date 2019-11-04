@@ -1,9 +1,8 @@
 # File called _pytest for PyCharm compatability
 
-from eland.tests.common import TestData
-
-
 from pandas.util.testing import assert_series_equal
+
+from eland.tests.common import TestData
 
 
 class TestDataFrameMetrics(TestData):
@@ -43,4 +42,3 @@ class TestDataFrameMetrics(TestData):
         ed_max = ed_flights.max(numeric_only=True)
 
         assert_series_equal(pd_max, ed_max)
-
