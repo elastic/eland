@@ -1,4 +1,3 @@
-import pandas as pd
 from elasticsearch import Elasticsearch
 from elasticsearch import helpers
 
@@ -9,6 +8,7 @@ DATA_LIST = [
     (FLIGHTS_SMALL_FILE_NAME, FLIGHTS_SMALL_INDEX_NAME, FLIGHTS_MAPPING),
     (ECOMMERCE_FILE_NAME, ECOMMERCE_INDEX_NAME, ECOMMERCE_MAPPING)
 ]
+
 
 def _setup_data(es):
     # Read json file and index records into Elasticsearch
@@ -32,7 +32,7 @@ def _setup_data(es):
         for index, row in df.iterrows():
             values = row.to_dict()
             # make timestamp datetime 2018-01-01T12:09:35
-            #values['timestamp'] = datetime.strptime(values['timestamp'], '%Y-%m-%dT%H:%M:%S')
+            # values['timestamp'] = datetime.strptime(values['timestamp'], '%Y-%m-%dT%H:%M:%S')
 
             # Use integer as id field for repeatable results
             action = {'_index': index_name, '_source': values, '_id': str(n)}
@@ -50,16 +50,19 @@ def _setup_data(es):
 
         print("Done", index_name)
 
+
 def _setup_test_mappings(es):
     # Create a complex mapping containing many Elasticsearch features
     es.indices.delete(index=TEST_MAPPING1_INDEX_NAME, ignore=[400, 404])
     es.indices.create(index=TEST_MAPPING1_INDEX_NAME, body=TEST_MAPPING1)
+
 
 def _setup_test_nested(es):
     es.indices.delete(index=TEST_NESTED_USER_GROUP_INDEX_NAME, ignore=[400, 404])
     es.indices.create(index=TEST_NESTED_USER_GROUP_INDEX_NAME, body=TEST_NESTED_USER_GROUP_MAPPING)
 
     helpers.bulk(es, TEST_NESTED_USER_GROUP_DOCS)
+
 
 if __name__ == '__main__':
     # Create connection to Elasticsearch - use defaults

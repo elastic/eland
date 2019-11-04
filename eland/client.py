@@ -1,10 +1,12 @@
 from elasticsearch import Elasticsearch
 from elasticsearch import helpers
 
+
 class Client:
     """
     eland client - implemented as facade to control access to Elasticsearch methods
     """
+
     def __init__(self, es=None):
         if isinstance(es, Elasticsearch):
             self._es = es
@@ -40,4 +42,3 @@ class Client:
     def count(self, **kwargs):
         count_json = self._es.count(**kwargs)
         return count_json['count']
-

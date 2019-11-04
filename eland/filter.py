@@ -1,7 +1,7 @@
 # Derived from pandasticsearch filters
 
 # Es filter builder for BooleanCond
-class BooleanFilter(object):
+class BooleanFilter:
     def __init__(self, *args):
         self._filter = None
 

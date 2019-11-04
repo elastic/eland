@@ -1,15 +1,14 @@
 # File called _pytest for PyCharm compatability
 
 import numpy as np
-import pandas as pd
-from pandas.util.testing import (assert_almost_equal)
+from pandas.util.testing import assert_almost_equal
 
 from eland.tests.common import TestData
 
 
 class TestDataFrameAggs(TestData):
 
-    def test_to_aggs1(self):
+    def test_basic_aggs(self):
         pd_flights = self.pd_flights()
         ed_flights = self.ed_flights()
 

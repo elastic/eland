@@ -1,8 +1,9 @@
 # File called _pytest for PyCharm compatability
 
+from matplotlib.testing.decorators import check_figures_equal
+
 from eland.tests.common import TestData
 
-from matplotlib.testing.decorators import check_figures_equal
 
 @check_figures_equal(extensions=['png'])
 def test_plot_hist(fig_test, fig_ref):

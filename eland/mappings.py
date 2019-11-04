@@ -75,6 +75,7 @@ class Mappings:
             pd_dtype = self._mappings_capabilities.loc[field_name]['pd_dtype']
             self._source_field_pd_dtypes[field_name] = pd_dtype
 
+    @staticmethod
     def _extract_fields_from_mapping(mappings, source_only=False):
         """
         Extract all field names and types from a mapping.
@@ -151,6 +152,7 @@ class Mappings:
 
         return fields
 
+    @staticmethod
     def _create_capability_matrix(all_fields, source_fields, all_fields_caps):
         """
         {
@@ -414,15 +416,27 @@ class Mappings:
             List of source fields where pd_dtype == (int64 or float64 or bool)
         """
         if columns is not None:
-            return self._mappings_capabilities[(self._mappings_capabilities._source == True) &
-                                               ((self._mappings_capabilities.pd_dtype == 'int64') |
-                                                (self._mappings_capabilities.pd_dtype == 'float64') |
-                                                (self._mappings_capabilities.pd_dtype == 'bool'))].loc[columns].index.tolist()
+            if include_bool == True:
+                return self._mappings_capabilities[(self._mappings_capabilities._source == True) &
+                                                   ((self._mappings_capabilities.pd_dtype == 'int64') |
+                                                    (self._mappings_capabilities.pd_dtype == 'float64') |
+                                                    (self._mappings_capabilities.pd_dtype == 'bool'))].loc[
+                    columns].index.tolist()
+            else:
+                return self._mappings_capabilities[(self._mappings_capabilities._source == True) &
+                                                   ((self._mappings_capabilities.pd_dtype == 'int64') |
+                                                    (self._mappings_capabilities.pd_dtype == 'float64'))].loc[
+                    columns].index.tolist()
         else:
-            return self._mappings_capabilities[(self._mappings_capabilities._source == True) &
-                                               ((self._mappings_capabilities.pd_dtype == 'int64') |
-                                                (self._mappings_capabilities.pd_dtype == 'float64') |
-                                                (self._mappings_capabilities.pd_dtype == 'bool'))].index.tolist()
+            if include_bool == True:
+                return self._mappings_capabilities[(self._mappings_capabilities._source == True) &
+                                                   ((self._mappings_capabilities.pd_dtype == 'int64') |
+                                                    (self._mappings_capabilities.pd_dtype == 'float64') |
+                                                    (self._mappings_capabilities.pd_dtype == 'bool'))].index.tolist()
+            else:
+                return self._mappings_capabilities[(self._mappings_capabilities._source == True) &
+                                                   ((self._mappings_capabilities.pd_dtype == 'int64') |
+                                                    (self._mappings_capabilities.pd_dtype == 'float64'))].index.tolist()
 
     def source_fields(self):
         """

@@ -1,13 +1,12 @@
 # File called _pytest for PyCharm compatability
 
-import pandas as pd
-
-from eland.tests.common import TestData
-from eland.tests.common import ROOT_DIR
-
-from pandas.util.testing import (assert_equal, assert_frame_equal)
-
 import ast
+
+import pandas as pd
+from pandas.util.testing import (assert_frame_equal)
+
+from eland.tests.common import ROOT_DIR
+from eland.tests.common import TestData
 
 
 class TestDataFrameToCSV(TestData):
@@ -43,6 +42,3 @@ class TestDataFrameToCSV(TestData):
         pd_from_csv.timestamp = pd.to_datetime(pd_from_csv.timestamp)
 
         assert_frame_equal(pd_flights, pd_from_csv)
-
-
-

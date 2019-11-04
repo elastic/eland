@@ -1,16 +1,15 @@
 import sys
 import warnings
 from distutils.version import LooseVersion
+from io import StringIO
 
 import numpy as np
 import pandas as pd
-import pandas.compat as compat
 import six
-from io import StringIO
 from pandas.core.common import apply_if_callable, is_bool_indexer
-from pandas.core.dtypes.common import (
-    is_list_like
-)
+from pandas.core.dtypes.common import is_list_like
+from pandas.core.indexing import check_bool_indexer
+
 from pandas.io.common import _expand_user, _stringify_path
 from pandas.io.formats import console
 from pandas.io.formats import format as fmt
@@ -58,10 +57,10 @@ class DataFrame(NDFrame):
         return len(self.columns) == 0 or len(self.index) == 0
 
     def head(self, n=5):
-        return super().head(n)
+        return DataFrame(query_compiler=self._query_compiler.head(n))
 
     def tail(self, n=5):
-        return super().tail(n)
+        return DataFrame(query_compiler=self._query_compiler.tail(n))
 
     def __repr__(self):
         """
@@ -104,7 +103,7 @@ class DataFrame(NDFrame):
                     return None
 
         if self._info_repr():
-            buf = StringIO(u(""))
+            buf = StringIO()
             self.info(buf=buf)
             # need to escape the <class>, should be the first line.
             val = buf.getvalue().replace('<', r'&lt;', 1)
@@ -509,7 +508,7 @@ class DataFrame(NDFrame):
         return self.columns
 
     def groupby(self, by=None, axis=0, *args, **kwargs):
-        axis = self._get_axis_number(axis)
+        axis = pd.DataFrame._get_axis_number(axis)
 
         if axis == 1:
             raise NotImplementedError("Aggregating via index not currently implemented - needs index transform")
@@ -544,7 +543,7 @@ class DataFrame(NDFrame):
             if Series.agg is called with single function, returns a scalar
             if Series.agg is called with several functions, returns a Series
         """
-        axis = self._get_axis_number(axis)
+        axis = pd.DataFrame._get_axis_number(axis)
 
         if axis == 1:
             raise NotImplementedError("Aggregating via index not currently implemented - needs index transform")
@@ -579,3 +578,20 @@ class DataFrame(NDFrame):
             )
         else:
             raise NotImplementedError(expr, type(expr))
+
+    def get(self, key, default=None):
+        """Get item from object for given key (DataFrame column, Panel
+                slice, etc.). Returns default value if not found.
+
+                Args:
+                    key (DataFrame column, Panel slice) : the key for which value
+                    to get
+
+                Returns:
+                    value (type of items contained in object) : A value that is
+                    stored at the key
+                """
+        if key in self.keys():
+            return self._getitem(key)
+        else:
+            return default

@@ -101,10 +101,10 @@ class Series(NDFrame):
     name = property(_get_name)
 
     def head(self, n=5):
-        return super().head(n)
+        return Series(query_compiler=self._query_compiler.head(n))
 
     def tail(self, n=5):
-        return super().tail(n)
+        return Series(query_compiler=self._query_compiler.tail(n))
 
     # ----------------------------------------------------------------------
     # Rendering Methods
@@ -193,7 +193,6 @@ class Series(NDFrame):
             return LessEqual(field=self.name, value=other)
         else:
             raise NotImplementedError(other, type(other))
-
 
     def __eq__(self, other):
         if isinstance(other, Series):

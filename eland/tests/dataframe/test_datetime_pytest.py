@@ -6,6 +6,7 @@ import pandas as pd
 import eland as ed
 from eland.tests.common import ELASTICSEARCH_HOST
 from eland.tests.common import TestData
+from eland.tests.common import assert_pandas_eland_frame_equal
 
 
 class TestDataFrameDateTime(TestData):
@@ -41,4 +42,4 @@ class TestDataFrameDateTime(TestData):
         ed_df = ed.DataFrame(ELASTICSEARCH_HOST, index_name)
         ed_df_head = ed_df.head()
 
-        # assert_frame_equal(df, ed_df_head)
+        assert_pandas_eland_frame_equal(df, ed_df_head)

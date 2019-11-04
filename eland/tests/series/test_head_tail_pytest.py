@@ -1,15 +1,9 @@
 # File called _pytest for PyCharm compatability
-import pandas as pd
 import eland as ed
-
-from eland.tests.common import TestData
-from eland.tests.common import assert_pandas_eland_series_equal
-
 from eland.tests import ELASTICSEARCH_HOST
 from eland.tests import FLIGHTS_INDEX_NAME
-
-from pandas.util.testing import assert_series_equal
-
+from eland.tests.common import TestData
+from eland.tests.common import assert_pandas_eland_series_equal
 
 
 class TestSeriesHeadTail(TestData):

@@ -1,6 +1,5 @@
 # File called _pytest for PyCharm compatability
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from pandas.util.testing import assert_almost_equal
@@ -10,7 +9,7 @@ from eland.tests.common import TestData
 
 class TestDataFrameHist(TestData):
 
-    def test_hist1(self):
+    def test_flights_hist(self):
         pd_flights = self.pd_flights()
         ed_flights = self.ed_flights()
 
@@ -30,15 +29,3 @@ class TestDataFrameHist(TestData):
         # Numbers are slightly different
         assert_almost_equal(pd_bins, ed_bins)
         assert_almost_equal(pd_weights, ed_weights)
-
-    def test_hist2(self):
-        pd_df = self.pd_flights()[['DistanceKilometers', 'DistanceMiles', 'FlightDelayMin', 'FlightTimeHour']]
-        ed_df = self.ed_flights()[['DistanceKilometers', 'DistanceMiles', 'FlightDelayMin', 'FlightTimeHour']]
-
-        num_bins = 10
-
-        ed_bins, ed_weights = ed_df._hist(num_bins=num_bins)
-
-        print(ed_bins)
-
-

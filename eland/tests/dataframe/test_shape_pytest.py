@@ -22,5 +22,3 @@ class TestDataFrameShape(TestData):
         ed_shape = ed_flights.shape
 
         assert pd_shape == ed_shape
-
-

@@ -1,9 +1,7 @@
 # File called _pytest for PyCharm compatability
-import pandas as pd
 
 from eland.tests.common import TestData
 from eland.tests.common import assert_pandas_eland_frame_equal
-
 
 
 class TestDataFrameHeadTail(TestData):

@@ -14,9 +14,11 @@ In case sorting or aggregating on the _id field is required, it is advised to du
 the content of the _id field in another field that has doc_values enabled.)
 
 """
+
+
 class Index:
     ID_INDEX_FIELD = '_id'
-    ID_SORT_FIELD = '_doc' # if index field is _id, sort by _doc
+    ID_SORT_FIELD = '_doc'  # if index field is _id, sort by _doc
 
     def __init__(self, query_compiler, index_field=None):
         # Calls setter

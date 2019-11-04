@@ -7,7 +7,8 @@ def read_es(es_params, index_pattern):
     return DataFrame(client=es_params, index_pattern=index_pattern)
 
 
-def pandas_to_es(df, es_params, destination_index, if_exists='fail', chunk_size=10000, refresh=False, dropna=False, geo_points=None):
+def pandas_to_es(df, es_params, destination_index, if_exists='fail', chunk_size=10000, refresh=False, dropna=False,
+                 geo_points=None):
     """
     Append a pandas DataFrame to an Elasticsearch index.
     Mainly used in testing.

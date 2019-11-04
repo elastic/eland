@@ -3,9 +3,9 @@
 from eland.tests.common import TestData
 
 
-class TestDataFrameHeadTail(TestData):
+class TestDataFrameRepr(TestData):
 
-    def test_to_string1(self):
+    def test_head_101_to_string(self):
         ed_flights = self.ed_flights()
         pd_flights = self.pd_flights()
 
@@ -18,7 +18,7 @@ class TestDataFrameHeadTail(TestData):
 
         assert pd_head_101_str == ed_head_101_str
 
-    def test_to_string2(self):
+    def test_head_11_to_string2(self):
         ed_flights = self.ed_flights()
         pd_flights = self.pd_flights()
 
@@ -30,7 +30,7 @@ class TestDataFrameHeadTail(TestData):
 
         assert pd_head_11_str == ed_head_11_str
 
-    def test_to_repr(self):
+    def test_repr(self):
         ed_ecommerce = self.ed_ecommerce()
         pd_ecommerce = self.pd_ecommerce()
 

@@ -7,8 +7,8 @@ from pandas.plotting._matplotlib.tools import _flatten, _set_ticks_props, _subpl
 
 
 def ed_hist_frame(ed_df, column=None, by=None, grid=True, xlabelsize=None,
-               xrot=None, ylabelsize=None, yrot=None, ax=None, sharex=False,
-               sharey=False, figsize=None, layout=None, bins=10, **kwds):
+                  xrot=None, ylabelsize=None, yrot=None, ax=None, sharex=False,
+                  sharey=False, figsize=None, layout=None, bins=10, **kwds):
     """
     Derived from pandas.plotting._core.hist_frame 0.24.2 - TODO update to 0.25.1
 
