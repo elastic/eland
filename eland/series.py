@@ -35,7 +35,7 @@ class Series(NDFrame):
     index_pattern : str
         An Elasticsearch index pattern. This can contain wildcards (e.g. filebeat-*).
 
-    field_name : str
+    index_field : str
         The field to base the series on
 
     See Also

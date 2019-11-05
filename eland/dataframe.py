@@ -1,6 +1,5 @@
 import sys
 import warnings
-from distutils.version import LooseVersion
 from io import StringIO
 
 import numpy as np
@@ -92,18 +91,8 @@ class DataFrame(NDFrame):
         """
         From pandas
         """
-        try:
-            import IPython
-        except ImportError:
-            pass
-        else:
-            if LooseVersion(IPython.__version__) < LooseVersion('3.0'):
-                if console.in_qtconsole():
-                    # 'HTML output is disabled in QtConsole'
-                    return None
-
         if self._info_repr():
-            buf = StringIO()
+            buf = StringIO("")
             self.info(buf=buf)
             # need to escape the <class>, should be the first line.
             val = buf.getvalue().replace('<', r'&lt;', 1)
@@ -138,7 +127,7 @@ class DataFrame(NDFrame):
     def info_es(self):
         buf = StringIO()
 
-        super().info_es(buf)
+        super()._info_es(buf)
 
         return buf.getvalue()
 
@@ -529,7 +518,7 @@ class DataFrame(NDFrame):
             - string function name
             - list of functions and/or function names, e.g. ``[np.sum, 'mean']``
             - dict of axis labels -> functions, function names or list of such.
-        %(axis)s
+        axis
         *args
             Positional arguments to pass to `func`.
         **kwargs
@@ -570,7 +559,7 @@ class DataFrame(NDFrame):
         """
         if isinstance(expr, BooleanFilter):
             return DataFrame(
-                query_compiler=self._query_compiler._update_query(key)
+                query_compiler=self._query_compiler._update_query(BooleanFilter(expr))
             )
         elif isinstance(expr, six.string_types):
             return DataFrame(
