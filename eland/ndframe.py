@@ -56,6 +56,12 @@ class NDFrame:
         self._query_compiler = query_compiler
 
     def _get_index(self):
+        """
+
+        Returns
+        -------
+
+        """
         return self._query_compiler.index
 
     index = property(_get_index)
