@@ -56,6 +56,12 @@ class NDFrame:
         self._query_compiler = query_compiler
 
     def _get_index(self):
+        """
+
+        Returns
+        -------
+
+        """
         return self._query_compiler.index
 
     index = property(_get_index)
@@ -114,14 +120,7 @@ class NDFrame:
         """
         return len(self.index)
 
-    @property
-    def iloc(self):
-        """Purely integer-location based indexing for selection by position.
-
-        """
-        return _iLocIndexer(self)
-
-    def info_es(self, buf):
+    def _info_es(self, buf):
         self._query_compiler.info_es(buf)
 
     def drop(

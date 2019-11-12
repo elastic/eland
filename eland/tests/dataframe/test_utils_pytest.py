@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 import eland as ed
-from eland.tests.common import ELASTICSEARCH_HOST
+from eland.tests.common import ELASTICSEARCH_HOST, assert_pandas_eland_frame_equal
 from eland.tests.common import TestData
 
 
@@ -36,9 +36,7 @@ class TestDataFrameUtils(TestData):
         # Now create index
         index_name = 'eland_test_generate_es_mappings'
 
-        ed.pandas_to_es(df, ELASTICSEARCH_HOST, index_name, if_exists="replace", refresh=True)
-
-        ed_df = ed.DataFrame(ELASTICSEARCH_HOST, index_name)
+        ed_df = ed.pd_to_ed(df, ELASTICSEARCH_HOST, index_name, if_exists="replace", refresh=True)
         ed_df_head = ed_df.head()
 
-        # assert_frame_equal(df, ed_df_head)
+        assert_pandas_eland_frame_equal(df, ed_df_head)

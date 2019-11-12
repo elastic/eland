@@ -47,7 +47,7 @@ the `pandas.DataFrame` API. This resolves some of the issues above as:
 than a new index
 
 * Instead of supporting the enitre `pandas.DataFrame` API we can support a subset appropriate for
-Elasticsearch. If addition calls are required, we could to create a `eland.DataFrame.to_pandas()` 
+Elasticsearch. If addition calls are required, we could to create a `eland.DataFrame._to_pandas()` 
 method which would explicitly export all data to a `pandas.DataFrame` 
 
 * Creating a new `eland.DataFrame` API gives us full flexibility in terms of implementation. However, 

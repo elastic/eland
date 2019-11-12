@@ -1,6 +1,5 @@
 import sys
 import warnings
-from distutils.version import LooseVersion
 from io import StringIO
 
 import numpy as np
@@ -20,17 +19,86 @@ from eland import NDFrame
 from eland import Series
 from eland.filter import BooleanFilter, ScriptFilter
 
-
 class DataFrame(NDFrame):
-    # This is effectively 2 constructors
-    # 1. client, index_pattern, columns, index_field
-    # 2. query_compiler
+    """
+    Two-dimensional size-mutable, potentially heterogeneous tabular data structure with labeled axes
+    (rows and columns) referencing data stored in Elasticsearch indices.
+    Where possible APIs mirror pandas.DataFrame APIs.
+    The underlying data is stored in Elasticsearch rather than core memory.
+
+    Parameters
+    ----------
+    client: Elasticsearch client argument(s) (e.g. 'localhost:9200')
+        - elasticsearch-py parameters or
+        - elasticsearch-py instance or
+        - eland.Client instance
+    index_pattern: str
+        Elasticsearch index pattern (e.g. 'flights' or 'filebeat-\*')
+    columns: list of str, optional
+        List of DataFrame columns. A subset of the Elasticsearch index's fields.
+    index_field: str, optional
+        The Elasticsearch index field to use as the DataFrame index. Defaults to _id if None is used.
+
+    Examples
+    --------
+    Constructing DataFrame from an Elasticsearch configuration arguments and an Elasticsearch index
+
+    >>> df = ed.DataFrame('localhost:9200', 'flights')
+    >>> df.head()
+       AvgTicketPrice  Cancelled           Carrier                                          Dest  ... OriginRegion        OriginWeather dayOfWeek           timestamp
+    0      841.265642      False   Kibana Airlines  Sydney Kingsford Smith International Airport  ...        DE-HE                Sunny         0 2018-01-01 00:00:00
+    1      882.982662      False  Logstash Airways                     Venice Marco Polo Airport  ...        SE-BD                Clear         0 2018-01-01 18:27:00
+    2      190.636904      False  Logstash Airways                     Venice Marco Polo Airport  ...        IT-34                 Rain         0 2018-01-01 17:11:14
+    3      181.694216       True   Kibana Airlines                   Treviso-Sant'Angelo Airport  ...        IT-72  Thunder & Lightning         0 2018-01-01 10:33:28
+    4      730.041778      False   Kibana Airlines          Xi'an Xianyang International Airport  ...       MX-DIF        Damaging Wind         0 2018-01-01 05:13:00
+    <BLANKLINE>
+    [5 rows x 27 columns]
+
+    Constructing DataFrame from an Elasticsearch client and an Elasticsearch index
+
+    >>> from elasticsearch import Elasticsearch
+    >>> es = Elasticsearch("localhost:9200")
+    >>> df = ed.DataFrame(client=es, index_pattern='flights', columns=['AvgTicketPrice', 'Cancelled'])
+    >>> df.head()
+       AvgTicketPrice  Cancelled
+    0      841.265642      False
+    1      882.982662      False
+    2      190.636904      False
+    3      181.694216       True
+    4      730.041778      False
+    <BLANKLINE>
+    [5 rows x 2 columns]
+
+    Constructing DataFrame from an Elasticsearch client and an Elasticsearch index, with 'timestamp' as the  DataFrame index field
+
+    >>> df = ed.DataFrame(client='localhost', index_pattern='flights', columns=['AvgTicketPrice', 'timestamp'], index_field='timestamp')
+    >>> df.head()
+                         AvgTicketPrice           timestamp
+    2018-01-01T00:00:00      841.265642 2018-01-01 00:00:00
+    2018-01-01T00:02:06      772.100846 2018-01-01 00:02:06
+    2018-01-01T00:06:27      159.990962 2018-01-01 00:06:27
+    2018-01-01T00:33:31      800.217104 2018-01-01 00:33:31
+    2018-01-01T00:36:51      803.015200 2018-01-01 00:36:51
+    <BLANKLINE>
+    [5 rows x 2 columns]
+    """
     def __init__(self,
                  client=None,
                  index_pattern=None,
                  columns=None,
                  index_field=None,
                  query_compiler=None):
+        """
+        There are effectively 2 constructors:
+
+        1. client, index_pattern, columns, index_field
+        2. query_compiler (eland.ElandQueryCompiler)
+
+        The constructor with 'query_compiler' is for internal use only.
+        """
+        if query_compiler is None:
+            if client is None or index_pattern is None:
+                raise ValueError("client and index_pattern must be defined in DataFrame constructor")
         # python 3 syntax
         super().__init__(
             client=client,
@@ -40,6 +108,27 @@ class DataFrame(NDFrame):
             query_compiler=query_compiler)
 
     def _get_columns(self):
+        """
+        The column labels of the DataFrame.
+
+        Returns
+        -------
+        Elasticsearch field names as pandas.Index
+
+        Examples
+        --------
+        >>> df = ed.DataFrame('localhost', 'flights')
+        >>> assert isinstance(df.columns, pd.Index)
+        >>> df.columns
+        Index(['AvgTicketPrice', 'Cancelled', 'Carrier', 'Dest', 'DestAirportID',
+        ...   'DestCityName', 'DestCountry', 'DestLocation', 'DestRegion',
+        ...   'DestWeather', 'DistanceKilometers', 'DistanceMiles', 'FlightDelay',
+        ...   'FlightDelayMin', 'FlightDelayType', 'FlightNum', 'FlightTimeHour',
+        ...   'FlightTimeMin', 'Origin', 'OriginAirportID', 'OriginCityName',
+        ...   'OriginCountry', 'OriginLocation', 'OriginRegion', 'OriginWeather',
+        ...   'dayOfWeek', 'timestamp'],
+        ...  dtype='object')
+        """
         return self._query_compiler.columns
 
     columns = property(_get_columns)
@@ -52,14 +141,70 @@ class DataFrame(NDFrame):
             True if the DataFrame is empty.
             False otherwise.
         """
-        # TODO - this is called on every attribute get (most methods) from modin/pandas/base.py:3337
-        #  (as Index.__len__ performs an query) we may want to cache self.index.empty()
         return len(self.columns) == 0 or len(self.index) == 0
 
     def head(self, n=5):
+        """
+        Return the first n rows.
+
+        This function returns the first n rows for the object based on position.
+        The row order is sorted by index field.
+        It is useful for quickly testing if your object has the right type of data in it.
+
+        Parameters
+        ----------
+        n: int, default 5
+            Number of rows to select.
+
+        Returns
+        -------
+        eland.DataFrame
+            eland DataFrame filtered on first n rows sorted by index field
+
+        Examples
+        --------
+        >>> df = ed.DataFrame('localhost', 'flights', columns=['Origin', 'Dest'])
+        >>> df.head(3)
+                                    Origin                                          Dest
+        0        Frankfurt am Main Airport  Sydney Kingsford Smith International Airport
+        1  Cape Town International Airport                     Venice Marco Polo Airport
+        2        Venice Marco Polo Airport                     Venice Marco Polo Airport
+        <BLANKLINE>
+        [3 rows x 2 columns]
+        """
         return DataFrame(query_compiler=self._query_compiler.head(n))
 
     def tail(self, n=5):
+        """
+        Return the last n rows.
+
+        This function returns the last n rows for the object based on position.
+        The row order is sorted by index field.
+        It is useful for quickly testing if your object has the right type of data in it.
+
+        Parameters
+        ----------
+        n: int, default 5
+            Number of rows to select.
+
+        Returns
+        -------
+        eland.DataFrame:
+            eland DataFrame filtered on last n rows sorted by index field
+
+        Examples
+        --------
+        >>> df = ed.DataFrame('localhost', 'flights', columns=['Origin', 'Dest'])
+        >>> df.tail()
+                                                          Origin                                      Dest
+        13054                         Pisa International Airport      Xi'an Xianyang International Airport
+        13055  Winnipeg / James Armstrong Richardson Internat...                            Zurich Airport
+        13056     Licenciado Benito Juarez International Airport                         Ukrainka Air Base
+        13057                                      Itami Airport  Ministro Pistarini International Airport
+        13058                     Adelaide International Airport   Washington Dulles International Airport
+        <BLANKLINE>
+        [5 rows x 2 columns]
+        """
         return DataFrame(query_compiler=self._query_compiler.tail(n))
 
     def __repr__(self):
@@ -92,18 +237,8 @@ class DataFrame(NDFrame):
         """
         From pandas
         """
-        try:
-            import IPython
-        except ImportError:
-            pass
-        else:
-            if LooseVersion(IPython.__version__) < LooseVersion('3.0'):
-                if console.in_qtconsole():
-                    # 'HTML output is disabled in QtConsole'
-                    return None
-
         if self._info_repr():
-            buf = StringIO()
+            buf = StringIO("")
             self.info(buf=buf)
             # need to escape the <class>, should be the first line.
             val = buf.getvalue().replace('<', r'&lt;', 1)
@@ -138,7 +273,7 @@ class DataFrame(NDFrame):
     def info_es(self):
         buf = StringIO()
 
-        super().info_es(buf)
+        super()._info_es(buf)
 
         return buf.getvalue()
 
@@ -470,6 +605,13 @@ class DataFrame(NDFrame):
         return self._query_compiler.to_csv(**kwargs)
 
     def _to_pandas(self):
+        """
+        Utility method to convert eland.Dataframe to pandas.Dataframe
+
+        Returns
+        -------
+        pandas.DataFrame
+        """
         return self._query_compiler.to_pandas()
 
     def _empty_pd_df(self):
@@ -529,7 +671,7 @@ class DataFrame(NDFrame):
             - string function name
             - list of functions and/or function names, e.g. ``[np.sum, 'mean']``
             - dict of axis labels -> functions, function names or list of such.
-        %(axis)s
+        axis
         *args
             Positional arguments to pass to `func`.
         **kwargs
@@ -570,7 +712,7 @@ class DataFrame(NDFrame):
         """
         if isinstance(expr, BooleanFilter):
             return DataFrame(
-                query_compiler=self._query_compiler._update_query(key)
+                query_compiler=self._query_compiler._update_query(BooleanFilter(expr))
             )
         elif isinstance(expr, six.string_types):
             return DataFrame(

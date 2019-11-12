@@ -436,34 +436,6 @@ class ElandQueryCompiler:
     def _hist(self, num_bins):
         return self._operations.hist(self, num_bins)
 
-    def apply(self, func, axis, *args, **kwargs):
-        """Apply func across given axis.
-
-        Args:
-            func: The function to apply.
-            axis: Target axis to apply the function along.
-
-        Returns:
-            A new QueryCompiler.
-        """
-        """Apply func across given axis.
-
-                Args:
-                    func: The function to apply.
-                    axis: Target axis to apply the function along.
-
-                Returns:
-                    A new PandasQueryCompiler.
-                """
-        if callable(func):
-            return self._callable_func(func, axis, *args, **kwargs)
-        elif isinstance(func, dict):
-            return self._dict_func(func, axis, *args, **kwargs)
-        elif is_list_like(func):
-            return self._list_like_func(func, axis, *args, **kwargs)
-        else:
-            pass
-
     def _update_query(self, boolean_filter):
         result = self.copy()
 

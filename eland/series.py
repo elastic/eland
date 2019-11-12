@@ -35,7 +35,7 @@ class Series(NDFrame):
     index_pattern : str
         An Elasticsearch index pattern. This can contain wildcards (e.g. filebeat-*).
 
-    field_name : str
+    index_field : str
         The field to base the series on
 
     See Also
@@ -91,8 +91,6 @@ class Series(NDFrame):
             True if the Series is empty.
             False otherwise.
         """
-        # TODO - this is called on every attribute get (most methods) from modin/pandas/base.py:3337
-        #  (as Index.__len__ performs an query) we may want to cache self.index.empty()
         return len(self.index) == 0
 
     def _get_name(self):
@@ -152,7 +150,7 @@ class Series(NDFrame):
         )
 
     def _to_pandas(self):
-        return self._query_compiler.to_pandas()[self.name]
+        return self._query_compiler._to_pandas()[self.name]
 
     def __gt__(self, other):
         if isinstance(other, Series):
