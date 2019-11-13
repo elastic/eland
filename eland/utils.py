@@ -141,3 +141,37 @@ def ed_to_pd(ed_df):
     eland.pd_to_ed: Create an eland.Dataframe from pandas.DataFrame
     """
     return ed_df._to_pandas()
+
+def _inherit_docstrings(parent, excluded=[]):
+    """Creates a decorator which overwrites a decorated class' __doc__
+    attribute with parent's __doc__ attribute. Also overwrites __doc__ of
+    methods and properties defined in the class with the __doc__ of matching
+    methods and properties in parent.
+
+    Args:
+        parent (object): Class from which the decorated class inherits __doc__.
+        excluded (list): List of parent objects from which the class does not
+            inherit docstrings.
+
+    Returns:
+        function: decorator which replaces the decorated class' documentation
+            parent's documentation.
+    """
+
+    def decorator(cls):
+        if parent not in excluded:
+            cls.__doc__ = parent.__doc__
+        for attr, obj in cls.__dict__.items():
+            parent_obj = getattr(parent, attr, None)
+            if parent_obj in excluded or (
+                not callable(parent_obj) and not isinstance(parent_obj, property)
+            ):
+                continue
+            if callable(obj):
+                obj.__doc__ = parent_obj.__doc__
+            elif isinstance(obj, property) and obj.fget is not None:
+                p = property(obj.fget, obj.fset, obj.fdel, parent_obj.__doc__)
+                setattr(cls, attr, p)
+        return cls
+
+    return decorator

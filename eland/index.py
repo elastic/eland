@@ -1,27 +1,23 @@
-"""
-class Index
-
-The index for an eland.DataFrame.
-
-Currently, the index is a field that exists in every document in an Elasticsearch index.
-For slicing and sorting operations it must be a docvalues field. By default _id is used,
-which can't be used for range queries and is inefficient for sorting:
-
-https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-id-field.html
-(The value of the _id field is also accessible in aggregations or for sorting,
-but doing so is discouraged as it requires to load a lot of data in memory.
-In case sorting or aggregating on the _id field is required, it is advised to duplicate
-the content of the _id field in another field that has doc_values enabled.)
-
-"""
-
-
 class Index:
+    """
+    The index for an eland.DataFrame.
+
+    TODO - This currently has very different behaviour than pandas.Index
+
+    Currently, the index is a field that exists in every document in an Elasticsearch index.
+    For slicing and sorting operations it must be a docvalues field. By default _id is used,
+    which can't be used for range queries and is inefficient for sorting:
+
+    https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-id-field.html
+    (The value of the _id field is also accessible in aggregations or for sorting,
+    but doing so is discouraged as it requires to load a lot of data in memory.
+    In case sorting or aggregating on the _id field is required, it is advised to duplicate
+    the content of the _id field in another field that has doc_values enabled.)
+    """
     ID_INDEX_FIELD = '_id'
     ID_SORT_FIELD = '_doc'  # if index field is _id, sort by _doc
 
     def __init__(self, query_compiler, index_field=None):
-        # Calls setter
         self.index_field = index_field
 
         self._query_compiler = query_compiler
