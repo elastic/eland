@@ -10,8 +10,30 @@
 # PyCharm files
 .idea/
 
+# vscode files
+.vscode/*
+
 # pytest files
 .pytest_cache/
 
 # Ignore MacOSX files
 .DS_Store
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
