@@ -215,3 +215,16 @@ class Series(NDFrame):
             return NotFilter(Equal(field=self.name, value=other))
         else:
             raise NotImplementedError(other, type(other))
+
+    @property
+    def ndim(self):
+        """
+        Returns 1 by definition of a Series1
+
+        Returns
+        -------
+        int
+            By definition 1
+
+        """
+        return 1

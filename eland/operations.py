@@ -183,12 +183,13 @@ class Operations:
             raise NotImplementedError("Can not count field matches if size is set {}".format(size))
 
         columns = self.get_columns()
-        if columns is None:
-            columns = query_compiler._mappings.source_fields()
+
+        # Get just aggregatable columns
+        aggregatable_columns = query_compiler._mappings.aggregatable_columns(columns)
 
         body = Query(query_params['query'])
 
-        for field in columns:
+        for field in aggregatable_columns.keys():
             body.metric_aggs(field, func, field)
 
         response = query_compiler._client.search(
@@ -198,10 +199,10 @@ class Operations:
 
         results = {}
 
-        for field in columns:
-            results[field] = response['aggregations'][field]['value']
+        for key, value in aggregatable_columns.items():
+            results[value] = response['aggregations'][key]['value']
 
-        s = pd.Series(data=results, index=columns)
+        s = pd.Series(data=results, index=results.keys())
 
         return s
 
@@ -845,16 +846,16 @@ class Operations:
 
     def info_es(self, buf):
         buf.write("Operations:\n")
-        buf.write("\ttasks: {0}\n".format(self._tasks))
+        buf.write(" tasks: {0}\n".format(self._tasks))
 
         query_params, post_processing = self._resolve_tasks()
         size, sort_params = Operations._query_params_to_size_and_sort(query_params)
         columns = self.get_columns()
 
-        buf.write("\tsize: {0}\n".format(size))
-        buf.write("\tsort_params: {0}\n".format(sort_params))
-        buf.write("\tcolumns: {0}\n".format(columns))
-        buf.write("\tpost_processing: {0}\n".format(post_processing))
+        buf.write(" size: {0}\n".format(size))
+        buf.write(" sort_params: {0}\n".format(sort_params))
+        buf.write(" columns: {0}\n".format(columns))
+        buf.write(" post_processing: {0}\n".format(post_processing))
 
     def update_query(self, boolean_filter):
         task = ('boolean_filter', boolean_filter)

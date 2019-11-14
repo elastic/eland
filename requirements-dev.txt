@@ -2,5 +2,4 @@ elasticsearch>=7.0.5
 pandas==0.25.1
 matplotlib
 pytest>=5.2.1
-sphinx_rtd_theme
 numpydoc==0.8

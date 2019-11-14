@@ -408,6 +408,44 @@ class Mappings:
 
         return is_source_field
 
+    def aggregatable_columns(self, columns=None):
+        """
+        Return a dict of aggregatable columns from all columns or columns list
+        {'customer_full_name': 'customer_full_name.keyword', ...}
+
+        Logic here is that column names are '_source' fields and keyword fields
+        may be nested beneath the field. E.g.
+        customer_full_name: text
+        customer_full_name.keyword: keyword
+
+        customer_full_name.keyword is the aggregatable field for customer_full_name
+
+        Returns
+        -------
+        dict
+            e.g. {'customer_full_name': 'customer_full_name.keyword', ...}
+        """
+        if columns is None:
+            columns = self.source_fields()
+
+        aggregatables = {}
+
+        for column in columns:
+            capabilities = self.field_capabilities(column)
+            if capabilities['aggregatable']:
+                aggregatables[column] = column
+            else:
+                # Try 'column.keyword'
+                column_keyword = column + '.keyword'
+                capabilities = self.field_capabilities(column_keyword)
+                if capabilities['aggregatable']:
+                    aggregatables[column_keyword] = column
+                else:
+                    # Aggregations not supported for this field
+                    raise ValueError("Aggregations not supported for ", column)
+
+        return aggregatables
+
     def numeric_source_fields(self, columns, include_bool=True):
         """
         Returns
@@ -471,4 +509,4 @@ class Mappings:
 
     def info_es(self, buf):
         buf.write("Mappings:\n")
-        buf.write("\tcapabilities: {0}\n".format(self._mappings_capabilities))
+        buf.write(" capabilities: {0}\n".format(self._mappings_capabilities))

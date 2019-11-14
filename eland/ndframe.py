@@ -66,7 +66,7 @@ class NDFrame:
 
         See Also
         --------
-        :pandas_docs:`pandas.DataFrame.index`
+        :pandas_api_docs:`pandas.DataFrame.index`
 
         Examples
         --------
@@ -92,7 +92,7 @@ class NDFrame:
 
         See Also
         --------
-        :pandas_docs:`pandas.DataFrame.dtypes`
+        :pandas_api_docs:`pandas.DataFrame.dtypes`
 
         Examples
         --------
@@ -124,22 +124,6 @@ class NDFrame:
 
     def __getitem__(self, key):
         return self._getitem(key)
-
-    def __getattr__(self, key):
-        """After regular attribute access, looks up the name in the columns
-
-        Args:
-            key (str): Attribute name.
-
-        Returns:
-            The value of the attribute.
-        """
-        try:
-            return object.__getattribute__(self, key)
-        except AttributeError as e:
-            if key in self.columns:
-                return self[key]
-            raise e
 
     def __sizeof__(self):
         # Don't default to pandas, just return approximation TODO - make this more accurate
@@ -190,7 +174,7 @@ class NDFrame:
 
         See Also
         --------
-        :pandas_docs:`pandas.DataFrame.drop`
+        :pandas_api_docs:`pandas.DataFrame.drop`
 
         Examples
         --------
@@ -299,26 +283,185 @@ class NDFrame:
         )
         return self._create_or_update_from_compiler(new_query_compiler, inplace)
 
-    # TODO implement arguments
-    def mean(self):
+    def mean(self, numeric_only=True):
+        """
+        Return mean value for each numeric column
+
+        TODO - implement remainder of pandas arguments
+
+        Returns
+        -------
+        pandas.Series
+            mean value for each numeric column
+
+        See Also
+        --------
+        :pandas_api_docs:`pandas.DataFrame.mean`
+
+        Examples
+        --------
+        >>> df = ed.DataFrame('localhost', 'flights')
+        >>> df.mean()
+        AvgTicketPrice         628.253689
+        Cancelled                0.128494
+        DistanceKilometers    7092.142457
+        DistanceMiles         4406.853010
+        FlightDelay              0.251168
+        FlightDelayMin          47.335171
+        FlightTimeHour           8.518797
+        FlightTimeMin          511.127842
+        dayOfWeek                2.835975
+        dtype: float64
+        """
+        if numeric_only == False:
+            raise NotImplementedError("Only mean of numeric fields is implemented")
         return self._query_compiler.mean()
 
     def sum(self, numeric_only=True):
+        """
+        Return sum for each numeric column
+
+        TODO - implement remainder of pandas arguments
+
+        Returns
+        -------
+        pandas.Series
+            sum for each numeric column
+
+        See Also
+        --------
+        :pandas_api_docs:`pandas.DataFrame.sum`
+
+        Examples
+        --------
+        >>> df = ed.DataFrame('localhost', 'flights')
+        >>> df.sum()
+        AvgTicketPrice        8.204365e+06
+        Cancelled             1.678000e+03
+        DistanceKilometers    9.261629e+07
+        DistanceMiles         5.754909e+07
+        FlightDelay           3.280000e+03
+        FlightDelayMin        6.181500e+05
+        FlightTimeHour        1.112470e+05
+        FlightTimeMin         6.674818e+06
+        dayOfWeek             3.703500e+04
+        dtype: float64
+        """
         if numeric_only == False:
             raise NotImplementedError("Only sum of numeric fields is implemented")
         return self._query_compiler.sum()
 
     def min(self, numeric_only=True):
+        """
+        Return the minimum value for each numeric column
+
+        TODO - implement remainder of pandas arguments
+
+        Returns
+        -------
+        pandas.Series
+            min value for each numeric column
+
+        See Also
+        --------
+        :pandas_api_docs:`pandas.DataFrame.min`
+
+        Examples
+        --------
+        >>> df = ed.DataFrame('localhost', 'flights')
+        >>> df.min()
+        AvgTicketPrice        100.020531
+        Cancelled               0.000000
+        DistanceKilometers      0.000000
+        DistanceMiles           0.000000
+        FlightDelay             0.000000
+        FlightDelayMin          0.000000
+        FlightTimeHour          0.000000
+        FlightTimeMin           0.000000
+        dayOfWeek               0.000000
+        dtype: float64
+        """
         if numeric_only == False:
-            raise NotImplementedError("Only sum of numeric fields is implemented")
+            raise NotImplementedError("Only min of numeric fields is implemented")
         return self._query_compiler.min()
 
     def max(self, numeric_only=True):
+        """
+        Return the maximum value for each numeric column
+
+        TODO - implement remainder of pandas arguments
+
+        Returns
+        -------
+        pandas.Series
+            max value for each numeric column
+
+        See Also
+        --------
+        :pandas_api_docs:`pandas.DataFrame.max`
+
+        Examples
+        --------
+        >>> df = ed.DataFrame('localhost', 'flights')
+        >>> df.max()
+        AvgTicketPrice         1199.729004
+        Cancelled                 1.000000
+        DistanceKilometers    19881.482422
+        DistanceMiles         12353.780273
+        FlightDelay               1.000000
+        FlightDelayMin          360.000000
+        FlightTimeHour           31.715034
+        FlightTimeMin          1902.901978
+        dayOfWeek                 6.000000
+        dtype: float64
+        """
         if numeric_only == False:
-            raise NotImplementedError("Only sum of numeric fields is implemented")
+            raise NotImplementedError("Only max of numeric fields is implemented")
         return self._query_compiler.max()
 
     def nunique(self):
+        """
+        Return cardinality of each field.
+
+        **Note we can only do this for aggregatable Elasticsearch fields - (in general) numeric and keyword rather than text fields**
+
+        This method will try and field aggregatable fields if possible if mapping has::
+
+            "customer_first_name" : {
+              "type" : "text",
+              "fields" : {
+                "keyword" : {
+                  "type" : "keyword",
+                  "ignore_above" : 256
+                }
+              }
+            }
+
+        we will aggregate ``customer_first_name`` columns using ``customer_first_name.keyword``.
+
+        TODO - implement remainder of pandas arguments
+
+        Returns
+        -------
+        pandas.Series
+            cardinality of each column
+
+        See Also
+        --------
+        :pandas_api_docs:`pandas.DataFrame.nunique`
+
+        Examples
+        --------
+        >>> columns = ['category', 'currency', 'customer_birth_date', 'customer_first_name', 'user']
+        >>> df = ed.DataFrame('localhost', 'ecommerce', columns=columns)
+        >>> df.nunique()
+        category                6
+        currency                1
+        customer_birth_date     0
+        customer_first_name    46
+        user                   46
+        dtype: int64
+        """
         return self._query_compiler.nunique()
 
     def _hist(self, num_bins):
@@ -341,7 +484,7 @@ class NDFrame:
 
         See Also
         --------
-        :pandas_docs:`pandas.DataFrame.describe`
+        :pandas_api_docs:`pandas.DataFrame.describe`
 
         Examples
         --------
