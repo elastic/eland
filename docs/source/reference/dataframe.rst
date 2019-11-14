@@ -31,8 +31,10 @@ Indexing, iteration
    :toctree: api/
 
    DataFrame.head
+   DataFrame.keys
    DataFrame.tail
    DataFrame.get
+   DataFrame.query
 
 Function application, GroupBy & window
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -52,6 +54,11 @@ Computations / descriptive stats
    DataFrame.count
    DataFrame.describe
    DataFrame.info
+   DataFrame.max
+   DataFrame.mean
+   DataFrame.min
+   DataFrame.sum
+   DataFrame.nunique
 
 Reindexing / selection / label manipulation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -73,4 +80,12 @@ Serialization / IO / conversion
    :toctree: api/
 
    DataFrame.info
+
+Elasticsearch utilities
+~~~~~~~~~~~~~~~~~~~~~~~
+.. autosummary::
+   :toctree: api/
+
+   DataFrame.info_es
+
 

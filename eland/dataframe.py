@@ -5,6 +5,7 @@ from io import StringIO
 import numpy as np
 import pandas as pd
 import six
+from pandas.core.computation.eval import eval
 from pandas.core.common import apply_if_callable, is_bool_indexer
 from pandas.core.dtypes.common import is_list_like
 from pandas.core.indexing import check_bool_indexer
@@ -41,7 +42,7 @@ class DataFrame(NDFrame):
 
     See Also
     --------
-    :pandas_docs:`pandas.DataFrame`
+    :pandas_api_docs:`pandas.DataFrame`
 
     Examples
     --------
@@ -119,11 +120,12 @@ class DataFrame(NDFrame):
 
         Returns
         -------
-        Elasticsearch field names as pandas.Index
+        pandas.Index
+            Elasticsearch field names as pandas.Index
 
         See Also
         --------
-        :pandas_docs:`pandas.DataFrame.columns`
+        :pandas_api_docs:`pandas.DataFrame.columns`
 
         Examples
         --------
@@ -153,7 +155,7 @@ class DataFrame(NDFrame):
 
         See Also
         --------
-        :pandas_docs:`pandas.DataFrame.empty`
+        :pandas_api_docs:`pandas.DataFrame.empty`
 
         Examples
         --------
@@ -183,7 +185,7 @@ class DataFrame(NDFrame):
 
         See Also
         --------
-        :pandas_docs:`pandas.DataFrame.head`
+        :pandas_api_docs:`pandas.DataFrame.head`
 
         Examples
         --------
@@ -218,7 +220,7 @@ class DataFrame(NDFrame):
 
         See Also
         --------
-        :pandas_docs:`pandas.DataFrame.tail`
+        :pandas_api_docs:`pandas.DataFrame.tail`
 
         Examples
         --------
@@ -304,7 +306,7 @@ class DataFrame(NDFrame):
 
         See Also
         --------
-        :pandas_docs:`pandas.DataFrame.count`
+        :pandas_api_docs:`pandas.DataFrame.count`
 
         Examples
         --------
@@ -318,11 +320,57 @@ class DataFrame(NDFrame):
 
     def info_es(self):
         """
+        A debug summary of an eland DataFrame internals.
+
+        This includes the Elasticsearch search queries and query compiler task list.
 
         Returns
         -------
-        None
-            This method prints a debug summary of the task list Elasticsearch
+        str
+            A debug summary of an eland DataFrame internals.
+
+        Examples
+        --------
+        >>> df = ed.DataFrame('localhost', 'flights')
+        >>> df = df[(df.OriginAirportID == 'AMS') & (df.FlightDelayMin > 60)]
+        >>> df = df[['timestamp', 'OriginAirportID', 'DestAirportID', 'FlightDelayMin']]
+        >>> df = df.tail()
+        >>> df
+                        timestamp OriginAirportID DestAirportID  FlightDelayMin
+        12608 2018-02-10 01:20:52             AMS          CYEG             120
+        12720 2018-02-10 14:09:40             AMS           BHM             255
+        12725 2018-02-10 00:53:01             AMS           ATL             360
+        12823 2018-02-10 15:41:20             AMS           NGO             120
+        12907 2018-02-11 20:08:25             AMS           LIM             225
+        <BLANKLINE>
+        [5 rows x 4 columns]
+        >>> print(df.info_es())
+        index_pattern: flights
+        Index:
+         index_field: _id
+         is_source_field: False
+        Mappings:
+         capabilities:                 _source   es_dtype        pd_dtype  searchable  aggregatable
+        AvgTicketPrice     True      float         float64        True          True
+        Cancelled          True    boolean            bool        True          True
+        Carrier            True    keyword          object        True          True
+        Dest               True    keyword          object        True          True
+        DestAirportID      True    keyword          object        True          True
+        ...                 ...        ...             ...         ...           ...
+        OriginLocation     True  geo_point          object        True          True
+        OriginRegion       True    keyword          object        True          True
+        OriginWeather      True    keyword          object        True          True
+        dayOfWeek          True    integer           int64        True          True
+        timestamp          True       date  datetime64[ns]        True          True
+        <BLANKLINE>
+        [27 rows x 5 columns]
+        Operations:
+         tasks: [('boolean_filter', {'bool': {'must': [{'term': {'OriginAirportID': 'AMS'}}, {'range': {'FlightDelayMin': {'gt': 60}}}]}}), ('columns', ['timestamp', 'OriginAirportID', 'DestAirportID', 'FlightDelayMin']), ('tail', ('_doc', 5))]
+         size: 5
+         sort_params: _doc:desc
+         columns: ['timestamp', 'OriginAirportID', 'DestAirportID', 'FlightDelayMin']
+         post_processing: ['sort_index']
+        <BLANKLINE>
         """
         buf = StringIO()
 
@@ -350,7 +398,7 @@ class DataFrame(NDFrame):
         This method prints information about a DataFrame including
         the index dtype and column dtypes, non-null values and memory usage.
 
-        See :pandas_docs:`pandas.DataFrame.info` for full details.
+        See :pandas_api_docs:`pandas.DataFrame.info` for full details.
 
         Notes
         -----
@@ -368,7 +416,7 @@ class DataFrame(NDFrame):
         customer_first_name    4675 non-null object
         geoip.city_name        4094 non-null object
         dtypes: object(2)
-        memory usage: 96.0 bytes
+        memory usage: ...
         """
         if buf is None:  # pragma: no cover
             buf = sys.stdout
@@ -559,6 +607,26 @@ class DataFrame(NDFrame):
             result = _buf.getvalue()
             return result
 
+    def __getattr__(self, key):
+        """After regular attribute access, looks up the name in the columns
+
+        Parameters
+        ----------
+            key: str
+                Attribute name.
+
+        Returns
+        -------
+            The value of the attribute.
+        """
+        try:
+            return object.__getattribute__(self, key)
+        except AttributeError as e:
+            if key in self.columns:
+                return self[key]
+            raise e
+
+
     def _getitem(self, key):
         """Get the column specified by key for this DataFrame.
 
@@ -695,7 +763,7 @@ class DataFrame(NDFrame):
         """
         Return a subset of the DataFrame's columns based on the column dtypes.
 
-        Compatible with :pandas_docs:`pandas.DataFrame.select_dtypes`
+        Compatible with :pandas_api_docs:`pandas.DataFrame.select_dtypes`
         """
         empty_df = self._empty_pd_df()
 
@@ -720,6 +788,16 @@ class DataFrame(NDFrame):
         return num_rows, num_columns
 
     def keys(self):
+        """
+        Return columns
+
+        See :pandas_api_docs:`pandas.DataFrame.keys`
+
+        Returns
+        -------
+        pandas.Index
+            Elasticsearch field names as pandas.Index
+        """
         return self.columns
 
     def aggregate(self, func, axis=0, *args, **kwargs):
@@ -758,7 +836,7 @@ class DataFrame(NDFrame):
 
         See Also
         --------
-        :pandas_docs:`pandas.DataFrame.aggregate`
+        :pandas_api_docs:`pandas.DataFrame.aggregate`
 
         Examples
         --------
@@ -788,19 +866,49 @@ class DataFrame(NDFrame):
 
     hist = gfx.ed_hist_frame
 
-    def query(self, expr, inplace=False, **kwargs):
-        """Queries the Dataframe with a boolean expression
+    def query(self, expr):
+        """
+        Query the columns of a DataFrame with a boolean expression.
 
-        Returns:
-            A new DataFrame if inplace=False
+        TODO - add additional pandas arguments
+
+        Parameters
+        ----------
+        expr: str
+            A boolean expression
+
+        Returns
+        -------
+        eland.DataFrame:
+            DataFrame populated by results of the query
+
+        TODO - add link to eland user guide
+
+        See Also
+        --------
+        :pandas_api_docs:`pandas.DataFrame.query`
+        :pandas_user_guide:`indexing`
+
+        Examples
+        --------
+        >>> df = ed.DataFrame('localhost', 'flights')
+        >>> df = df.query('FlightDelayMin > 60')
+        >>> df.info()
         """
         if isinstance(expr, BooleanFilter):
             return DataFrame(
                 query_compiler=self._query_compiler._update_query(BooleanFilter(expr))
             )
         elif isinstance(expr, six.string_types):
+            column_resolver = {}
+            for key in self.keys():
+                column_resolver[key] = self.get(key)
+            # Create fake resolvers - index resolver is empty
+            resolvers = column_resolver, {}
+            # Use pandas eval to parse query - TODO validate this further
+            filter = eval(expr, target=self, resolvers=tuple(tuple(resolvers)))
             return DataFrame(
-                query_compiler=self._query_compiler._update_query(ScriptFilter(expr))
+                query_compiler=self._query_compiler._update_query(filter)
             )
         else:
             raise NotImplementedError(expr, type(expr))
@@ -820,7 +928,7 @@ class DataFrame(NDFrame):
 
         See Also
         --------
-        :pandas_docs:`pandas.DataFrame.get`
+        :pandas_api_docs:`pandas.DataFrame.get`
 
         Examples
         --------

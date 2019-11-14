@@ -57,7 +57,10 @@ except ImportError:
     pd = None
 '''
 
-extlinks = {'pandas_docs': ('https://pandas.pydata.org/pandas-docs/version/0.25.1/reference/api/%s.html', '')}
+extlinks = {
+    'pandas_api_docs': ('https://pandas.pydata.org/pandas-docs/version/0.25.1/reference/api/%s.html', ''),
+    'pandas_user_guide': ('https://pandas.pydata.org/pandas-docs/stable/user_guide/%s.html', 'Pandas User Guide/')
+}
 
 numpydoc_attributes_as_param_list = False
 numpydoc_show_class_members = False
@@ -85,7 +88,8 @@ exclude_patterns = []
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'sphinx_rtd_theme'
+#html_theme = 'sphinx_rtd_theme'
+html_theme = "pandas_sphinx_theme"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,

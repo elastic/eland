@@ -10,14 +10,14 @@ from eland.tests.common import assert_pandas_eland_frame_equal
 
 class TestDataFrameQuery(TestData):
 
-    def test_query(self):
+    def test_getitem_query(self):
         # Examples from:
         # https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.query.html
         pd_df = pd.DataFrame({'A': range(1, 6), 'B': range(10, 0, -2), 'C': range(10, 5, -1)},
                              index=['0', '1', '2', '3', '4'])
 
         # Now create index
-        index_name = 'eland_test_query1'
+        index_name = 'eland_test_query'
 
         ed_df = ed.pd_to_ed(pd_df, ELASTICSEARCH_HOST, index_name, if_exists="replace", refresh=True)
 
@@ -42,3 +42,12 @@ class TestDataFrameQuery(TestData):
         ed_q4 = ed_df[(ed_df.A > 2) & (ed_df.B > 3)]
 
         assert_pandas_eland_frame_equal(pd_q4, ed_q4)
+
+    def test_query(self):
+        ed_flights = self.ed_flights()
+        pd_flights = self.pd_flights()
+
+        #print(ed_flights.query('FlightDelayMin > 60').info_es())
+
+        print(pd_flights.query('FlightDelayMin > 60').shape)
+        print(ed_flights.query('FlightDelayMin > 60').shape)

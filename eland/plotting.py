@@ -10,7 +10,7 @@ def ed_hist_frame(ed_df, column=None, by=None, grid=True, xlabelsize=None,
                   xrot=None, ylabelsize=None, yrot=None, ax=None, sharex=False,
                   sharey=False, figsize=None, layout=None, bins=10, **kwds):
     """
-    See :pandas_docs:`pandas.DataFrame.hist` for usage.
+    See :pandas_api_docs:`pandas.DataFrame.hist` for usage.
 
     Notes
     -----

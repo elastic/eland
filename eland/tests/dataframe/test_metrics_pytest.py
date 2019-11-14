@@ -7,16 +7,16 @@ from eland.tests.common import TestData
 
 class TestDataFrameMetrics(TestData):
 
-    def test_to_mean(self):
+    def test_mean(self):
         pd_flights = self.pd_flights()
         ed_flights = self.ed_flights()
 
-        pd_mean = pd_flights.mean()
-        ed_mean = ed_flights.mean()
+        pd_mean = pd_flights.mean(numeric_only=True)
+        ed_mean = ed_flights.mean(numeric_only=True)
 
         assert_series_equal(pd_mean, ed_mean)
 
-    def test_to_sum(self):
+    def test_sum(self):
         pd_flights = self.pd_flights()
         ed_flights = self.ed_flights()
 
@@ -25,7 +25,7 @@ class TestDataFrameMetrics(TestData):
 
         assert_series_equal(pd_sum, ed_sum)
 
-    def test_to_min(self):
+    def test_min(self):
         pd_flights = self.pd_flights()
         ed_flights = self.ed_flights()
 
@@ -34,7 +34,7 @@ class TestDataFrameMetrics(TestData):
 
         assert_series_equal(pd_min, ed_min)
 
-    def test_to_max(self):
+    def test_max(self):
         pd_flights = self.pd_flights()
         ed_flights = self.ed_flights()
 

@@ -5,7 +5,7 @@ from eland.tests.common import TestData
 
 class TestDataFrameShape(TestData):
 
-    def test_to_shape1(self):
+    def test_ecommerce_shape(self):
         pd_ecommerce = self.pd_ecommerce()
         ed_ecommerce = self.ed_ecommerce()
 
@@ -14,7 +14,7 @@ class TestDataFrameShape(TestData):
 
         assert pd_shape == ed_shape
 
-    def test_to_shape2(self):
+    def test_flights_shape(self):
         pd_flights = self.pd_flights()
         ed_flights = self.ed_flights()
 
