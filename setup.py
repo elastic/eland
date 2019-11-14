@@ -29,6 +29,7 @@ setup(
         'Programming Language :: Python :: 3.7',
     ],
     keywords='elastic eland pandas python',
+    packages=['eland'],
     install_requires=[
         'elasticsearch>=7.0.5',
         'pandas==0.25.1',
