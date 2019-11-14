@@ -1,21 +1,37 @@
-from setuptools import setup
+from setuptools import setup, find_packages
+from codecs import open
+from os import path
 
+here = path.abspath(path.dirname(__file__))
 
-def readme():
-    with open('README.rst') as f:
-        return f.read()
+with open(path.join(here, 'README.md'), encoding='utf-8') as f:
+    long_description = f.read()
 
+here = path.abspath(path.dirname(__file__))
+about = {}
+with open(path.join(here, 'eland', '__version__.py'), 'r', 'utf-8') as f:
+    exec(f.read(), about)
 
-setup(name='eland',
-      version='0.1',
-      description='Python elasticsearch client to analyse, explore and manipulate data that resides in elasticsearch',
-      url='http://github.com/elastic/eland',
-      author='Stephen Dodson',
-      author_email='sjd171@gmail.com',
-      license='ELASTIC LICENSE',
-      packages=['eland'],
-      install_requires=[
-          'elasticsearch>=7.0.5',
-          'pandas==0.25.1'
-      ],
-      zip_safe=False)
+setup(
+    name=about['__title__'],
+    version=about['__version__'],
+    description=about['__description__'],
+    long_description=long_description,
+    long_description_content_type='text/markdown',
+    url=about['__url__'],
+    maintainer=about['__maintainer__'],
+    maintainer_email=about['__maintainer_email__'],
+    license='Apache 2.0',
+    classifiers=[
+        'Development Status :: 4 - Beta',
+        'Intended Audience :: Developers',
+        'License :: OSI Approved :: Apache Software License',
+        'Programming Language :: Python :: 3.7',
+    ],
+    keywords='elastic eland pandas python',
+    install_requires=[
+        'elasticsearch>=7.0.5',
+        'pandas==0.25.1',
+        'matplotlib'
+    ]
+)

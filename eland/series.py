@@ -150,7 +150,7 @@ class Series(NDFrame):
         )
 
     def _to_pandas(self):
-        return self._query_compiler._to_pandas()[self.name]
+        return self._query_compiler.to_pandas()[self.name]
 
     def __gt__(self, other):
         if isinstance(other, Series):

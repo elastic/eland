@@ -84,11 +84,6 @@ class ElandQueryCompiler:
 
         return self._mappings.dtypes(columns)
 
-    def get_dtype_counts(self):
-        columns = self._operations.get_columns()
-
-        return self._mappings.get_dtype_counts(columns)
-
     # END Index, columns, and dtypes objects
 
     def _es_results_to_pandas(self, results, batch_size=None):

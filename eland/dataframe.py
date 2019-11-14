@@ -8,7 +8,6 @@ import six
 from pandas.core.common import apply_if_callable, is_bool_indexer
 from pandas.core.dtypes.common import is_list_like
 from pandas.core.indexing import check_bool_indexer
-
 from pandas.io.common import _expand_user, _stringify_path
 from pandas.io.formats import console
 from pandas.io.formats import format as fmt
@@ -18,6 +17,7 @@ import eland.plotting as gfx
 from eland import NDFrame
 from eland import Series
 from eland.filter import BooleanFilter, ScriptFilter
+
 
 class DataFrame(NDFrame):
     """
@@ -39,20 +39,25 @@ class DataFrame(NDFrame):
     index_field: str, optional
         The Elasticsearch index field to use as the DataFrame index. Defaults to _id if None is used.
 
+    See Also
+    --------
+    :pandas_docs:`pandas.DataFrame`
+
     Examples
     --------
     Constructing DataFrame from an Elasticsearch configuration arguments and an Elasticsearch index
 
     >>> df = ed.DataFrame('localhost:9200', 'flights')
     >>> df.head()
-       AvgTicketPrice  Cancelled           Carrier                                          Dest  ... OriginRegion        OriginWeather dayOfWeek           timestamp
-    0      841.265642      False   Kibana Airlines  Sydney Kingsford Smith International Airport  ...        DE-HE                Sunny         0 2018-01-01 00:00:00
-    1      882.982662      False  Logstash Airways                     Venice Marco Polo Airport  ...        SE-BD                Clear         0 2018-01-01 18:27:00
-    2      190.636904      False  Logstash Airways                     Venice Marco Polo Airport  ...        IT-34                 Rain         0 2018-01-01 17:11:14
-    3      181.694216       True   Kibana Airlines                   Treviso-Sant'Angelo Airport  ...        IT-72  Thunder & Lightning         0 2018-01-01 10:33:28
-    4      730.041778      False   Kibana Airlines          Xi'an Xianyang International Airport  ...       MX-DIF        Damaging Wind         0 2018-01-01 05:13:00
+       AvgTicketPrice  Cancelled  ... dayOfWeek           timestamp
+    0      841.265642      False  ...         0 2018-01-01 00:00:00
+    1      882.982662      False  ...         0 2018-01-01 18:27:00
+    2      190.636904      False  ...         0 2018-01-01 17:11:14
+    3      181.694216       True  ...         0 2018-01-01 10:33:28
+    4      730.041778      False  ...         0 2018-01-01 05:13:00
     <BLANKLINE>
     [5 rows x 27 columns]
+
 
     Constructing DataFrame from an Elasticsearch client and an Elasticsearch index
 
@@ -82,6 +87,7 @@ class DataFrame(NDFrame):
     <BLANKLINE>
     [5 rows x 2 columns]
     """
+
     def __init__(self,
                  client=None,
                  index_pattern=None,
@@ -115,19 +121,22 @@ class DataFrame(NDFrame):
         -------
         Elasticsearch field names as pandas.Index
 
+        See Also
+        --------
+        :pandas_docs:`pandas.DataFrame.columns`
+
         Examples
         --------
         >>> df = ed.DataFrame('localhost', 'flights')
         >>> assert isinstance(df.columns, pd.Index)
         >>> df.columns
-        Index(['AvgTicketPrice', 'Cancelled', 'Carrier', 'Dest', 'DestAirportID',
-        ...   'DestCityName', 'DestCountry', 'DestLocation', 'DestRegion',
-        ...   'DestWeather', 'DistanceKilometers', 'DistanceMiles', 'FlightDelay',
-        ...   'FlightDelayMin', 'FlightDelayType', 'FlightNum', 'FlightTimeHour',
-        ...   'FlightTimeMin', 'Origin', 'OriginAirportID', 'OriginCityName',
-        ...   'OriginCountry', 'OriginLocation', 'OriginRegion', 'OriginWeather',
-        ...   'dayOfWeek', 'timestamp'],
-        ...  dtype='object')
+        Index(['AvgTicketPrice', 'Cancelled', 'Carrier', 'Dest', 'DestAirportID', 'DestCityName',
+        ...   'DestCountry', 'DestLocation', 'DestRegion', 'DestWeather', 'DistanceKilometers',
+        ...   'DistanceMiles', 'FlightDelay', 'FlightDelayMin', 'FlightDelayType', 'FlightNum',
+        ...   'FlightTimeHour', 'FlightTimeMin', 'Origin', 'OriginAirportID', 'OriginCityName',
+        ...   'OriginCountry', 'OriginLocation', 'OriginRegion', 'OriginWeather', 'dayOfWeek',
+        ...   'timestamp'],
+        ...   dtype='object')
         """
         return self._query_compiler.columns
 
@@ -137,9 +146,20 @@ class DataFrame(NDFrame):
     def empty(self):
         """Determines if the DataFrame is empty.
 
-        Returns:
-            True if the DataFrame is empty.
-            False otherwise.
+        Returns
+        -------
+        bool
+            If DataFrame is empty, return True, if not return False.
+
+        See Also
+        --------
+        :pandas_docs:`pandas.DataFrame.empty`
+
+        Examples
+        --------
+        >>> df = ed.DataFrame('localhost', 'flights')
+        >>> df.empty
+        False
         """
         return len(self.columns) == 0 or len(self.index) == 0
 
@@ -160,6 +180,10 @@ class DataFrame(NDFrame):
         -------
         eland.DataFrame
             eland DataFrame filtered on first n rows sorted by index field
+
+        See Also
+        --------
+        :pandas_docs:`pandas.DataFrame.head`
 
         Examples
         --------
@@ -191,6 +215,10 @@ class DataFrame(NDFrame):
         -------
         eland.DataFrame:
             eland DataFrame filtered on last n rows sorted by index field
+
+        See Also
+        --------
+        :pandas_docs:`pandas.DataFrame.tail`
 
         Examples
         --------
@@ -257,20 +285,45 @@ class DataFrame(NDFrame):
 
     def count(self):
         """
-        Count non-NA cells for each column (TODO row)
+        Count non-NA cells for each column.
 
-        Counts are based on exists queries against ES
+        Counts are based on exists queries against ES.
 
         This is inefficient, as it creates N queries (N is number of fields).
-
         An alternative approach is to use value_count aggregations. However, they have issues in that:
-        1. They can only be used with aggregatable fields (e.g. keyword not text)
-        2. For list fields they return multiple counts. E.g. tags=['elastic', 'ml'] returns value_count=2
-        for a single document.
+
+        - They can only be used with aggregatable fields (e.g. keyword not text)
+        - For list fields they return multiple counts. E.g. tags=['elastic', 'ml'] returns value_count=2 for a single document.
+
+        TODO - add additional pandas.DataFrame.count features
+
+        Returns
+        -------
+        pandas.Series:
+            Summary of column counts
+
+        See Also
+        --------
+        :pandas_docs:`pandas.DataFrame.count`
+
+        Examples
+        --------
+        >>> df = ed.DataFrame('localhost', 'ecommerce', columns=['customer_first_name', 'geoip.city_name'])
+        >>> df.count()
+        customer_first_name    4675
+        geoip.city_name        4094
+        dtype: int64
         """
         return self._query_compiler.count()
 
     def info_es(self):
+        """
+
+        Returns
+        -------
+        None
+            This method prints a debug summary of the task list Elasticsearch
+        """
         buf = StringIO()
 
         super()._info_es(buf)
@@ -297,9 +350,25 @@ class DataFrame(NDFrame):
         This method prints information about a DataFrame including
         the index dtype and column dtypes, non-null values and memory usage.
 
+        See :pandas_docs:`pandas.DataFrame.info` for full details.
+
+        Notes
+        -----
         This copies a lot of code from pandas.DataFrame.info as it is difficult
         to split out the appropriate code or creating a SparseDataFrame gives
         incorrect results on types and counts.
+
+        Examples
+        --------
+        >>> df = ed.DataFrame('localhost', 'ecommerce', columns=['customer_first_name', 'geoip.city_name'])
+        >>> df.info()
+        <class 'eland.dataframe.DataFrame'>
+        Index: 4675 entries, 0 to 4674
+        Data columns (total 2 columns):
+        customer_first_name    4675 non-null object
+        geoip.city_name        4094 non-null object
+        dtypes: object(2)
+        memory usage: 96.0 bytes
         """
         if buf is None:  # pragma: no cover
             buf = sys.stdout
@@ -386,7 +455,7 @@ class DataFrame(NDFrame):
             else:
                 _verbose_repr()
 
-        counts = self.get_dtype_counts()
+        counts = self.dtypes.value_counts()
         dtypes = ['{k}({kk:d})'.format(k=k[0], kk=k[1]) for k
                   in sorted(counts.items())]
         lines.append('dtypes: {types}'.format(types=', '.join(dtypes)))
@@ -623,7 +692,11 @@ class DataFrame(NDFrame):
         )
 
     def select_dtypes(self, include=None, exclude=None):
-        # get empty df
+        """
+        Return a subset of the DataFrame's columns based on the column dtypes.
+
+        Compatible with :pandas_docs:`pandas.DataFrame.select_dtypes`
+        """
         empty_df = self._empty_pd_df()
 
         empty_df = empty_df.select_dtypes(include=include, exclude=exclude)
@@ -649,19 +722,13 @@ class DataFrame(NDFrame):
     def keys(self):
         return self.columns
 
-    def groupby(self, by=None, axis=0, *args, **kwargs):
-        axis = pd.DataFrame._get_axis_number(axis)
-
-        if axis == 1:
-            raise NotImplementedError("Aggregating via index not currently implemented - needs index transform")
-
     def aggregate(self, func, axis=0, *args, **kwargs):
         """
         Aggregate using one or more operations over the specified axis.
 
         Parameters
         ----------
-        func : function, str, list or dict
+        func: function, str, list or dict
             Function to use for aggregating the data. If a function, must either
             work when passed a %(klass)s or when passed to %(klass)s.apply.
 
@@ -671,11 +738,15 @@ class DataFrame(NDFrame):
             - string function name
             - list of functions and/or function names, e.g. ``[np.sum, 'mean']``
             - dict of axis labels -> functions, function names or list of such.
+
+            Currently, we only support ``['count', 'mad', 'max', 'mean', 'median', 'min', 'mode', 'quantile',
+            'rank', 'sem', 'skew', 'sum', 'std', 'var']``
         axis
+            Currently, we only support axis=0 (index)
         *args
-            Positional arguments to pass to `func`.
+            Positional arguments to pass to `func`
         **kwargs
-            Keyword arguments to pass to `func`.
+            Keyword arguments to pass to `func`
 
         Returns
         -------
@@ -684,6 +755,19 @@ class DataFrame(NDFrame):
             if DataFrame.agg is called with several functions, returns a DataFrame
             if Series.agg is called with single function, returns a scalar
             if Series.agg is called with several functions, returns a Series
+
+        See Also
+        --------
+        :pandas_docs:`pandas.DataFrame.aggregate`
+
+        Examples
+        --------
+        >>> df = ed.DataFrame('localhost', 'flights')
+        >>> df[['DistanceKilometers', 'AvgTicketPrice']].aggregate(['sum', 'min', 'std'])
+             DistanceKilometers  AvgTicketPrice
+        sum        9.261629e+07    8.204365e+06
+        min        0.000000e+00    1.000205e+02
+        std        4.578263e+03    2.663867e+02
         """
         axis = pd.DataFrame._get_axis_number(axis)
 
@@ -722,17 +806,39 @@ class DataFrame(NDFrame):
             raise NotImplementedError(expr, type(expr))
 
     def get(self, key, default=None):
-        """Get item from object for given key (DataFrame column, Panel
-                slice, etc.). Returns default value if not found.
+        """
+        Get item from object for given key (ex: DataFrame column).
+        Returns default value if not found.
 
-                Args:
-                    key (DataFrame column, Panel slice) : the key for which value
-                    to get
+        Parameters
+        ----------
+        key: object
 
-                Returns:
-                    value (type of items contained in object) : A value that is
-                    stored at the key
-                """
+        Returns
+        -------
+        value: same type as items contained in object
+
+        See Also
+        --------
+        :pandas_docs:`pandas.DataFrame.get`
+
+        Examples
+        --------
+        >>> df = ed.DataFrame('localhost', 'flights')
+        >>> df.get('Carrier')
+        0         Kibana Airlines
+        1        Logstash Airways
+        2        Logstash Airways
+        3         Kibana Airlines
+        4         Kibana Airlines
+                       ...
+        13054    Logstash Airways
+        13055    Logstash Airways
+        13056    Logstash Airways
+        13057            JetBeats
+        13058            JetBeats
+        Name: Carrier, Length: 13059, dtype: object
+        """
         if key in self.keys():
             return self._getitem(key)
         else:

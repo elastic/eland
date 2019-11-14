@@ -40,7 +40,10 @@ release = '0.1'
 extensions = [
     'sphinx.ext.autodoc',
     "sphinx.ext.doctest",
-    'numpydoc'
+    "sphinx.ext.extlinks",
+    'numpydoc',
+    "matplotlib.sphinxext.plot_directive",
+    "sphinx.ext.todo",
 ]
 
 doctest_global_setup = '''
@@ -54,7 +57,18 @@ except ImportError:
     pd = None
 '''
 
+extlinks = {'pandas_docs': ('https://pandas.pydata.org/pandas-docs/version/0.25.1/reference/api/%s.html', '')}
+
 numpydoc_attributes_as_param_list = False
+numpydoc_show_class_members = False
+
+# matplotlib plot directive
+plot_include_source = True
+plot_formats = [("png", 90)]
+plot_html_show_formats = False
+plot_html_show_source_link = False
+plot_pre_code = """import numpy as np
+import eland as ed"""
 
 
 # Add any paths that contain templates here, relative to this directory.

@@ -420,13 +420,13 @@ class Mappings:
                 return self._mappings_capabilities[(self._mappings_capabilities._source == True) &
                                                    ((self._mappings_capabilities.pd_dtype == 'int64') |
                                                     (self._mappings_capabilities.pd_dtype == 'float64') |
-                                                    (self._mappings_capabilities.pd_dtype == 'bool'))].loc[
-                    columns].index.tolist()
+                                                    (self._mappings_capabilities.pd_dtype == 'bool'))].reindex(
+                    columns).index.tolist()
             else:
                 return self._mappings_capabilities[(self._mappings_capabilities._source == True) &
                                                    ((self._mappings_capabilities.pd_dtype == 'int64') |
-                                                    (self._mappings_capabilities.pd_dtype == 'float64'))].loc[
-                    columns].index.tolist()
+                                                    (self._mappings_capabilities.pd_dtype == 'float64'))].reindex(
+                    columns).index.tolist()
         else:
             if include_bool == True:
                 return self._mappings_capabilities[(self._mappings_capabilities._source == True) &
@@ -468,26 +468,6 @@ class Mappings:
                 {key: self._source_field_pd_dtypes[key] for key in columns})
 
         return pd.Series(self._source_field_pd_dtypes)
-
-    def get_dtype_counts(self, columns=None):
-        """
-        Return counts of unique dtypes in this object.
-
-        Returns
-        -------
-        get_dtype_counts : Series
-            Series with the count of columns with each dtype.
-        """
-
-        if columns is not None:
-            return pd.Series(self._mappings_capabilities[self._mappings_capabilities._source == True]
-                             .loc[columns]
-                             .groupby('pd_dtype')['_source']
-                             .count().to_dict())
-
-        return pd.Series(self._mappings_capabilities[self._mappings_capabilities._source == True]
-                         .groupby('pd_dtype')['_source']
-                         .count().to_dict())
 
     def info_es(self, buf):
         buf.write("Mappings:\n")

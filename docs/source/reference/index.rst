@@ -12,3 +12,4 @@ methods. All classes and functions exposed in ``eland.*`` namespace are public.
 
    general_utility_functions
    dataframe
+   indexing

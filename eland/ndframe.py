@@ -57,10 +57,23 @@ class NDFrame:
 
     def _get_index(self):
         """
+        Return eland index referencing Elasticsearch field to index a DataFrame/Series
 
         Returns
         -------
+        eland.Index:
+            Note eland.Index has a very limited API compared to pandas.Index
 
+        See Also
+        --------
+        :pandas_docs:`pandas.DataFrame.index`
+
+        Examples
+        --------
+        >>> df = ed.DataFrame('localhost', 'flights')
+        >>> assert isinstance(df.index, ed.Index)
+        >>> df.index.index_field
+        '_id'
         """
         return self._query_compiler.index
 
@@ -68,10 +81,30 @@ class NDFrame:
 
     @property
     def dtypes(self):
-        return self._query_compiler.dtypes
+        """
+        Return the pandas dtypes in the DataFrame. Elasticsearch types are mapped
+        to pandas dtypes via Mappings._es_dtype_to_pd_dtype.__doc__
 
-    def get_dtype_counts(self):
-        return self._query_compiler.get_dtype_counts()
+        Returns
+        -------
+        pandas.Series
+            The data type of each column.
+
+        See Also
+        --------
+        :pandas_docs:`pandas.DataFrame.dtypes`
+
+        Examples
+        --------
+        >>> df = ed.DataFrame('localhost', 'flights', columns=['Origin', 'AvgTicketPrice', 'timestamp', 'dayOfWeek'])
+        >>> df.dtypes
+        Origin                    object
+        AvgTicketPrice           float64
+        timestamp         datetime64[ns]
+        dayOfWeek                  int64
+        dtype: object
+        """
+        return self._query_compiler.dtypes
 
     def _build_repr_df(self, num_rows, num_cols):
         # Overriden version of BasePandasDataset._build_repr_df
@@ -134,21 +167,71 @@ class NDFrame:
             errors="raise",
     ):
         """Return new object with labels in requested axis removed.
-        Args:
-            labels: Index or column labels to drop.
-            axis: Whether to drop labels from the index (0 / 'index') or
-                columns (1 / 'columns').
-            index, columns: Alternative to specifying axis (labels, axis=1 is
-                equivalent to columns=labels).
-            level: For MultiIndex
-            inplace: If True, do operation inplace and return None.
-            errors: If 'ignore', suppress error and existing labels are
-                dropped.
-        Returns:
-            dropped : type of caller
 
-        (derived from modin.base.BasePandasDataset)
+        Parameters
+        ----------
+        labels:
+            Index or column labels to drop.
+        axis:
+            Whether to drop labels from the index (0 / 'index') or columns (1 / 'columns').
+        index, columns:
+            Alternative to specifying axis (labels, axis=1 is equivalent to columns=labels).
+        level:
+            For MultiIndex - not supported
+        inplace:
+            If True, do operation inplace and return None.
+        errors:
+            If 'ignore', suppress error and existing labels are dropped.
+
+        Returns
+        -------
+        dropped:
+            type of caller
+
+        See Also
+        --------
+        :pandas_docs:`pandas.DataFrame.drop`
+
+        Examples
+        --------
+        Drop a column
+
+        >>> df = ed.DataFrame('localhost', 'ecommerce', columns=['customer_first_name', 'email', 'user'])
+        >>> df.drop(columns=['user'])
+             customer_first_name                       email
+        0                  Eddie  eddie@underwood-family.zzz
+        1                   Mary      mary@bailey-family.zzz
+        2                   Gwen      gwen@butler-family.zzz
+        3                  Diane   diane@chandler-family.zzz
+        4                  Eddie      eddie@weber-family.zzz
+        ...                  ...                         ...
+        4670                Mary     mary@lambert-family.zzz
+        4671                 Jim      jim@gilbert-family.zzz
+        4672               Yahya     yahya@rivera-family.zzz
+        4673                Mary     mary@hampton-family.zzz
+        4674             Jackson  jackson@hopkins-family.zzz
+        <BLANKLINE>
+        [4675 rows x 2 columns]
+
+        Drop rows by index value (axis=0)
+
+        >>> df.drop(['1', '2'])
+             customer_first_name                       email     user
+        0                  Eddie  eddie@underwood-family.zzz    eddie
+        3                  Diane   diane@chandler-family.zzz    diane
+        4                  Eddie      eddie@weber-family.zzz    eddie
+        5                  Diane    diane@goodwin-family.zzz    diane
+        6                 Oliver      oliver@rios-family.zzz   oliver
+        ...                  ...                         ...      ...
+        4670                Mary     mary@lambert-family.zzz     mary
+        4671                 Jim      jim@gilbert-family.zzz      jim
+        4672               Yahya     yahya@rivera-family.zzz    yahya
+        4673                Mary     mary@hampton-family.zzz     mary
+        4674             Jackson  jackson@hopkins-family.zzz  jackson
+        <BLANKLINE>
+        [4673 rows x 3 columns]
         """
+        #(derived from modin.base.BasePandasDataset)
         # Level not supported
         if level is not None:
             raise NotImplementedError("level not supported {}".format(level))
@@ -242,4 +325,36 @@ class NDFrame:
         return self._query_compiler._hist(num_bins)
 
     def describe(self):
+        """
+        Generate descriptive statistics that summarize the central tendency, dispersion and shape of a
+        dataset’s distribution, excluding NaN values.
+
+        Analyzes both numeric and object series, as well as DataFrame column sets of mixed data types.
+        The output will vary depending on what is provided. Refer to the notes below for more detail.
+
+        TODO - add additional arguments (current only numeric values supported)
+
+        Returns
+        -------
+        pandas.Dataframe:
+            Summary information
+
+        See Also
+        --------
+        :pandas_docs:`pandas.DataFrame.describe`
+
+        Examples
+        --------
+        >>> df = ed.DataFrame('localhost', 'flights', columns=['AvgTicketPrice', 'FlightDelay'])
+        >>> df.describe() # ignoring percentiles as they don't generate consistent results
+               AvgTicketPrice   FlightDelay
+        count    13059.000000  13059.000000
+        mean       628.253689      0.251168
+        std        266.386661      0.433685
+        min        100.020531      0.000000
+        ...
+        ...
+        ...
+        max       1199.729004      1.000000
+        """
         return self._query_compiler.describe()

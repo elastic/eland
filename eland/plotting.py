@@ -10,36 +10,42 @@ def ed_hist_frame(ed_df, column=None, by=None, grid=True, xlabelsize=None,
                   xrot=None, ylabelsize=None, yrot=None, ax=None, sharex=False,
                   sharey=False, figsize=None, layout=None, bins=10, **kwds):
     """
-    Derived from pandas.plotting._core.hist_frame 0.24.2 - TODO update to 0.25.1
+    See :pandas_docs:`pandas.DataFrame.hist` for usage.
 
-    Ideally, we'd call hist_frame directly with histogram data,
+    Notes
+    -----
+    Derived from ``pandas.plotting._core.hist_frame 0.24.2`` - TODO update to ``0.25.1``
+
+    Ideally, we'd call `hist_frame` directly with histogram data,
     but weights are applied to ALL series. For example, we can
     plot a histogram of pre-binned data via:
 
-    counts, bins = np.histogram(data)
-    plt.hist(bins[:-1], bins, weights=counts)
+    .. code-block:: python
+
+        counts, bins = np.histogram(data)
+        plt.hist(bins[:-1], bins, weights=counts)
 
     However,
 
-    ax.hist(data[col].dropna().values, bins=bins, **kwds)
+    .. code-block:: python
 
-    is for [col] and weights are a single array.
+        ax.hist(data[col].dropna().values, bins=bins, **kwds)
 
-    We therefore cut/paste code.
+    is for ``[col]`` and weights are a single array.
+
+    Examples
+    --------
+    .. plot::
+        :context: close-figs
+
+        >>> df = ed.DataFrame('localhost', 'flights')
+        >>> hist = df.select_dtypes(include=[np.number]).hist(figsize=[10,10])
     """
     # Start with empty pandas data frame derived from
     ed_df_bins, ed_df_weights = ed_df._hist(num_bins=bins)
 
     if by is not None:
         raise NotImplementedError("TODO")
-        """
-        axes = grouped_hist(data, column=column, by=by, ax=ax, grid=grid,
-                            figsize=figsize, sharex=sharex, sharey=sharey,
-                            layout=layout, bins=bins, xlabelsize=xlabelsize,
-                            xrot=xrot, ylabelsize=ylabelsize,
-                            yrot=yrot, **kwds)
-        """
-        return axes
 
     if column is not None:
         if not isinstance(column, (list, np.ndarray, ABCIndexClass)):
