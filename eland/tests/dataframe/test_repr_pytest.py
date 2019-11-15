@@ -1,5 +1,7 @@
 # File called _pytest for PyCharm compatability
 
+import pytest
+
 from eland.tests.common import TestData
 
 
@@ -12,8 +14,9 @@ class TestDataFrameRepr(TestData):
         ed_head_101 = ed_flights.head(101)
         pd_head_101 = pd_flights.head(101)
 
-        # This sets max_rows=60 by default
-        ed_head_101_str = ed_head_101.to_string()
+        # This sets max_rows=60 by default (but throws userwarning)
+        with pytest.warns(UserWarning):
+            ed_head_101_str = ed_head_101.to_string()
         pd_head_101_str = pd_head_101.to_string(max_rows=60)
 
         assert pd_head_101_str == ed_head_101_str

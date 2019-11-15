@@ -539,10 +539,6 @@ class Operations:
         task = ('iloc', (index, columns))
         self._tasks.append(task)
 
-    def squeeze(self, axis):
-        task = ('squeeze', axis)
-        self._tasks.append(task)
-
     def index_count(self, query_compiler, field):
         # field is the index field so count values
         query_params, post_processing = self._resolve_tasks()
@@ -660,8 +656,6 @@ class Operations:
                 if column_indexer is None:
                     column_indexer = slice(None)
                 df = df.iloc[index_indexer, column_indexer]
-            elif action[0] == 'squeeze':
-                df = df.squeeze(axis=action[1])
             # columns could be in here (and we ignore it)
 
         return df
