@@ -10,6 +10,7 @@ methods. All classes and functions exposed in ``eland.*`` namespace are public.
 .. toctree::
    :maxdepth: 2
 
+   io
    general_utility_functions
    dataframe
    indexing

@@ -431,4 +431,3 @@ class ElandQueryCompiler:
 
         return result
 
-    # def isna(self):
