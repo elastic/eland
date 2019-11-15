@@ -251,6 +251,7 @@ class DataFrame(NDFrame):
             width, _ = console.get_console_size()
         else:
             width = None
+
         self.to_string(buf=buf, max_rows=max_rows, max_cols=max_cols,
                        line_width=width, show_dimensions=show_dimensions)
 
@@ -586,6 +587,10 @@ class DataFrame(NDFrame):
                           "- this will return entire index results. "
                           "Setting max_rows=60, overwrite if different behaviour is required.")
             max_rows = 60
+
+        # if the size of the index is larger than max_rows, only show 10 rows
+        if len(self) > max_rows:
+            max_rows = 10
 
         # Create a slightly bigger dataframe than display
         df = self._build_repr_df(max_rows + 1, max_cols)
