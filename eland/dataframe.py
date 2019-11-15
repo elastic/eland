@@ -244,8 +244,16 @@ class DataFrame(NDFrame):
         """
         buf = StringIO()
 
+        # max_rows and max_cols determine the maximum size of the pretty printed tabular
+        # representation of the dataframe. pandas defaults are 60 and 20 respectively.
+        # dataframes where len(df) > max_rows shows a truncated view with 10 rows shown.
         max_rows = pd.get_option("display.max_rows")
         max_cols = pd.get_option("display.max_columns")
+        min_rows = pd.get_option("display.min_rows")
+
+        if len(self) > max_rows:
+            max_rows = min_rows
+
         show_dimensions = pd.get_option("display.show_dimensions")
         if pd.get_option("display.expand_frame_repr"):
             width, _ = console.get_console_size()
@@ -587,10 +595,6 @@ class DataFrame(NDFrame):
                           "- this will return entire index results. "
                           "Setting max_rows=60, overwrite if different behaviour is required.")
             max_rows = 60
-
-        # if the size of the index is larger than max_rows, only show 10 rows
-        if len(self) > max_rows:
-            max_rows = 10
 
         # Create a slightly bigger dataframe than display
         df = self._build_repr_df(max_rows + 1, max_cols)

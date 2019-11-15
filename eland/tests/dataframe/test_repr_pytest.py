@@ -19,7 +19,7 @@ class TestDataFrameRepr(TestData):
             ed_head_101_str = ed_head_101.to_string()
         pd_head_101_str = pd_head_101.to_string(max_rows=60)
 
-        assert pd_head_101_str == ed_head_101_str
+        assert pd_head_101_str  == ed_head_101_str
 
     def test_head_11_to_string2(self):
         ed_flights = self.ed_flights()
@@ -32,6 +32,16 @@ class TestDataFrameRepr(TestData):
         pd_head_11_str = pd_head_11.to_string(max_rows=60)
 
         assert pd_head_11_str == ed_head_11_str
+
+    def test_less_than_max_rows_to_string(self):
+        ed_flights = self.ed_flights()
+        pd_flights = self.pd_flights()
+
+        ed_less_than_max = ed_flights[ed_flights['AvgTicketPrice']>1190]
+        pd_less_than_max = pd_flights[pd_flights['AvgTicketPrice']>1190]
+
+        ed_less_than_max_str = ed_less_than_max.to_string()
+        pd_less_than_max_str = pd_less_than_max.to_string()
 
     def test_repr(self):
         ed_ecommerce = self.ed_ecommerce()
