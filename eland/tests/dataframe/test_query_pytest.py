@@ -19,7 +19,7 @@ class TestDataFrameQuery(TestData):
         # Now create index
         index_name = 'eland_test_query'
 
-        ed_df = ed.pd_to_ed(pd_df, ELASTICSEARCH_HOST, index_name, if_exists="replace", refresh=True)
+        ed_df = ed.pandas_to_eland(pd_df, ELASTICSEARCH_HOST, index_name, if_exists="replace", refresh=True)
 
         assert_pandas_eland_frame_equal(pd_df, ed_df)
 

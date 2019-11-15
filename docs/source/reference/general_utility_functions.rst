@@ -17,5 +17,5 @@ Pandas and Eland
 .. autosummary::
    :toctree: api/
 
-    pd_to_ed
-    ed_to_pd
+    pandas_to_eland
+    eland_to_pandas

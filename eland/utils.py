@@ -26,13 +26,13 @@ def read_es(es_params, index_pattern):
 
     See Also
     --------
-    eland.pd_to_ed: Create an eland.Dataframe from pandas.DataFrame
-    eland.ed_to_pd: Create a pandas.Dataframe from eland.DataFrame
+    eland.pandas_to_eland: Create an eland.Dataframe from pandas.DataFrame
+    eland.eland_to_pandas: Create a pandas.Dataframe from eland.DataFrame
     """
     return DataFrame(client=es_params, index_pattern=index_pattern)
 
-def pd_to_ed(df, es_params, destination_index, if_exists='fail', chunk_size=10000, refresh=False, dropna=False,
-             geo_points=None):
+def pandas_to_eland(pd_df, es_params, destination_index, if_exists='fail', chunk_size=10000, refresh=False, dropna=False,
+                    geo_points=None):
     """
     Append a pandas DataFrame to an Elasticsearch index.
     Mainly used in testing.
@@ -66,11 +66,11 @@ def pd_to_ed(df, es_params, destination_index, if_exists='fail', chunk_size=1000
     See Also
     --------
     eland.read_es: Create an eland.Dataframe from an Elasticsearch index
-    eland.ed_to_pd: Create a pandas.Dataframe from eland.DataFrame
+    eland.eland_to_pandas: Create a pandas.Dataframe from eland.DataFrame
     """
     client = Client(es_params)
 
-    mapping = Mappings._generate_es_mappings(df, geo_points)
+    mapping = Mappings._generate_es_mappings(pd_df, geo_points)
 
     # If table exists, check if_exists parameter
     if client.index_exists(index=destination_index):
@@ -92,7 +92,7 @@ def pd_to_ed(df, es_params, destination_index, if_exists='fail', chunk_size=1000
     # Now add data
     actions = []
     n = 0
-    for row in df.iterrows():
+    for row in pd_df.iterrows():
         # Use index as _id
         id = row[0]
 
@@ -118,7 +118,7 @@ def pd_to_ed(df, es_params, destination_index, if_exists='fail', chunk_size=1000
 
     return ed_df
 
-def ed_to_pd(ed_df):
+def eland_to_pandas(ed_df):
     """
     Convert an eland.Dataframe to a pandas.DataFrame
 
@@ -138,7 +138,7 @@ def ed_to_pd(ed_df):
     See Also
     --------
     eland.read_es: Create an eland.Dataframe from an Elasticsearch index
-    eland.pd_to_ed: Create an eland.Dataframe from pandas.DataFrame
+    eland.pandas_to_eland: Create an eland.Dataframe from pandas.DataFrame
     """
     return ed_df._to_pandas()
 

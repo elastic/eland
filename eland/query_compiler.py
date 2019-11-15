@@ -369,13 +369,6 @@ class ElandQueryCompiler:
 
         return result
 
-    def squeeze(self, axis=None):
-        result = self.copy()
-
-        result._operations.squeeze(axis)
-
-        return result
-
     def view(self, index=None, columns=None):
         result = self.copy()
 

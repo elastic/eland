@@ -24,6 +24,7 @@ Attributes and underlying data
    DataFrame.dtypes   
    DataFrame.select_dtypes   
    DataFrame.empty   
+   DataFrame.shape
 
 Indexing, iteration
 ~~~~~~~~~~~~~~~~~~~
@@ -80,6 +81,9 @@ Serialization / IO / conversion
    :toctree: api/
 
    DataFrame.info
+   DataFrame.to_csv
+   DataFrame.to_html
+   DataFrame.to_string
 
 Elasticsearch utilities
 ~~~~~~~~~~~~~~~~~~~~~~~

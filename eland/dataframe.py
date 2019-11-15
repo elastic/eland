@@ -76,6 +76,7 @@ class DataFrame(NDFrame):
     [5 rows x 2 columns]
 
     Constructing DataFrame from an Elasticsearch client and an Elasticsearch index, with 'timestamp' as the  DataFrame index field
+    (TODO - currently index_field must also be a field if not _id)
 
     >>> df = ed.DataFrame(client='localhost', index_pattern='flights', columns=['AvgTicketPrice', 'timestamp'], index_field='timestamp')
     >>> df.head()
@@ -529,7 +530,11 @@ class DataFrame(NDFrame):
                 bold_rows=True, classes=None, escape=True, notebook=False,
                 border=None, table_id=None, render_links=False):
         """
-        From pandas - except we set max_rows default to avoid careless extraction of entire index
+        Render a Elasticsearch data as an HTML table.
+
+        See Also
+        --------
+        :pandas_api_docs:`to_html` for argument details.
         """
         if max_rows is None:
             warnings.warn("DataFrame.to_string called without max_rows set "
@@ -568,7 +573,13 @@ class DataFrame(NDFrame):
                   max_rows=None, max_cols=None, show_dimensions=False,
                   decimal='.', line_width=None):
         """
-        From pandas - except we set max_rows default to avoid careless extraction of entire index
+        Render a DataFrame to a console-friendly tabular output.
+
+        Follows pandas implementation except we set max_rows default to avoid careless extraction of entire index.
+
+        See Also
+        --------
+        :pandas_api_docs:`to_string` for argument details.
         """
         if max_rows is None:
             warnings.warn("DataFrame.to_string called without max_rows set "
@@ -718,6 +729,13 @@ class DataFrame(NDFrame):
                quotechar='"', line_terminator=None, chunksize=None,
                tupleize_cols=None, date_format=None, doublequote=True,
                escapechar=None, decimal='.'):
+        """
+        Write Elasticsearch data to a comma-separated values (csv) file.
+
+        See Also
+        --------
+        :pandas_api_docs:`to_csv` for argument details.
+        """
         kwargs = {
             "path_or_buf": path_or_buf,
             "sep": sep,
@@ -754,16 +772,34 @@ class DataFrame(NDFrame):
     def _empty_pd_df(self):
         return self._query_compiler._empty_pd_ef()
 
-    def squeeze(self, axis=None):
-        return DataFrame(
-            query_compiler=self._query_compiler.squeeze(axis)
-        )
-
     def select_dtypes(self, include=None, exclude=None):
         """
         Return a subset of the DataFrame's columns based on the column dtypes.
 
         Compatible with :pandas_api_docs:`pandas.DataFrame.select_dtypes`
+
+        Returns
+        -------
+        eland.DataFrame
+            DataFrame contains only columns of selected dtypes
+
+        Examples
+        --------
+        >>> df = ed.DataFrame('localhost', 'flights',
+        ... columns=['AvgTicketPrice', 'Dest', 'Cancelled', 'timestamp', 'dayOfWeek'])
+        >>> df.dtypes
+        AvgTicketPrice           float64
+        Dest                      object
+        Cancelled                   bool
+        timestamp         datetime64[ns]
+        dayOfWeek                  int64
+        dtype: object
+        >>> df = df.select_dtypes(include=[np.number, 'datetime'])
+        >>> df.dtypes
+        AvgTicketPrice           float64
+        timestamp         datetime64[ns]
+        dayOfWeek                  int64
+        dtype: object
         """
         empty_df = self._empty_pd_df()
 
@@ -779,8 +815,20 @@ class DataFrame(NDFrame):
         Returns
         -------
         shape: tuple
-            0 - number of rows
-            1 - number of columns
+
+        0. number of rows
+        1. number of columns
+
+        Notes
+        -----
+        - number of rows ``len(df)`` queries Elasticsearch
+        - number of columns ``len(df.columns)`` is cached. If mappings are updated, DataFrame must be updated.
+
+        Examples
+        --------
+        >>> df = ed.read_es('localhost', 'ecommerce')
+        >>> df.shape
+        (4675, 45)
         """
         num_rows = len(self)
         num_columns = len(self.columns)
@@ -891,9 +939,11 @@ class DataFrame(NDFrame):
 
         Examples
         --------
-        >>> df = ed.DataFrame('localhost', 'flights')
-        >>> df = df.query('FlightDelayMin > 60')
-        >>> df.info()
+        >>> df = ed.read_es('localhost', 'flights')
+        >>> df.shape
+        (13059, 27)
+        >>> df.query('FlightDelayMin > 60').shape
+        (2730, 27)
         """
         if isinstance(expr, BooleanFilter):
             return DataFrame(
