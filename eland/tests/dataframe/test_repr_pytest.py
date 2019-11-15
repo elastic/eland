@@ -19,7 +19,7 @@ class TestDataFrameRepr(TestData):
             ed_head_101_str = ed_head_101.to_string()
         pd_head_101_str = pd_head_101.to_string(max_rows=60)
 
-        assert pd_head_101_str  == ed_head_101_str
+        assert pd_head_101_str == ed_head_101_str
 
     def test_head_11_to_string2(self):
         ed_flights = self.ed_flights()
