@@ -20,7 +20,7 @@ import warnings
 import pandas as pd
 
 from eland import NDFrame
-from eland.filter import NotFilter, Equal, Greater, Less, GreaterEqual, LessEqual, ScriptFilter
+from eland.filter import NotFilter, Equal, Greater, Less, GreaterEqual, LessEqual, ScriptFilter, IsIn
 
 
 class Series(NDFrame):
@@ -213,6 +213,12 @@ class Series(NDFrame):
             return NotFilter(Equal(field=self.name, value=other))
         elif isinstance(other, str):
             return NotFilter(Equal(field=self.name, value=other))
+        else:
+            raise NotImplementedError(other, type(other))
+
+    def isin(self, other):
+        if isinstance(other, list):
+            return IsIn(field=self.name, value=other)
         else:
             raise NotImplementedError(other, type(other))
 
