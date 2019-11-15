@@ -1,12 +1,22 @@
 # File called _pytest for PyCharm compatability
 
 import ast
+import time
+
+import eland as ed
+
+from elasticsearch import Elasticsearch
 
 import pandas as pd
-from pandas.util.testing import (assert_frame_equal)
+from pandas.util.testing import assert_frame_equal
 
 from eland.tests.common import ROOT_DIR
 from eland.tests.common import TestData
+
+from eland.tests import ELASTICSEARCH_HOST
+from eland.tests import FLIGHTS_INDEX_NAME
+
+from eland.tests.common import assert_pandas_eland_frame_equal
 
 
 class TestDataFrameToCSV(TestData):
@@ -42,3 +52,21 @@ class TestDataFrameToCSV(TestData):
         pd_from_csv.timestamp = pd.to_datetime(pd_from_csv.timestamp)
 
         assert_frame_equal(pd_flights, pd_from_csv)
+
+        # Now read the csv to an index
+        now_millis = int(round(time.time() * 1000))
+
+        test_index = FLIGHTS_INDEX_NAME + '.' + str(now_millis)
+        es = Elasticsearch(ELASTICSEARCH_HOST)
+
+        ed_flights_from_csv = ed.read_csv(results_file, es, test_index, index_col=0, es_refresh=True,
+                                          es_geo_points=['OriginLocation', 'DestLocation'],
+                                          converters={
+                                              'DestLocation': lambda x: ast.literal_eval(x),
+                                              'OriginLocation': lambda x: ast.literal_eval(x)}
+                                          )
+        pd_flights_from_csv = ed.eland_to_pandas(ed_flights_from_csv)
+
+        # TODO - there is a 'bug' where the Elasticsearch index returns data in a different order to the CSV
+        print(ed_flights_from_csv.head())
+        print(pd_flights_from_csv.head())
