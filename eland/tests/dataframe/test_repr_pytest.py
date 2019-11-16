@@ -43,6 +43,8 @@ class TestDataFrameRepr(TestData):
         ed_less_than_max_str = ed_less_than_max.to_string()
         pd_less_than_max_str = pd_less_than_max.to_string()
 
+        assert pd_less_than_max_str == ed_less_than_max_str
+
     def test_repr(self):
         ed_ecommerce = self.ed_ecommerce()
         pd_ecommerce = self.pd_ecommerce()
