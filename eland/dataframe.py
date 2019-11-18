@@ -278,7 +278,7 @@ class DataFrame(NDFrame):
 
     def _repr_html_(self):
         """
-        From pandas
+        From pandas - this is called by notebooks
         """
         if self._info_repr():
             buf = StringIO("")
@@ -557,7 +557,10 @@ class DataFrame(NDFrame):
         # by limiting rows by default.
         num_rows = len(self) # avoid multiple calls
         if num_rows <= DEFAULT_NUM_ROWS_DISPLAYED:
-            max_rows = num_rows
+            if max_rows is None:
+                max_rows = num_rows
+            else:
+                max_rows = min(num_rows, max_rows)
         elif max_rows is None:
             warnings.warn("DataFrame.to_string called without max_rows set "
                           "- this will return entire index results. "
@@ -612,7 +615,10 @@ class DataFrame(NDFrame):
         # by limiting rows by default.
         num_rows = len(self) # avoid multiple calls
         if num_rows <= DEFAULT_NUM_ROWS_DISPLAYED:
-            max_rows = num_rows
+            if max_rows is None:
+                max_rows = num_rows
+            else:
+                max_rows = min(num_rows, max_rows)
         elif max_rows is None:
             warnings.warn("DataFrame.to_string called without max_rows set "
                       "- this will return entire index results. "

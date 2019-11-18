@@ -30,18 +30,22 @@ class TestDataFrameRepr(TestData):
         self.num_rows_to_string(DEFAULT_NUM_ROWS_DISPLAYED-1)
         self.num_rows_to_string(DEFAULT_NUM_ROWS_DISPLAYED)
         with pytest.warns(UserWarning):
-            # UserWarning displayed by eland here
-            self.num_rows_to_string(DEFAULT_NUM_ROWS_DISPLAYED+1, DEFAULT_NUM_ROWS_DISPLAYED)
+            # UserWarning displayed by eland here (compare to pandas with max_rows set)
+            self.num_rows_to_string(DEFAULT_NUM_ROWS_DISPLAYED+1, None, DEFAULT_NUM_ROWS_DISPLAYED)
 
-    def num_rows_to_string(self, rows, max_rows=None):
+        # Test for where max_rows lt or gt num_rows
+        self.num_rows_to_string(10, 5, 5)
+        self.num_rows_to_string(100, 200, 200)
+
+    def num_rows_to_string(self, rows, max_rows_eland=None, max_rows_pandas=None):
         ed_flights = self.ed_flights()
         pd_flights = self.pd_flights()
 
         ed_head = ed_flights.head(rows)
         pd_head = pd_flights.head(rows)
 
-        ed_head_str = ed_head.to_string()
-        pd_head_str = pd_head.to_string(max_rows=max_rows)
+        ed_head_str = ed_head.to_string(max_rows=max_rows_eland)
+        pd_head_str = pd_head.to_string(max_rows=max_rows_pandas)
 
         #print(ed_head_str)
         #print(pd_head_str)
@@ -93,20 +97,24 @@ class TestDataFrameRepr(TestData):
         self.num_rows_to_html(DEFAULT_NUM_ROWS_DISPLAYED)
         with pytest.warns(UserWarning):
             # UserWarning displayed by eland here
-            self.num_rows_to_html(DEFAULT_NUM_ROWS_DISPLAYED+1, DEFAULT_NUM_ROWS_DISPLAYED)
+            self.num_rows_to_html(DEFAULT_NUM_ROWS_DISPLAYED+1, None, DEFAULT_NUM_ROWS_DISPLAYED)
 
-    def num_rows_to_html(self, rows, max_rows=None):
+        # Test for where max_rows lt or gt num_rows
+        self.num_rows_to_html(10, 5, 5)
+        self.num_rows_to_html(100, 200, 200)
+
+    def num_rows_to_html(self, rows, max_rows_eland=None, max_rows_pandas=None):
         ed_flights = self.ed_flights()
         pd_flights = self.pd_flights()
 
         ed_head = ed_flights.head(rows)
         pd_head = pd_flights.head(rows)
 
-        ed_head_str = ed_head.to_html()
-        pd_head_str = pd_head.to_html(max_rows=max_rows)
+        ed_head_str = ed_head.to_html(max_rows=max_rows_eland)
+        pd_head_str = pd_head.to_html(max_rows=max_rows_pandas)
 
-        print(ed_head_str)
-        print(pd_head_str)
+        #print(ed_head_str)
+        #print(pd_head_str)
 
         assert pd_head_str == ed_head_str
 
