@@ -22,6 +22,12 @@ from eland.filter import BooleanFilter, ScriptFilter
 # Default number of rows displayed (different to pandas where ALL could be displayed)
 DEFAULT_NUM_ROWS_DISPLAYED = 60
 
+def docstring_parameter(*sub):
+    def dec(obj):
+        obj.__doc__ = obj.__doc__.format(*sub)
+        return obj
+    return dec
+
 
 class DataFrame(NDFrame):
     """
@@ -540,6 +546,7 @@ class DataFrame(NDFrame):
 
         fmt.buffer_put_lines(buf, lines)
 
+    @docstring_parameter(DEFAULT_NUM_ROWS_DISPLAYED)
     def to_html(self, buf=None, columns=None, col_space=None, header=True,
                 index=True, na_rep='NaN', formatters=None, float_format=None,
                 sparsify=None, index_names=True, justify=None, max_rows=None,
@@ -548,6 +555,9 @@ class DataFrame(NDFrame):
                 border=None, table_id=None, render_links=False):
         """
         Render a Elasticsearch data as an HTML table.
+
+        Follows pandas implementation except when ``max_rows=None``. In this scenario, we set ``max_rows={0}`` to avoid
+        accidentally dumping an entire index. This can be overridden by explicitly setting ``max_rows``.
 
         See Also
         --------
@@ -597,6 +607,7 @@ class DataFrame(NDFrame):
             result = _buf.getvalue()
             return result
 
+    @docstring_parameter(DEFAULT_NUM_ROWS_DISPLAYED)
     def to_string(self, buf=None, columns=None, col_space=None, header=True,
                   index=True, na_rep='NaN', formatters=None, float_format=None,
                   sparsify=None, index_names=True, justify=None,
@@ -605,7 +616,8 @@ class DataFrame(NDFrame):
         """
         Render a DataFrame to a console-friendly tabular output.
 
-        Follows pandas implementation except we set max_rows default to avoid careless extraction of entire index.
+        Follows pandas implementation except when ``max_rows=None``. In this scenario, we set ``max_rows={0}`` to avoid
+        accidentally dumping an entire index. This can be overridden by explicitly setting ``max_rows``.
 
         See Also
         --------
