@@ -244,13 +244,22 @@ class DataFrame(NDFrame):
         """
         buf = StringIO()
 
+        # max_rows and max_cols determine the maximum size of the pretty printed tabular
+        # representation of the dataframe. pandas defaults are 60 and 20 respectively.
+        # dataframes where len(df) > max_rows shows a truncated view with 10 rows shown.
         max_rows = pd.get_option("display.max_rows")
         max_cols = pd.get_option("display.max_columns")
+        min_rows = pd.get_option("display.min_rows")
+
+        if len(self) > max_rows:
+            max_rows = min_rows
+
         show_dimensions = pd.get_option("display.show_dimensions")
         if pd.get_option("display.expand_frame_repr"):
             width, _ = console.get_console_size()
         else:
             width = None
+
         self.to_string(buf=buf, max_rows=max_rows, max_cols=max_cols,
                        line_width=width, show_dimensions=show_dimensions)
 
