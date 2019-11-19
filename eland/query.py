@@ -69,6 +69,27 @@ class Query:
             else:
                 self._query = self._query & ~(IsIn(field, items))
 
+    def terms_aggs(self, name, func, field, es_size):
+        """
+        Add terms agg e.g
+
+        "aggs": {
+            "name": {
+                "terms": {
+                    "field": "Airline",
+                    "size": 10
+                }
+            }
+        }
+        """
+        agg = {
+            func: {
+                "field": field,
+                "size": es_size
+            }
+        }
+        self._aggs[name] = agg
+
     def metric_aggs(self, name, func, field):
         """
         Add metric agg e.g

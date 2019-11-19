@@ -30,10 +30,11 @@ In general, the data resides in elasticsearch and not in memory, which allows el
   * :doc:`reference/io`
   * :doc:`reference/general_utility_functions`
   * :doc:`reference/dataframe`
+  * :doc:`reference/series`
+  * :doc:`reference/index`
   * :doc:`reference/indexing`
 
 * :doc:`implementation/index`
 
   * :doc:`implementation/details`
   * :doc:`implementation/dataframe_supported`
-

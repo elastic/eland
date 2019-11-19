@@ -411,6 +411,9 @@ class ElandQueryCompiler:
     def nunique(self):
         return self._operations.nunique(self)
 
+    def value_counts(self, es_size):
+        return self._operations.value_counts(self, es_size)
+
     def info_es(self, buf):
         buf.write("index_pattern: {index_pattern}\n".format(index_pattern=self._index_pattern))
 

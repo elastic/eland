@@ -130,12 +130,27 @@ class Operations:
         return self._metric_aggs(query_compiler, 'min')
 
     def nunique(self, query_compiler):
-        return self._terms_aggs(query_compiler, 'cardinality')
+        return self._metric_aggs(query_compiler, 'cardinality', field_types='aggregatable')
+
+    def value_counts(self, query_compiler, es_size):
+        return self._terms_aggs(query_compiler, 'terms', es_size)
 
     def hist(self, query_compiler, bins):
         return self._hist_aggs(query_compiler, bins)
 
-    def _metric_aggs(self, query_compiler, func):
+    def _metric_aggs(self, query_compiler, func, field_types=None):
+        """
+        Parameters
+        ----------
+        field_types: str, default None
+            if `aggregatable` use only columns whose fields in elasticseach are aggregatable.
+            If `None`, use only numeric fields.
+
+        Returns
+        -------
+        pandas.Series
+            Series containing results of `func` applied to the column(s)
+        """
         query_params, post_processing = self._resolve_tasks()
 
         size = self._size(query_params, post_processing)
@@ -144,11 +159,17 @@ class Operations:
 
         columns = self.get_columns()
 
-        numeric_source_fields = query_compiler._mappings.numeric_source_fields(columns)
-
         body = Query(query_params['query'])
 
-        for field in numeric_source_fields:
+        # some metrics aggs (including cardinality) work on all aggregatable fields
+        # therefore we include an optional all parameter on operations
+        # that call _metric_aggs
+        if field_types=='aggregatable':
+            source_fields = query_compiler._mappings.aggregatable_columns(columns)
+        else:
+            source_fields = query_compiler._mappings.numeric_source_fields(columns)
+
+        for field in source_fields:
             body.metric_aggs(field, func, field)
 
         response = query_compiler._client.search(
@@ -164,18 +185,32 @@ class Operations:
         # }
         results = {}
 
-        for field in numeric_source_fields:
-            results[field] = response['aggregations'][field]['value']
+        if field_types=='aggregatable':
+            for key, value in source_fields.items():
+                results[value] = response['aggregations'][key]['value']
+        else:
+            for field in source_fields:
+                results[field] = response['aggregations'][field]['value']
 
         # Return single value if this is a series
         # if len(numeric_source_fields) == 1:
         #    return np.float64(results[numeric_source_fields[0]])
-
-        s = pd.Series(data=results, index=numeric_source_fields)
+        s = pd.Series(data=results, index=results.keys())
 
         return s
 
-    def _terms_aggs(self, query_compiler, func):
+    def _terms_aggs(self, query_compiler, func, es_size=None):
+        """
+        Parameters
+        ----------
+        es_size: int, default None
+            Parameter used by Series.value_counts()
+
+        Returns
+        -------
+        pandas.Series
+            Series containing results of `func` applied to the column(s)
+        """
         query_params, post_processing = self._resolve_tasks()
 
         size = self._size(query_params, post_processing)
@@ -190,7 +225,7 @@ class Operations:
         body = Query(query_params['query'])
 
         for field in aggregatable_columns.keys():
-            body.metric_aggs(field, func, field)
+            body.terms_aggs(field, func, field, es_size=es_size)
 
         response = query_compiler._client.search(
             index=query_compiler._index_pattern,
@@ -200,9 +235,15 @@ class Operations:
         results = {}
 
         for key, value in aggregatable_columns.items():
-            results[value] = response['aggregations'][key]['value']
+            for bucket in response['aggregations'][columns[0]]['buckets']:
+                results[bucket['key']] = bucket['doc_count']
 
-        s = pd.Series(data=results, index=results.keys())
+        try:
+            name = columns[0]
+        except IndexError:
+            name = None
+
+        s = pd.Series(data=results, index=results.keys(), name=name)
 
         return s
 
@@ -379,7 +420,7 @@ class Operations:
 
         """
         Results are like (for 'sum', 'min')
-        
+
              AvgTicketPrice  DistanceKilometers  DistanceMiles  FlightDelayMin
         sum    8.204365e+06        9.261629e+07   5.754909e+07          618150
         min    1.000205e+02        0.000000e+00   0.000000e+00               0

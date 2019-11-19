@@ -720,7 +720,7 @@ class DataFrame(NDFrame):
 
     def _getitem_column(self, key):
         if key not in self.columns:
-            raise KeyError("Requested column is not in the DataFrame {}".format(key))
+            raise KeyError("Requested column [{}] is not in the DataFrame.".format(key))
         s = self._reduce_dimension(self._query_compiler.getitem_column_array([key]))
         return s
 

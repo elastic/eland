@@ -13,4 +13,5 @@ methods. All classes and functions exposed in ``eland.*`` namespace are public.
    io
    general_utility_functions
    dataframe
+   series
    indexing
