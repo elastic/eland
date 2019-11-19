@@ -34,3 +34,13 @@ class TestSeriesValueCounts(TestData):
         ed_f = self.ed_flights()
         with pytest.raises(AttributeError):
             assert ed_f.value_counts()
+
+    def test_value_counts_non_int(self):
+        ed_s = self.ed_flights()['Carrier']
+        with pytest.raises(TypeError):
+            assert ed_s.value_counts(es_size='foo')
+
+    def test_value_counts_non_positive_int(self):
+        ed_s = self.ed_flights()['Carrier']
+        with pytest.raises(ValueError):
+            assert ed_s.value_counts(es_size=-9)

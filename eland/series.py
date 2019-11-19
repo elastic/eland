@@ -139,6 +139,11 @@ class Series(NDFrame):
         ES-Air              3220
         Name: Carrier, dtype: int64
         """
+        if not isinstance(es_size, int):
+            raise TypeError("es_size must be a positive integer.")
+        if not es_size>0:
+            raise ValueError("es_size must be a positive integer.")
+
         return self._query_compiler.value_counts(es_size)
 
     # ----------------------------------------------------------------------
