@@ -13,9 +13,6 @@ class TestSeriesValueCounts(TestData):
         pd_vc = pd_s.value_counts().to_string()
         ed_vc = ed_s.value_counts().to_string()
 
-        print(type(pd_vc))
-        print(type(ed_vc))
-
         assert pd_vc == ed_vc
 
     def test_value_counts_size(self):
@@ -24,9 +21,6 @@ class TestSeriesValueCounts(TestData):
 
         pd_vc = pd_s.value_counts()[:1].to_string()
         ed_vc = ed_s.value_counts(es_size=1).to_string()
-
-        print(type(pd_vc))
-        print(type(ed_vc))
 
         assert pd_vc == ed_vc
 
@@ -40,4 +34,3 @@ class TestSeriesValueCounts(TestData):
         ed_f = self.ed_flights()
         with pytest.raises(AttributeError):
             assert ed_f.value_counts()
-
