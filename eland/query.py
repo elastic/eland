@@ -69,7 +69,7 @@ class Query:
             else:
                 self._query = self._query & ~(IsIn(field, items))
 
-    def terms_aggs(self, name, func, field, buckets):
+    def terms_aggs(self, name, func, field, es_size):
         """
         Add terms agg e.g
 
@@ -85,7 +85,7 @@ class Query:
         agg = {
             func: {
                 "field": field,
-                "size": buckets
+                "size": es_size
             }
         }
         self._aggs[name] = agg

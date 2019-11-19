@@ -104,7 +104,7 @@ class Series(NDFrame):
     def tail(self, n=5):
         return Series(query_compiler=self._query_compiler.tail(n))
 
-    def value_counts(self, size=10):
+    def value_counts(self, es_size=10):
         """
         Return the value counts for the specified field.
 
@@ -114,8 +114,9 @@ class Series(NDFrame):
 
         Parameters
         ----------
-        size: int, default 10
-            Number of buckets to return counts for, automatically sorts by count descending
+        es_size: int, default 10
+            Number of buckets to return counts for, automatically sorts by count descending.
+            This parameter is specific to `eland`
 
         Returns
         -------
@@ -125,6 +126,7 @@ class Series(NDFrame):
         See Also
         --------
         :pandas_api_docs:`pandas.Series.value_counts`
+        :es_api_docs:`search-aggregations-bucket-terms-aggregation`
 
         Examples
         --------
@@ -136,7 +138,7 @@ class Series(NDFrame):
         ES-Air              3220
         Name: Carrier, dtype: int64
         """
-        return self._query_compiler.value_counts(size)
+        return self._query_compiler.value_counts(es_size)
 
     # ----------------------------------------------------------------------
     # Rendering Methods
