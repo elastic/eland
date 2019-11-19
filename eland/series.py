@@ -104,6 +104,40 @@ class Series(NDFrame):
     def tail(self, n=5):
         return Series(query_compiler=self._query_compiler.tail(n))
 
+    def value_counts(self, size=10):
+        """
+        Return the value counts for the specified field.
+
+        **Note we can only do this for aggregatable Elasticsearch fields - (in general) numeric and keyword rather than text fields**
+
+        TODO - implement remainder of pandas arguments
+
+        Parameters
+        ----------
+        size: int, default 10
+            Number of buckets to return counts for, automatically sorts by count descending
+
+        Returns
+        -------
+        pandas.Series
+            number of occurences of each value in the column
+
+        See Also
+        --------
+        :pandas_api_docs:`pandas.Series.value_counts`
+
+        Examples
+        --------
+        >>> df = ed.DataFrame('localhost', 'flights')
+        >>> df['Carrier'].value_counts()
+        Logstash Airways    3331
+        JetBeats            3274
+        Kibana Airlines     3234
+        ES-Air              3220
+        Name: Carrier, dtype: int64
+        """
+        return self._query_compiler.value_counts(size)
+
     # ----------------------------------------------------------------------
     # Rendering Methods
     def __repr__(self):
