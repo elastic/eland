@@ -52,10 +52,9 @@ class Mappings:
         if (client is not None) and (index_pattern is not None):
             get_mapping = client.get_mapping(index=index_pattern)
 
-            # Get all fields (including all nested) and then field_caps
-            # for these names (fields=* doesn't appear to work effectively...)
+            # Get all fields (including all nested) and then all field_caps
             all_fields = Mappings._extract_fields_from_mapping(get_mapping)
-            all_fields_caps = client.field_caps(index=index_pattern, fields=list(all_fields.keys()))
+            all_fields_caps = client.field_caps(index=index_pattern, fields='*')
 
             # Get top level (not sub-field multifield) mappings
             source_fields = Mappings._extract_fields_from_mapping(get_mapping, source_only=True)
