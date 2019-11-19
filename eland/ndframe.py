@@ -287,7 +287,7 @@ class NDFrame:
         """
         Return mean value for each numeric column
 
-        TODO - implement remainder of pandas arguments
+        TODO - implement remainder of pandas arguments, currently non-numerics are not supported
 
         Returns
         -------
@@ -321,7 +321,7 @@ class NDFrame:
         """
         Return sum for each numeric column
 
-        TODO - implement remainder of pandas arguments
+        TODO - implement remainder of pandas arguments, currently non-numerics are not supported
 
         Returns
         -------
@@ -355,7 +355,7 @@ class NDFrame:
         """
         Return the minimum value for each numeric column
 
-        TODO - implement remainder of pandas arguments
+        TODO - implement remainder of pandas arguments, currently non-numerics are not supported
 
         Returns
         -------
@@ -389,7 +389,7 @@ class NDFrame:
         """
         Return the maximum value for each numeric column
 
-        TODO - implement remainder of pandas arguments
+        TODO - implement remainder of pandas arguments, currently non-numerics are not supported
 
         Returns
         -------
