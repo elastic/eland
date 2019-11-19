@@ -151,6 +151,8 @@ class Operations:
         for field in numeric_source_fields:
             body.metric_aggs(field, func, field)
 
+        #print(body.to_search_body(), columns, numeric_source_fields)
+
         response = query_compiler._client.search(
             index=query_compiler._index_pattern,
             size=0,

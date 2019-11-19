@@ -488,16 +488,16 @@ class NDFrame:
 
         Examples
         --------
-        >>> df = ed.DataFrame('localhost', 'flights', columns=['AvgTicketPrice', 'FlightDelay'])
+        >>> df = ed.DataFrame('localhost', 'flights', columns=['AvgTicketPrice', 'FlightDelayMin'])
         >>> df.describe() # ignoring percentiles as they don't generate consistent results
-               AvgTicketPrice   FlightDelay
-        count    13059.000000  13059.000000
-        mean       628.253689      0.251168
-        std        266.386661      0.433685
-        min        100.020531      0.000000
+               AvgTicketPrice  FlightDelayMin
+        count    13059.000000    13059.000000
+        mean       628.253689       47.335171
+        std        266.386661       96.743006
+        min        100.020531        0.000000
         ...
         ...
         ...
-        max       1199.729004      1.000000
+        max       1199.729004      360.000000
         """
         return self._query_compiler.describe()
