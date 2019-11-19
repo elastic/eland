@@ -52,10 +52,9 @@ class Mappings:
         if (client is not None) and (index_pattern is not None):
             get_mapping = client.get_mapping(index=index_pattern)
 
-            # Get all fields (including all nested) and then field_caps
-            # for these names (fields=* doesn't appear to work effectively...)
+            # Get all fields (including all nested) and then all field_caps
             all_fields = Mappings._extract_fields_from_mapping(get_mapping)
-            all_fields_caps = client.field_caps(index=index_pattern, fields=list(all_fields.keys()))
+            all_fields_caps = client.field_caps(index=index_pattern, fields='*')
 
             # Get top level (not sub-field multifield) mappings
             source_fields = Mappings._extract_fields_from_mapping(get_mapping, source_only=True)
@@ -453,28 +452,23 @@ class Mappings:
         numeric_source_fields: list of str
             List of source fields where pd_dtype == (int64 or float64 or bool)
         """
-        if columns is not None:
-            if include_bool == True:
-                return self._mappings_capabilities[(self._mappings_capabilities._source == True) &
-                                                   ((self._mappings_capabilities.pd_dtype == 'int64') |
-                                                    (self._mappings_capabilities.pd_dtype == 'float64') |
-                                                    (self._mappings_capabilities.pd_dtype == 'bool'))].reindex(
-                    columns).index.tolist()
-            else:
-                return self._mappings_capabilities[(self._mappings_capabilities._source == True) &
-                                                   ((self._mappings_capabilities.pd_dtype == 'int64') |
-                                                    (self._mappings_capabilities.pd_dtype == 'float64'))].reindex(
-                    columns).index.tolist()
+        if include_bool == True:
+            df = self._mappings_capabilities[(self._mappings_capabilities._source == True) &
+                                               ((self._mappings_capabilities.pd_dtype == 'int64') |
+                                                (self._mappings_capabilities.pd_dtype == 'float64') |
+                                                (self._mappings_capabilities.pd_dtype == 'bool'))]
         else:
-            if include_bool == True:
-                return self._mappings_capabilities[(self._mappings_capabilities._source == True) &
-                                                   ((self._mappings_capabilities.pd_dtype == 'int64') |
-                                                    (self._mappings_capabilities.pd_dtype == 'float64') |
-                                                    (self._mappings_capabilities.pd_dtype == 'bool'))].index.tolist()
-            else:
-                return self._mappings_capabilities[(self._mappings_capabilities._source == True) &
-                                                   ((self._mappings_capabilities.pd_dtype == 'int64') |
-                                                    (self._mappings_capabilities.pd_dtype == 'float64'))].index.tolist()
+            df = self._mappings_capabilities[(self._mappings_capabilities._source == True) &
+                                               ((self._mappings_capabilities.pd_dtype == 'int64') |
+                                                (self._mappings_capabilities.pd_dtype == 'float64'))]
+        # if columns exists, filter index with columns
+        if columns is not None:
+            # reindex adds NA for non-existing columns (non-numeric), so drop these after reindex
+            df = df.reindex(columns)
+            df.dropna(inplace=True)
+
+        # return as list
+        return df.index.to_list()
 
     def source_fields(self):
         """

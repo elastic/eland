@@ -23,6 +23,7 @@ In general, the data resides in elasticsearch and not in memory, which allows el
    :hidden:
 
    reference/index
+   implementation/index
 
 * :doc:`reference/index`
 
@@ -31,3 +32,9 @@ In general, the data resides in elasticsearch and not in memory, which allows el
   * :doc:`reference/dataframe`
   * :doc:`reference/series`
   * :doc:`reference/index`
+  * :doc:`reference/indexing`
+
+* :doc:`implementation/index`
+
+  * :doc:`implementation/details`
+  * :doc:`implementation/dataframe_supported`
