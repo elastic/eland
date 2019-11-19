@@ -4,41 +4,54 @@ from pandas.util.testing import assert_series_equal
 
 from eland.tests.common import TestData
 
+import eland as ed
+
 
 class TestDataFrameMetrics(TestData):
 
-    def test_mean(self):
+    funcs = ['max', 'min', 'mean', 'sum']
+
+    def test_flights_metrics(self):
         pd_flights = self.pd_flights()
         ed_flights = self.ed_flights()
 
-        pd_mean = pd_flights.mean(numeric_only=True)
-        ed_mean = ed_flights.mean(numeric_only=True)
+        for func in self.funcs:
+            pd_metric = getattr(pd_flights, func)(numeric_only=True)
+            ed_metric = getattr(ed_flights, func)(numeric_only=True)
 
-        assert_series_equal(pd_mean, ed_mean)
+            assert_series_equal(pd_metric, ed_metric)
 
-    def test_sum(self):
-        pd_flights = self.pd_flights()
-        ed_flights = self.ed_flights()
+    def test_ecommerce_selected_non_numeric_source_fields(self):
+        # None of these are numeric
+        columns = ['category', 'currency', 'customer_birth_date', 'customer_first_name', 'user']
 
-        pd_sum = pd_flights.sum(numeric_only=True)
-        ed_sum = ed_flights.sum(numeric_only=True)
+        pd_ecommerce = self.pd_ecommerce()[columns]
+        ed_ecommerce = self.ed_ecommerce()[columns]
 
-        assert_series_equal(pd_sum, ed_sum)
+        for func in self.funcs:
+            assert_series_equal(getattr(pd_ecommerce, func)(numeric_only=True), getattr(ed_ecommerce, func)(numeric_only=True),
+                                check_less_precise=True)
 
-    def test_min(self):
-        pd_flights = self.pd_flights()
-        ed_flights = self.ed_flights()
+    def test_ecommerce_selected_mixed_numeric_source_fields(self):
+        # Some of these are numeric
+        columns = ['category', 'currency', 'taxless_total_price', 'customer_birth_date',
+                   'total_quantity', 'customer_first_name', 'user']
 
-        pd_min = pd_flights.min(numeric_only=True)
-        ed_min = ed_flights.min(numeric_only=True)
+        pd_ecommerce = self.pd_ecommerce()[columns]
+        ed_ecommerce = self.ed_ecommerce()[columns]
 
-        assert_series_equal(pd_min, ed_min)
+        for func in self.funcs:
+            assert_series_equal(getattr(pd_ecommerce, func)(numeric_only=True), getattr(ed_ecommerce, func)(numeric_only=True),
+                                check_less_precise=True)
 
-    def test_max(self):
-        pd_flights = self.pd_flights()
-        ed_flights = self.ed_flights()
 
-        pd_max = pd_flights.max(numeric_only=True)
-        ed_max = ed_flights.max(numeric_only=True)
+    def test_ecommerce_selected_all_numeric_source_fields(self):
+        # All of these are numeric
+        columns = ['total_quantity', 'taxful_total_price', 'taxless_total_price']
 
-        assert_series_equal(pd_max, ed_max)
+        pd_ecommerce = self.pd_ecommerce()[columns]
+        ed_ecommerce = self.ed_ecommerce()[columns]
+
+        for func in self.funcs:
+            assert_series_equal(getattr(pd_ecommerce, func)(numeric_only=True), getattr(ed_ecommerce, func)(numeric_only=True),
+                                check_less_precise=True)

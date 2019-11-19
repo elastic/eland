@@ -8,7 +8,7 @@ from eland import Client
 from eland import DataFrame
 from eland import Mappings
 
-_default_chunk_size = 10000
+DEFAULT_CHUNK_SIZE = 10000
 
 
 def read_es(es_params, index_pattern):
@@ -80,7 +80,7 @@ def pandas_to_eland(pd_df, es_params, destination_index, if_exists='fail', chunk
     eland.eland_to_pandas: Create a pandas.Dataframe from eland.DataFrame
     """
     if chunksize is None:
-        chunksize = _default_chunk_size
+        chunksize = DEFAULT_CHUNK_SIZE
 
     client = Client(es_params)
 
@@ -99,7 +99,7 @@ def pandas_to_eland(pd_df, es_params, destination_index, if_exists='fail', chunk
             client.index_delete(index=destination_index)
             client.index_create(index=destination_index, body=mapping)
         # elif if_exists == "append":
-        # TODO validate mapping is compatible
+        # TODO validate mapping are compatible
     else:
         client.index_create(index=destination_index, body=mapping)
 
@@ -226,7 +226,7 @@ def read_csv(filepath_or_buffer,
 
     **Modifies an Elasticsearch index**
 
-     **Note iteration not supported**
+    **Note pandas iteration options not supported**
 
     Parameters
     ----------
@@ -248,17 +248,17 @@ def read_csv(filepath_or_buffer,
     es_geo_points: list, default None
         List of columns to map to geo_point data type
     iterator
-        ignored
+        not supported
     chunksize
         number of csv rows to read before bulk index into Elasticsearch
 
     Other Parameters
     ----------------
-    Parameters derived from :pandas_api_docs:`read_csv`.
+    Parameters derived from :pandas_api_docs:`pandas.read_csv`.
 
     See Also
     --------
-    :pandas_api_docs:`read_csv` - for all parameters
+    :pandas_api_docs:`pandas.read_csv` - for all parameters
 
     Notes
     -----
@@ -318,7 +318,7 @@ def read_csv(filepath_or_buffer,
     )
 
     if chunksize is None:
-        kwds.update(chunksize=_default_chunk_size)
+        kwds.update(chunksize=DEFAULT_CHUNK_SIZE)
 
     client = Client(es_client)
 
