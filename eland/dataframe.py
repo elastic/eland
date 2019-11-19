@@ -580,6 +580,11 @@ class DataFrame(NDFrame):
                           UserWarning)
             max_rows = DEFAULT_NUM_ROWS_DISPLAYED
 
+        # because of the way pandas handles max_rows=0, not having this throws an error
+        # see eland issue #56
+        if max_rows == 0:
+            max_rows = 1
+
         # Create a slightly bigger dataframe than display
         df = self._build_repr_df(max_rows + 1, max_cols)
 
@@ -640,6 +645,11 @@ class DataFrame(NDFrame):
                           UserWarning)
             max_rows = DEFAULT_NUM_ROWS_DISPLAYED
 
+        # because of the way pandas handles max_rows=0, not having this throws an error
+        # see eland issue #56
+        if max_rows == 0:
+            max_rows = 1
+
         # Create a slightly bigger dataframe than display
         df = self._build_repr_df(max_rows + 1, max_cols)
 
@@ -660,6 +670,10 @@ class DataFrame(NDFrame):
                      show_dimensions=False,  # print this outside of this call
                      decimal=decimal,
                      line_width=line_width)
+
+        # dimensions are not show in the terminal, but they are shown in jupyter
+        if len(self) == 0:
+            show_dimensions=False
 
         # Our fake dataframe has incorrect number of rows (max_rows*2+1) - write out
         # the correct number of rows
