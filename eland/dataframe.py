@@ -605,7 +605,7 @@ class DataFrame(NDFrame):
         if show_dimensions:
                 # TODO - this results in different output to pandas
                 # TODO - the 'x' character is different and this gets added after the </div>
-                _buf.write("\n<p>{nrows} rows x {ncols} columns</p>"
+                _buf.write("\n<p>{nrows} rows × {ncols} columns</p>"
                        .format(nrows=len(self.index), ncols=len(self.columns)))
 
         if buf is None:
@@ -670,10 +670,6 @@ class DataFrame(NDFrame):
                      show_dimensions=False,  # print this outside of this call
                      decimal=decimal,
                      line_width=line_width)
-
-        # dimensions are not show in the terminal, but they are shown in jupyter
-        if len(self) == 0:
-            show_dimensions=False
 
         # Our fake dataframe has incorrect number of rows (max_rows*2+1) - write out
         # the correct number of rows
