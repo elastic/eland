@@ -1,6 +1,7 @@
 # File called _pytest for PyCharm compatability
 import eland as ed
 from eland.tests.common import TestData
+import pytest
 
 
 class TestSeriesValueCounts(TestData):
@@ -22,9 +23,21 @@ class TestSeriesValueCounts(TestData):
         ed_s = self.ed_flights()['Carrier']
 
         pd_vc = pd_s.value_counts()[:1].to_string()
-        ed_vc = ed_s.value_counts(size=1).to_string()
+        ed_vc = ed_s.value_counts(es_size=1).to_string()
 
         print(type(pd_vc))
         print(type(ed_vc))
 
         assert pd_vc == ed_vc
+
+    def test_value_counts_keyerror(self):
+        ed_f = self.ed_flights()
+        with pytest.raises(KeyError):
+            assert ed_f['not_a_column'].value_counts()
+
+    def test_value_counts_dataframe(self):
+        # value_counts() is a series method, should raise AttributeError if called on a DataFrame
+        ed_f = self.ed_flights()
+        with pytest.raises(AttributeError):
+            assert ed_f.value_counts()
+
