@@ -1,6 +1,7 @@
 # File called _pytest for PyCharm compatability
 import eland as ed
 from eland.tests.common import TestData
+from pandas.util.testing import assert_series_equal
 import pytest
 
 
@@ -10,19 +11,19 @@ class TestSeriesValueCounts(TestData):
         pd_s = self.pd_flights()['Carrier']
         ed_s = self.ed_flights()['Carrier']
 
-        pd_vc = pd_s.value_counts().to_string()
-        ed_vc = ed_s.value_counts().to_string()
+        pd_vc = pd_s.value_counts()
+        ed_vc = ed_s.value_counts()
 
-        assert pd_vc == ed_vc
+        assert_series_equal(pd_vc, ed_vc)
 
     def test_value_counts_size(self):
         pd_s = self.pd_flights()['Carrier']
         ed_s = self.ed_flights()['Carrier']
 
-        pd_vc = pd_s.value_counts()[:1].to_string()
-        ed_vc = ed_s.value_counts(es_size=1).to_string()
+        pd_vc = pd_s.value_counts()[:1]
+        ed_vc = ed_s.value_counts(es_size=1)
 
-        assert pd_vc == ed_vc
+        assert_series_equal(pd_vc, ed_vc)
 
     def test_value_counts_keyerror(self):
         ed_f = self.ed_flights()
