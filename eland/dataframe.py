@@ -19,6 +19,15 @@ from eland import NDFrame
 from eland import Series
 from eland.filter import BooleanFilter, ScriptFilter
 
+# Default number of rows displayed (different to pandas where ALL could be displayed)
+DEFAULT_NUM_ROWS_DISPLAYED = 60
+
+def docstring_parameter(*sub):
+    def dec(obj):
+        obj.__doc__ = obj.__doc__.format(*sub)
+        return obj
+    return dec
+
 
 class DataFrame(NDFrame):
     """
@@ -275,7 +284,7 @@ class DataFrame(NDFrame):
 
     def _repr_html_(self):
         """
-        From pandas
+        From pandas - this is called by notebooks
         """
         if self._info_repr():
             buf = StringIO("")
@@ -288,10 +297,15 @@ class DataFrame(NDFrame):
         if pd.get_option("display.notebook_repr_html"):
             max_rows = pd.get_option("display.max_rows")
             max_cols = pd.get_option("display.max_columns")
+            min_rows = pd.get_option("display.min_rows")
             show_dimensions = pd.get_option("display.show_dimensions")
 
+            if len(self) > max_rows:
+                max_rows = min_rows
+
             return self.to_html(max_rows=max_rows, max_cols=max_cols,
-                                show_dimensions=show_dimensions, notebook=True)
+                                show_dimensions=show_dimensions, notebook=True,
+                                bold_rows=False) # set for consistency with pandas output
         else:
             return None
 
@@ -532,6 +546,7 @@ class DataFrame(NDFrame):
 
         fmt.buffer_put_lines(buf, lines)
 
+    @docstring_parameter(DEFAULT_NUM_ROWS_DISPLAYED)
     def to_html(self, buf=None, columns=None, col_space=None, header=True,
                 index=True, na_rep='NaN', formatters=None, float_format=None,
                 sparsify=None, index_names=True, justify=None, max_rows=None,
@@ -541,15 +556,29 @@ class DataFrame(NDFrame):
         """
         Render a Elasticsearch data as an HTML table.
 
+        Follows pandas implementation except when ``max_rows=None``. In this scenario, we set ``max_rows={0}`` to avoid
+        accidentally dumping an entire index. This can be overridden by explicitly setting ``max_rows``.
+
         See Also
         --------
         :pandas_api_docs:`to_html` for argument details.
         """
-        if max_rows is None:
+        # In pandas calling 'to_string' without max_rows set, will dump ALL rows - we avoid this
+        # by limiting rows by default.
+        num_rows = len(self) # avoid multiple calls
+        if num_rows <= DEFAULT_NUM_ROWS_DISPLAYED:
+            if max_rows is None:
+                max_rows = num_rows
+            else:
+                max_rows = min(num_rows, max_rows)
+        elif max_rows is None:
             warnings.warn("DataFrame.to_string called without max_rows set "
                           "- this will return entire index results. "
-                          "Setting max_rows=60, overwrite if different behaviour is required.")
-            max_rows = 60
+                          "Setting max_rows={default}"
+                          " overwrite if different behaviour is required."
+                          .format(default=DEFAULT_NUM_ROWS_DISPLAYED),
+                          UserWarning)
+            max_rows = DEFAULT_NUM_ROWS_DISPLAYED
 
         # Create a slightly bigger dataframe than display
         df = self._build_repr_df(max_rows + 1, max_cols)
@@ -569,13 +598,16 @@ class DataFrame(NDFrame):
         # Our fake dataframe has incorrect number of rows (max_rows*2+1) - write out
         # the correct number of rows
         if show_dimensions:
-            _buf.write("\n<p>{nrows} rows x {ncols} columns</p>"
+                # TODO - this results in different output to pandas
+                # TODO - the 'x' character is different and this gets added after the </div>
+                _buf.write("\n<p>{nrows} rows x {ncols} columns</p>"
                        .format(nrows=len(self.index), ncols=len(self.columns)))
 
         if buf is None:
             result = _buf.getvalue()
             return result
 
+    @docstring_parameter(DEFAULT_NUM_ROWS_DISPLAYED)
     def to_string(self, buf=None, columns=None, col_space=None, header=True,
                   index=True, na_rep='NaN', formatters=None, float_format=None,
                   sparsify=None, index_names=True, justify=None,
@@ -584,17 +616,29 @@ class DataFrame(NDFrame):
         """
         Render a DataFrame to a console-friendly tabular output.
 
-        Follows pandas implementation except we set max_rows default to avoid careless extraction of entire index.
+        Follows pandas implementation except when ``max_rows=None``. In this scenario, we set ``max_rows={0}`` to avoid
+        accidentally dumping an entire index. This can be overridden by explicitly setting ``max_rows``.
 
         See Also
         --------
         :pandas_api_docs:`to_string` for argument details.
         """
-        if max_rows is None:
+        # In pandas calling 'to_string' without max_rows set, will dump ALL rows - we avoid this
+        # by limiting rows by default.
+        num_rows = len(self) # avoid multiple calls
+        if num_rows <= DEFAULT_NUM_ROWS_DISPLAYED:
+            if max_rows is None:
+                max_rows = num_rows
+            else:
+                max_rows = min(num_rows, max_rows)
+        elif max_rows is None:
             warnings.warn("DataFrame.to_string called without max_rows set "
-                          "- this will return entire index results. "
-                          "Setting max_rows=60, overwrite if different behaviour is required.")
-            max_rows = 60
+                      "- this will return entire index results. "
+                      "Setting max_rows={default}"
+                      " overwrite if different behaviour is required."
+                          .format(default=DEFAULT_NUM_ROWS_DISPLAYED),
+                          UserWarning)
+            max_rows = DEFAULT_NUM_ROWS_DISPLAYED
 
         # Create a slightly bigger dataframe than display
         df = self._build_repr_df(max_rows + 1, max_cols)

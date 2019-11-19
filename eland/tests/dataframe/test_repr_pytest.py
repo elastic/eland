@@ -2,57 +2,158 @@
 
 import pytest
 
+import pandas as pd
+
 from eland.tests.common import TestData
+
+from eland.dataframe import DEFAULT_NUM_ROWS_DISPLAYED
 
 
 class TestDataFrameRepr(TestData):
 
-    def test_head_101_to_string(self):
-        ed_flights = self.ed_flights()
-        pd_flights = self.pd_flights()
+    @classmethod
+    def setup_class(cls):
+        # conftest.py changes this default - restore to original setting
+        pd.set_option('display.max_rows', 60)
 
-        ed_head_101 = ed_flights.head(101)
-        pd_head_101 = pd_flights.head(101)
+    """
+    to_string
+    """
+    def test_num_rows_to_string(self):
+        # check setup works
+        assert pd.get_option('display.max_rows') == 60
 
-        # This sets max_rows=60 by default (but throws userwarning)
+        # Test eland.DataFrame.to_string vs pandas.DataFrame.to_string
+        # In pandas calling 'to_string' without max_rows set, will dump ALL rows
+
+        # Test n-1, n, n+1 for edge cases
+        self.num_rows_to_string(DEFAULT_NUM_ROWS_DISPLAYED-1)
+        self.num_rows_to_string(DEFAULT_NUM_ROWS_DISPLAYED)
         with pytest.warns(UserWarning):
-            ed_head_101_str = ed_head_101.to_string()
-        pd_head_101_str = pd_head_101.to_string(max_rows=60)
+            # UserWarning displayed by eland here (compare to pandas with max_rows set)
+            self.num_rows_to_string(DEFAULT_NUM_ROWS_DISPLAYED+1, None, DEFAULT_NUM_ROWS_DISPLAYED)
 
-        assert pd_head_101_str == ed_head_101_str
+        # Test for where max_rows lt or gt num_rows
+        self.num_rows_to_string(10, 5, 5)
+        self.num_rows_to_string(100, 200, 200)
 
-    def test_head_11_to_string2(self):
+    def num_rows_to_string(self, rows, max_rows_eland=None, max_rows_pandas=None):
         ed_flights = self.ed_flights()
         pd_flights = self.pd_flights()
 
-        ed_head_11 = ed_flights.head(11)
-        pd_head_11 = pd_flights.head(11)
+        ed_head = ed_flights.head(rows)
+        pd_head = pd_flights.head(rows)
 
-        ed_head_11_str = ed_head_11.to_string(max_rows=60)
-        pd_head_11_str = pd_head_11.to_string(max_rows=60)
+        ed_head_str = ed_head.to_string(max_rows=max_rows_eland)
+        pd_head_str = pd_head.to_string(max_rows=max_rows_pandas)
 
-        assert pd_head_11_str == ed_head_11_str
+        #print(ed_head_str)
+        #print(pd_head_str)
 
-    def test_less_than_max_rows_to_string(self):
+        assert pd_head_str == ed_head_str
+
+    """
+    repr
+    """
+    def test_num_rows_repr(self):
         ed_flights = self.ed_flights()
         pd_flights = self.pd_flights()
 
-        ed_less_than_max = ed_flights[ed_flights['AvgTicketPrice']>1190]
-        pd_less_than_max = pd_flights[pd_flights['AvgTicketPrice']>1190]
+        self.num_rows_repr(pd.get_option('display.max_rows')-1, pd.get_option('display.max_rows')-1)
+        self.num_rows_repr(pd.get_option('display.max_rows'), pd.get_option('display.max_rows'))
+        self.num_rows_repr(pd.get_option('display.max_rows')+1, pd.get_option('display.min_rows'))
 
-        ed_less_than_max_str = ed_less_than_max.to_string()
-        pd_less_than_max_str = pd_less_than_max.to_string()
+    def num_rows_repr(self, rows, num_rows_printed):
+        ed_flights = self.ed_flights()
+        pd_flights = self.pd_flights()
 
-        assert pd_less_than_max_str == ed_less_than_max_str
+        ed_head = ed_flights.head(rows)
+        pd_head = pd_flights.head(rows)
 
-    def test_repr(self):
-        ed_ecommerce = self.ed_ecommerce()
-        pd_ecommerce = self.pd_ecommerce()
+        ed_head_str = repr(ed_head)
+        pd_head_str = repr(pd_head)
 
-        ed_head_18 = ed_ecommerce.head(18)
-        pd_head_18 = pd_ecommerce.head(18)
+        if num_rows_printed < rows:
+            # add 1 for ellipsis
+            num_rows_printed = num_rows_printed + 1
 
-        ed_head_18_repr = repr(ed_head_18)
-        pd_head_18_repr = repr(pd_head_18)
+        # number of rows is num_rows_printed + 3 (header, summary)
+        assert (num_rows_printed+3) == len(ed_head_str.splitlines())
 
-        assert ed_head_18_repr == pd_head_18_repr
+        assert pd_head_str == ed_head_str
+
+    """
+    to_html 
+    """
+    def test_num_rows_to_html(self):
+        # check setup works
+        assert pd.get_option('display.max_rows') == 60
+
+        # Test eland.DataFrame.to_string vs pandas.DataFrame.to_string
+        # In pandas calling 'to_string' without max_rows set, will dump ALL rows
+
+        # Test n-1, n, n+1 for edge cases
+        self.num_rows_to_html(DEFAULT_NUM_ROWS_DISPLAYED-1)
+        self.num_rows_to_html(DEFAULT_NUM_ROWS_DISPLAYED)
+        with pytest.warns(UserWarning):
+            # UserWarning displayed by eland here
+            self.num_rows_to_html(DEFAULT_NUM_ROWS_DISPLAYED+1, None, DEFAULT_NUM_ROWS_DISPLAYED)
+
+        # Test for where max_rows lt or gt num_rows
+        self.num_rows_to_html(10, 5, 5)
+        self.num_rows_to_html(100, 200, 200)
+
+    def num_rows_to_html(self, rows, max_rows_eland=None, max_rows_pandas=None):
+        ed_flights = self.ed_flights()
+        pd_flights = self.pd_flights()
+
+        ed_head = ed_flights.head(rows)
+        pd_head = pd_flights.head(rows)
+
+        ed_head_str = ed_head.to_html(max_rows=max_rows_eland)
+        pd_head_str = pd_head.to_html(max_rows=max_rows_pandas)
+
+        #print(ed_head_str)
+        #print(pd_head_str)
+
+        assert pd_head_str == ed_head_str
+
+
+    """
+    _repr_html_
+    """
+    def test_num_rows_repr_html(self):
+        # check setup works
+        assert pd.get_option('display.max_rows') == 60
+
+        show_dimensions = pd.get_option('display.show_dimensions')
+
+        # TODO - there is a bug in 'show_dimensions' as it gets added after the last </div>
+        # For now test without this
+        pd.set_option('display.show_dimensions', False)
+
+        # Test eland.DataFrame.to_string vs pandas.DataFrame.to_string
+        # In pandas calling 'to_string' without max_rows set, will dump ALL rows
+
+        # Test n-1, n, n+1 for edge cases
+        self.num_rows_repr_html(pd.get_option('display.max_rows')-1)
+        self.num_rows_repr_html(pd.get_option('display.max_rows'))
+        self.num_rows_repr_html(pd.get_option('display.max_rows')+1, pd.get_option('display.max_rows'))
+
+        # Restore default
+        pd.set_option('display.show_dimensions', show_dimensions)
+
+    def num_rows_repr_html(self, rows, max_rows=None):
+        ed_flights = self.ed_flights()
+        pd_flights = self.pd_flights()
+
+        ed_head = ed_flights.head(rows)
+        pd_head = pd_flights.head(rows)
+
+        ed_head_str = ed_head._repr_html_()
+        pd_head_str = pd_head._repr_html_()
+
+        #print(ed_head_str)
+        #print(pd_head_str)
+
+        assert pd_head_str == ed_head_str
