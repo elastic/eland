@@ -116,7 +116,8 @@ class Series(NDFrame):
         ----------
         es_size: int, default 10
             Number of buckets to return counts for, automatically sorts by count descending.
-            This parameter is specific to `eland`
+            This parameter is specific to `eland`, and determines how many term buckets
+            elasticsearch should return out of the overall terms list.
 
         Returns
         -------
