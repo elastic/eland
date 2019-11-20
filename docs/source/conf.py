@@ -25,8 +25,7 @@ sys.path.extend(
 # -- Project information -----------------------------------------------------
 
 project = 'eland'
-copyright = '2019, Stephen Dodson'
-author = 'Stephen Dodson'
+copyright = '2019, Elasticsearch B.V.'
 
 # The full version, including alpha/beta/rc tags
 release = '0.1'
@@ -95,4 +94,4 @@ html_theme = "pandas_sphinx_theme"
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+#html_static_path = ['_static']

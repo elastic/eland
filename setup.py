@@ -23,7 +23,7 @@ setup(
     maintainer_email=about['__maintainer_email__'],
     license='Apache 2.0',
     classifiers=[
-        'Development Status :: 4 - Beta',
+        'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: Apache Software License',
         'Programming Language :: Python :: 3.7',
