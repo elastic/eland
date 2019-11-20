@@ -219,8 +219,7 @@ class ElandQueryCompiler:
 
         for missing in missing_columns:
             is_source_field, pd_dtype = self._mappings.source_field_pd_dtype(missing)
-            df[missing] = None
-            df[missing].astype(pd_dtype)
+            df[missing] = pd.Series(dtype=pd_dtype)
 
         # Sort columns in mapping order
         df = df[self.columns]
