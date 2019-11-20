@@ -10,6 +10,12 @@ build/
 # docs build folder
 docs/build/
 
+# pytest results
+eland/tests/dataframe/results/
+eland/tests/dataframe/results/
+result_images/
+
+
 # Python egg metadata, regenerated from source files by setuptools.
 /*.egg-info
 

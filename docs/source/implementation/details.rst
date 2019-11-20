@@ -9,7 +9,7 @@ to access, explore and manipulate data that resides in Elasticsearch.
 
 Ideally, all data should reside in Elasticsearch and not to reside in memory.
 This restricts the API, but allows access to huge data sets that do not fit into memory, and allows
-use of powerful Elasticsearch features such as aggrergations.
+use of powerful Elasticsearch features such as aggregations.
 
 
 Pandas and 3rd Party Storage Systems

@@ -24,6 +24,7 @@ In general, the data resides in elasticsearch and not in memory, which allows el
 
    reference/index
    implementation/index
+   development/index
 
 * :doc:`reference/index`
 
@@ -38,3 +39,7 @@ In general, the data resides in elasticsearch and not in memory, which allows el
 
   * :doc:`implementation/details`
   * :doc:`implementation/dataframe_supported`
+
+* :doc:`development/index`
+
+  * :doc:`development/contributing`
