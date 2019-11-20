@@ -52,6 +52,15 @@ class TestDataFrameRepr(TestData):
 
         assert pd_head_str == ed_head_str
 
+    def test_empty_dataframe_string(self):
+        ed_ecom = self.ed_ecommerce()
+        pd_ecom = self.pd_ecommerce()
+
+        ed_ecom_s = ed_ecom[ed_ecom['currency'] == 'USD'].to_string()
+        pd_ecom_s = pd_ecom[pd_ecom['currency'] == 'USD'].to_string()
+
+        assert ed_ecom_s == pd_ecom_s
+
     """
     repr
     """
@@ -82,8 +91,17 @@ class TestDataFrameRepr(TestData):
 
         assert pd_head_str == ed_head_str
 
+    def test_empty_dataframe_repr(self):
+        ed_ecom = self.ed_ecommerce()
+        pd_ecom = self.pd_ecommerce()
+
+        ed_ecom_r = repr(ed_ecom[ed_ecom['currency'] == 'USD'])
+        pd_ecom_r = repr(pd_ecom[pd_ecom['currency'] == 'USD'])
+
+        assert ed_ecom_r == pd_ecom_r
+
     """
-    to_html 
+    to_html
     """
     def test_num_rows_to_html(self):
         # check setup works
@@ -117,6 +135,15 @@ class TestDataFrameRepr(TestData):
         #print(pd_head_str)
 
         assert pd_head_str == ed_head_str
+
+    def test_empty_dataframe_to_html(self):
+        ed_ecom = self.ed_ecommerce()
+        pd_ecom = self.pd_ecommerce()
+
+        ed_ecom_h = ed_ecom[ed_ecom['currency'] == 'USD'].to_html()
+        pd_ecom_h = pd_ecom[pd_ecom['currency'] == 'USD'].to_html()
+
+        assert ed_ecom_h == pd_ecom_h
 
 
     """
@@ -157,3 +184,21 @@ class TestDataFrameRepr(TestData):
         #print(pd_head_str)
 
         assert pd_head_str == ed_head_str
+
+    def test_empty_dataframe_repr_html(self):
+
+        # TODO - there is a bug in 'show_dimensions' as it gets added after the last </div>
+        # For now test without this
+        show_dimensions = pd.get_option('display.show_dimensions')
+        pd.set_option('display.show_dimensions', False)
+
+        ed_ecom = self.ed_ecommerce()
+        pd_ecom = self.pd_ecommerce()
+
+        ed_ecom_rh = ed_ecom[ed_ecom['currency'] == 'USD']._repr_html_()
+        pd_ecom_rh = pd_ecom[pd_ecom['currency'] == 'USD']._repr_html_()
+
+        # Restore default
+        pd.set_option('display.show_dimensions', show_dimensions)
+
+        assert ed_ecom_rh == pd_ecom_rh

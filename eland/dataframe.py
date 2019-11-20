@@ -580,6 +580,11 @@ class DataFrame(NDFrame):
                           UserWarning)
             max_rows = DEFAULT_NUM_ROWS_DISPLAYED
 
+        # because of the way pandas handles max_rows=0, not having this throws an error
+        # see eland issue #56
+        if max_rows == 0:
+            max_rows = 1
+
         # Create a slightly bigger dataframe than display
         df = self._build_repr_df(max_rows + 1, max_cols)
 
@@ -600,7 +605,7 @@ class DataFrame(NDFrame):
         if show_dimensions:
                 # TODO - this results in different output to pandas
                 # TODO - the 'x' character is different and this gets added after the </div>
-                _buf.write("\n<p>{nrows} rows x {ncols} columns</p>"
+                _buf.write("\n<p>{nrows} rows × {ncols} columns</p>"
                        .format(nrows=len(self.index), ncols=len(self.columns)))
 
         if buf is None:
@@ -639,6 +644,11 @@ class DataFrame(NDFrame):
                           .format(default=DEFAULT_NUM_ROWS_DISPLAYED),
                           UserWarning)
             max_rows = DEFAULT_NUM_ROWS_DISPLAYED
+
+        # because of the way pandas handles max_rows=0, not having this throws an error
+        # see eland issue #56
+        if max_rows == 0:
+            max_rows = 1
 
         # Create a slightly bigger dataframe than display
         df = self._build_repr_df(max_rows + 1, max_cols)
