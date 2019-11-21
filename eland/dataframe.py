@@ -389,10 +389,10 @@ class DataFrame(NDFrame):
         <BLANKLINE>
         [27 rows x 5 columns]
         Operations:
-         tasks: [('boolean_filter', {'bool': {'must': [{'term': {'OriginAirportID': 'AMS'}}, {'range': {'FlightDelayMin': {'gt': 60}}}]}}), ('columns', ['timestamp', 'OriginAirportID', 'DestAirportID', 'FlightDelayMin']), ('tail', ('_doc', 5))]
+         tasks: [('boolean_filter', {'bool': {'must': [{'term': {'OriginAirportID': 'AMS'}}, {'range': {'FlightDelayMin': {'gt': 60}}}]}}), ('field_names', ['timestamp', 'OriginAirportID', 'DestAirportID', 'FlightDelayMin']), ('tail', ('_doc', 5))]
          size: 5
          sort_params: _doc:desc
-         columns: ['timestamp', 'OriginAirportID', 'DestAirportID', 'FlightDelayMin']
+         field_names: ['timestamp', 'OriginAirportID', 'DestAirportID', 'FlightDelayMin']
          post_processing: ['sort_index']
         <BLANKLINE>
         """

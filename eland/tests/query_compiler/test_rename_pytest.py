@@ -53,23 +53,23 @@ class TestQueryCompilerRename(TestData):
         update_A = {'a' : 'A'}
         mapper.rename_display_name(update_A)
 
-        assert display_names == mapper.display_names(columns)
+        assert display_names == mapper.field_to_display_names(columns)
 
         # Invalid update
         display_names = ['A', 'b', 'c', 'd']
         update_ZZ = {'a' : 'ZZ'}
         mapper.rename_display_name(update_ZZ)
 
-        assert display_names == mapper.display_names(columns)
+        assert display_names == mapper.field_to_display_names(columns)
 
         display_names = ['AA', 'b', 'c', 'd']
         update_AA = {'A' : 'AA'} # already renamed to 'A'
         mapper.rename_display_name(update_AA)
 
-        assert display_names == mapper.display_names(columns)
+        assert display_names == mapper.field_to_display_names(columns)
 
         display_names = ['AA', 'b', 'C', 'd']
         update_AA_C = {'a' : 'AA', 'c' : 'C'} # 'a' rename ignored
         mapper.rename_display_name(update_AA_C)
 
-        assert display_names == mapper.display_names(columns)
+        assert display_names == mapper.field_to_display_names(columns)

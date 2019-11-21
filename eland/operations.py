@@ -881,31 +881,58 @@ class Operations:
         left_field = item[1][1][1][0]
         right_field = item[1][1][1][1]
 
-        """
-        (if op_name = 'truediv')
-        
-        "script_fields": {
-            "field_name": {
-              "script": {
-                "source": "doc[left_field].value / doc[right_field].value"
-               }
+        if isinstance(right_field, str):
+            """
+            (if op_name = 'truediv')
+            
+            "script_fields": {
+                "field_name": {
+                  "script": {
+                    "source": "doc[left_field].value / doc[right_field].value"
+                   }
+                }
             }
-        }
-        """
-        if op_name == 'truediv':
-            op = '/'
+            """
+            if op_name == 'truediv':
+                op = '/'
+            else:
+                raise NotImplementedError("Not implemented operation '{0}'".format(op_name))
+
+            source = "doc['{0}'].value {1} doc['{2}'].value".format(left_field, op, right_field)
+
+            if query_params['query_script_fields'] is None:
+                query_params['query_script_fields'] = {}
+            query_params['query_script_fields'][field_name] = {
+                'script': {
+                    'source': source
+                }
+            }
         else:
-            raise NotImplementedError("Not implemented operation '{0}'".format(op_name))
+            """
+            (if op_name = 'truediv')
 
-        source = "doc['{0}'].value {1} doc['{2}'].value".format(left_field, op, right_field)
-
-        if query_params['query_script_fields'] is None:
-            query_params['query_script_fields'] = {}
-        query_params['query_script_fields'][field_name] = {
-            'script': {
-                'source': source
+            "script_fields": {
+                "field_name": {
+                  "script": {
+                    "source": "doc[left_field].value / right_field"
+                   }
+                }
             }
-        }
+            """
+            if op_name == 'truediv':
+                op = '/'
+            else:
+                raise NotImplementedError("Not implemented operation '{0}'".format(op_name))
+
+            source = "doc['{0}'].value {1} {2}".format(left_field, op, right_field)
+
+            if query_params['query_script_fields'] is None:
+                query_params['query_script_fields'] = {}
+            query_params['query_script_fields'][field_name] = {
+                'script': {
+                    'source': source
+                }
+            }
 
         return query_params, post_processing
 

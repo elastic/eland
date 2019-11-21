@@ -18,6 +18,7 @@ Based on NDFrame which underpins eland.1DataFrame
 from io import StringIO
 
 import pandas as pd
+import numpy as np
 
 from eland import NDFrame
 from eland.filter import NotFilter, Equal, Greater, Less, GreaterEqual, LessEqual, ScriptFilter, IsIn
@@ -96,19 +97,58 @@ class Series(NDFrame):
     def _get_name(self):
         return self._query_compiler.columns[0]
 
-    name = property(_get_name)
+    def _set_name(self, name):
+        self._query_compiler.rename({self.name: name}, inplace=True)
+
+    name = property(_get_name, _set_name)
 
     def rename(self, new_name):
         """
-        ONLY COLUMN rename supported
+        Rename name of series. Only column rename is supported. This does not change the underlying
+        Elasticsearch index, but adds a soft link from the new name (column) to the Elasticsearch field name
 
         Parameters
         ----------
-        new_name
+        new_name: str
 
         Returns
         -------
+        eland.Series
+            eland.Series with new name.
 
+        See Also
+        --------
+        :pandas_api_docs:pandas.Series.rename
+
+        Examples
+        --------
+        >>> df = ed.DataFrame('localhost', 'flights')
+        >>> df.Carrier
+        0         Kibana Airlines
+        1        Logstash Airways
+        2        Logstash Airways
+        3         Kibana Airlines
+        4         Kibana Airlines
+                       ...
+        13054    Logstash Airways
+        13055    Logstash Airways
+        13056    Logstash Airways
+        13057            JetBeats
+        13058            JetBeats
+        Name: Carrier, Length: 13059, dtype: object
+        >>> df.Carrier.rename('Airline')
+        0         Kibana Airlines
+        1        Logstash Airways
+        2        Logstash Airways
+        3         Kibana Airlines
+        4         Kibana Airlines
+                       ...
+        13054    Logstash Airways
+        13055    Logstash Airways
+        13056    Logstash Airways
+        13057            JetBeats
+        13058            JetBeats
+        Name: Airline, Length: 13059, dtype: object
         """
         return Series(query_compiler=self._query_compiler.rename({self.name: new_name}))
 
@@ -312,11 +352,25 @@ class Series(NDFrame):
             # Check compatibility
             self._query_compiler.check_arithmetics(right._query_compiler)
 
-            field_name = "{0}_{1}_{2}".format(self.name, "truediv", right.name)
+            new_field_name = "{0}_{1}_{2}".format(self.name, "truediv", right.name)
 
             # Compatible, so create new Series
-            return Series(query_compiler=self._query_compiler.arithmetic_op_fields(
-                field_name, 'truediv', self.name, right.name))
+            series = Series(query_compiler=self._query_compiler.arithmetic_op_fields(
+                new_field_name, 'truediv', self.name, right.name))
+            series.name = None
+
+            return series
+        elif isinstance(right, (int, float)): # TODO extend to numpy types
+            new_field_name = "{0}_{1}_{2}".format(self.name, "truediv", str(right).replace('.','_'))
+
+            # Compatible, so create new Series
+            series = Series(query_compiler=self._query_compiler.arithmetic_op_fields(
+                new_field_name, 'truediv', self.name, float(right))) # force rhs to float
+
+            # name of Series remains original name
+            series.name = self.name
+
+            return series
         else:
             raise TypeError(
                 "Can only perform arithmetic operation on selected types "

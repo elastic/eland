@@ -96,6 +96,7 @@ class ElandQueryCompiler:
         self._operations.set_field_names(columns)
 
     columns = property(_get_columns, _set_columns)
+
     index = property(_get_index)
 
     @property
@@ -241,9 +242,9 @@ class ElandQueryCompiler:
         # _source may not contain all columns in the mapping
         # therefore, fill in missing columns
         # (note this returns self.columns NOT IN df.columns)
-        missing_columns = list(set(self.columns) - set(df.columns))
+        missing_field_names = list(set(self.field_names) - set(df.columns))
 
-        for missing in missing_columns:
+        for missing in missing_field_names:
             is_source_field, pd_dtype = self._mappings.source_field_pd_dtype(missing)
             df[missing] = pd.Series(dtype=pd_dtype)
 
@@ -252,7 +253,8 @@ class ElandQueryCompiler:
             df.rename(columns=self._name_mapper.display_names_mapper(), inplace=True)
 
         # Sort columns in mapping order
-        df = df[self.columns]
+        if len(self.columns) > 1:
+            df = df[self.columns]
 
         return partial_result, df
 
@@ -343,12 +345,14 @@ class ElandQueryCompiler:
                                   index_field=self._index.index_field, operations=self._operations.copy(),
                                   name_mapper=self._name_mapper.copy())
 
-    def rename(self, renames):
-        result = self.copy()
-
-        result._name_mapper.rename_display_name(renames)
-
-        return result
+    def rename(self, renames, inplace=False):
+        if inplace:
+            self._name_mapper.rename_display_name(renames)
+            return self
+        else:
+            result = self.copy()
+            result._name_mapper.rename_display_name(renames)
+            return result
 
     def head(self, n):
         result = self.copy()
@@ -503,10 +507,10 @@ class ElandQueryCompiler:
                 "{0} != {1}".format(self._index_pattern, right._index_pattern)
             )
 
-    def arithmetic_op_fields(self, field_name, op, left_field, right_field):
+    def arithmetic_op_fields(self, new_field_name, op, left_field, right_field):
         result = self.copy()
 
-        result._operations.arithmetic_op_fields(field_name, op, left_field, right_field)
+        result._operations.arithmetic_op_fields(new_field_name, op, left_field, right_field)
 
         return result
 
@@ -547,10 +551,10 @@ class ElandQueryCompiler:
                         self._field_to_display_names[field_name] = new_display_name
 
         def field_names_to_list(self):
-            return self._field_to_display_names.keys()
+            return sorted(list(self._field_to_display_names.keys()))
 
         def display_names_to_list(self):
-            return self._display_to_field_names.keys()
+            return sorted(list(self._display_to_field_names.keys()))
 
         # Return mapper values as dict
         def display_names_mapper(self):
@@ -595,7 +599,7 @@ class ElandQueryCompiler:
 
         def copy(self):
             return self.__constructor__(
-                field_to_display_names=self._field_to_display_names,
-                display_to_field_names = self._display_to_field_names
+                field_to_display_names=self._field_to_display_names.copy(),
+                display_to_field_names = self._display_to_field_names.copy()
             )
 
