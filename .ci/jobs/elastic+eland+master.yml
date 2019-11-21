@@ -1,7 +1,7 @@
 ---
 - job:
-    name: elastic+clients-flight-recorder+master
-    display-name: 'elastic / clients-flight-recorder # master'
+    name: elastic+eland+master
+    display-name: 'elastic / eland # master'
     description: Flight recorder captures normalized request responses to be notified of state changes
     junit_results: "*-junit.xml"
     parameters:
