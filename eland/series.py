@@ -15,7 +15,7 @@ Based on NDFrame which underpins eland.1DataFrame
 
 """
 
-import warnings
+from io import StringIO
 
 import pandas as pd
 
@@ -98,6 +98,20 @@ class Series(NDFrame):
 
     name = property(_get_name)
 
+    def rename(self, new_name):
+        """
+        ONLY COLUMN rename supported
+
+        Parameters
+        ----------
+        new_name
+
+        Returns
+        -------
+
+        """
+        return Series(query_compiler=self._query_compiler.rename({self.name: new_name}))
+
     def head(self, n=5):
         return Series(query_compiler=self._query_compiler.head(n))
 
@@ -141,7 +155,7 @@ class Series(NDFrame):
         """
         if not isinstance(es_size, int):
             raise TypeError("es_size must be a positive integer.")
-        if not es_size>0:
+        if not es_size > 0:
             raise ValueError("es_size must be a positive integer.")
 
         return self._query_compiler.value_counts(es_size)
@@ -276,3 +290,35 @@ class Series(NDFrame):
 
         """
         return 1
+
+    def info_es(self):
+        buf = StringIO()
+
+        super()._info_es(buf)
+
+        return buf.getvalue()
+
+    def __truediv__(self, right):
+        return self.truediv(right)
+
+    def truediv(self, right):
+        """
+        return a / b
+
+        a & b == Series
+            a & b must share same eland.Client, index_pattern and index_field
+        """
+        if isinstance(right, Series):
+            # Check compatibility
+            self._query_compiler.check_arithmetics(right._query_compiler)
+
+            field_name = "{0}_{1}_{2}".format(self.name, "truediv", right.name)
+
+            # Compatible, so create new Series
+            return Series(query_compiler=self._query_compiler.arithmetic_op_fields(
+                field_name, 'truediv', self.name, right.name))
+        else:
+            raise TypeError(
+                "Can only perform arithmetic operation on selected types "
+                "{0} != {1}".format(type(self), type(right))
+            )

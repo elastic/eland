@@ -43,7 +43,7 @@ class DataFrame(NDFrame):
         - elasticsearch-py instance or
         - eland.Client instance
     index_pattern: str
-        Elasticsearch index pattern (e.g. 'flights' or 'filebeat-\*')
+        Elasticsearch index pattern (e.g. 'flights' or 'filebeat-*')
     columns: list of str, optional
         List of DataFrame columns. A subset of the Elasticsearch index's fields.
     index_field: str, optional

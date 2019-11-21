@@ -12,7 +12,7 @@ class Operations:
     A collector of the queries and selectors we apply to queries to return the appropriate results.
 
     For example,
-        - a list of the columns in the DataFrame (a subset of columns in the index)
+        - a list of the field_names in the DataFrame (a subset of field_names in the index)
         - a size limit on the results (e.g. for head(n=5))
         - a query to filter the results (e.g. df.A > 10)
 
@@ -66,26 +66,34 @@ class Operations:
         task = ('tail', (index.sort_field, n))
         self._tasks.append(task)
 
-    def set_columns(self, columns):
-        # Setting columns at different phases of the task list may result in different
-        # operations. So instead of setting columns once, set when it happens in call chain
-        if type(columns) is not list:
-            columns = list(columns)
+    def arithmetic_op_fields(self, field_name, op_name, left_field, right_field):
+        task = ('arithmetic_op_fields', (field_name, (op_name, (left_field, right_field))))
 
-        # TODO - column renaming
-        # TODO - validate we are setting columns to a subset of last columns?
-        task = ('columns', columns)
+        # Set this as a column we want to retrieve
+        self.set_field_names([field_name])
+
         self._tasks.append(task)
-        # Iterate backwards through task list looking for last 'columns' task
+
+    def set_field_names(self, field_names):
+        # Setting field_names at different phases of the task list may result in different
+        # operations. So instead of setting field_names once, set when it happens in call chain
+        if type(field_names) is not list:
+            field_names = list(field_names)
+
+        # TODO - field_name renaming
+        # TODO - validate we are setting field_names to a subset of last field_names?
+        task = ('field_names', field_names)
+        self._tasks.append(task)
+        # Iterate backwards through task list looking for last 'field_names' task
         for task in reversed(self._tasks):
-            if task[0] == 'columns':
+            if task[0] == 'field_names':
                 return task[1]
         return None
 
-    def get_columns(self):
-        # Iterate backwards through task list looking for last 'columns' task
+    def get_field_names(self):
+        # Iterate backwards through task list looking for last 'field_names' task
         for task in reversed(self._tasks):
-            if task[0] == 'columns':
+            if task[0] == 'field_names':
                 return task[1]
         return None
 
@@ -103,8 +111,8 @@ class Operations:
                                       "not supported {0} {1}"
                                       .format(query_params, post_processing))
 
-        # Only return requested columns
-        fields = query_compiler.columns
+        # Only return requested field_names
+        fields = query_compiler.field_names
 
         counts = {}
         for field in fields:
@@ -143,13 +151,13 @@ class Operations:
         Parameters
         ----------
         field_types: str, default None
-            if `aggregatable` use only columns whose fields in elasticseach are aggregatable.
+            if `aggregatable` use only field_names whose fields in elasticseach are aggregatable.
             If `None`, use only numeric fields.
 
         Returns
         -------
         pandas.Series
-            Series containing results of `func` applied to the column(s)
+            Series containing results of `func` applied to the field_name(s)
         """
         query_params, post_processing = self._resolve_tasks()
 
@@ -157,7 +165,7 @@ class Operations:
         if size is not None:
             raise NotImplementedError("Can not count field matches if size is set {}".format(size))
 
-        columns = self.get_columns()
+        field_names = self.get_field_names()
 
         body = Query(query_params['query'])
 
@@ -165,9 +173,9 @@ class Operations:
         # therefore we include an optional all parameter on operations
         # that call _metric_aggs
         if field_types=='aggregatable':
-            source_fields = query_compiler._mappings.aggregatable_columns(columns)
+            source_fields = query_compiler._mappings.aggregatable_field_names(field_names)
         else:
-            source_fields = query_compiler._mappings.numeric_source_fields(columns)
+            source_fields = query_compiler._mappings.numeric_source_fields(field_names)
 
         for field in source_fields:
             body.metric_aggs(field, func, field)
@@ -209,7 +217,7 @@ class Operations:
         Returns
         -------
         pandas.Series
-            Series containing results of `func` applied to the column(s)
+            Series containing results of `func` applied to the field_name(s)
         """
         query_params, post_processing = self._resolve_tasks()
 
@@ -217,14 +225,14 @@ class Operations:
         if size is not None:
             raise NotImplementedError("Can not count field matches if size is set {}".format(size))
 
-        columns = self.get_columns()
+        field_names = self.get_field_names()
 
-        # Get just aggregatable columns
-        aggregatable_columns = query_compiler._mappings.aggregatable_columns(columns)
+        # Get just aggregatable field_names
+        aggregatable_field_names = query_compiler._mappings.aggregatable_field_names(field_names)
 
         body = Query(query_params['query'])
 
-        for field in aggregatable_columns.keys():
+        for field in aggregatable_field_names.keys():
             body.terms_aggs(field, func, field, es_size=es_size)
 
         response = query_compiler._client.search(
@@ -234,12 +242,12 @@ class Operations:
 
         results = {}
 
-        for key, value in aggregatable_columns.items():
-            for bucket in response['aggregations'][columns[0]]['buckets']:
+        for key, value in aggregatable_field_names.items():
+            for bucket in response['aggregations'][field_names[0]]['buckets']:
                 results[bucket['key']] = bucket['doc_count']
 
         try:
-            name = columns[0]
+            name = field_names[0]
         except IndexError:
             name = None
 
@@ -248,16 +256,16 @@ class Operations:
         return s
 
     def _hist_aggs(self, query_compiler, num_bins):
-        # Get histogram bins and weights for numeric columns
+        # Get histogram bins and weights for numeric field_names
         query_params, post_processing = self._resolve_tasks()
 
         size = self._size(query_params, post_processing)
         if size is not None:
             raise NotImplementedError("Can not count field matches if size is set {}".format(size))
 
-        columns = self.get_columns()
+        field_names = self.get_field_names()
 
-        numeric_source_fields = query_compiler._mappings.numeric_source_fields(columns)
+        numeric_source_fields = query_compiler._mappings.numeric_source_fields(field_names)
 
         body = Query(query_params['query'])
 
@@ -331,7 +339,7 @@ class Operations:
         Pandas supports a lot of options here, and these options generally work on text and numerics in pandas.
         Elasticsearch has metric aggs and terms aggs so will have different behaviour.
 
-        Pandas aggs that return columns (as opposed to transformed rows):
+        Pandas aggs that return field_names (as opposed to transformed rows):
 
         all
         any
@@ -398,14 +406,14 @@ class Operations:
         if size is not None:
             raise NotImplementedError("Can not count field matches if size is set {}".format(size))
 
-        columns = self.get_columns()
+        field_names = self.get_field_names()
 
         body = Query(query_params['query'])
 
         # convert pandas aggs to ES equivalent
         es_aggs = self._map_pd_aggs_to_es_aggs(pd_aggs)
 
-        for field in columns:
+        for field in field_names:
             for es_agg in es_aggs:
                 # If we have multiple 'extended_stats' etc. here we simply NOOP on 2nd call
                 if isinstance(es_agg, tuple):
@@ -427,7 +435,7 @@ class Operations:
         """
         results = {}
 
-        for field in columns:
+        for field in field_names:
             values = list()
             for es_agg in es_aggs:
                 if isinstance(es_agg, tuple):
@@ -448,9 +456,9 @@ class Operations:
         if size is not None:
             raise NotImplementedError("Can not count field matches if size is set {}".format(size))
 
-        columns = self.get_columns()
+        field_names = self.get_field_names()
 
-        numeric_source_fields = query_compiler._mappings.numeric_source_fields(columns, include_bool=False)
+        numeric_source_fields = query_compiler._mappings.numeric_source_fields(field_names, include_bool=False)
 
         # for each field we compute:
         # count, mean, std, min, 25%, 50%, 75%, max
@@ -535,10 +543,15 @@ class Operations:
 
         size, sort_params = Operations._query_params_to_size_and_sort(query_params)
 
-        body = Query(query_params['query'])
+        script_fields = query_params['query_script_fields']
+        query = Query(query_params['query'])
 
-        # Only return requested columns
-        columns = self.get_columns()
+        body = query.to_search_body()
+        if script_fields is not None:
+            body['script_fields'] = script_fields
+
+        # Only return requested field_names
+        field_names = self.get_field_names()
 
         es_results = None
 
@@ -551,14 +564,14 @@ class Operations:
                     index=query_compiler._index_pattern,
                     size=size,
                     sort=sort_params,
-                    body=body.to_search_body(),
-                    _source=columns)
+                    body=body,
+                    _source=field_names)
         else:
             is_scan = True
             es_results = query_compiler._client.scan(
                 index=query_compiler._index_pattern,
-                query=body.to_search_body(),
-                _source=columns)
+                query=body,
+                _source=field_names)
             # create post sort
             if sort_params is not None:
                 post_processing.append(self._sort_params_to_postprocessing(sort_params))
@@ -575,9 +588,9 @@ class Operations:
             df = self._apply_df_post_processing(df, post_processing)
             collector.collect(df)
 
-    def iloc(self, index, columns):
-        # index and columns are indexers
-        task = ('iloc', (index, columns))
+    def iloc(self, index, field_names):
+        # index and field_names are indexers
+        task = ('iloc', (index, field_names))
         self._tasks.append(task)
 
     def index_count(self, query_compiler, field):
@@ -691,13 +704,13 @@ class Operations:
                     df = df.sort_values(sort_field, False)
             elif action[0] == 'iloc':
                 index_indexer = action[1][0]
-                column_indexer = action[1][1]
+                field_name_indexer = action[1][1]
                 if index_indexer is None:
                     index_indexer = slice(None)
-                if column_indexer is None:
-                    column_indexer = slice(None)
-                df = df.iloc[index_indexer, column_indexer]
-            # columns could be in here (and we ignore it)
+                if field_name_indexer is None:
+                    field_name_indexer = slice(None)
+                df = df.iloc[index_indexer, field_name_indexer]
+            # field_names could be in here (and we ignore it)
 
         return df
 
@@ -710,6 +723,7 @@ class Operations:
                         "query_sort_order": None,
                         "query_size": None,
                         "query_fields": None,
+                        "query_script_fields": None,
                         "query": Query()}
 
         post_processing = []
@@ -727,6 +741,8 @@ class Operations:
                 query_params, post_processing = self._resolve_query_terms(task, query_params, post_processing)
             elif task[0] == 'boolean_filter':
                 query_params, post_processing = self._resolve_boolean_filter(task, query_params, post_processing)
+            elif task[0] == 'arithmetic_op_fields':
+                query_params, post_processing = self._resolve_arithmetic_op_fields(task, query_params, post_processing)
             else:  # a lot of operations simply post-process the dataframe - put these straight through
                 query_params, post_processing = self._resolve_post_processing_task(task, query_params, post_processing)
 
@@ -858,9 +874,44 @@ class Operations:
 
         return query_params, post_processing
 
+    def _resolve_arithmetic_op_fields(self, item, query_params, post_processing):
+        # task = ('arithmetic_op_fields', (field_name, (op_name, (left_field, right_field))))
+        field_name = item[1][0]
+        op_name = item[1][1][0]
+        left_field = item[1][1][1][0]
+        right_field = item[1][1][1][1]
+
+        """
+        (if op_name = 'truediv')
+        
+        "script_fields": {
+            "field_name": {
+              "script": {
+                "source": "doc[left_field].value / doc[right_field].value"
+               }
+            }
+        }
+        """
+        if op_name == 'truediv':
+            op = '/'
+        else:
+            raise NotImplementedError("Not implemented operation '{0}'".format(op_name))
+
+        source = "doc['{0}'].value {1} doc['{2}'].value".format(left_field, op, right_field)
+
+        if query_params['query_script_fields'] is None:
+            query_params['query_script_fields'] = {}
+        query_params['query_script_fields'][field_name] = {
+            'script': {
+                'source': source
+            }
+        }
+
+        return query_params, post_processing
+
     def _resolve_post_processing_task(self, item, query_params, post_processing):
         # Just do this in post-processing
-        if item[0] != 'columns':
+        if item[0] != 'field_names':
             post_processing.append(item)
 
         return query_params, post_processing
@@ -885,11 +936,11 @@ class Operations:
 
         query_params, post_processing = self._resolve_tasks()
         size, sort_params = Operations._query_params_to_size_and_sort(query_params)
-        columns = self.get_columns()
+        field_names = self.get_field_names()
 
         buf.write(" size: {0}\n".format(size))
         buf.write(" sort_params: {0}\n".format(sort_params))
-        buf.write(" columns: {0}\n".format(columns))
+        buf.write(" field_names: {0}\n".format(field_names))
         buf.write(" post_processing: {0}\n".format(post_processing))
 
     def update_query(self, boolean_filter):

@@ -182,7 +182,7 @@ class Mappings:
         """
         all_fields_caps_fields = all_fields_caps['fields']
 
-        columns = ['_source', 'es_dtype', 'pd_dtype', 'searchable', 'aggregatable']
+        field_names = ['_source', 'es_dtype', 'pd_dtype', 'searchable', 'aggregatable']
         capability_matrix = {}
 
         for field, field_caps in all_fields_caps_fields.items():
@@ -208,7 +208,7 @@ class Mappings:
                                       format(field, vv['non_searchable_indices']),
                                       UserWarning)
 
-        capability_matrix_df = pd.DataFrame.from_dict(capability_matrix, orient='index', columns=columns)
+        capability_matrix_df = pd.DataFrame.from_dict(capability_matrix, orient='index', columns=field_names)
 
         return capability_matrix_df.sort_index()
 
@@ -325,14 +325,14 @@ class Mappings:
 
         mappings = {}
         mappings['properties'] = {}
-        for column_name, dtype in dataframe.dtypes.iteritems():
-            if geo_points is not None and column_name in geo_points:
+        for field_name_name, dtype in dataframe.dtypes.iteritems():
+            if geo_points is not None and field_name_name in geo_points:
                 es_dtype = 'geo_point'
             else:
                 es_dtype = Mappings._pd_dtype_to_es_dtype(dtype)
 
-            mappings['properties'][column_name] = {}
-            mappings['properties'][column_name]['type'] = es_dtype
+            mappings['properties'][field_name_name] = {}
+            mappings['properties'][field_name_name]['type'] = es_dtype
 
         return {"mappings": mappings}
 
@@ -407,12 +407,12 @@ class Mappings:
 
         return is_source_field
 
-    def aggregatable_columns(self, columns=None):
+    def aggregatable_field_names(self, field_names=None):
         """
-        Return a dict of aggregatable columns from all columns or columns list
+        Return a dict of aggregatable field_names from all field_names or field_names list
         {'customer_full_name': 'customer_full_name.keyword', ...}
 
-        Logic here is that column names are '_source' fields and keyword fields
+        Logic here is that field_name names are '_source' fields and keyword fields
         may be nested beneath the field. E.g.
         customer_full_name: text
         customer_full_name.keyword: keyword
@@ -424,28 +424,28 @@ class Mappings:
         dict
             e.g. {'customer_full_name': 'customer_full_name.keyword', ...}
         """
-        if columns is None:
-            columns = self.source_fields()
+        if field_names is None:
+            field_names = self.source_fields()
 
         aggregatables = {}
 
-        for column in columns:
-            capabilities = self.field_capabilities(column)
+        for field_name in field_names:
+            capabilities = self.field_capabilities(field_name)
             if capabilities['aggregatable']:
-                aggregatables[column] = column
+                aggregatables[field_name] = field_name
             else:
-                # Try 'column.keyword'
-                column_keyword = column + '.keyword'
-                capabilities = self.field_capabilities(column_keyword)
+                # Try 'field_name.keyword'
+                field_name_keyword = field_name + '.keyword'
+                capabilities = self.field_capabilities(field_name_keyword)
                 if capabilities['aggregatable']:
-                    aggregatables[column_keyword] = column
+                    aggregatables[field_name_keyword] = field_name
                 else:
                     # Aggregations not supported for this field
-                    raise ValueError("Aggregations not supported for ", column)
+                    raise ValueError("Aggregations not supported for ", field_name)
 
         return aggregatables
 
-    def numeric_source_fields(self, columns, include_bool=True):
+    def numeric_source_fields(self, field_names, include_bool=True):
         """
         Returns
         -------
@@ -461,10 +461,10 @@ class Mappings:
             df = self._mappings_capabilities[(self._mappings_capabilities._source == True) &
                                                ((self._mappings_capabilities.pd_dtype == 'int64') |
                                                 (self._mappings_capabilities.pd_dtype == 'float64'))]
-        # if columns exists, filter index with columns
-        if columns is not None:
-            # reindex adds NA for non-existing columns (non-numeric), so drop these after reindex
-            df = df.reindex(columns)
+        # if field_names exists, filter index with field_names
+        if field_names is not None:
+            # reindex adds NA for non-existing field_names (non-numeric), so drop these after reindex
+            df = df.reindex(field_names)
             df.dropna(inplace=True)
 
         # return as list
@@ -488,16 +488,16 @@ class Mappings:
         """
         return len(self.source_fields())
 
-    def dtypes(self, columns=None):
+    def dtypes(self, field_names=None):
         """
         Returns
         -------
         dtypes: pd.Series
             Source field name + pd_dtype
         """
-        if columns is not None:
+        if field_names is not None:
             return pd.Series(
-                {key: self._source_field_pd_dtypes[key] for key in columns})
+                {key: self._source_field_pd_dtypes[key] for key in field_names})
 
         return pd.Series(self._source_field_pd_dtypes)
 

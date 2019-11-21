@@ -21,6 +21,6 @@ class TestMappingsDtypes(TestData):
         pd_flights = self.pd_flights()[['Carrier', 'AvgTicketPrice', 'Cancelled']]
 
         pd_dtypes = pd_flights.dtypes
-        ed_dtypes = ed_flights._query_compiler._mappings.dtypes(columns=['Carrier', 'AvgTicketPrice', 'Cancelled'])
+        ed_dtypes = ed_flights._query_compiler._mappings.dtypes(field_names=['Carrier', 'AvgTicketPrice', 'Cancelled'])
 
         assert_series_equal(pd_dtypes, ed_dtypes)

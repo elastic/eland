@@ -15,10 +15,12 @@ class Query:
     def __init__(self, query=None):
         if query is None:
             self._query = BooleanFilter()
+            self._script_fields = {}
             self._aggs = {}
         else:
             # Deep copy the incoming query so we can change it
             self._query = deepcopy(query._query)
+            self._script_fields = deepcopy(query._script_fields)
             self._aggs = deepcopy(query._aggs)
 
     def exists(self, field, must=True):
@@ -157,5 +159,14 @@ class Query:
         else:
             self._query = self._query & boolean_filter
 
+    def arithmetic_op_fields(self, op_name, left_field, right_field):
+        if self._script_fields.empty():
+            body = None
+        else:
+            body = {"query": self._script_fields.build()}
+
+        return body
+
     def __repr__(self):
         return repr(self.to_search_body())
+

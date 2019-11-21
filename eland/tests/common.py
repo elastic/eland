@@ -80,7 +80,7 @@ def assert_eland_frame_equal(left, right):
     assert_frame_equal(left._to_pandas(), right._to_pandas())
 
 
-def assert_pandas_eland_series_equal(left, right):
+def assert_pandas_eland_series_equal(left, right, check_less_precise=False):
     if not isinstance(left, pd.Series):
         raise AssertionError("Expected type {exp_type}, found {act_type} instead".format(
             exp_type='pd.Series', act_type=type(left)))
@@ -90,4 +90,4 @@ def assert_pandas_eland_series_equal(left, right):
             exp_type='ed.Series', act_type=type(right)))
 
     # Use pandas tests to check similarity
-    assert_series_equal(left, right._to_pandas())
+    assert_series_equal(left, right._to_pandas(), check_less_precise=check_less_precise)
