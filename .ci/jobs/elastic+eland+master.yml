@@ -2,7 +2,7 @@
 - job:
     name: elastic+eland+master
     display-name: 'elastic / eland # master'
-    description: Flight recorder captures normalized request responses to be notified of state changes
+    description: Eland is a data science client with a Pandas-like interface
     junit_results: "*-junit.xml"
     parameters:
       - string:
