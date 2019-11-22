@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 
+from eland.common import *
 from eland.client import *
 from eland.filter import *
 from eland.index import *

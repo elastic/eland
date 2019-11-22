@@ -31,7 +31,6 @@ from pandas.util._validators import validate_bool_kwarg
 
 from eland import ElandQueryCompiler
 
-
 class NDFrame:
 
     def __init__(self,
@@ -65,12 +64,17 @@ class NDFrame:
         See Also
         --------
         :pandas_api_docs:`pandas.DataFrame.index`
+        :pandas_api_docs:`pandas.Series.index`
 
         Examples
         --------
         >>> df = ed.DataFrame('localhost', 'flights')
         >>> assert isinstance(df.index, ed.Index)
         >>> df.index.index_field
+        '_id'
+        >>> s = df['Carrier']
+        >>> assert isinstance(s.index, ed.Index)
+        >>> s.index.index_field
         '_id'
         """
         return self._query_compiler.index
@@ -104,9 +108,8 @@ class NDFrame:
         """
         return self._query_compiler.dtypes
 
-    def _build_repr_df(self, num_rows, num_cols):
-        # Overriden version of BasePandasDataset._build_repr_df
-        # to avoid issues with concat
+    def _build_repr(self, num_rows):
+        # self could be Series or DataFrame
         if len(self.index) <= num_rows:
             return self._to_pandas()
 

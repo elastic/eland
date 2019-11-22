@@ -91,5 +91,3 @@ Elasticsearch utilities
    :toctree: api/
 
    DataFrame.info_es
-
-

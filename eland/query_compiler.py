@@ -239,9 +239,9 @@ class ElandQueryCompiler:
         # Create pandas DataFrame
         df = pd.DataFrame(data=rows, index=index)
 
-        # _source may not contain all columns in the mapping
-        # therefore, fill in missing columns
-        # (note this returns self.columns NOT IN df.columns)
+        # _source may not contain all field_names in the mapping
+        # therefore, fill in missing field_names
+        # (note this returns self.field_names NOT IN df.columns)
         missing_field_names = list(set(self.field_names) - set(df.columns))
 
         for missing in missing_field_names:

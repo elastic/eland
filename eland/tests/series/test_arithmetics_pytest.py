@@ -4,6 +4,8 @@ from eland.tests.common import TestData, assert_pandas_eland_series_equal
 from pandas.util.testing import assert_series_equal
 import pytest
 
+import numpy as np
+
 
 class TestSeriesArithmetics(TestData):
 
@@ -15,29 +17,35 @@ class TestSeriesArithmetics(TestData):
         with pytest.raises(TypeError):
             ed_df['total_quantity'] / pd_df['taxful_total_price']
 
-    def test_ecommerce_series_div(self):
-        pd_df = self.pd_ecommerce()
-        ed_df = self.ed_ecommerce()
+    def test_ecommerce_series_basic_arithmetics(self):
+        pd_df = self.pd_ecommerce().head(100)
+        ed_df = self.ed_ecommerce().head(100)
 
-        pd_avg_price = pd_df['total_quantity'] / pd_df['taxful_total_price']
-        ed_avg_price = ed_df['total_quantity'] / ed_df['taxful_total_price']
+        ops = ['__add__',
+               '__truediv__',
+               '__floordiv__',
+               '__pow__',
+               '__mod__',
+               '__mul__',
+               '__sub__',
+               'add',
+               'truediv',
+               'floordiv',
+               'pow',
+               'mod',
+               'mul',
+               'sub']
 
-        assert_pandas_eland_series_equal(pd_avg_price, ed_avg_price, check_less_precise=True)
+        for op in ops:
+            pd_series = getattr(pd_df['taxful_total_price'], op)(pd_df['total_quantity'])
+            ed_series = getattr(ed_df['taxful_total_price'], op)(ed_df['total_quantity'])
+            assert_pandas_eland_series_equal(pd_series, ed_series, check_less_precise=True)
 
-    def test_ecommerce_series_div_float(self):
-        pd_df = self.pd_ecommerce()
-        ed_df = self.ed_ecommerce()
+            pd_series = getattr(pd_df['taxful_total_price'], op)(10.56)
+            ed_series = getattr(ed_df['taxful_total_price'], op)(10.56)
+            assert_pandas_eland_series_equal(pd_series, ed_series, check_less_precise=True)
 
-        pd_avg_price = pd_df['total_quantity'] / 10.0
-        ed_avg_price = ed_df['total_quantity'] / 10.0
+            pd_series = getattr(pd_df['taxful_total_price'], op)(int(8))
+            ed_series = getattr(ed_df['taxful_total_price'], op)(int(8))
+            assert_pandas_eland_series_equal(pd_series, ed_series, check_less_precise=True)
 
-        assert_pandas_eland_series_equal(pd_avg_price, ed_avg_price, check_less_precise=True)
-
-    def test_ecommerce_series_div_int(self):
-        pd_df = self.pd_ecommerce()
-        ed_df = self.ed_ecommerce()
-
-        pd_avg_price = pd_df['total_quantity'] / int(10)
-        ed_avg_price = ed_df['total_quantity'] / int(10)
-
-        assert_pandas_eland_series_equal(pd_avg_price, ed_avg_price, check_less_precise=True)
