@@ -23,7 +23,7 @@ import pandas as pd
 from pandas.io.common import _expand_user, _stringify_path
 
 from eland import NDFrame
-from eland.common import DEFAULT_NUM_ROWS_DISPLAYED
+from eland.common import DEFAULT_NUM_ROWS_DISPLAYED, docstring_parameter
 from eland.filter import NotFilter, Equal, Greater, Less, GreaterEqual, LessEqual, ScriptFilter, IsIn
 
 
@@ -269,6 +269,7 @@ class Series(NDFrame):
 
         return result
 
+    @docstring_parameter(DEFAULT_NUM_ROWS_DISPLAYED)
     def to_string(
             self,
             buf=None,
@@ -282,6 +283,17 @@ class Series(NDFrame):
             max_rows=None,
             min_rows=None,
     ):
+        """
+        Render a string representation of the Series.
+
+        Follows pandas implementation except when ``max_rows=None``. In this scenario, we set ``max_rows={0}`` to avoid
+        accidentally dumping an entire index. This can be overridden by explicitly setting ``max_rows``.
+
+        See Also
+        --------
+        :pandas_api_docs:`pandas.Series.to_string`
+            for argument details.
+        """
         # In pandas calling 'to_string' without max_rows set, will dump ALL rows - we avoid this
         # by limiting rows by default.
         num_rows = len(self)  # avoid multiple calls
