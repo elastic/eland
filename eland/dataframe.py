@@ -1064,12 +1064,31 @@ class DataFrame(NDFrame):
         In pandas this returns a Numpy representation of the DataFrame. This would involve scan/scrolling the
         entire index.
 
-        If this is required, call ``ed.eland_to_pandas(ed_df).values``, _but beware this will scan/scroll the entire
-        Elasticsearch index(s) into memory_
+        If this is required, call ``ed.eland_to_pandas(ed_df).values``, *but beware this will scan/scroll the entire
+        Elasticsearch index(s) into memory.*
 
         See Also
         --------
         :pandas_api_docs:`pandas.DataFrame.values`
+        eland_to_pandas
+        to_numpy
+        """
+        self.to_numpy()
+
+    def to_numpy(self):
+        """
+        Not implemented.
+
+        In pandas this returns a Numpy representation of the DataFrame. This would involve scan/scrolling the
+        entire index.
+
+        If this is required, call ``ed.eland_to_pandas(ed_df).values``, *but beware this will scan/scroll the entire
+        Elasticsearch index(s) into memory.*
+
+        See Also
+        --------
+        :pandas_api_docs:`pandas.DataFrame.to_numpy`
+        eland_to_pandas
 
         Examples
         --------
@@ -1094,9 +1113,8 @@ class DataFrame(NDFrame):
                [181.69421554118, 'Kibana Airlines'],
                [730.041778346198, 'Kibana Airlines']], dtype=object)
         """
-        raise NotImplementedError(
-            "This method would scan/scroll the entire Elasticsearch index(s) into memory."
-            "If this is explicitly required and there is sufficient memory, call `ed.eland_to_pandas(ed_df).values`"
+        raise AttributeError(
+            "This method would scan/scroll the entire Elasticsearch index(s) into memory. "
+            "If this is explicitly required, and there is sufficient memory, call `ed.eland_to_pandas(ed_df).values`"
         )
 
-    to_numpy = values

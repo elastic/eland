@@ -72,6 +72,7 @@ Serialization / IO / conversion
    :toctree: api/
 
    Series.to_string
+   Series.to_numpy
 
 Elasticsearch utilities
 ~~~~~~~~~~~~~~~~~~~~~~~

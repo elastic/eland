@@ -23,6 +23,7 @@ Attributes and underlying data
    DataFrame.columns
    DataFrame.dtypes   
    DataFrame.select_dtypes   
+   DataFrame.values   
    DataFrame.empty   
    DataFrame.shape
 
@@ -81,6 +82,7 @@ Serialization / IO / conversion
    :toctree: api/
 
    DataFrame.info
+   DataFrame.to_numpy
    DataFrame.to_csv
    DataFrame.to_html
    DataFrame.to_string

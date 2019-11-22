@@ -878,3 +878,40 @@ class Series(NDFrame):
         """
         results = super().nunique()
         return results.squeeze()
+
+    #def values TODO - not implemented as causes current implementation of query to fail
+
+    def to_numpy(self):
+        """
+        Not implemented.
+
+        In pandas this returns a Numpy representation of the Series. This would involve scan/scrolling the
+        entire index.
+
+        If this is required, call ``ed.eland_to_pandas(ed_series).values``, *but beware this will scan/scroll the entire
+        Elasticsearch index(s) into memory.*
+
+        See Also
+        --------
+        :pandas_api_docs:`pandas.DataFrame.to_numpy`
+        eland_to_pandas
+
+        Examples
+        --------
+        >>> ed_s = ed.Series('localhost', 'flights', name='Carrier').head(5)
+        >>> pd_s = ed.eland_to_pandas(ed_s)
+        >>> print("type(ed_s)={0}\\ntype(pd_s)={1}".format(type(ed_s), type(pd_s)))
+        type(ed_s)=<class 'eland.series.Series'>
+        type(pd_s)=<class 'pandas.core.series.Series'>
+        >>> ed_s
+        0     Kibana Airlines
+        1    Logstash Airways
+        2    Logstash Airways
+        3     Kibana Airlines
+        4     Kibana Airlines
+        Name: Carrier, dtype: object
+        """
+        raise NotImplementedError(
+            "This method would scan/scroll the entire Elasticsearch index(s) into memory."
+            "If this is explicitly required and there is sufficient memory, call `ed.eland_to_pandas(ed_df).values`"
+        )
