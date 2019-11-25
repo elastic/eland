@@ -519,7 +519,12 @@ class DataFrame(NDFrame):
             else:
                 _verbose_repr()
 
+        # pandas 0.25.1 uses get_dtype_counts() here. This
+        # returns a Series with strings as the index NOT dtypes.
+        # Therefore, to get consistent ordering we need to
+        # align types with pandas method.
         counts = self.dtypes.value_counts()
+        counts.index = counts.index.astype(str)
         dtypes = ['{k}({kk:d})'.format(k=k[0], kk=k[1]) for k
                   in sorted(counts.items())]
         lines.append('dtypes: {types}'.format(types=', '.join(dtypes)))

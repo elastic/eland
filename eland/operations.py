@@ -1,6 +1,7 @@
 import copy
 from enum import Enum
 
+import numpy as np
 import pandas as pd
 
 from eland import Index
@@ -172,7 +173,7 @@ class Operations:
         # some metrics aggs (including cardinality) work on all aggregatable fields
         # therefore we include an optional all parameter on operations
         # that call _metric_aggs
-        if field_types=='aggregatable':
+        if field_types == 'aggregatable':
             source_fields = query_compiler._mappings.aggregatable_field_names(field_names)
         else:
             source_fields = query_compiler._mappings.numeric_source_fields(field_names)
@@ -193,7 +194,7 @@ class Operations:
         # }
         results = {}
 
-        if field_types=='aggregatable':
+        if field_types == 'aggregatable':
             for key, value in source_fields.items():
                 results[value] = response['aggregations'][key]['value']
         else:
@@ -538,7 +539,6 @@ class Operations:
 
         return collector.ret
 
-
     def _es_results(self, query_compiler, collector):
         query_params, post_processing = self._resolve_tasks()
 
@@ -561,12 +561,24 @@ class Operations:
         is_scan = False
         if size is not None and size <= 10000:
             if size > 0:
-                es_results = query_compiler._client.search(
-                    index=query_compiler._index_pattern,
-                    size=size,
-                    sort=sort_params,
-                    body=body,
-                    _source=field_names)
+                try:
+                    es_results = query_compiler._client.search(
+                        index=query_compiler._index_pattern,
+                        size=size,
+                        sort=sort_params,
+                        body=body,
+                        _source=field_names)
+                except:
+                    # Catch ES error and print debug (currently to stdout)
+                    error = {
+                        'index': query_compiler._index_pattern,
+                        'size': size,
+                        'sort': sort_params,
+                        'body': body,
+                        '_source': field_names
+                    }
+                    print("Elasticsearch error:", error)
+                    raise
         else:
             is_scan = True
             es_results = query_compiler._client.scan(
@@ -588,7 +600,6 @@ class Operations:
             partial_result, df = query_compiler._es_results_to_pandas(es_results)
             df = self._apply_df_post_processing(df, post_processing)
             collector.collect(df)
-
 
     def iloc(self, index, field_names):
         # index and field_names are indexers
@@ -884,7 +895,7 @@ class Operations:
         right_field = item[1][1][1][1]
 
         # https://www.elastic.co/guide/en/elasticsearch/painless/current/painless-api-reference-shared-java-lang.html#painless-api-reference-shared-Math
-        if isinstance(right_field, str):
+        if isinstance(left_field, str) and isinstance(right_field, str):
             """
             (if op_name = '__truediv__')
             
@@ -913,7 +924,6 @@ class Operations:
             else:
                 raise NotImplementedError("Not implemented operation '{0}'".format(op_name))
 
-
             if query_params['query_script_fields'] is None:
                 query_params['query_script_fields'] = {}
             query_params['query_script_fields'][field_name] = {
@@ -921,7 +931,7 @@ class Operations:
                     'source': source
                 }
             }
-        else:
+        elif isinstance(left_field, str) and np.issubdtype(np.dtype(type(right_field)), np.number):
             """
             (if op_name = '__truediv__')
 
@@ -949,17 +959,47 @@ class Operations:
                 source = "doc['{0}'].value - {1}".format(left_field, right_field)
             else:
                 raise NotImplementedError("Not implemented operation '{0}'".format(op_name))
+        elif np.issubdtype(np.dtype(type(left_field)), np.number) and isinstance(right_field, str):
+            """
+            (if op_name = '__truediv__')
 
-
-            if query_params['query_script_fields'] is None:
-                query_params['query_script_fields'] = {}
-            query_params['query_script_fields'][field_name] = {
-                'script': {
-                    'source': source
+            "script_fields": {
+                "field_name": {
+                  "script": {
+                    "source": "left_field / doc['right_field'].value"
+                   }
                 }
             }
+            """
+            if op_name == '__add__':
+                source = "{0} + doc['{1}'].value".format(left_field, right_field)
+            elif op_name == '__truediv__':
+                source = "{0} / doc['{1}'].value".format(left_field, right_field)
+            elif op_name == '__floordiv__':
+                source = "Math.floor({0} / doc['{1}'].value)".format(left_field, right_field)
+            elif op_name == '__pow__':
+                source = "Math.pow({0}, doc['{1}'].value)".format(left_field, right_field)
+            elif op_name == '__mod__':
+                source = "{0} % doc['{1}'].value".format(left_field, right_field)
+            elif op_name == '__mul__':
+                source = "{0} * doc['{1}'].value".format(left_field, right_field)
+            elif op_name == '__sub__':
+                source = "{0} - doc['{1}'].value".format(left_field, right_field)
+            else:
+                raise NotImplementedError("Not implemented operation '{0}'".format(op_name))
+        else:
+            raise TypeError("Types for operation inconsistent {} {} {}", type(left_field), type(right_field), op_name)
+
+        if query_params['query_script_fields'] is None:
+            query_params['query_script_fields'] = {}
+        query_params['query_script_fields'][field_name] = {
+            'script': {
+                'source': source
+            }
+        }
 
         return query_params, post_processing
+
 
     def _resolve_post_processing_task(self, item, query_params, post_processing):
         # Just do this in post-processing
@@ -967,6 +1007,7 @@ class Operations:
             post_processing.append(item)
 
         return query_params, post_processing
+
 
     def _size(self, query_params, post_processing):
         # Shrink wrap code around checking if size parameter is set
@@ -981,6 +1022,7 @@ class Operations:
 
         # This can return None
         return size
+
 
     def info_es(self, buf):
         buf.write("Operations:\n")
@@ -1001,6 +1043,7 @@ class Operations:
         buf.write(" _source: {0}\n".format(field_names))
         buf.write(" body: {0}\n".format(body))
         buf.write(" post_processing: {0}\n".format(post_processing))
+
 
     def update_query(self, boolean_filter):
         task = ('boolean_filter', boolean_filter)

@@ -104,3 +104,39 @@ class TestSeriesArithmetics(TestData):
                 pd_series = getattr(pd_df['total_quantity'], op)(pd_df['currency'])
             with pytest.raises(TypeError):
                 ed_series = getattr(ed_df['total_quantity'], op)(ed_df['currency'])
+
+    def test_ecommerce_series_basic_rarithmetics(self):
+        pd_df = self.pd_ecommerce().head(10)
+        ed_df = self.ed_ecommerce().head(10)
+
+        ops = ['__radd__',
+               '__rtruediv__',
+               '__rfloordiv__',
+               '__rpow__',
+               '__rmod__',
+               '__rmul__',
+               '__rsub__',
+               'radd',
+               'rtruediv',
+               'rfloordiv',
+               'rpow',
+               'rmod',
+               'rmul',
+               'rsub']
+
+        for op in ops:
+            pd_series = getattr(pd_df['taxful_total_price'], op)(pd_df['total_quantity'])
+            ed_series = getattr(ed_df['taxful_total_price'], op)(ed_df['total_quantity'])
+            assert_pandas_eland_series_equal(pd_series, ed_series, check_less_precise=True)
+
+            pd_series = getattr(pd_df['taxful_total_price'], op)(3.141)
+            ed_series = getattr(ed_df['taxful_total_price'], op)(3.141)
+            assert_pandas_eland_series_equal(pd_series, ed_series, check_less_precise=True)
+
+            pd_series = getattr(pd_df['taxful_total_price'], op)(np.float32(2.879))
+            ed_series = getattr(ed_df['taxful_total_price'], op)(np.float32(2.879))
+            assert_pandas_eland_series_equal(pd_series, ed_series, check_less_precise=True)
+
+            pd_series = getattr(pd_df['taxful_total_price'], op)(int(6))
+            ed_series = getattr(ed_df['taxful_total_price'], op)(int(6))
+            assert_pandas_eland_series_equal(pd_series, ed_series, check_less_precise=True)

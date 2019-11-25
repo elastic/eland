@@ -499,6 +499,7 @@ class Series(NDFrame):
         """
         return self._numeric_op(right, _get_method_name())
 
+
     def __truediv__(self, right):
         """
         Return floating division of series and right, element-wise (binary operator truediv).
@@ -528,7 +529,7 @@ class Series(NDFrame):
         3    2
         4    2
         Name: total_quantity, dtype: int64
-        >>> df.taxful_total_price / df.total_quantity
+        >>> df.taxful_total_price / df.total_quantity # doctest: +SKIP
         0    18.490000
         1    26.990000
         2    99.989998
@@ -733,6 +734,21 @@ class Series(NDFrame):
         """
         return self._numeric_op(right, _get_method_name())
 
+    def __radd__(self, left):
+        return self._numeric_rop(left, _get_method_name())
+    def __rtruediv__(self, left):
+        return self._numeric_rop(left, _get_method_name())
+    def __rfloordiv__(self, left):
+        return self._numeric_rop(left, _get_method_name())
+    def __rmod__(self, left):
+        return self._numeric_rop(left, _get_method_name())
+    def __rmul__(self, left):
+        return self._numeric_rop(left, _get_method_name())
+    def __rpow__(self, left):
+        return self._numeric_rop(left, _get_method_name())
+    def __rsub__(self, left):
+        return self._numeric_rop(left, _get_method_name())
+
     add = __add__
     div = __truediv__
     divide = __truediv__
@@ -744,6 +760,18 @@ class Series(NDFrame):
     sub = __sub__
     subtract = __sub__
     truediv = __truediv__
+
+    radd = __radd__
+    rdiv = __rtruediv__
+    rdivide = __rtruediv__
+    rfloordiv = __rfloordiv__
+    rmod = __rmod__
+    rmul = __rmul__
+    rmultiply = __rmul__
+    rpow = __rpow__
+    rsub = __rsub__
+    rsubtract = __rsub__
+    rtruediv = __rtruediv__
 
     def _numeric_op(self, right, method_name):
         """
@@ -785,6 +813,31 @@ class Series(NDFrame):
         else:
             raise TypeError(
                 "unsupported operand type(s) for '{}' {} '{}'".format(type(self), method_name, type(right))
+            )
+
+    def _numeric_rop(self, left, method_name):
+        """
+        e.g. 1 + ed.Series
+        """
+        op_method_name = str(method_name).replace('__r', '__')
+        if isinstance(left, Series):
+            # if both are Series, revese args and call normal op method and remove 'r' from radd etc.
+            return left._numeric_op(self, op_method_name)
+        elif np.issubdtype(np.dtype(type(left)), np.number): # allow np types
+            # Prefix new field name with 'f_' so it's a valid ES field name
+            new_field_name = "f_{0}_{1}_{2}".format(str(left).replace('.', '_'), op_method_name, self.name)
+
+            # Compatible, so create new Series
+            series = Series(query_compiler=self._query_compiler.arithmetic_op_fields(
+                new_field_name, op_method_name, left, self.name))
+
+            # name of Series pinned to valid series (like pandas)
+            series.name = self.name
+
+            return series
+        else:
+            raise TypeError(
+                "unsupported operand type(s) for '{}' {} '{}'".format(type(self), method_name, type(left))
             )
 
     def max(self):
