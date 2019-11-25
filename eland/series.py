@@ -11,16 +11,26 @@ without storing the dataset in local memory.
 
 Implementation Details
 ----------------------
-Based on NDFrame which underpins eland.1DataFrame
+Based on NDFrame which underpins eland.DataFrame
 
 """
 
+import sys
 import warnings
+from io import StringIO
+
+import numpy as np
 
 import pandas as pd
+from pandas.io.common import _expand_user, _stringify_path
 
 from eland import NDFrame
+from eland.common import DEFAULT_NUM_ROWS_DISPLAYED, docstring_parameter
 from eland.filter import NotFilter, Equal, Greater, Less, GreaterEqual, LessEqual, ScriptFilter, IsIn
+
+
+def _get_method_name():
+    return sys._getframe(1).f_code.co_name
 
 
 class Series(NDFrame):
@@ -33,35 +43,35 @@ class Series(NDFrame):
         A reference to a Elasticsearch python client
 
     index_pattern : str
-        An Elasticsearch index pattern. This can contain wildcards (e.g. filebeat-*).
+        An Elasticsearch index pattern. This can contain wildcards (e.g. filebeat-\*\).
 
     index_field : str
         The field to base the series on
-
-    See Also
-    --------
-
-    Examples
-    --------
-
-    import eland as ed
-    client = ed.Client(Elasticsearch())
-    s = ed.DataFrame(client, 'reviews', 'date')
-    df.head()
-       reviewerId  vendorId  rating              date
-    0           0         0       5  2006-04-07 17:08
-    1           1         1       5  2006-05-04 12:16
-    2           2         2       4  2006-04-21 12:26
-    3           3         3       5  2006-04-18 15:48
-    4           3         4       5  2006-04-18 15:49
-
-    Notice that the types are based on Elasticsearch mappings
 
     Notes
     -----
     If the Elasticsearch index is deleted or index mappings are changed after this
     object is created, the object is not rebuilt and so inconsistencies can occur.
 
+    See Also
+    --------
+    :pandas_api_docs:`pandas.Series`
+
+    Examples
+    --------
+    >>> ed.Series(client='localhost', index_pattern='flights', name='Carrier')
+    0         Kibana Airlines
+    1        Logstash Airways
+    2        Logstash Airways
+    3         Kibana Airlines
+    4         Kibana Airlines
+                   ...
+    13054    Logstash Airways
+    13055    Logstash Airways
+    13056    Logstash Airways
+    13057            JetBeats
+    13058            JetBeats
+    Name: Carrier, Length: 13059, dtype: object
     """
 
     def __init__(self,
@@ -93,10 +103,93 @@ class Series(NDFrame):
         """
         return len(self.index) == 0
 
+    @property
+    def shape(self):
+        """
+        Return a tuple representing the dimensionality of the Series.
+
+        Returns
+        -------
+        shape: tuple
+
+        0. number of rows
+        1. number of columns
+
+        Notes
+        -----
+        - number of rows ``len(series)`` queries Elasticsearch
+        - number of columns == 1
+
+        Examples
+        --------
+        >>> df = ed.Series('localhost', 'ecommerce', name='total_quantity')
+        >>> df.shape
+        (4675, 1)
+        """
+        num_rows = len(self)
+        num_columns = 1
+
+        return num_rows, num_columns
+
     def _get_name(self):
         return self._query_compiler.columns[0]
 
-    name = property(_get_name)
+    def _set_name(self, name):
+        self._query_compiler.rename({self.name: name}, inplace=True)
+
+    name = property(_get_name, _set_name)
+
+    def rename(self, new_name):
+        """
+        Rename name of series. Only column rename is supported. This does not change the underlying
+        Elasticsearch index, but adds a symbolic link from the new name (column) to the Elasticsearch field name.
+
+        For instance, if a field was called 'tot_quan' it could be renamed 'Total Quantity'.
+
+        Parameters
+        ----------
+        new_name: str
+
+        Returns
+        -------
+        eland.Series
+            eland.Series with new name.
+
+        See Also
+        --------
+        :pandas_api_docs:`pandas.Series.rename`
+
+        Examples
+        --------
+        >>> df = ed.DataFrame('localhost', 'flights')
+        >>> df.Carrier
+        0         Kibana Airlines
+        1        Logstash Airways
+        2        Logstash Airways
+        3         Kibana Airlines
+        4         Kibana Airlines
+                       ...
+        13054    Logstash Airways
+        13055    Logstash Airways
+        13056    Logstash Airways
+        13057            JetBeats
+        13058            JetBeats
+        Name: Carrier, Length: 13059, dtype: object
+        >>> df.Carrier.rename('Airline')
+        0         Kibana Airlines
+        1        Logstash Airways
+        2        Logstash Airways
+        3         Kibana Airlines
+        4         Kibana Airlines
+                       ...
+        13054    Logstash Airways
+        13055    Logstash Airways
+        13056    Logstash Airways
+        13057            JetBeats
+        13058            JetBeats
+        Name: Airline, Length: 13059, dtype: object
+        """
+        return Series(query_compiler=self._query_compiler.rename({self.name: new_name}))
 
     def head(self, n=5):
         return Series(query_compiler=self._query_compiler.head(n))
@@ -141,18 +234,46 @@ class Series(NDFrame):
         """
         if not isinstance(es_size, int):
             raise TypeError("es_size must be a positive integer.")
-        if not es_size>0:
+        if not es_size > 0:
             raise ValueError("es_size must be a positive integer.")
 
         return self._query_compiler.value_counts(es_size)
 
+    # dtype not implemented for Series as causes query to fail
+    # in pandas.core.computation.ops.Term.type
+
     # ----------------------------------------------------------------------
     # Rendering Methods
     def __repr__(self):
-        num_rows = pd.get_option("max_rows") or 60
+        """
+        Return a string representation for a particular Series.
+        """
+        buf = StringIO()
 
-        return self.to_string(max_rows=num_rows)
+        # max_rows and max_cols determine the maximum size of the pretty printed tabular
+        # representation of the series. pandas defaults are 60 and 20 respectively.
+        # series where len(series) > max_rows shows a truncated view with 10 rows shown.
+        max_rows = pd.get_option("display.max_rows")
+        min_rows = pd.get_option("display.min_rows")
 
+        if len(self) > max_rows:
+            max_rows = min_rows
+
+        show_dimensions = pd.get_option("display.show_dimensions")
+
+        self.to_string(
+            buf=buf,
+            name=self.name,
+            dtype=True,
+            min_rows=min_rows,
+            max_rows=max_rows,
+            length=show_dimensions,
+        )
+        result = buf.getvalue()
+
+        return result
+
+    @docstring_parameter(DEFAULT_NUM_ROWS_DISPLAYED)
     def to_string(
             self,
             buf=None,
@@ -163,36 +284,88 @@ class Series(NDFrame):
             length=False,
             dtype=False,
             name=False,
-            max_rows=None):
+            max_rows=None,
+            min_rows=None,
+    ):
+        """
+        Render a string representation of the Series.
 
-        if max_rows is None:
+        Follows pandas implementation except when ``max_rows=None``. In this scenario, we set ``max_rows={0}`` to avoid
+        accidentally dumping an entire index. This can be overridden by explicitly setting ``max_rows``.
+
+        See Also
+        --------
+        :pandas_api_docs:`pandas.Series.to_string`
+            for argument details.
+        """
+        # In pandas calling 'to_string' without max_rows set, will dump ALL rows - we avoid this
+        # by limiting rows by default.
+        num_rows = len(self)  # avoid multiple calls
+        if num_rows <= DEFAULT_NUM_ROWS_DISPLAYED:
+            if max_rows is None:
+                max_rows = num_rows
+            else:
+                max_rows = min(num_rows, max_rows)
+        elif max_rows is None:
             warnings.warn("Series.to_string called without max_rows set "
                           "- this will return entire index results. "
-                          "Setting max_rows=60, overwrite if different behaviour is required.")
-            max_rows = 60
+                          "Setting max_rows={default}"
+                          " overwrite if different behaviour is required."
+                          .format(default=DEFAULT_NUM_ROWS_DISPLAYED),
+                          UserWarning)
+            max_rows = DEFAULT_NUM_ROWS_DISPLAYED
+
+        # because of the way pandas handles max_rows=0, not having this throws an error
+        # see eland issue #56
+        if max_rows == 0:
+            max_rows = 1
 
         # Create a slightly bigger dataframe than display
-        temp_df = self._build_repr_df(max_rows + 1, None)
-        if isinstance(temp_df, pd.DataFrame):
-            temp_df = temp_df[self.name]
-        temp_str = repr(temp_df)
-        if self.name is not None:
-            name_str = "Name: {}, ".format(str(self.name))
+        temp_series = self._build_repr(max_rows + 1)
+
+        if buf is not None:
+            _buf = _expand_user(_stringify_path(buf))
         else:
-            name_str = ""
-        if len(self.index) > max_rows:
-            len_str = "Length: {}, ".format(len(self.index))
-        else:
-            len_str = ""
-        dtype_str = "dtype: {}".format(temp_str.rsplit("dtype: ", 1)[-1])
-        if len(self) == 0:
-            return "Series([], {}{}".format(name_str, dtype_str)
-        return temp_str.rsplit("\nName:", 1)[0] + "\n{}{}{}".format(
-            name_str, len_str, dtype_str
-        )
+            _buf = StringIO()
+
+        # Create repr of fake series without name, length, dtype summary
+        temp_str = temp_series.to_string(buf=_buf,
+                                         na_rep=na_rep,
+                                         float_format=float_format,
+                                         header=header,
+                                         index=index,
+                                         length=False,
+                                         dtype=False,
+                                         name=False,
+                                         max_rows=max_rows)
+
+        # Create the summary
+        footer = ""
+        if name and self.name is not None:
+            footer += "Name: {}".format(str(self.name))
+        if length and len(self) > max_rows:
+            if footer:
+                footer += ", "
+            footer += "Length: {}".format(len(self.index))
+        if dtype:
+            if footer:
+                footer += ", "
+            footer += "dtype: {}".format(temp_series.dtype)
+
+        if len(footer) > 0:
+            _buf.write("\n{}".format(footer))
+
+        if buf is None:
+            result = _buf.getvalue()
+            return result
 
     def _to_pandas(self):
         return self._query_compiler.to_pandas()[self.name]
+
+    @property
+    def _dtype(self):
+        # DO NOT MAKE PUBLIC (i.e. def dtype) as this breaks query eval implementation
+        return self._query_compiler.dtypes[0]
 
     def __gt__(self, other):
         if isinstance(other, Series):
@@ -267,12 +440,772 @@ class Series(NDFrame):
     @property
     def ndim(self):
         """
-        Returns 1 by definition of a Series1
+        Returns 1 by definition of a Series
 
         Returns
         -------
         int
             By definition 1
 
+        See Also
+        --------
+        :pandas_api_docs:`pandas.Series.ndim`
         """
         return 1
+
+    def info_es(self):
+        buf = StringIO()
+
+        super()._info_es(buf)
+
+        return buf.getvalue()
+
+    def __add__(self, right):
+        """
+        Return addition of series and right, element-wise (binary operator add).
+
+        Parameters
+        ----------
+        right: eland.Series
+
+        Returns
+        -------
+        eland.Series
+
+        Examples
+        --------
+        >>> df = ed.DataFrame('localhost', 'ecommerce').head(5)
+        >>> df.taxful_total_price
+        0     36.98
+        1     53.98
+        2    199.98
+        3    174.98
+        4     80.98
+        Name: taxful_total_price, dtype: float64
+        >>> df.taxful_total_price + 1
+        0     37.980000
+        1     54.980000
+        2    200.979996
+        3    175.979996
+        4     81.980003
+        Name: taxful_total_price, dtype: float64
+        >>> df.total_quantity
+        0    2
+        1    2
+        2    2
+        3    2
+        4    2
+        Name: total_quantity, dtype: int64
+        >>> df.taxful_total_price + df.total_quantity
+        0     38.980000
+        1     55.980000
+        2    201.979996
+        3    176.979996
+        4     82.980003
+        dtype: float64
+        """
+        return self._numeric_op(right, _get_method_name())
+
+
+    def __truediv__(self, right):
+        """
+        Return floating division of series and right, element-wise (binary operator truediv).
+
+        Parameters
+        ----------
+        right: eland.Series
+
+        Returns
+        -------
+        eland.Series
+
+        Examples
+        --------
+        >>> df = ed.DataFrame('localhost', 'ecommerce').head(5)
+        >>> df.taxful_total_price
+        0     36.98
+        1     53.98
+        2    199.98
+        3    174.98
+        4     80.98
+        Name: taxful_total_price, dtype: float64
+        >>> df.total_quantity
+        0    2
+        1    2
+        2    2
+        3    2
+        4    2
+        Name: total_quantity, dtype: int64
+        >>> df.taxful_total_price / df.total_quantity
+        0    18.490000
+        1    26.990000
+        2    99.989998
+        3    87.489998
+        4    40.490002
+        dtype: float64
+        """
+        return self._numeric_op(right, _get_method_name())
+
+    def __floordiv__(self, right):
+        """
+        Return integer division of series and right, element-wise (binary operator floordiv //).
+
+        Parameters
+        ----------
+        right: eland.Series
+
+        Returns
+        -------
+        eland.Series
+
+        Examples
+        --------
+        >>> df = ed.DataFrame('localhost', 'ecommerce').head(5)
+        >>> df.taxful_total_price
+        0     36.98
+        1     53.98
+        2    199.98
+        3    174.98
+        4     80.98
+        Name: taxful_total_price, dtype: float64
+        >>> df.total_quantity
+        0    2
+        1    2
+        2    2
+        3    2
+        4    2
+        Name: total_quantity, dtype: int64
+        >>> df.taxful_total_price // df.total_quantity
+        0    18.0
+        1    26.0
+        2    99.0
+        3    87.0
+        4    40.0
+        dtype: float64
+        """
+        return self._numeric_op(right, _get_method_name())
+
+    def __mod__(self, right):
+        """
+        Return modulo of series and right, element-wise (binary operator mod %).
+
+        Parameters
+        ----------
+        right: eland.Series
+
+        Returns
+        -------
+        eland.Series
+
+        Examples
+        --------
+        >>> df = ed.DataFrame('localhost', 'ecommerce').head(5)
+        >>> df.taxful_total_price
+        0     36.98
+        1     53.98
+        2    199.98
+        3    174.98
+        4     80.98
+        Name: taxful_total_price, dtype: float64
+        >>> df.total_quantity
+        0    2
+        1    2
+        2    2
+        3    2
+        4    2
+        Name: total_quantity, dtype: int64
+        >>> df.taxful_total_price % df.total_quantity
+        0    0.980000
+        1    1.980000
+        2    1.979996
+        3    0.979996
+        4    0.980003
+        dtype: float64
+        """
+        return self._numeric_op(right, _get_method_name())
+
+    def __mul__(self, right):
+        """
+        Return multiplication of series and right, element-wise (binary operator mul).
+
+        Parameters
+        ----------
+        right: eland.Series
+
+        Returns
+        -------
+        eland.Series
+
+        Examples
+        --------
+        >>> df = ed.DataFrame('localhost', 'ecommerce').head(5)
+        >>> df.taxful_total_price
+        0     36.98
+        1     53.98
+        2    199.98
+        3    174.98
+        4     80.98
+        Name: taxful_total_price, dtype: float64
+        >>> df.total_quantity
+        0    2
+        1    2
+        2    2
+        3    2
+        4    2
+        Name: total_quantity, dtype: int64
+        >>> df.taxful_total_price * df.total_quantity
+        0     73.959999
+        1    107.959999
+        2    399.959991
+        3    349.959991
+        4    161.960007
+        dtype: float64
+        """
+        return self._numeric_op(right, _get_method_name())
+
+    def __sub__(self, right):
+        """
+        Return subtraction of series and right, element-wise (binary operator sub).
+
+        Parameters
+        ----------
+        right: eland.Series
+
+        Returns
+        -------
+        eland.Series
+
+        Examples
+        --------
+        >>> df = ed.DataFrame('localhost', 'ecommerce').head(5)
+        >>> df.taxful_total_price
+        0     36.98
+        1     53.98
+        2    199.98
+        3    174.98
+        4     80.98
+        Name: taxful_total_price, dtype: float64
+        >>> df.total_quantity
+        0    2
+        1    2
+        2    2
+        3    2
+        4    2
+        Name: total_quantity, dtype: int64
+        >>> df.taxful_total_price - df.total_quantity
+        0     34.980000
+        1     51.980000
+        2    197.979996
+        3    172.979996
+        4     78.980003
+        dtype: float64
+        """
+        return self._numeric_op(right, _get_method_name())
+
+    def __pow__(self, right):
+        """
+        Return exponential power of series and right, element-wise (binary operator pow \**\).
+
+        Parameters
+        ----------
+        right: eland.Series
+
+        Returns
+        -------
+        eland.Series
+
+        Examples
+        --------
+        >>> df = ed.DataFrame('localhost', 'ecommerce').head(5)
+        >>> df.taxful_total_price
+        0     36.98
+        1     53.98
+        2    199.98
+        3    174.98
+        4     80.98
+        Name: taxful_total_price, dtype: float64
+        >>> df.total_quantity
+        0    2
+        1    2
+        2    2
+        3    2
+        4    2
+        Name: total_quantity, dtype: int64
+        >>> df.taxful_total_price ** df.total_quantity
+        0     1367.520366
+        1     2913.840351
+        2    39991.998691
+        3    30617.998905
+        4     6557.760944
+        dtype: float64
+        """
+        return self._numeric_op(right, _get_method_name())
+
+    def __radd__(self, left):
+        """
+        Return addition of series and left, element-wise (binary operator add).
+
+        Parameters
+        ----------
+        left: eland.Series
+
+        Returns
+        -------
+        eland.Series
+
+        Examples
+        --------
+        >>> df = ed.DataFrame('localhost', 'ecommerce').head(5)
+        >>> df.taxful_total_price
+        0     36.98
+        1     53.98
+        2    199.98
+        3    174.98
+        4     80.98
+        Name: taxful_total_price, dtype: float64
+        >>> 1 + df.taxful_total_price
+        0     37.980000
+        1     54.980000
+        2    200.979996
+        3    175.979996
+        4     81.980003
+        Name: taxful_total_price, dtype: float64
+        """
+        return self._numeric_rop(left, _get_method_name())
+    def __rtruediv__(self, left):
+        """
+        Return division of series and left, element-wise (binary operator div).
+
+        Parameters
+        ----------
+        left: eland.Series
+
+        Returns
+        -------
+        eland.Series
+
+        Examples
+        --------
+        >>> df = ed.DataFrame('localhost', 'ecommerce').head(5)
+        >>> df.taxful_total_price
+        0     36.98
+        1     53.98
+        2    199.98
+        3    174.98
+        4     80.98
+        Name: taxful_total_price, dtype: float64
+        >>> 1.0 / df.taxful_total_price
+        0    0.027042
+        1    0.018525
+        2    0.005001
+        3    0.005715
+        4    0.012349
+        Name: taxful_total_price, dtype: float64
+        """
+        return self._numeric_rop(left, _get_method_name())
+    def __rfloordiv__(self, left):
+        """
+        Return integer division of series and left, element-wise (binary operator floordiv //).
+
+        Parameters
+        ----------
+        left: eland.Series
+
+        Returns
+        -------
+        eland.Series
+
+        Examples
+        --------
+        >>> df = ed.DataFrame('localhost', 'ecommerce').head(5)
+        >>> df.taxful_total_price
+        0     36.98
+        1     53.98
+        2    199.98
+        3    174.98
+        4     80.98
+        Name: taxful_total_price, dtype: float64
+        >>> 500.0 // df.taxful_total_price
+        0    13.0
+        1     9.0
+        2     2.0
+        3     2.0
+        4     6.0
+        Name: taxful_total_price, dtype: float64
+        """
+        return self._numeric_rop(left, _get_method_name())
+    def __rmod__(self, left):
+        """
+        Return modulo of series and left, element-wise (binary operator mod %).
+
+        Parameters
+        ----------
+        left: eland.Series
+
+        Returns
+        -------
+        eland.Series
+
+        Examples
+        --------
+        >>> df = ed.DataFrame('localhost', 'ecommerce').head(5)
+        >>> df.taxful_total_price
+        0     36.98
+        1     53.98
+        2    199.98
+        3    174.98
+        4     80.98
+        Name: taxful_total_price, dtype: float64
+        >>> 500.0 % df.taxful_total_price
+        0     19.260006
+        1     14.180004
+        2    100.040009
+        3    150.040009
+        4     14.119980
+        Name: taxful_total_price, dtype: float64
+        """
+        return self._numeric_rop(left, _get_method_name())
+    def __rmul__(self, left):
+        """
+        Return multiplication of series and left, element-wise (binary operator mul).
+
+        Parameters
+        ----------
+        left: eland.Series
+
+        Returns
+        -------
+        eland.Series
+
+        Examples
+        --------
+        >>> df = ed.DataFrame('localhost', 'ecommerce').head(5)
+        >>> df.taxful_total_price
+        0     36.98
+        1     53.98
+        2    199.98
+        3    174.98
+        4     80.98
+        Name: taxful_total_price, dtype: float64
+        >>> 10.0 * df.taxful_total_price
+        0     369.799995
+        1     539.799995
+        2    1999.799957
+        3    1749.799957
+        4     809.800034
+        Name: taxful_total_price, dtype: float64
+        """
+        return self._numeric_rop(left, _get_method_name())
+    def __rpow__(self, left):
+        """
+        Return exponential power of series and left, element-wise (binary operator pow \**\).
+
+        Parameters
+        ----------
+        left: eland.Series
+
+        Returns
+        -------
+        eland.Series
+
+        Examples
+        --------
+        >>> df = ed.DataFrame('localhost', 'ecommerce').head(5)
+        >>> df.total_quantity
+        0    2
+        1    2
+        2    2
+        3    2
+        4    2
+        Name: total_quantity, dtype: int64
+        >>> np.int(2) ** df.total_quantity
+        0    4.0
+        1    4.0
+        2    4.0
+        3    4.0
+        4    4.0
+        Name: total_quantity, dtype: float64
+        """
+        return self._numeric_rop(left, _get_method_name())
+    def __rsub__(self, left):
+        """
+        Return subtraction of series and left, element-wise (binary operator sub).
+
+        Parameters
+        ----------
+        left: eland.Series
+
+        Returns
+        -------
+        eland.Series
+
+        Examples
+        --------
+        >>> df = ed.DataFrame('localhost', 'ecommerce').head(5)
+        >>> df.taxful_total_price
+        0     36.98
+        1     53.98
+        2    199.98
+        3    174.98
+        4     80.98
+        Name: taxful_total_price, dtype: float64
+        >>> 1.0 - df.taxful_total_price
+        0    -35.980000
+        1    -52.980000
+        2   -198.979996
+        3   -173.979996
+        4    -79.980003
+        Name: taxful_total_price, dtype: float64
+        """
+        return self._numeric_rop(left, _get_method_name())
+
+    add = __add__
+    div = __truediv__
+    divide = __truediv__
+    floordiv = __floordiv__
+    mod = __mod__
+    mul = __mul__
+    multiply = __mul__
+    pow = __pow__
+    sub = __sub__
+    subtract = __sub__
+    truediv = __truediv__
+
+    radd = __radd__
+    rdiv = __rtruediv__
+    rdivide = __rtruediv__
+    rfloordiv = __rfloordiv__
+    rmod = __rmod__
+    rmul = __rmul__
+    rmultiply = __rmul__
+    rpow = __rpow__
+    rsub = __rsub__
+    rsubtract = __rsub__
+    rtruediv = __rtruediv__
+
+    def _numeric_op(self, right, method_name):
+        """
+        return a op b
+
+        a & b == Series
+            a & b must share same eland.Client, index_pattern and index_field
+        a == Series, b == numeric
+        """
+        if isinstance(right, Series):
+            # Check compatibility of Elasticsearch cluster
+            self._query_compiler.check_arithmetics(right._query_compiler)
+
+            # Check compatibility of dtypes
+            # either not a number?
+            if not (np.issubdtype(self._dtype, np.number) and np.issubdtype(right._dtype, np.number)):
+                # TODO - support limited ops on strings https://github.com/elastic/eland/issues/65
+                raise TypeError("Unsupported operation: '{}' {} '{}'".format(self._dtype, method_name, right._dtype))
+
+            new_field_name = "{0}_{1}_{2}".format(self.name, method_name, right.name)
+
+            # Compatible, so create new Series
+            series = Series(query_compiler=self._query_compiler.arithmetic_op_fields(
+                new_field_name, method_name, self.name, right.name))
+            series.name = None
+
+            return series
+        elif np.issubdtype(np.dtype(type(right)), np.number) and np.issubdtype(self._dtype, np.number):
+            new_field_name = "{0}_{1}_{2}".format(self.name, method_name, str(right).replace('.', '_'))
+
+            # Compatible, so create new Series
+            series = Series(query_compiler=self._query_compiler.arithmetic_op_fields(
+                new_field_name, method_name, self.name, right))
+
+            # name of Series remains original name
+            series.name = self.name
+
+            return series
+        else:
+            # TODO - support limited ops on strings https://github.com/elastic/eland/issues/65
+            raise TypeError(
+                "unsupported operand type(s) for '{}' {} '{}'".format(type(self), method_name, type(right))
+            )
+
+    def _numeric_rop(self, left, method_name):
+        """
+        e.g. 1 + ed.Series
+        """
+        op_method_name = str(method_name).replace('__r', '__')
+        if isinstance(left, Series):
+            # if both are Series, revese args and call normal op method and remove 'r' from radd etc.
+            return left._numeric_op(self, op_method_name)
+        elif np.issubdtype(np.dtype(type(left)), np.number) and np.issubdtype(self._dtype, np.number):
+            # Prefix new field name with 'f_' so it's a valid ES field name
+            new_field_name = "f_{0}_{1}_{2}".format(str(left).replace('.', '_'), op_method_name, self.name)
+
+            # Compatible, so create new Series
+            series = Series(query_compiler=self._query_compiler.arithmetic_op_fields(
+                new_field_name, op_method_name, left, self.name))
+
+            # name of Series pinned to valid series (like pandas)
+            series.name = self.name
+
+            return series
+        else:
+            # TODO - support limited ops on strings https://github.com/elastic/eland/issues/65
+            raise TypeError(
+                "unsupported operand type(s) for '{}' {} '{}'".format(type(self), method_name, type(left))
+            )
+
+    def max(self):
+        """
+        Return the maximum of the Series values
+
+        TODO - implement remainder of pandas arguments, currently non-numerics are not supported
+
+        Returns
+        -------
+        float
+            max value
+
+        See Also
+        --------
+        :pandas_api_docs:`pandas.Series.max`
+
+        Examples
+        --------
+        >>> s = ed.Series('localhost', 'flights', name='AvgTicketPrice')
+        >>> int(s.max())
+        1199
+        """
+        results = super().max()
+        return results.squeeze()
+
+    def mean(self):
+        """
+        Return the mean of the Series values
+
+        TODO - implement remainder of pandas arguments, currently non-numerics are not supported
+
+        Returns
+        -------
+        float
+            max value
+
+        See Also
+        --------
+        :pandas_api_docs:`pandas.Series.mean`
+
+        Examples
+        --------
+        >>> s = ed.Series('localhost', 'flights', name='AvgTicketPrice')
+        >>> int(s.mean())
+        628
+        """
+        results = super().mean()
+        return results.squeeze()
+
+    def min(self):
+        """
+        Return the minimum of the Series values
+
+        TODO - implement remainder of pandas arguments, currently non-numerics are not supported
+
+        Returns
+        -------
+        float
+            max value
+
+        See Also
+        --------
+        :pandas_api_docs:`pandas.Series.min`
+
+        Examples
+        --------
+        >>> s = ed.Series('localhost', 'flights', name='AvgTicketPrice')
+        >>> int(s.min())
+        100
+        """
+        results = super().min()
+        return results.squeeze()
+
+    def sum(self):
+        """
+        Return the sum of the Series values
+
+        TODO - implement remainder of pandas arguments, currently non-numerics are not supported
+
+        Returns
+        -------
+        float
+            max value
+
+        See Also
+        --------
+        :pandas_api_docs:`pandas.Series.sum`
+
+        Examples
+        --------
+        >>> s = ed.Series('localhost', 'flights', name='AvgTicketPrice')
+        >>> int(s.sum())
+        8204364
+        """
+        results = super().sum()
+        return results.squeeze()
+
+    def nunique(self):
+        """
+        Return the sum of the Series values
+
+        Returns
+        -------
+        float
+            max value
+
+        See Also
+        --------
+        :pandas_api_docs:`pandas.Series.sum`
+
+        Examples
+        --------
+        >>> s = ed.Series('localhost', 'flights', name='Carrier')
+        >>> s.nunique()
+        4
+        """
+        results = super().nunique()
+        return results.squeeze()
+
+    #def values TODO - not implemented as causes current implementation of query to fail
+
+    def to_numpy(self):
+        """
+        Not implemented.
+
+        In pandas this returns a Numpy representation of the Series. This would involve scan/scrolling the
+        entire index.
+
+        If this is required, call ``ed.eland_to_pandas(ed_series).values``, *but beware this will scan/scroll the entire
+        Elasticsearch index(s) into memory.*
+
+        See Also
+        --------
+        :pandas_api_docs:`pandas.DataFrame.to_numpy`
+        eland_to_pandas
+
+        Examples
+        --------
+        >>> ed_s = ed.Series('localhost', 'flights', name='Carrier').head(5)
+        >>> pd_s = ed.eland_to_pandas(ed_s)
+        >>> print("type(ed_s)={0}\\ntype(pd_s)={1}".format(type(ed_s), type(pd_s)))
+        type(ed_s)=<class 'eland.series.Series'>
+        type(pd_s)=<class 'pandas.core.series.Series'>
+        >>> ed_s
+        0     Kibana Airlines
+        1    Logstash Airways
+        2    Logstash Airways
+        3     Kibana Airlines
+        4     Kibana Airlines
+        Name: Carrier, dtype: object
+        >>> pd_s.to_numpy()
+        array(['Kibana Airlines', 'Logstash Airways', 'Logstash Airways',
+               'Kibana Airlines', 'Kibana Airlines'], dtype=object)
+        """
+        raise NotImplementedError(
+            "This method would scan/scroll the entire Elasticsearch index(s) into memory."
+            "If this is explicitly required and there is sufficient memory, call `ed.eland_to_pandas(ed_df).values`"
+        )

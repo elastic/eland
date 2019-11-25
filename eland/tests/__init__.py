@@ -279,10 +279,10 @@ ECOMMERCE_MAPPING = {"mappings": {
             "type": "keyword"
         },
         "taxful_total_price": {
-            "type": "half_float"
+            "type": "float"
         },
         "taxless_total_price": {
-            "type": "half_float"
+            "type": "float"
         },
         "total_quantity": {
             "type": "integer"

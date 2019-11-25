@@ -18,15 +18,7 @@ import eland.plotting as gfx
 from eland import NDFrame
 from eland import Series
 from eland.filter import BooleanFilter, ScriptFilter
-
-# Default number of rows displayed (different to pandas where ALL could be displayed)
-DEFAULT_NUM_ROWS_DISPLAYED = 60
-
-def docstring_parameter(*sub):
-    def dec(obj):
-        obj.__doc__ = obj.__doc__.format(*sub)
-        return obj
-    return dec
+from eland.common import DEFAULT_NUM_ROWS_DISPLAYED, docstring_parameter
 
 
 class DataFrame(NDFrame):
@@ -98,7 +90,6 @@ class DataFrame(NDFrame):
     <BLANKLINE>
     [5 rows x 2 columns]
     """
-
     def __init__(self,
                  client=None,
                  index_pattern=None,
@@ -389,10 +380,11 @@ class DataFrame(NDFrame):
         <BLANKLINE>
         [27 rows x 5 columns]
         Operations:
-         tasks: [('boolean_filter', {'bool': {'must': [{'term': {'OriginAirportID': 'AMS'}}, {'range': {'FlightDelayMin': {'gt': 60}}}]}}), ('columns', ['timestamp', 'OriginAirportID', 'DestAirportID', 'FlightDelayMin']), ('tail', ('_doc', 5))]
+         tasks: [('boolean_filter', {'bool': {'must': [{'term': {'OriginAirportID': 'AMS'}}, {'range': {'FlightDelayMin': {'gt': 60}}}]}}), ('field_names', ['timestamp', 'OriginAirportID', 'DestAirportID', 'FlightDelayMin']), ('tail', ('_doc', 5))]
          size: 5
          sort_params: _doc:desc
-         columns: ['timestamp', 'OriginAirportID', 'DestAirportID', 'FlightDelayMin']
+         _source: ['timestamp', 'OriginAirportID', 'DestAirportID', 'FlightDelayMin']
+         body: {'query': {'bool': {'must': [{'term': {'OriginAirportID': 'AMS'}}, {'range': {'FlightDelayMin': {'gt': 60}}}]}}, 'aggs': {}}
          post_processing: ['sort_index']
         <BLANKLINE>
         """
@@ -527,7 +519,12 @@ class DataFrame(NDFrame):
             else:
                 _verbose_repr()
 
+        # pandas 0.25.1 uses get_dtype_counts() here. This
+        # returns a Series with strings as the index NOT dtypes.
+        # Therefore, to get consistent ordering we need to
+        # align types with pandas method.
         counts = self.dtypes.value_counts()
+        counts.index = counts.index.astype(str)
         dtypes = ['{k}({kk:d})'.format(k=k[0], kk=k[1]) for k
                   in sorted(counts.items())]
         lines.append('dtypes: {types}'.format(types=', '.join(dtypes)))
@@ -586,7 +583,7 @@ class DataFrame(NDFrame):
             max_rows = 1
 
         # Create a slightly bigger dataframe than display
-        df = self._build_repr_df(max_rows + 1, max_cols)
+        df = self._build_repr(max_rows + 1)
 
         if buf is not None:
             _buf = _expand_user(_stringify_path(buf))
@@ -651,7 +648,7 @@ class DataFrame(NDFrame):
             max_rows = 1
 
         # Create a slightly bigger dataframe than display
-        df = self._build_repr_df(max_rows + 1, max_cols)
+        df = self._build_repr(max_rows + 1)
 
         if buf is not None:
             _buf = _expand_user(_stringify_path(buf))
@@ -1064,3 +1061,66 @@ class DataFrame(NDFrame):
             return self._getitem(key)
         else:
             return default
+
+    @property
+    def values(self):
+        """
+        Not implemented.
+
+        In pandas this returns a Numpy representation of the DataFrame. This would involve scan/scrolling the
+        entire index.
+
+        If this is required, call ``ed.eland_to_pandas(ed_df).values``, *but beware this will scan/scroll the entire
+        Elasticsearch index(s) into memory.*
+
+        See Also
+        --------
+        :pandas_api_docs:`pandas.DataFrame.values`
+        eland_to_pandas
+        to_numpy
+        """
+        self.to_numpy()
+
+    def to_numpy(self):
+        """
+        Not implemented.
+
+        In pandas this returns a Numpy representation of the DataFrame. This would involve scan/scrolling the
+        entire index.
+
+        If this is required, call ``ed.eland_to_pandas(ed_df).values``, *but beware this will scan/scroll the entire
+        Elasticsearch index(s) into memory.*
+
+        See Also
+        --------
+        :pandas_api_docs:`pandas.DataFrame.to_numpy`
+        eland_to_pandas
+
+        Examples
+        --------
+        >>> ed_df = ed.DataFrame('localhost', 'flights', columns=['AvgTicketPrice', 'Carrier']).head(5)
+        >>> pd_df = ed.eland_to_pandas(ed_df)
+        >>> print("type(ed_df)={0}\\ntype(pd_df)={1}".format(type(ed_df), type(pd_df)))
+        type(ed_df)=<class 'eland.dataframe.DataFrame'>
+        type(pd_df)=<class 'pandas.core.frame.DataFrame'>
+        >>> ed_df
+           AvgTicketPrice           Carrier
+        0      841.265642   Kibana Airlines
+        1      882.982662  Logstash Airways
+        2      190.636904  Logstash Airways
+        3      181.694216   Kibana Airlines
+        4      730.041778   Kibana Airlines
+        <BLANKLINE>
+        [5 rows x 2 columns]
+        >>> pd_df.values
+        array([[841.2656419677076, 'Kibana Airlines'],
+               [882.9826615595518, 'Logstash Airways'],
+               [190.6369038508356, 'Logstash Airways'],
+               [181.69421554118, 'Kibana Airlines'],
+               [730.041778346198, 'Kibana Airlines']], dtype=object)
+        """
+        raise AttributeError(
+            "This method would scan/scroll the entire Elasticsearch index(s) into memory. "
+            "If this is explicitly required, and there is sufficient memory, call `ed.eland_to_pandas(ed_df).values`"
+        )
+

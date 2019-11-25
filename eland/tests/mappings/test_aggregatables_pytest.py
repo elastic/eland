@@ -8,7 +8,7 @@ class TestMappingsAggregatables(TestData):
     def test_ecommerce_all_aggregatables(self):
         ed_ecommerce = self.ed_ecommerce()
 
-        aggregatables = ed_ecommerce._query_compiler._mappings.aggregatable_columns()
+        aggregatables = ed_ecommerce._query_compiler._mappings.aggregatable_field_names()
 
         expected = {'category.keyword': 'category',
          'currency': 'currency',
@@ -67,6 +67,6 @@ class TestMappingsAggregatables(TestData):
                     'customer_first_name.keyword': 'customer_first_name',
                     'type': 'type', 'user': 'user'}
 
-        aggregatables = ed_ecommerce._query_compiler._mappings.aggregatable_columns(expected.values())
+        aggregatables = ed_ecommerce._query_compiler._mappings.aggregatable_field_names(expected.values())
 
         assert expected == aggregatables
