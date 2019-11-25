@@ -53,3 +53,7 @@ echo -e "\033[1m>>>>> YOUR STEPS HERE >>>>>>>>>>>>>>>>>>>>>>>>>>>>>\033[0m"
 ## Use ${elasticsearch_url} to talk to elasticsearch
 ## declare your matrix variables here as well e.g DOTNET_VERSION=${DOTNET_VERSION-3.0.100}
 
+
+echo -e "\033[1m>>>>> Build [elastic/eland container] >>>>>>>>>>>>>>>>>>>>>>>>>>>>>\033[0m"
+
+docker build --file .ci/DockerFile --tag elastic/eland .
