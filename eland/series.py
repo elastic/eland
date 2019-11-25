@@ -1009,7 +1009,7 @@ class Series(NDFrame):
             series.name = None
 
             return series
-        elif np.issubdtype(np.dtype(type(right)), np.number): # allow np types
+        elif np.issubdtype(np.dtype(type(right)), np.number) and np.issubdtype(self._dtype, np.number):
             new_field_name = "{0}_{1}_{2}".format(self.name, method_name, str(right).replace('.', '_'))
 
             # Compatible, so create new Series
@@ -1021,6 +1021,7 @@ class Series(NDFrame):
 
             return series
         else:
+            # TODO - support limited ops on strings https://github.com/elastic/eland/issues/65
             raise TypeError(
                 "unsupported operand type(s) for '{}' {} '{}'".format(type(self), method_name, type(right))
             )
@@ -1033,7 +1034,7 @@ class Series(NDFrame):
         if isinstance(left, Series):
             # if both are Series, revese args and call normal op method and remove 'r' from radd etc.
             return left._numeric_op(self, op_method_name)
-        elif np.issubdtype(np.dtype(type(left)), np.number): # allow np types
+        elif np.issubdtype(np.dtype(type(left)), np.number) and np.issubdtype(self._dtype, np.number):
             # Prefix new field name with 'f_' so it's a valid ES field name
             new_field_name = "f_{0}_{1}_{2}".format(str(left).replace('.', '_'), op_method_name, self.name)
 
@@ -1046,6 +1047,7 @@ class Series(NDFrame):
 
             return series
         else:
+            # TODO - support limited ops on strings https://github.com/elastic/eland/issues/65
             raise TypeError(
                 "unsupported operand type(s) for '{}' {} '{}'".format(type(self), method_name, type(left))
             )
