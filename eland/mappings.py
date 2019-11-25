@@ -1,5 +1,6 @@
 import warnings
 
+import numpy as np
 import pandas as pd
 from pandas.core.dtypes.common import (is_float_dtype, is_bool_dtype, is_integer_dtype, is_datetime_or_timedelta_dtype,
                                        is_string_dtype)
@@ -454,13 +455,13 @@ class Mappings:
         """
         if include_bool == True:
             df = self._mappings_capabilities[(self._mappings_capabilities._source == True) &
-                                               ((self._mappings_capabilities.pd_dtype == 'int64') |
-                                                (self._mappings_capabilities.pd_dtype == 'float64') |
-                                                (self._mappings_capabilities.pd_dtype == 'bool'))]
+                                             ((self._mappings_capabilities.pd_dtype == 'int64') |
+                                              (self._mappings_capabilities.pd_dtype == 'float64') |
+                                              (self._mappings_capabilities.pd_dtype == 'bool'))]
         else:
             df = self._mappings_capabilities[(self._mappings_capabilities._source == True) &
-                                               ((self._mappings_capabilities.pd_dtype == 'int64') |
-                                                (self._mappings_capabilities.pd_dtype == 'float64'))]
+                                             ((self._mappings_capabilities.pd_dtype == 'int64') |
+                                              (self._mappings_capabilities.pd_dtype == 'float64'))]
         # if field_names exists, filter index with field_names
         if field_names is not None:
             # reindex adds NA for non-existing field_names (non-numeric), so drop these after reindex
@@ -493,13 +494,14 @@ class Mappings:
         Returns
         -------
         dtypes: pd.Series
-            Source field name + pd_dtype
+            Source field name + pd_dtype as np.dtype
         """
         if field_names is not None:
             return pd.Series(
-                {key: self._source_field_pd_dtypes[key] for key in field_names})
+                {key: np.dtype(self._source_field_pd_dtypes[key]) for key in field_names})
 
-        return pd.Series(self._source_field_pd_dtypes)
+        return pd.Series(
+            {key: np.dtype(value) for key, value in self._source_field_pd_dtypes.items()})
 
     def info_es(self, buf):
         buf.write("Mappings:\n")

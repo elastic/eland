@@ -19,6 +19,8 @@ import sys
 import warnings
 from io import StringIO
 
+import numpy as np
+
 import pandas as pd
 from pandas.io.common import _expand_user, _stringify_path
 
@@ -140,7 +142,9 @@ class Series(NDFrame):
     def rename(self, new_name):
         """
         Rename name of series. Only column rename is supported. This does not change the underlying
-        Elasticsearch index, but adds a soft link from the new name (column) to the Elasticsearch field name
+        Elasticsearch index, but adds a symbolic link from the new name (column) to the Elasticsearch field name.
+
+        For instance, if a field was called 'tot_quan' it could be renamed 'Total Quantity'.
 
         Parameters
         ----------
@@ -357,6 +361,11 @@ class Series(NDFrame):
 
     def _to_pandas(self):
         return self._query_compiler.to_pandas()[self.name]
+
+    @property
+    def _dtype(self):
+        # DO NOT MAKE PUBLIC (i.e. def dtype) as this breaks query eval implementation
+        return self._query_compiler.dtypes[0]
 
     def __gt__(self, other):
         if isinstance(other, Series):
@@ -745,8 +754,14 @@ class Series(NDFrame):
         a == Series, b == numeric
         """
         if isinstance(right, Series):
-            # Check compatibility
+            # Check compatibility of Elasticsearch cluster
             self._query_compiler.check_arithmetics(right._query_compiler)
+
+            # Check compatibility of dtypes
+            # either not a number?
+            if not (np.issubdtype(self._dtype, np.number) and np.issubdtype(right._dtype, np.number)):
+                # TODO - support limited ops on strings https://github.com/elastic/eland/issues/65
+                raise TypeError("Unsupported operation: '{}' {} '{}'".format(self._dtype, method_name, right._dtype))
 
             new_field_name = "{0}_{1}_{2}".format(self.name, method_name, right.name)
 
@@ -756,12 +771,12 @@ class Series(NDFrame):
             series.name = None
 
             return series
-        elif isinstance(right, (int, float)):  # TODO extend to numpy types
+        elif np.issubdtype(np.dtype(type(right)), np.number): # allow np types
             new_field_name = "{0}_{1}_{2}".format(self.name, method_name, str(right).replace('.', '_'))
 
             # Compatible, so create new Series
             series = Series(query_compiler=self._query_compiler.arithmetic_op_fields(
-                new_field_name, method_name, self.name, float(right)))  # force rhs to float
+                new_field_name, method_name, self.name, right))
 
             # name of Series remains original name
             series.name = self.name
@@ -769,8 +784,7 @@ class Series(NDFrame):
             return series
         else:
             raise TypeError(
-                "Can only perform arithmetic operation on selected types "
-                "{0} != {1} for {2}".format(type(self), type(right), method_name)
+                "unsupported operand type(s) for '{}' {} '{}'".format(type(self), method_name, type(right))
             )
 
     def max(self):

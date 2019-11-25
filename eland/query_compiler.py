@@ -1,7 +1,5 @@
 import pandas as pd
-from pandas.core.dtypes.common import (
-    is_list_like
-)
+import numpy as np
 
 from eland import Client
 from eland import Index
@@ -300,6 +298,15 @@ class ElandQueryCompiler:
                 else:
                     out[field_name] = x
             else:
+                # Script fields end up here
+
+                # Elasticsearch returns 'Infinity' as a string for np.inf values.
+                # Map this to a numeric value to avoid this whole Series being classed as an object
+                # TODO - create a lookup for script fields and dtypes to only map 'Infinity'
+                #        if the field is numeric. This implementation will currently map
+                #        any script field with "Infinity" as a string to np.inf
+                if x == 'Infinity':
+                    x = np.inf
                 out[name[:-1]] = x
 
         flatten(y)
@@ -600,6 +607,5 @@ class ElandQueryCompiler:
         def copy(self):
             return self.__constructor__(
                 field_to_display_names=self._field_to_display_names.copy(),
-                display_to_field_names = self._display_to_field_names.copy()
+                display_to_field_names=self._display_to_field_names.copy()
             )
-

@@ -77,7 +77,7 @@ class Operations:
     def set_field_names(self, field_names):
         # Setting field_names at different phases of the task list may result in different
         # operations. So instead of setting field_names once, set when it happens in call chain
-        if type(field_names) is not list:
+        if not isinstance(field_names, list):
             field_names = list(field_names)
 
         # TODO - field_name renaming
@@ -538,6 +538,7 @@ class Operations:
 
         return collector.ret
 
+
     def _es_results(self, query_compiler, collector):
         query_params, post_processing = self._resolve_tasks()
 
@@ -989,9 +990,16 @@ class Operations:
         size, sort_params = Operations._query_params_to_size_and_sort(query_params)
         field_names = self.get_field_names()
 
+        script_fields = query_params['query_script_fields']
+        query = Query(query_params['query'])
+        body = query.to_search_body()
+        if script_fields is not None:
+            body['script_fields'] = script_fields
+
         buf.write(" size: {0}\n".format(size))
         buf.write(" sort_params: {0}\n".format(sort_params))
-        buf.write(" field_names: {0}\n".format(field_names))
+        buf.write(" _source: {0}\n".format(field_names))
+        buf.write(" body: {0}\n".format(body))
         buf.write(" post_processing: {0}\n".format(post_processing))
 
     def update_query(self, boolean_filter):
