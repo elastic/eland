@@ -56,4 +56,4 @@ echo -e "\033[1m>>>>> YOUR STEPS HERE >>>>>>>>>>>>>>>>>>>>>>>>>>>>>\033[0m"
 
 echo -e "\033[1m>>>>> Build [elastic/eland container] >>>>>>>>>>>>>>>>>>>>>>>>>>>>>\033[0m"
 
-docker build --file .ci/DockerFile --tag elastic/eland .
+docker build --file .ci/Dockerfile --tag elastic/eland .

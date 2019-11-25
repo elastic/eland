@@ -3,4 +3,4 @@ FROM python:${PYTHON_VERSION}
 
 WORKDIR /code/eland
 COPY . .
-RUN pip install requirements-dev.txt
+RUN pip install -r requirements-dev.txt
