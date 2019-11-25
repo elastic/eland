@@ -482,6 +482,13 @@ class Series(NDFrame):
         3    174.98
         4     80.98
         Name: taxful_total_price, dtype: float64
+        >>> df.taxful_total_price + 1
+        0     37.980000
+        1     54.980000
+        2    200.979996
+        3    175.979996
+        4     81.980003
+        Name: taxful_total_price, dtype: float64
         >>> df.total_quantity
         0    2
         1    2
@@ -529,7 +536,7 @@ class Series(NDFrame):
         3    2
         4    2
         Name: total_quantity, dtype: int64
-        >>> df.taxful_total_price / df.total_quantity # doctest: +SKIP
+        >>> df.taxful_total_price / df.total_quantity
         0    18.490000
         1    26.990000
         2    99.989998
@@ -735,18 +742,221 @@ class Series(NDFrame):
         return self._numeric_op(right, _get_method_name())
 
     def __radd__(self, left):
+        """
+        Return addition of series and left, element-wise (binary operator add).
+
+        Parameters
+        ----------
+        left: eland.Series
+
+        Returns
+        -------
+        eland.Series
+
+        Examples
+        --------
+        >>> df = ed.DataFrame('localhost', 'ecommerce').head(5)
+        >>> df.taxful_total_price
+        0     36.98
+        1     53.98
+        2    199.98
+        3    174.98
+        4     80.98
+        Name: taxful_total_price, dtype: float64
+        >>> 1 + df.taxful_total_price
+        0     37.980000
+        1     54.980000
+        2    200.979996
+        3    175.979996
+        4     81.980003
+        Name: taxful_total_price, dtype: float64
+        """
         return self._numeric_rop(left, _get_method_name())
     def __rtruediv__(self, left):
+        """
+        Return division of series and left, element-wise (binary operator div).
+
+        Parameters
+        ----------
+        left: eland.Series
+
+        Returns
+        -------
+        eland.Series
+
+        Examples
+        --------
+        >>> df = ed.DataFrame('localhost', 'ecommerce').head(5)
+        >>> df.taxful_total_price
+        0     36.98
+        1     53.98
+        2    199.98
+        3    174.98
+        4     80.98
+        Name: taxful_total_price, dtype: float64
+        >>> 1.0 / df.taxful_total_price
+        0    0.027042
+        1    0.018525
+        2    0.005001
+        3    0.005715
+        4    0.012349
+        Name: taxful_total_price, dtype: float64
+        """
         return self._numeric_rop(left, _get_method_name())
     def __rfloordiv__(self, left):
+        """
+        Return integer division of series and left, element-wise (binary operator floordiv //).
+
+        Parameters
+        ----------
+        left: eland.Series
+
+        Returns
+        -------
+        eland.Series
+
+        Examples
+        --------
+        >>> df = ed.DataFrame('localhost', 'ecommerce').head(5)
+        >>> df.taxful_total_price
+        0     36.98
+        1     53.98
+        2    199.98
+        3    174.98
+        4     80.98
+        Name: taxful_total_price, dtype: float64
+        >>> 500.0 // df.taxful_total_price
+        0    13.0
+        1     9.0
+        2     2.0
+        3     2.0
+        4     6.0
+        Name: taxful_total_price, dtype: float64
+        """
         return self._numeric_rop(left, _get_method_name())
     def __rmod__(self, left):
+        """
+        Return modulo of series and left, element-wise (binary operator mod %).
+
+        Parameters
+        ----------
+        left: eland.Series
+
+        Returns
+        -------
+        eland.Series
+
+        Examples
+        --------
+        >>> df = ed.DataFrame('localhost', 'ecommerce').head(5)
+        >>> df.taxful_total_price
+        0     36.98
+        1     53.98
+        2    199.98
+        3    174.98
+        4     80.98
+        Name: taxful_total_price, dtype: float64
+        >>> 500.0 % df.taxful_total_price
+        0     19.260006
+        1     14.180004
+        2    100.040009
+        3    150.040009
+        4     14.119980
+        Name: taxful_total_price, dtype: float64
+        """
         return self._numeric_rop(left, _get_method_name())
     def __rmul__(self, left):
+        """
+        Return multiplication of series and left, element-wise (binary operator mul).
+
+        Parameters
+        ----------
+        left: eland.Series
+
+        Returns
+        -------
+        eland.Series
+
+        Examples
+        --------
+        >>> df = ed.DataFrame('localhost', 'ecommerce').head(5)
+        >>> df.taxful_total_price
+        0     36.98
+        1     53.98
+        2    199.98
+        3    174.98
+        4     80.98
+        Name: taxful_total_price, dtype: float64
+        >>> 10.0 * df.taxful_total_price
+        0     369.799995
+        1     539.799995
+        2    1999.799957
+        3    1749.799957
+        4     809.800034
+        Name: taxful_total_price, dtype: float64
+        """
         return self._numeric_rop(left, _get_method_name())
     def __rpow__(self, left):
+        """
+        Return exponential power of series and left, element-wise (binary operator pow \**\).
+
+        Parameters
+        ----------
+        left: eland.Series
+
+        Returns
+        -------
+        eland.Series
+
+        Examples
+        --------
+        >>> df = ed.DataFrame('localhost', 'ecommerce').head(5)
+        >>> df.total_quantity
+        0    2
+        1    2
+        2    2
+        3    2
+        4    2
+        Name: total_quantity, dtype: int64
+        >>> np.int(2) ** df.total_quantity
+        0    4.0
+        1    4.0
+        2    4.0
+        3    4.0
+        4    4.0
+        Name: total_quantity, dtype: float64
+        """
         return self._numeric_rop(left, _get_method_name())
     def __rsub__(self, left):
+        """
+        Return subtraction of series and left, element-wise (binary operator sub).
+
+        Parameters
+        ----------
+        left: eland.Series
+
+        Returns
+        -------
+        eland.Series
+
+        Examples
+        --------
+        >>> df = ed.DataFrame('localhost', 'ecommerce').head(5)
+        >>> df.taxful_total_price
+        0     36.98
+        1     53.98
+        2    199.98
+        3    174.98
+        4     80.98
+        Name: taxful_total_price, dtype: float64
+        >>> 1.0 - df.taxful_total_price
+        0    -35.980000
+        1    -52.980000
+        2   -198.979996
+        3   -173.979996
+        4    -79.980003
+        Name: taxful_total_price, dtype: float64
+        """
         return self._numeric_rop(left, _get_method_name())
 
     add = __add__
@@ -989,6 +1199,9 @@ class Series(NDFrame):
         3     Kibana Airlines
         4     Kibana Airlines
         Name: Carrier, dtype: object
+        >>> pd_s.to_numpy()
+        array(['Kibana Airlines', 'Logstash Airways', 'Logstash Airways',
+               'Kibana Airlines', 'Kibana Airlines'], dtype=object)
         """
         raise NotImplementedError(
             "This method would scan/scroll the entire Elasticsearch index(s) into memory."

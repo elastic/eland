@@ -45,6 +45,14 @@ Binary operator functions
    Series.floordiv
    Series.mod
    Series.pow
+   Series.radd
+   Series.rsub
+   Series.rmul
+   Series.rdiv
+   Series.rtruediv
+   Series.rfloordiv
+   Series.rmod
+   Series.rpow
 
 Computations / descriptive stats
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
