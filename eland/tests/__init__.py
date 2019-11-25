@@ -5,7 +5,7 @@ import pandas as pd
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Define test files and indices
-ELASTICSEARCH_HOST = 'localhost'  # TODO externalise this
+ELASTICSEARCH_HOST = os.environ.get('ELASTICSEARCH_HOST') or 'localhost'  # TODO externalise this
 
 FLIGHTS_INDEX_NAME = 'flights'
 FLIGHTS_MAPPING = {"mappings": {

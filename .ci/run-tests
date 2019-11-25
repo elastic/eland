@@ -57,3 +57,15 @@ echo -e "\033[1m>>>>> YOUR STEPS HERE >>>>>>>>>>>>>>>>>>>>>>>>>>>>>\033[0m"
 echo -e "\033[1m>>>>> Build [elastic/eland container] >>>>>>>>>>>>>>>>>>>>>>>>>>>>>\033[0m"
 
 docker build --file .ci/Dockerfile --tag elastic/eland .
+
+echo -e "\033[1m>>>>> Run [elastic/eland container] >>>>>>>>>>>>>>>>>>>>>>>>>>>>>\033[0m"
+
+ELASTICSEARCH_HOST=${elasticsearch_url}
+
+docker run \
+  --network=elasticsearch \
+  --env "ELASTICSEARCH_HOST" \
+  --name eland-test-runner \
+  --rm \
+  elastic/eland \
+  ./run_build.sh
