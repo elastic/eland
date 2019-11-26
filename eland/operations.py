@@ -1018,7 +1018,7 @@ class Operations:
                 "script_fields": {
                     "field_name": {
                     "script": {
-                        "source": "doc[left_field].value / right_field"
+                        "source": "doc[left_field].value + right_field"
                     }
                     }
                 }
@@ -1036,7 +1036,7 @@ class Operations:
                 "script_fields": {
                     "field_name": {
                     "script": {
-                        "source": "left_field / doc[right_field].value"
+                        "source": "left_field + doc[right_field].value"
                     }
                     }
                 }
