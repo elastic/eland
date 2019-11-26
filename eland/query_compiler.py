@@ -514,6 +514,40 @@ class ElandQueryCompiler:
                 "{0} != {1}".format(self._index_pattern, right._index_pattern)
             )
 
+    def check_str_arithmetics(self, right, self_field, right_field):
+        """
+        In the case of string arithmetics, we need an additional check to ensure that the
+        selected fields are aggregatable.
+
+        Parameters
+        ----------
+        right: ElandQueryCompiler
+            The query compiler to compare self to
+
+        Raises
+        ------
+        TypeError, ValueError
+            If string arithmetic operations aren't possible
+        """
+
+        # only check compatibility if right is an ElandQueryCompiler
+        # else return the raw string as the new field name
+        right_agg = {right_field: right_field}
+        if right:
+            self.check_arithmetics(right)
+            right_agg = right._mappings.aggregatable_field_names([right_field])
+
+        self_agg = self._mappings.aggregatable_field_names([self_field])
+
+        if self_agg and right_agg:
+            return list(self_agg.keys())[0], list(right_agg.keys())[0]
+
+        else:
+            raise ValueError(
+                "Can not perform arithmetic operations on non aggregatable fields"
+                "One of [{}, {}] is not aggregatable.".format(self.name, right.name)
+        )
+
     def arithmetic_op_fields(self, new_field_name, op, left_field, right_field):
         result = self.copy()
 

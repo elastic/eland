@@ -895,100 +895,156 @@ class Operations:
         right_field = item[1][1][1][1]
 
         # https://www.elastic.co/guide/en/elasticsearch/painless/current/painless-api-reference-shared-java-lang.html#painless-api-reference-shared-Math
-        if isinstance(left_field, str) and isinstance(right_field, str):
-            """
-            (if op_name = '__truediv__')
-            
-            "script_fields": {
-                "field_name": {
-                  "script": {
-                    "source": "doc[left_field].value / doc[right_field].value"
-                   }
-                }
-            }
-            """
-            if op_name == '__add__':
-                source = "doc['{0}'].value + doc['{1}'].value".format(left_field, right_field)
-            elif op_name == '__truediv__':
-                source = "doc['{0}'].value / doc['{1}'].value".format(left_field, right_field)
-            elif op_name == '__floordiv__':
-                source = "Math.floor(doc['{0}'].value / doc['{1}'].value)".format(left_field, right_field)
-            elif op_name == '__pow__':
-                source = "Math.pow(doc['{0}'].value, doc['{1}'].value)".format(left_field, right_field)
-            elif op_name == '__mod__':
-                source = "doc['{0}'].value % doc['{1}'].value".format(left_field, right_field)
-            elif op_name == '__mul__':
-                source = "doc['{0}'].value * doc['{1}'].value".format(left_field, right_field)
-            elif op_name == '__sub__':
-                source = "doc['{0}'].value - doc['{1}'].value".format(left_field, right_field)
-            else:
-                raise NotImplementedError("Not implemented operation '{0}'".format(op_name))
+        if not field_name.endswith("||str") and not field_name.startswith("str||"):
+            if isinstance(left_field, str) and isinstance(right_field, str):
+                """
+                (if op_name = '__truediv__')
 
-            if query_params['query_script_fields'] is None:
-                query_params['query_script_fields'] = {}
-            query_params['query_script_fields'][field_name] = {
-                'script': {
-                    'source': source
+                "script_fields": {
+                    "field_name": {
+                    "script": {
+                        "source": "doc[left_field].value / doc[right_field].value"
+                    }
+                    }
                 }
-            }
-        elif isinstance(left_field, str) and np.issubdtype(np.dtype(type(right_field)), np.number):
-            """
-            (if op_name = '__truediv__')
+                """
+                if op_name == '__add__':
+                    source = "doc['{0}'].value + doc['{1}'].value".format(left_field, right_field)
+                elif op_name == '__truediv__':
+                    source = "doc['{0}'].value / doc['{1}'].value".format(left_field, right_field)
+                elif op_name == '__floordiv__':
+                    source = "Math.floor(doc['{0}'].value / doc['{1}'].value)".format(left_field, right_field)
+                elif op_name == '__pow__':
+                    source = "Math.pow(doc['{0}'].value, doc['{1}'].value)".format(left_field, right_field)
+                elif op_name == '__mod__':
+                    source = "doc['{0}'].value % doc['{1}'].value".format(left_field, right_field)
+                elif op_name == '__mul__':
+                    source = "doc['{0}'].value * doc['{1}'].value".format(left_field, right_field)
+                elif op_name == '__sub__':
+                    source = "doc['{0}'].value - doc['{1}'].value".format(left_field, right_field)
+                else:
+                    raise NotImplementedError("Not implemented operation '{0}'".format(op_name))
 
-            "script_fields": {
-                "field_name": {
-                  "script": {
-                    "source": "doc[left_field].value / right_field"
-                   }
+                if query_params['query_script_fields'] is None:
+                    query_params['query_script_fields'] = {}
+                query_params['query_script_fields'][field_name] = {
+                    'script': {
+                        'source': source
+                    }
                 }
-            }
-            """
-            if op_name == '__add__':
-                source = "doc['{0}'].value + {1}".format(left_field, right_field)
-            elif op_name == '__truediv__':
-                source = "doc['{0}'].value / {1}".format(left_field, right_field)
-            elif op_name == '__floordiv__':
-                source = "Math.floor(doc['{0}'].value / {1})".format(left_field, right_field)
-            elif op_name == '__pow__':
-                source = "Math.pow(doc['{0}'].value, {1})".format(left_field, right_field)
-            elif op_name == '__mod__':
-                source = "doc['{0}'].value % {1}".format(left_field, right_field)
-            elif op_name == '__mul__':
-                source = "doc['{0}'].value * {1}".format(left_field, right_field)
-            elif op_name == '__sub__':
-                source = "doc['{0}'].value - {1}".format(left_field, right_field)
-            else:
-                raise NotImplementedError("Not implemented operation '{0}'".format(op_name))
-        elif np.issubdtype(np.dtype(type(left_field)), np.number) and isinstance(right_field, str):
-            """
-            (if op_name = '__truediv__')
+            elif isinstance(left_field, str) and np.issubdtype(np.dtype(type(right_field)), np.number):
+                """
+                (if op_name = '__truediv__')
 
-            "script_fields": {
-                "field_name": {
-                  "script": {
-                    "source": "left_field / doc['right_field'].value"
-                   }
+                "script_fields": {
+                    "field_name": {
+                    "script": {
+                        "source": "doc[left_field].value / right_field"
+                    }
+                    }
                 }
-            }
-            """
-            if op_name == '__add__':
-                source = "{0} + doc['{1}'].value".format(left_field, right_field)
-            elif op_name == '__truediv__':
-                source = "{0} / doc['{1}'].value".format(left_field, right_field)
-            elif op_name == '__floordiv__':
-                source = "Math.floor({0} / doc['{1}'].value)".format(left_field, right_field)
-            elif op_name == '__pow__':
-                source = "Math.pow({0}, doc['{1}'].value)".format(left_field, right_field)
-            elif op_name == '__mod__':
-                source = "{0} % doc['{1}'].value".format(left_field, right_field)
-            elif op_name == '__mul__':
-                source = "{0} * doc['{1}'].value".format(left_field, right_field)
-            elif op_name == '__sub__':
-                source = "{0} - doc['{1}'].value".format(left_field, right_field)
+                """
+                if op_name == '__add__':
+                    source = "doc['{0}'].value + {1}".format(left_field, right_field)
+                elif op_name == '__truediv__':
+                    source = "doc['{0}'].value / {1}".format(left_field, right_field)
+                elif op_name == '__floordiv__':
+                    source = "Math.floor(doc['{0}'].value / {1})".format(left_field, right_field)
+                elif op_name == '__pow__':
+                    source = "Math.pow(doc['{0}'].value, {1})".format(left_field, right_field)
+                elif op_name == '__mod__':
+                    source = "doc['{0}'].value % {1}".format(left_field, right_field)
+                elif op_name == '__mul__':
+                    source = "doc['{0}'].value * {1}".format(left_field, right_field)
+                elif op_name == '__sub__':
+                    source = "doc['{0}'].value - {1}".format(left_field, right_field)
+                else:
+                    raise NotImplementedError("Not implemented operation '{0}'".format(op_name))
+            elif np.issubdtype(np.dtype(type(left_field)), np.number) and isinstance(right_field, str):
+                """
+                (if op_name = '__truediv__')
+
+                "script_fields": {
+                    "field_name": {
+                    "script": {
+                        "source": "left_field / doc['right_field'].value"
+                    }
+                    }
+                }
+                """
+                if op_name == '__add__':
+                    source = "{0} + doc['{1}'].value".format(left_field, right_field)
+                elif op_name == '__truediv__':
+                    source = "{0} / doc['{1}'].value".format(left_field, right_field)
+                elif op_name == '__floordiv__':
+                    source = "Math.floor({0} / doc['{1}'].value)".format(left_field, right_field)
+                elif op_name == '__pow__':
+                    source = "Math.pow({0}, doc['{1}'].value)".format(left_field, right_field)
+                elif op_name == '__mod__':
+                    source = "{0} % doc['{1}'].value".format(left_field, right_field)
+                elif op_name == '__mul__':
+                    source = "{0} * doc['{1}'].value".format(left_field, right_field)
+                elif op_name == '__sub__':
+                    source = "{0} - doc['{1}'].value".format(left_field, right_field)
+                else:
+                    raise NotImplementedError("Not implemented operation '{0}'".format(op_name))
+
             else:
-                raise NotImplementedError("Not implemented operation '{0}'".format(op_name))
-        else:
-            raise TypeError("Types for operation inconsistent {} {} {}", type(left_field), type(right_field), op_name)
+                raise TypeError("Types for operation inconsistent {} {} {}", type(left_field), type(right_field), op_name)
+
+        elif field_name.startswith("str||") and field_name.endswith("||str"):
+            if isinstance(left_field, str) and isinstance(right_field, str):
+                """
+                (if op_name = '__add__')
+
+                "script_fields": {
+                    "field_name": {
+                    "script": {
+                        "source": "doc[left_field].value + doc[right_field].value"
+                    }
+                    }
+                }
+                """
+                if op_name == '__add__':
+                    source = "doc['{0}'].value + doc['{1}'].value".format(left_field, right_field)
+                else:
+                    raise NotImplementedError("Not implemented operation '{0}'".format(op_name))
+
+        elif field_name.endswith("||str"):
+            if isinstance(left_field, str) and isinstance(right_field, str):
+                """
+                (if op_name = '__add__')
+
+                "script_fields": {
+                    "field_name": {
+                    "script": {
+                        "source": "doc[left_field].value / right_field"
+                    }
+                    }
+                }
+                """
+                if op_name == '__add__':
+                    source = "doc['{0}'].value + '{1}'".format(left_field, right_field)
+                else:
+                    raise NotImplementedError("Not implemented operation '{0}'".format(op_name))
+
+        elif field_name.startswith("str||"):
+            if isinstance(left_field, str) and isinstance(right_field, str):
+                """
+                (if op_name = '__add__')
+
+                "script_fields": {
+                    "field_name": {
+                    "script": {
+                        "source": "left_field / doc[right_field].value"
+                    }
+                    }
+                }
+                """
+                if op_name == '__add__':
+                    source = "'{0}' + doc['{1}'].value".format(left_field, right_field)
+                else:
+                    raise NotImplementedError("Not implemented operation '{0}'".format(op_name))
 
         if query_params['query_script_fields'] is None:
             query_params['query_script_fields'] = {}
@@ -1000,14 +1056,12 @@ class Operations:
 
         return query_params, post_processing
 
-
     def _resolve_post_processing_task(self, item, query_params, post_processing):
         # Just do this in post-processing
         if item[0] != 'field_names':
             post_processing.append(item)
 
         return query_params, post_processing
-
 
     def _size(self, query_params, post_processing):
         # Shrink wrap code around checking if size parameter is set
@@ -1022,7 +1076,6 @@ class Operations:
 
         # This can return None
         return size
-
 
     def info_es(self, buf):
         buf.write("Operations:\n")
@@ -1043,7 +1096,6 @@ class Operations:
         buf.write(" _source: {0}\n".format(field_names))
         buf.write(" body: {0}\n".format(body))
         buf.write(" post_processing: {0}\n".format(post_processing))
-
 
     def update_query(self, boolean_filter):
         task = ('boolean_filter', boolean_filter)

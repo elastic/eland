@@ -503,6 +503,20 @@ class Series(NDFrame):
         3    176.979996
         4     82.980003
         dtype: float64
+        >>> df.customer_first_name + df.customer_last_name
+        0    EddieUnderwood
+        1        MaryBailey
+        2        GwenButler
+        3     DianeChandler
+        4        EddieWeber
+        dtype: object
+        >>> "First name: " + df.customer_first_name
+        0    First name: Eddie
+        1     First name: Mary
+        2     First name: Gwen
+        3    First name: Diane
+        4    First name: Eddie
+        Name: customer_first_name, dtype: object
         """
         return self._numeric_op(right, _get_method_name())
 
@@ -997,18 +1011,31 @@ class Series(NDFrame):
 
             # Check compatibility of dtypes
             # either not a number?
-            if not (np.issubdtype(self._dtype, np.number) and np.issubdtype(right._dtype, np.number)):
+            if (np.issubdtype(self._dtype, np.number) and np.issubdtype(right._dtype, np.number)):
+                new_field_name = "{0}_{1}_{2}".format(self.name, method_name, right.name)
+
+                # Compatible, so create new Series
+                series = Series(query_compiler=self._query_compiler.arithmetic_op_fields(
+                    new_field_name, method_name, self.name, right.name))
+                series.name = None
+
+                return series
+
+            elif self._dtype == 'object' and right._dtype == 'object':
+                new_field_name = "str||{0}_{1}_{2}||str".format(self.name, method_name, right.name)
+                # check if fields are aggregatable
+                self.name, right.name = self._query_compiler.check_str_arithmetics(right._query_compiler, self.name, right.name)
+
+                series = Series(query_compiler=self._query_compiler.arithmetic_op_fields(
+                    new_field_name, method_name, self.name, right.name))
+                series.name = None
+
+                return series
+
+            else:
                 # TODO - support limited ops on strings https://github.com/elastic/eland/issues/65
                 raise TypeError("Unsupported operation: '{}' {} '{}'".format(self._dtype, method_name, right._dtype))
 
-            new_field_name = "{0}_{1}_{2}".format(self.name, method_name, right.name)
-
-            # Compatible, so create new Series
-            series = Series(query_compiler=self._query_compiler.arithmetic_op_fields(
-                new_field_name, method_name, self.name, right.name))
-            series.name = None
-
-            return series
         elif np.issubdtype(np.dtype(type(right)), np.number) and np.issubdtype(self._dtype, np.number):
             new_field_name = "{0}_{1}_{2}".format(self.name, method_name, str(right).replace('.', '_'))
 
@@ -1020,6 +1047,19 @@ class Series(NDFrame):
             series.name = self.name
 
             return series
+
+        elif isinstance(right, str) and self._dtype == 'object':
+            new_field_name = "{0}_{1}_{2}||str".format(self.name, method_name, str(right).replace('.', '_'))
+            self.name, right = self._query_compiler.check_str_arithmetics(None, self.name, right)
+            # Compatible, so create new Series
+            series = Series(query_compiler=self._query_compiler.arithmetic_op_fields(
+                new_field_name, method_name, self.name, right))
+
+            # name of Series remains original name
+            series.name = self.name.replace('.keyword', '')
+
+            return series
+
         else:
             # TODO - support limited ops on strings https://github.com/elastic/eland/issues/65
             raise TypeError(
@@ -1046,6 +1086,19 @@ class Series(NDFrame):
             series.name = self.name
 
             return series
+
+        elif isinstance(left, str) and self._dtype == 'object':
+            new_field_name = "str||{0}_{1}_{2}".format(self.name, op_method_name, str(left).replace('.', '_'))
+            self.name, left = self._query_compiler.check_str_arithmetics(None, self.name, left)
+            # Compatible, so create new Series
+            series = Series(query_compiler=self._query_compiler.arithmetic_op_fields(
+                new_field_name, op_method_name, left, self.name))
+
+            # name of Series remains original name
+            series.name = self.name.replace('.keyword', '')
+
+            return series
+
         else:
             # TODO - support limited ops on strings https://github.com/elastic/eland/issues/65
             raise TypeError(
