@@ -25,16 +25,16 @@ class TestSeriesArithmetics(TestData):
         edadd = self.ed_ecommerce()['customer_first_name'] + self.ed_ecommerce()['customer_last_name']
         pdadd = self.pd_ecommerce()['customer_first_name'] + self.pd_ecommerce()['customer_last_name']
 
-        assert_pandas_eland_series_equal(pdadd, edadd, check_less_precise=True)
+        assert_pandas_eland_series_equal(pdadd, edadd)
 
     def test_ser_add_str(self):
         edadd = self.ed_ecommerce()['customer_first_name'] + " is the first name."
         pdadd = self.pd_ecommerce()['customer_first_name'] + " is the first name."
 
-        assert_pandas_eland_series_equal(pdadd, edadd, check_less_precise=True)
+        assert_pandas_eland_series_equal(pdadd, edadd)
 
     def test_ser_add_ser(self):
         edadd = "The last name is: " + self.ed_ecommerce()['customer_last_name']
         pdadd = "The last name is: " + self.pd_ecommerce()['customer_last_name']
 
-        assert_pandas_eland_series_equal(pdadd, edadd, check_less_precise=True)
+        assert_pandas_eland_series_equal(pdadd, edadd)

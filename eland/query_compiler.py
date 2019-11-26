@@ -548,10 +548,10 @@ class ElandQueryCompiler:
                 "One of [{}, {}] is not aggregatable.".format(self.name, right.name)
         )
 
-    def arithmetic_op_fields(self, new_field_name, op, left_field, right_field):
+    def arithmetic_op_fields(self, new_field_name, op, left_field, right_field, op_type=None):
         result = self.copy()
 
-        result._operations.arithmetic_op_fields(new_field_name, op, left_field, right_field)
+        result._operations.arithmetic_op_fields(new_field_name, op, left_field, right_field, op_type)
 
         return result
 
