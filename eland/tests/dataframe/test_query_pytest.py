@@ -47,12 +47,11 @@ class TestDataFrameQuery(TestData):
         ed_flights = self.ed_flights()
         pd_flights = self.pd_flights()
 
-        assert pd_flights.query('FlightDelayMin > 60').shape == \
-               ed_flights.query('FlightDelayMin > 60').shape
+        assert pd_flights.query('FlightDelayMin > 60').shape == ed_flights.query('FlightDelayMin > 60').shape
 
     def test_isin_query(self):
         ed_flights = self.ed_flights()
         pd_flights = self.pd_flights()
 
-        assert pd_flights[pd_flights.OriginAirportID.isin(['LHR','SYD'])].shape == \
-               ed_flights[ed_flights.OriginAirportID.isin(['LHR','SYD'])].shape
+        assert pd_flights[pd_flights.OriginAirportID.isin(['LHR', 'SYD'])].shape == \
+               ed_flights[ed_flights.OriginAirportID.isin(['LHR', 'SYD'])].shape

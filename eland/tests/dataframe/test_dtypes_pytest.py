@@ -1,7 +1,6 @@
 # File called _pytest for PyCharm compatability
 
 import numpy as np
-
 from pandas.util.testing import assert_series_equal
 
 from eland.tests.common import TestData
@@ -16,8 +15,8 @@ class TestDataFrameDtypes(TestData):
 
         assert_series_equal(pd_flights.dtypes, ed_flights.dtypes)
 
-        for i in range(0, len(pd_flights.dtypes)-1):
-            assert type(pd_flights.dtypes[i]) == type(ed_flights.dtypes[i])
+        for i in range(0, len(pd_flights.dtypes) - 1):
+            assert isinstance(pd_flights.dtypes[i], type(ed_flights.dtypes[i]))
 
     def test_flights_select_dtypes(self):
         ed_flights = self.ed_flights_small()

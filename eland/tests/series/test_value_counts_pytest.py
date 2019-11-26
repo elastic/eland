@@ -1,8 +1,8 @@
 # File called _pytest for PyCharm compatability
-import eland as ed
-from eland.tests.common import TestData
-from pandas.util.testing import assert_series_equal
 import pytest
+from pandas.util.testing import assert_series_equal
+
+from eland.tests.common import TestData
 
 
 class TestSeriesValueCounts(TestData):

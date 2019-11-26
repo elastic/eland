@@ -4,11 +4,8 @@ from pandas.util.testing import assert_almost_equal
 
 from eland.tests.common import TestData
 
-import eland as ed
-
 
 class TestSeriesMetrics(TestData):
-
     funcs = ['max', 'min', 'mean', 'sum']
 
     def test_flights_metrics(self):
@@ -29,7 +26,6 @@ class TestSeriesMetrics(TestData):
         for func in self.funcs:
             ed_metric = getattr(ed_ecommerce, func)()
             assert ed_metric.empty
-
 
     def test_ecommerce_selected_all_numeric_source_fields(self):
         # All of these are numeric

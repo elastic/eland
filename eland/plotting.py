@@ -35,11 +35,8 @@ def ed_hist_frame(ed_df, column=None, by=None, grid=True, xlabelsize=None,
 
     Examples
     --------
-    .. plot::
-        :context: close-figs
-
-        >>> df = ed.DataFrame('localhost', 'flights')
-        >>> hist = df.select_dtypes(include=[np.number]).hist(figsize=[10,10])
+    >>> df = ed.DataFrame('localhost', 'flights')
+    >>> hist = df.select_dtypes(include=[np.number]).hist(figsize=[10,10]) # doctest: +SKIP
     """
     # Start with empty pandas data frame derived from
     ed_df_bins, ed_df_weights = ed_df._hist(num_bins=bins)

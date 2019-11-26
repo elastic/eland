@@ -1,7 +1,6 @@
 # File called _pytest for PyCharm compatability
-import pytest
-
 import numpy as np
+import pytest
 
 from eland.tests.common import TestData, assert_pandas_eland_series_equal
 

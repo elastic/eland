@@ -2,8 +2,6 @@
 
 import numpy as np
 
-from pandas.util.testing import assert_series_equal
-
 from eland.tests.common import TestData
 
 
@@ -32,7 +30,8 @@ class TestMappingsNumericSourceFields(TestData):
         ed_ecommerce = self.ed_ecommerce()[field_names]
         pd_ecommerce = self.pd_ecommerce()[field_names]
 
-        ed_numeric = ed_ecommerce._query_compiler._mappings.numeric_source_fields(field_names=field_names, include_bool=False)
+        ed_numeric = ed_ecommerce._query_compiler._mappings.numeric_source_fields(field_names=field_names,
+                                                                                  include_bool=False)
         pd_numeric = pd_ecommerce.select_dtypes(include=np.number)
 
         assert pd_numeric.columns.to_list() == ed_numeric
@@ -53,7 +52,8 @@ class TestMappingsNumericSourceFields(TestData):
         ed_ecommerce = self.ed_ecommerce()[field_names]
         pd_ecommerce = self.pd_ecommerce()[field_names]
 
-        ed_numeric = ed_ecommerce._query_compiler._mappings.numeric_source_fields(field_names=field_names, include_bool=False)
+        ed_numeric = ed_ecommerce._query_compiler._mappings.numeric_source_fields(field_names=field_names,
+                                                                                  include_bool=False)
         pd_numeric = pd_ecommerce.select_dtypes(include=np.number)
 
         assert pd_numeric.columns.to_list() == ed_numeric
@@ -71,7 +71,8 @@ class TestMappingsNumericSourceFields(TestData):
         ed_ecommerce = self.ed_ecommerce()[field_names]
         pd_ecommerce = self.pd_ecommerce()[field_names]
 
-        ed_numeric = ed_ecommerce._query_compiler._mappings.numeric_source_fields(field_names=field_names, include_bool=False)
+        ed_numeric = ed_ecommerce._query_compiler._mappings.numeric_source_fields(field_names=field_names,
+                                                                                  include_bool=False)
         pd_numeric = pd_ecommerce.select_dtypes(include=np.number)
 
         assert pd_numeric.columns.to_list() == ed_numeric

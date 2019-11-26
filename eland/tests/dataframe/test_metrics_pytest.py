@@ -4,11 +4,8 @@ from pandas.util.testing import assert_series_equal
 
 from eland.tests.common import TestData
 
-import eland as ed
-
 
 class TestDataFrameMetrics(TestData):
-
     funcs = ['max', 'min', 'mean', 'sum']
 
     def test_flights_metrics(self):
@@ -29,7 +26,8 @@ class TestDataFrameMetrics(TestData):
         ed_ecommerce = self.ed_ecommerce()[columns]
 
         for func in self.funcs:
-            assert_series_equal(getattr(pd_ecommerce, func)(numeric_only=True), getattr(ed_ecommerce, func)(numeric_only=True),
+            assert_series_equal(getattr(pd_ecommerce, func)(numeric_only=True),
+                                getattr(ed_ecommerce, func)(numeric_only=True),
                                 check_less_precise=True)
 
     def test_ecommerce_selected_mixed_numeric_source_fields(self):
@@ -41,9 +39,9 @@ class TestDataFrameMetrics(TestData):
         ed_ecommerce = self.ed_ecommerce()[columns]
 
         for func in self.funcs:
-            assert_series_equal(getattr(pd_ecommerce, func)(numeric_only=True), getattr(ed_ecommerce, func)(numeric_only=True),
+            assert_series_equal(getattr(pd_ecommerce, func)(numeric_only=True),
+                                getattr(ed_ecommerce, func)(numeric_only=True),
                                 check_less_precise=True)
-
 
     def test_ecommerce_selected_all_numeric_source_fields(self):
         # All of these are numeric
@@ -53,5 +51,6 @@ class TestDataFrameMetrics(TestData):
         ed_ecommerce = self.ed_ecommerce()[columns]
 
         for func in self.funcs:
-            assert_series_equal(getattr(pd_ecommerce, func)(numeric_only=True), getattr(ed_ecommerce, func)(numeric_only=True),
+            assert_series_equal(getattr(pd_ecommerce, func)(numeric_only=True),
+                                getattr(ed_ecommerce, func)(numeric_only=True),
                                 check_less_precise=True)

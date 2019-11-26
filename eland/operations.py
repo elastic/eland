@@ -39,6 +39,7 @@ class Operations:
 
             return "desc"
 
+        @staticmethod
         def from_string(order):
             if order == "asc":
                 return Operations.SortOrder.ASC
@@ -46,7 +47,7 @@ class Operations:
             return Operations.SortOrder.DESC
 
     def __init__(self, tasks=None):
-        if tasks == None:
+        if tasks is None:
             self._tasks = []
         else:
             self._tasks = tasks
@@ -105,7 +106,8 @@ class Operations:
         query_params, post_processing = self._resolve_tasks()
 
         # Elasticsearch _count is very efficient and so used to return results here. This means that
-        # data frames that have restricted size or sort params will not return valid results (_count doesn't support size).
+        # data frames that have restricted size or sort params will not return valid results
+        # (_count doesn't support size).
         # Longer term we may fall back to pandas, but this may result in loading all index into memory.
         if self._size(query_params, post_processing) is not None:
             raise NotImplementedError("Requesting count with additional query and processing parameters "
@@ -497,10 +499,14 @@ class Operations:
 
     def to_pandas(self, query_compiler):
         class PandasDataFrameCollector:
+            def __init__(self):
+                self.df = None
+
             def collect(self, df):
                 self.df = df
 
-            def batch_size(self):
+            @staticmethod
+            def batch_size():
                 return None
 
         collector = PandasDataFrameCollector()
@@ -528,7 +534,8 @@ class Operations:
                     self.kwargs['mode'] = 'a'
                     df.to_csv(**self.kwargs)
 
-            def batch_size(self):
+            @staticmethod
+            def batch_size():
                 # By default read 10000 docs to csv
                 batch_size = 10000
                 return batch_size
@@ -568,8 +575,8 @@ class Operations:
                         sort=sort_params,
                         body=body,
                         _source=field_names)
-                except:
-                    # Catch ES error and print debug (currently to stdout)
+                except Exception:
+                    # Catch all ES errors and print debug (currently to stdout)
                     error = {
                         'index': query_compiler._index_pattern,
                         'size': size,
@@ -594,7 +601,7 @@ class Operations:
                 partial_result, df = query_compiler._es_results_to_pandas(es_results, collector.batch_size())
                 df = self._apply_df_post_processing(df, post_processing)
                 collector.collect(df)
-                if partial_result == False:
+                if not partial_result:
                     break
         else:
             partial_result, df = query_compiler._es_results_to_pandas(es_results)
@@ -761,7 +768,8 @@ class Operations:
 
         return query_params, post_processing
 
-    def _resolve_head(self, item, query_params, post_processing):
+    @staticmethod
+    def _resolve_head(item, query_params, post_processing):
         # head - sort asc, size n
         # |12345-------------|
         query_sort_field = item[1][0]
@@ -792,7 +800,8 @@ class Operations:
 
         return query_params, post_processing
 
-    def _resolve_tail(self, item, query_params, post_processing):
+    @staticmethod
+    def _resolve_tail(item, query_params, post_processing):
         # tail - sort desc, size n, post-process sort asc
         # |-------------12345|
         query_sort_field = item[1][0]
@@ -802,7 +811,7 @@ class Operations:
         # If this is a tail of a tail adjust settings and return
         if query_params['query_size'] is not None and \
                 query_params['query_sort_order'] == query_sort_order and \
-                post_processing == [('sort_index')]:
+                post_processing == ['sort_index']:
             if query_size < query_params['query_size']:
                 query_params['query_size'] = query_size
             return query_params, post_processing
@@ -830,11 +839,12 @@ class Operations:
             # reverse sort order
             query_params['query_sort_order'] = Operations.SortOrder.reverse(query_sort_order)
 
-        post_processing.append(('sort_index'))
+        post_processing.append('sort_index')
 
         return query_params, post_processing
 
-    def _resolve_iloc(self, item, query_params, post_processing):
+    @staticmethod
+    def _resolve_iloc(item, query_params, post_processing):
         # tail - sort desc, size n, post-process sort asc
         # |---4--7-9---------|
 
@@ -854,7 +864,8 @@ class Operations:
 
         return query_params, post_processing
 
-    def _resolve_query_ids(self, item, query_params, post_processing):
+    @staticmethod
+    def _resolve_query_ids(item, query_params, post_processing):
         # task = ('query_ids', ('must_not', items))
         must_clause = item[1][0]
         ids = item[1][1]
@@ -866,7 +877,8 @@ class Operations:
 
         return query_params, post_processing
 
-    def _resolve_query_terms(self, item, query_params, post_processing):
+    @staticmethod
+    def _resolve_query_terms(item, query_params, post_processing):
         # task = ('query_terms', ('must_not', (field, terms)))
         must_clause = item[1][0]
         field = item[1][1][0]
@@ -879,7 +891,8 @@ class Operations:
 
         return query_params, post_processing
 
-    def _resolve_boolean_filter(self, item, query_params, post_processing):
+    @staticmethod
+    def _resolve_boolean_filter(item, query_params, post_processing):
         # task = ('boolean_filter', object)
         boolean_filter = item[1]
 
@@ -1000,14 +1013,13 @@ class Operations:
 
         return query_params, post_processing
 
-
-    def _resolve_post_processing_task(self, item, query_params, post_processing):
+    @staticmethod
+    def _resolve_post_processing_task(item, query_params, post_processing):
         # Just do this in post-processing
         if item[0] != 'field_names':
             post_processing.append(item)
 
         return query_params, post_processing
-
 
     def _size(self, query_params, post_processing):
         # Shrink wrap code around checking if size parameter is set
@@ -1022,7 +1034,6 @@ class Operations:
 
         # This can return None
         return size
-
 
     def info_es(self, buf):
         buf.write("Operations:\n")
@@ -1043,7 +1054,6 @@ class Operations:
         buf.write(" _source: {0}\n".format(field_names))
         buf.write(" body: {0}\n".format(body))
         buf.write(" post_processing: {0}\n".format(post_processing))
-
 
     def update_query(self, boolean_filter):
         task = ('boolean_filter', boolean_filter)
