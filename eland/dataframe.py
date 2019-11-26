@@ -92,6 +92,7 @@ class DataFrame(NDFrame):
     <BLANKLINE>
     [5 rows x 2 columns]
     """
+
     def __init__(self,
                  client=None,
                  index_pattern=None,
@@ -339,59 +340,59 @@ class DataFrame(NDFrame):
     def info_es(self):
         # noinspection PyPep8
         """
-                A debug summary of an eland DataFrame internals.
+        A debug summary of an eland DataFrame internals.
 
-                This includes the Elasticsearch search queries and query compiler task list.
+        This includes the Elasticsearch search queries and query compiler task list.
 
-                Returns
-                -------
-                str
-                    A debug summary of an eland DataFrame internals.
+        Returns
+        -------
+        str
+            A debug summary of an eland DataFrame internals.
 
-                Examples
-                --------
-                >>> df = ed.DataFrame('localhost', 'flights')
-                >>> df = df[(df.OriginAirportID == 'AMS') & (df.FlightDelayMin > 60)]
-                >>> df = df[['timestamp', 'OriginAirportID', 'DestAirportID', 'FlightDelayMin']]
-                >>> df = df.tail()
-                >>> df
-                                timestamp OriginAirportID DestAirportID  FlightDelayMin
-                12608 2018-02-10 01:20:52             AMS          CYEG             120
-                12720 2018-02-10 14:09:40             AMS           BHM             255
-                12725 2018-02-10 00:53:01             AMS           ATL             360
-                12823 2018-02-10 15:41:20             AMS           NGO             120
-                12907 2018-02-11 20:08:25             AMS           LIM             225
-                <BLANKLINE>
-                [5 rows x 4 columns]
-                >>> print(df.info_es())
-                index_pattern: flights
-                Index:
-                 index_field: _id
-                 is_source_field: False
-                Mappings:
-                 capabilities:                 _source   es_dtype        pd_dtype  searchable  aggregatable
-                AvgTicketPrice     True      float         float64        True          True
-                Cancelled          True    boolean            bool        True          True
-                Carrier            True    keyword          object        True          True
-                Dest               True    keyword          object        True          True
-                DestAirportID      True    keyword          object        True          True
-                ...                 ...        ...             ...         ...           ...
-                OriginLocation     True  geo_point          object        True          True
-                OriginRegion       True    keyword          object        True          True
-                OriginWeather      True    keyword          object        True          True
-                dayOfWeek          True    integer           int64        True          True
-                timestamp          True       date  datetime64[ns]        True          True
-                <BLANKLINE>
-                [27 rows x 5 columns]
-                Operations:
-                 tasks: [('boolean_filter', {'bool': {'must': [{'term': {'OriginAirportID': 'AMS'}}, {'range': {'FlightDelayMin': {'gt': 60}}}]}}), ('field_names', ['timestamp', 'OriginAirportID', 'DestAirportID', 'FlightDelayMin']), ('tail', ('_doc', 5))]
-                 size: 5
-                 sort_params: _doc:desc
-                 _source: ['timestamp', 'OriginAirportID', 'DestAirportID', 'FlightDelayMin']
-                 body: {'query': {'bool': {'must': [{'term': {'OriginAirportID': 'AMS'}}, {'range': {'FlightDelayMin': {'gt': 60}}}]}}, 'aggs': {}}
-                 post_processing: ['sort_index']
-                <BLANKLINE>
-                """
+        Examples
+        --------
+        >>> df = ed.DataFrame('localhost', 'flights')
+        >>> df = df[(df.OriginAirportID == 'AMS') & (df.FlightDelayMin > 60)]
+        >>> df = df[['timestamp', 'OriginAirportID', 'DestAirportID', 'FlightDelayMin']]
+        >>> df = df.tail()
+        >>> df
+                        timestamp OriginAirportID DestAirportID  FlightDelayMin
+        12608 2018-02-10 01:20:52             AMS          CYEG             120
+        12720 2018-02-10 14:09:40             AMS           BHM             255
+        12725 2018-02-10 00:53:01             AMS           ATL             360
+        12823 2018-02-10 15:41:20             AMS           NGO             120
+        12907 2018-02-11 20:08:25             AMS           LIM             225
+        <BLANKLINE>
+        [5 rows x 4 columns]
+        >>> print(df.info_es())
+        index_pattern: flights
+        Index:
+         index_field: _id
+         is_source_field: False
+        Mappings:
+         capabilities:                 _source   es_dtype        pd_dtype  searchable  aggregatable
+        AvgTicketPrice     True      float         float64        True          True
+        Cancelled          True    boolean            bool        True          True
+        Carrier            True    keyword          object        True          True
+        Dest               True    keyword          object        True          True
+        DestAirportID      True    keyword          object        True          True
+        ...                 ...        ...             ...         ...           ...
+        OriginLocation     True  geo_point          object        True          True
+        OriginRegion       True    keyword          object        True          True
+        OriginWeather      True    keyword          object        True          True
+        dayOfWeek          True    integer           int64        True          True
+        timestamp          True       date  datetime64[ns]        True          True
+        <BLANKLINE>
+        [27 rows x 5 columns]
+        Operations:
+         tasks: [('boolean_filter', {'bool': {'must': [{'term': {'OriginAirportID': 'AMS'}}, {'range': {'FlightDelayMin': {'gt': 60}}}]}}), ('field_names', ['timestamp', 'OriginAirportID', 'DestAirportID', 'FlightDelayMin']), ('tail', ('_doc', 5))]
+         size: 5
+         sort_params: _doc:desc
+         _source: ['timestamp', 'OriginAirportID', 'DestAirportID', 'FlightDelayMin']
+         body: {'query': {'bool': {'must': [{'term': {'OriginAirportID': 'AMS'}}, {'range': {'FlightDelayMin': {'gt': 60}}}]}}, 'aggs': {}}
+         post_processing: ['sort_index']
+        <BLANKLINE>
+        """
         buf = StringIO()
 
         super()._info_es(buf)
