@@ -1,5 +1,5 @@
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 from eland import Client
 from eland import Index
@@ -188,8 +188,10 @@ class ElandQueryCompiler:
           }
         }
         ```
-        TODO - explain how lists are handled (https://www.elastic.co/guide/en/elasticsearch/reference/current/array.html)
-        TODO - an option here is to use Elasticsearch's multi-field matching instead of pandas treatment of lists (which isn't great)
+        TODO - explain how lists are handled
+            (https://www.elastic.co/guide/en/elasticsearch/reference/current/array.html)
+        TODO - an option here is to use Elasticsearch's multi-field matching instead of pandas treatment of lists
+            (which isn't great)
         NOTE - using this lists is generally not a good way to use this API
         """
         partial_result = False
@@ -274,7 +276,8 @@ class ElandQueryCompiler:
             elif not is_source_field and type(x) is list:
                 for a in x:
                     flatten(a, name)
-            elif is_source_field == True:  # only print source fields from mappings (TODO - not so efficient for large number of fields and filtered mapping)
+            elif is_source_field:  # only print source fields from mappings
+                # (TODO - not so efficient for large number of fields and filtered mapping)
                 field_name = name[:-1]
 
                 # Coerce types - for now just datetime
@@ -292,8 +295,8 @@ class ElandQueryCompiler:
                 # create lists for this pivot (see notes above)
                 if field_name in out:
                     if type(out[field_name]) is not list:
-                        l = [out[field_name]]
-                        out[field_name] = l
+                        field_as_list = [out[field_name]]
+                        out[field_name] = field_as_list
                     out[field_name].append(x)
                 else:
                     out[field_name] = x
@@ -524,6 +527,7 @@ class ElandQueryCompiler:
     """
     Internal class to deal with column renaming and script_fields
     """
+
     class DisplayNameToFieldNameMapper:
         def __init__(self,
                      field_to_display_names=None,

@@ -1,8 +1,7 @@
 # File called _pytest for PyCharm compatability
 import eland as ed
-import pandas as pd
 from eland.tests import ELASTICSEARCH_HOST
-from eland.tests import FLIGHTS_INDEX_NAME, ECOMMERCE_INDEX_NAME
+from eland.tests import FLIGHTS_INDEX_NAME
 from eland.tests.common import TestData
 
 

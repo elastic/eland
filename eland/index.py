@@ -38,7 +38,7 @@ class Index:
 
     @index_field.setter
     def index_field(self, index_field):
-        if index_field == None or index_field == Index.ID_INDEX_FIELD:
+        if index_field is None or index_field == Index.ID_INDEX_FIELD:
             self._index_field = Index.ID_INDEX_FIELD
             self._is_source_field = False
         else:

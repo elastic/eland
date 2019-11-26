@@ -5,8 +5,8 @@ from io import StringIO
 import numpy as np
 import pandas as pd
 import six
-from pandas.core.computation.eval import eval
 from pandas.core.common import apply_if_callable, is_bool_indexer
+from pandas.core.computation.eval import eval
 from pandas.core.dtypes.common import is_list_like
 from pandas.core.indexing import check_bool_indexer
 from pandas.io.common import _expand_user, _stringify_path
@@ -17,8 +17,8 @@ from pandas.io.formats.printing import pprint_thing
 import eland.plotting as gfx
 from eland import NDFrame
 from eland import Series
-from eland.filter import BooleanFilter, ScriptFilter
 from eland.common import DEFAULT_NUM_ROWS_DISPLAYED, docstring_parameter
+from eland.filter import BooleanFilter
 
 
 class DataFrame(NDFrame):
@@ -35,7 +35,7 @@ class DataFrame(NDFrame):
         - elasticsearch-py instance or
         - eland.Client instance
     index_pattern: str
-        Elasticsearch index pattern (e.g. 'flights' or 'filebeat-\*')
+        Elasticsearch index pattern. This can contain wildcards. (e.g. 'flights')
     columns: list of str, optional
         List of DataFrame columns. A subset of the Elasticsearch index's fields.
     index_field: str, optional
@@ -76,10 +76,12 @@ class DataFrame(NDFrame):
     <BLANKLINE>
     [5 rows x 2 columns]
 
-    Constructing DataFrame from an Elasticsearch client and an Elasticsearch index, with 'timestamp' as the  DataFrame index field
+    Constructing DataFrame from an Elasticsearch client and an Elasticsearch index, with 'timestamp' as the  DataFrame
+    index field
     (TODO - currently index_field must also be a field if not _id)
 
-    >>> df = ed.DataFrame(client='localhost', index_pattern='flights', columns=['AvgTicketPrice', 'timestamp'], index_field='timestamp')
+    >>> df = ed.DataFrame(client='localhost', index_pattern='flights', columns=['AvgTicketPrice', 'timestamp'],
+    ...                   index_field='timestamp')
     >>> df.head()
                          AvgTicketPrice           timestamp
     2018-01-01T00:00:00      841.265642 2018-01-01 00:00:00
@@ -296,7 +298,7 @@ class DataFrame(NDFrame):
 
             return self.to_html(max_rows=max_rows, max_cols=max_cols,
                                 show_dimensions=show_dimensions, notebook=True,
-                                bold_rows=False) # set for consistency with pandas output
+                                bold_rows=False)  # set for consistency with pandas output
         else:
             return None
 
@@ -310,7 +312,8 @@ class DataFrame(NDFrame):
         An alternative approach is to use value_count aggregations. However, they have issues in that:
 
         - They can only be used with aggregatable fields (e.g. keyword not text)
-        - For list fields they return multiple counts. E.g. tags=['elastic', 'ml'] returns value_count=2 for a single document.
+        - For list fields they return multiple counts. E.g. tags=['elastic', 'ml'] returns value_count=2 for a
+          single document.
 
         TODO - add additional pandas.DataFrame.count features
 
@@ -334,60 +337,61 @@ class DataFrame(NDFrame):
         return self._query_compiler.count()
 
     def info_es(self):
+        # noinspection PyPep8
         """
-        A debug summary of an eland DataFrame internals.
+                A debug summary of an eland DataFrame internals.
 
-        This includes the Elasticsearch search queries and query compiler task list.
+                This includes the Elasticsearch search queries and query compiler task list.
 
-        Returns
-        -------
-        str
-            A debug summary of an eland DataFrame internals.
+                Returns
+                -------
+                str
+                    A debug summary of an eland DataFrame internals.
 
-        Examples
-        --------
-        >>> df = ed.DataFrame('localhost', 'flights')
-        >>> df = df[(df.OriginAirportID == 'AMS') & (df.FlightDelayMin > 60)]
-        >>> df = df[['timestamp', 'OriginAirportID', 'DestAirportID', 'FlightDelayMin']]
-        >>> df = df.tail()
-        >>> df
-                        timestamp OriginAirportID DestAirportID  FlightDelayMin
-        12608 2018-02-10 01:20:52             AMS          CYEG             120
-        12720 2018-02-10 14:09:40             AMS           BHM             255
-        12725 2018-02-10 00:53:01             AMS           ATL             360
-        12823 2018-02-10 15:41:20             AMS           NGO             120
-        12907 2018-02-11 20:08:25             AMS           LIM             225
-        <BLANKLINE>
-        [5 rows x 4 columns]
-        >>> print(df.info_es())
-        index_pattern: flights
-        Index:
-         index_field: _id
-         is_source_field: False
-        Mappings:
-         capabilities:                 _source   es_dtype        pd_dtype  searchable  aggregatable
-        AvgTicketPrice     True      float         float64        True          True
-        Cancelled          True    boolean            bool        True          True
-        Carrier            True    keyword          object        True          True
-        Dest               True    keyword          object        True          True
-        DestAirportID      True    keyword          object        True          True
-        ...                 ...        ...             ...         ...           ...
-        OriginLocation     True  geo_point          object        True          True
-        OriginRegion       True    keyword          object        True          True
-        OriginWeather      True    keyword          object        True          True
-        dayOfWeek          True    integer           int64        True          True
-        timestamp          True       date  datetime64[ns]        True          True
-        <BLANKLINE>
-        [27 rows x 5 columns]
-        Operations:
-         tasks: [('boolean_filter', {'bool': {'must': [{'term': {'OriginAirportID': 'AMS'}}, {'range': {'FlightDelayMin': {'gt': 60}}}]}}), ('field_names', ['timestamp', 'OriginAirportID', 'DestAirportID', 'FlightDelayMin']), ('tail', ('_doc', 5))]
-         size: 5
-         sort_params: _doc:desc
-         _source: ['timestamp', 'OriginAirportID', 'DestAirportID', 'FlightDelayMin']
-         body: {'query': {'bool': {'must': [{'term': {'OriginAirportID': 'AMS'}}, {'range': {'FlightDelayMin': {'gt': 60}}}]}}, 'aggs': {}}
-         post_processing: ['sort_index']
-        <BLANKLINE>
-        """
+                Examples
+                --------
+                >>> df = ed.DataFrame('localhost', 'flights')
+                >>> df = df[(df.OriginAirportID == 'AMS') & (df.FlightDelayMin > 60)]
+                >>> df = df[['timestamp', 'OriginAirportID', 'DestAirportID', 'FlightDelayMin']]
+                >>> df = df.tail()
+                >>> df
+                                timestamp OriginAirportID DestAirportID  FlightDelayMin
+                12608 2018-02-10 01:20:52             AMS          CYEG             120
+                12720 2018-02-10 14:09:40             AMS           BHM             255
+                12725 2018-02-10 00:53:01             AMS           ATL             360
+                12823 2018-02-10 15:41:20             AMS           NGO             120
+                12907 2018-02-11 20:08:25             AMS           LIM             225
+                <BLANKLINE>
+                [5 rows x 4 columns]
+                >>> print(df.info_es())
+                index_pattern: flights
+                Index:
+                 index_field: _id
+                 is_source_field: False
+                Mappings:
+                 capabilities:                 _source   es_dtype        pd_dtype  searchable  aggregatable
+                AvgTicketPrice     True      float         float64        True          True
+                Cancelled          True    boolean            bool        True          True
+                Carrier            True    keyword          object        True          True
+                Dest               True    keyword          object        True          True
+                DestAirportID      True    keyword          object        True          True
+                ...                 ...        ...             ...         ...           ...
+                OriginLocation     True  geo_point          object        True          True
+                OriginRegion       True    keyword          object        True          True
+                OriginWeather      True    keyword          object        True          True
+                dayOfWeek          True    integer           int64        True          True
+                timestamp          True       date  datetime64[ns]        True          True
+                <BLANKLINE>
+                [27 rows x 5 columns]
+                Operations:
+                 tasks: [('boolean_filter', {'bool': {'must': [{'term': {'OriginAirportID': 'AMS'}}, {'range': {'FlightDelayMin': {'gt': 60}}}]}}), ('field_names', ['timestamp', 'OriginAirportID', 'DestAirportID', 'FlightDelayMin']), ('tail', ('_doc', 5))]
+                 size: 5
+                 sort_params: _doc:desc
+                 _source: ['timestamp', 'OriginAirportID', 'DestAirportID', 'FlightDelayMin']
+                 body: {'query': {'bool': {'must': [{'term': {'OriginAirportID': 'AMS'}}, {'range': {'FlightDelayMin': {'gt': 60}}}]}}, 'aggs': {}}
+                 post_processing: ['sort_index']
+                <BLANKLINE>
+                """
         buf = StringIO()
 
         super()._info_es(buf)
@@ -437,10 +441,7 @@ class DataFrame(NDFrame):
         if buf is None:  # pragma: no cover
             buf = sys.stdout
 
-        lines = []
-
-        lines.append(str(type(self)))
-        lines.append(self._index_summary())
+        lines = [str(type(self)), self._index_summary()]
 
         if len(self.columns) == 0:
             lines.append('Empty {name}'.format(name=type(self).__name__))
@@ -562,7 +563,7 @@ class DataFrame(NDFrame):
         """
         # In pandas calling 'to_string' without max_rows set, will dump ALL rows - we avoid this
         # by limiting rows by default.
-        num_rows = len(self) # avoid multiple calls
+        num_rows = len(self)  # avoid multiple calls
         if num_rows <= DEFAULT_NUM_ROWS_DISPLAYED:
             if max_rows is None:
                 max_rows = num_rows
@@ -600,9 +601,9 @@ class DataFrame(NDFrame):
         # Our fake dataframe has incorrect number of rows (max_rows*2+1) - write out
         # the correct number of rows
         if show_dimensions:
-                # TODO - this results in different output to pandas
-                # TODO - the 'x' character is different and this gets added after the </div>
-                _buf.write("\n<p>{nrows} rows × {ncols} columns</p>"
+            # TODO - this results in different output to pandas
+            # TODO - the 'x' character is different and this gets added after the </div>
+            _buf.write("\n<p>{nrows} rows × {ncols} columns</p>"
                        .format(nrows=len(self.index), ncols=len(self.columns)))
 
         if buf is None:
@@ -627,7 +628,7 @@ class DataFrame(NDFrame):
         """
         # In pandas calling 'to_string' without max_rows set, will dump ALL rows - we avoid this
         # by limiting rows by default.
-        num_rows = len(self) # avoid multiple calls
+        num_rows = len(self)  # avoid multiple calls
         if num_rows <= DEFAULT_NUM_ROWS_DISPLAYED:
             if max_rows is None:
                 max_rows = num_rows
@@ -635,9 +636,9 @@ class DataFrame(NDFrame):
                 max_rows = min(num_rows, max_rows)
         elif max_rows is None:
             warnings.warn("DataFrame.to_string called without max_rows set "
-                      "- this will return entire index results. "
-                      "Setting max_rows={default}"
-                      " overwrite if different behaviour is required."
+                          "- this will return entire index results. "
+                          "Setting max_rows={default}"
+                          " overwrite if different behaviour is required."
                           .format(default=DEFAULT_NUM_ROWS_DISPLAYED),
                           UserWarning)
             max_rows = DEFAULT_NUM_ROWS_DISPLAYED
@@ -696,7 +697,6 @@ class DataFrame(NDFrame):
             if key in self.columns:
                 return self[key]
             raise e
-
 
     def _getitem(self, key):
         """Get the column specified by key for this DataFrame.
@@ -780,7 +780,8 @@ class DataFrame(NDFrame):
         else:
             self._query_compiler = new_query_compiler
 
-    def _reduce_dimension(self, query_compiler):
+    @staticmethod
+    def _reduce_dimension(query_compiler):
         return Series(query_compiler=query_compiler)
 
     def to_csv(self, path_or_buf=None, sep=",", na_rep='', float_format=None,
@@ -961,7 +962,8 @@ class DataFrame(NDFrame):
             raise NotImplementedError("Aggregating via index not currently implemented - needs index transform")
 
         # currently we only support a subset of functions that aggregate columns.
-        # ['count', 'mad', 'max', 'mean', 'median', 'min', 'mode', 'quantile', 'rank', 'sem', 'skew', 'sum', 'std', 'var', 'nunique']
+        # ['count', 'mad', 'max', 'mean', 'median', 'min', 'mode', 'quantile',
+        # 'rank', 'sem', 'skew', 'sum', 'std', 'var', 'nunique']
         if isinstance(func, str):
             # wrap in list
             func = [func]
@@ -1031,6 +1033,7 @@ class DataFrame(NDFrame):
         Parameters
         ----------
         key: object
+        default: default value if not found
 
         Returns
         -------
@@ -1079,7 +1082,7 @@ class DataFrame(NDFrame):
         eland_to_pandas
         to_numpy
         """
-        self.to_numpy()
+        return self.to_numpy()
 
     def to_numpy(self):
         """
@@ -1123,4 +1126,3 @@ class DataFrame(NDFrame):
             "This method would scan/scroll the entire Elasticsearch index(s) into memory. "
             "If this is explicitly required, and there is sufficient memory, call `ed.eland_to_pandas(ed_df).values`"
         )
-

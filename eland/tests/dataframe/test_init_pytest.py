@@ -1,11 +1,11 @@
 # File called _pytest for PyCharm compatability
 
-import eland as ed
-
 import pytest
 
+import eland as ed
 from eland.tests import ELASTICSEARCH_HOST
 from eland.tests import FLIGHTS_INDEX_NAME
+
 
 class TestDataFrameInit:
 
@@ -28,4 +28,3 @@ class TestDataFrameInit:
 
         qc = ed.ElandQueryCompiler(client=ELASTICSEARCH_HOST, index_pattern=FLIGHTS_INDEX_NAME)
         df2 = ed.DataFrame(query_compiler=qc)
-

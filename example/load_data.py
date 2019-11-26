@@ -4,6 +4,7 @@ import csv
 from elasticsearch import Elasticsearch, helpers
 from elasticsearch.exceptions import TransportError
 
+
 def create_index(es, index):
     mapping = {
         "mappings": {
@@ -30,6 +31,7 @@ def create_index(es, index):
         else:
             raise
 
+
 def parse_date(date):
     """
     we need to convert dates to conform to the mapping in the following way:
@@ -55,6 +57,7 @@ def parse_date(date):
 
     return date
 
+
 def parse_line(line):
     """
     creates the document to be indexed
@@ -72,6 +75,7 @@ def parse_line(line):
 
     return obj
 
+
 def load_data(es):
     """
     generate one document per line of online-retail.csv
@@ -85,7 +89,7 @@ def load_data(es):
         reader = csv.reader(f, quotechar='"', delimiter=',', quoting=csv.QUOTE_ALL)
         for line in reader:
             if header:
-                header=False
+                header = False
                 continue
             doc = parse_line(line)
 
@@ -106,11 +110,11 @@ if __name__ == "__main__":
 
     # create the elasticsearch client, pointing to the host parameter
     es = Elasticsearch(args.host)
-    index='online-retail'
+    index = 'online-retail'
 
     # load data from online retail csv in data directory
     stream = load_data(es)
-    for ok, result  in helpers.streaming_bulk(
+    for ok, result in helpers.streaming_bulk(
             es,
             actions=stream,
             index=index,

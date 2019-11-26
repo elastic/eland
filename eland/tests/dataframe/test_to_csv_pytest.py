@@ -3,20 +3,15 @@
 import ast
 import time
 
-import eland as ed
-
-from elasticsearch import Elasticsearch
-
 import pandas as pd
+from elasticsearch import Elasticsearch
 from pandas.util.testing import assert_frame_equal
 
-from eland.tests.common import ROOT_DIR
-from eland.tests.common import TestData
-
+import eland as ed
 from eland.tests import ELASTICSEARCH_HOST
 from eland.tests import FLIGHTS_INDEX_NAME
-
-from eland.tests.common import assert_pandas_eland_frame_equal
+from eland.tests.common import ROOT_DIR
+from eland.tests.common import TestData
 
 
 class TestDataFrameToCSV(TestData):
