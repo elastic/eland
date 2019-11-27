@@ -20,7 +20,6 @@ import warnings
 from io import StringIO
 
 import numpy as np
-
 import pandas as pd
 from pandas.io.common import _expand_user, _stringify_path
 
@@ -43,7 +42,7 @@ class Series(NDFrame):
         A reference to a Elasticsearch python client
 
     index_pattern : str
-        An Elasticsearch index pattern. This can contain wildcards (e.g. filebeat-\*\).
+        An Elasticsearch index pattern. This can contain wildcards.
 
     index_field : str
         The field to base the series on
@@ -201,7 +200,8 @@ class Series(NDFrame):
         """
         Return the value counts for the specified field.
 
-        **Note we can only do this for aggregatable Elasticsearch fields - (in general) numeric and keyword rather than text fields**
+        **Note we can only do this for aggregatable Elasticsearch fields - (in general) numeric and keyword
+        rather than text fields**
 
         TODO - implement remainder of pandas arguments
 
@@ -722,7 +722,7 @@ class Series(NDFrame):
 
     def __pow__(self, right):
         """
-        Return exponential power of series and right, element-wise (binary operator pow \**\).
+        Return exponential power of series and right, element-wise (binary operator pow).
 
         Parameters
         ----------
@@ -827,6 +827,7 @@ class Series(NDFrame):
         Name: taxful_total_price, dtype: float64
         """
         return self._numeric_rop(left, _get_method_name())
+
     def __rfloordiv__(self, left):
         """
         Return integer division of series and left, element-wise (binary operator floordiv //).
@@ -858,6 +859,7 @@ class Series(NDFrame):
         Name: taxful_total_price, dtype: float64
         """
         return self._numeric_rop(left, _get_method_name())
+
     def __rmod__(self, left):
         """
         Return modulo of series and left, element-wise (binary operator mod %).
@@ -889,6 +891,7 @@ class Series(NDFrame):
         Name: taxful_total_price, dtype: float64
         """
         return self._numeric_rop(left, _get_method_name())
+
     def __rmul__(self, left):
         """
         Return multiplication of series and left, element-wise (binary operator mul).
@@ -920,9 +923,10 @@ class Series(NDFrame):
         Name: taxful_total_price, dtype: float64
         """
         return self._numeric_rop(left, _get_method_name())
+
     def __rpow__(self, left):
         """
-        Return exponential power of series and left, element-wise (binary operator pow \**\).
+        Return exponential power of series and left, element-wise (binary operator pow).
 
         Parameters
         ----------
@@ -951,6 +955,7 @@ class Series(NDFrame):
         Name: total_quantity, dtype: float64
         """
         return self._numeric_rop(left, _get_method_name())
+
     def __rsub__(self, left):
         """
         Return subtraction of series and left, element-wise (binary operator sub).
@@ -1243,7 +1248,7 @@ class Series(NDFrame):
         results = super().nunique()
         return results.squeeze()
 
-    #def values TODO - not implemented as causes current implementation of query to fail
+    # def values TODO - not implemented as causes current implementation of query to fail
 
     def to_numpy(self):
         """

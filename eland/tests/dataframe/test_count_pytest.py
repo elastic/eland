@@ -4,7 +4,6 @@ from pandas.util.testing import assert_series_equal
 
 from eland.tests.common import TestData
 
-import pandas as pd
 
 class TestDataFrameCount(TestData):
 

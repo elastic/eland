@@ -31,6 +31,7 @@ from pandas.util._validators import validate_bool_kwarg
 
 from eland import ElandQueryCompiler
 
+
 class NDFrame:
 
     def __init__(self,
@@ -216,7 +217,7 @@ class NDFrame:
         <BLANKLINE>
         [4673 rows x 3 columns]
         """
-        #(derived from modin.base.BasePandasDataset)
+        # (derived from modin.base.BasePandasDataset)
         # Level not supported
         if level is not None:
             raise NotImplementedError("level not supported {}".format(level))
@@ -314,7 +315,7 @@ class NDFrame:
         dayOfWeek                2.835975
         dtype: float64
         """
-        if numeric_only == False:
+        if not numeric_only:
             raise NotImplementedError("Only mean of numeric fields is implemented")
         return self._query_compiler.mean()
 
@@ -348,7 +349,7 @@ class NDFrame:
         dayOfWeek             3.703500e+04
         dtype: float64
         """
-        if numeric_only == False:
+        if not numeric_only:
             raise NotImplementedError("Only sum of numeric fields is implemented")
         return self._query_compiler.sum()
 
@@ -382,7 +383,7 @@ class NDFrame:
         dayOfWeek               0.000000
         dtype: float64
         """
-        if numeric_only == False:
+        if not numeric_only:
             raise NotImplementedError("Only min of numeric fields is implemented")
         return self._query_compiler.min()
 
@@ -416,7 +417,7 @@ class NDFrame:
         dayOfWeek                 6.000000
         dtype: float64
         """
-        if numeric_only == False:
+        if not numeric_only:
             raise NotImplementedError("Only max of numeric fields is implemented")
         return self._query_compiler.max()
 
@@ -424,7 +425,8 @@ class NDFrame:
         """
         Return cardinality of each field.
 
-        **Note we can only do this for aggregatable Elasticsearch fields - (in general) numeric and keyword rather than text fields**
+        **Note we can only do this for aggregatable Elasticsearch fields - (in general) numeric and keyword
+        rather than text fields**
 
         This method will try and field aggregatable fields if possible if mapping has::
 

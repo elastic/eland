@@ -2,7 +2,7 @@
 from eland.filter import *
 
 
-class TestOperators():
+class TestOperators:
     def test_leaf_boolean_filter(self):
         assert GreaterEqual('a', 2).build() == {"range": {"a": {"gte": 2}}}
         assert LessEqual('a', 2).build() == {"range": {"a": {"lte": 2}}}

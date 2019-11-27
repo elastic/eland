@@ -14,8 +14,8 @@ class TestDataFrameDescribe(TestData):
         pd_describe = pd_flights.describe()
         ed_describe = ed_flights.describe()
 
-        assert_almost_equal(pd_describe.drop(['25%','50%','75%'], axis='index'),
-                            ed_describe.drop(['25%','50%','75%'], axis='index'),
+        assert_almost_equal(pd_describe.drop(['25%', '50%', '75%'], axis='index'),
+                            ed_describe.drop(['25%', '50%', '75%'], axis='index'),
                             check_less_precise=True)
 
         # TODO - this fails for percentile fields as ES aggregations are approximate

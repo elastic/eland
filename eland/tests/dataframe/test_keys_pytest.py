@@ -1,8 +1,8 @@
 # File called _pytest for PyCharm compatability
 
-from eland.tests.common import TestData
-
 from pandas.testing import assert_index_equal
+
+from eland.tests.common import TestData
 
 
 class TestDataFrameKeys(TestData):

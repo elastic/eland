@@ -1,8 +1,7 @@
-import pandas as pd
 import csv
 
+import pandas as pd
 from pandas.io.parsers import _c_parser_defaults
-
 
 from eland import Client
 from eland import DataFrame
@@ -339,4 +338,3 @@ def read_csv(filepath_or_buffer,
     ed_df = DataFrame(client, es_dest_index)
 
     return ed_df
-

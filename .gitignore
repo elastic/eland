@@ -12,7 +12,6 @@ docs/build/
 
 # pytest results
 eland/tests/dataframe/results/
-eland/tests/dataframe/results/
 result_images/
 
 

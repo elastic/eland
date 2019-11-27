@@ -27,6 +27,3 @@ class TestSeriesName(TestData):
 
         assert_pandas_eland_series_equal(pd_series, ed_series)
         assert ed_series.name == pd_series.name
-
-
-

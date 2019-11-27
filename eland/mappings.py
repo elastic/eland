@@ -13,7 +13,7 @@ class Mappings:
     Attributes
     ----------
 
-    mappings_capabilities: pandas.DataFrame
+    _mappings_capabilities: pandas.DataFrame
         A data frame summarising the capabilities of the index mapping
 
         _source     - is top level field (i.e. not a multi-field sub-field)
@@ -71,7 +71,7 @@ class Mappings:
         # (this massively improves performance of DataFrame.flatten)
         self._source_field_pd_dtypes = {}
 
-        for field_name in self._mappings_capabilities[self._mappings_capabilities._source == True].index:
+        for field_name in self._mappings_capabilities[self._mappings_capabilities._source].index:
             pd_dtype = self._mappings_capabilities.loc[field_name]['pd_dtype']
             self._source_field_pd_dtypes[field_name] = pd_dtype
 
@@ -324,8 +324,7 @@ class Mappings:
         }
         """
 
-        mappings = {}
-        mappings['properties'] = {}
+        mappings = {'properties': {}}
         for field_name_name, dtype in dataframe.dtypes.iteritems():
             if geo_points is not None and field_name_name in geo_points:
                 es_dtype = 'geo_point'
@@ -453,13 +452,13 @@ class Mappings:
         numeric_source_fields: list of str
             List of source fields where pd_dtype == (int64 or float64 or bool)
         """
-        if include_bool == True:
-            df = self._mappings_capabilities[(self._mappings_capabilities._source == True) &
+        if include_bool:
+            df = self._mappings_capabilities[self._mappings_capabilities._source &
                                              ((self._mappings_capabilities.pd_dtype == 'int64') |
                                               (self._mappings_capabilities.pd_dtype == 'float64') |
                                               (self._mappings_capabilities.pd_dtype == 'bool'))]
         else:
-            df = self._mappings_capabilities[(self._mappings_capabilities._source == True) &
+            df = self._mappings_capabilities[self._mappings_capabilities._source &
                                              ((self._mappings_capabilities.pd_dtype == 'int64') |
                                               (self._mappings_capabilities.pd_dtype == 'float64'))]
         # if field_names exists, filter index with field_names
@@ -487,7 +486,7 @@ class Mappings:
         count_source_fields: int
             Number of source fields in mapping
         """
-        return len(self.source_fields())
+        return len(self._source_field_pd_dtypes)
 
     def dtypes(self, field_names=None):
         """

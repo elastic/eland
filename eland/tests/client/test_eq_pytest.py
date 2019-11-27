@@ -4,8 +4,6 @@ from elasticsearch import Elasticsearch
 import eland as ed
 from eland.tests.common import TestData
 
-import pytest
-
 
 class TestClientEq(TestData):
 

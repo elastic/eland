@@ -18,6 +18,3 @@ class TestSeriesRename(TestData):
         ed_renamed = ed_carrier.rename("renamed")
 
         assert_pandas_eland_series_equal(pd_renamed, ed_renamed)
-
-
-
