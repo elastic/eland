@@ -5,6 +5,7 @@ from eland import Client
 from eland import Index
 from eland import Mappings
 from eland import Operations
+import re
 
 
 class ElandQueryCompiler:
@@ -281,7 +282,8 @@ class ElandQueryCompiler:
                 field_name = name[:-1]
 
                 # Coerce types - for now just datetime
-                if pd_dtype == 'datetime64[ns]':
+                pattern = "datetime64\[(.+)\]"
+                if re.match(pattern, pd_dtype):
                     # TODO  - this doesn't work for certain ES date formats
                     #   e.g. "@timestamp" : {
                     #           "type" : "date",
@@ -289,7 +291,8 @@ class ElandQueryCompiler:
                     #         }
                     #   1484053499256 - we need to check ES type and format and add conversions like:
                     #   pd.to_datetime(x, unit='ms')
-                    x = pd.to_datetime(x)
+                    unit = re.match(pattern, pd_dtype).group(1)
+                    x = pd.to_datetime(x, unit=unit)
 
                 # Elasticsearch can have multiple values for a field. These are represented as lists, so
                 # create lists for this pivot (see notes above)
