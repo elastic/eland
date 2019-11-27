@@ -60,13 +60,6 @@ class Mappings:
             # Get top level (not sub-field multifield) mappings
             source_fields = Mappings._extract_fields_from_mapping(get_mapping, source_only=True)
 
-            # reconcile type constructed in source_field into all_fields_caps
-            # for example, specific date format (ex. date[epoch_millis])
-            for field, _type in source_fields.items():
-                ty = list(all_fields_caps["fields"][field].keys())[0]
-                all_fields_caps["fields"][field][ty]["type"] = _type
-
-
             # Populate capability matrix of fields
             # field_name, es_dtype, pd_dtype, is_searchable, is_aggregtable, is_source
             self._mappings_capabilities = Mappings._create_capability_matrix(all_fields, source_fields, all_fields_caps)
@@ -137,15 +130,7 @@ class Mappings:
                 for a in x:
                     if a == 'type' and type(x[a]) is str:  # 'type' can be a name of a field
                         field_name = name[:-1]
-                        if x[a] == "date":
-                            if "format" in x:
-                                field_type = "date[{}]".format(x["format"])
-                            else:
-                                # if no format is specified for date,
-                                # `epoch_millis` is used
-                                field_type = "date[epoch_millis]"
-                        else:
-                            field_type = x[a]
+                        field_type = x[a]
 
                         # If there is a conflicting type, warn - first values added wins
                         if field_name in fields and fields[field_name] != field_type:
@@ -259,8 +244,7 @@ class Mappings:
             'half_float': 'float64',
             'scaled_float': 'float64',
 
-            'date[epoch_millis]': 'datetime64[ms]',
-            'date[epoch_second]': 'datetime64[s]',
+            'date': 'datetime64[ns]',
             'date_nanos': 'datetime64[ns]',
 
             'boolean': 'bool'
