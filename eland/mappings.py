@@ -50,11 +50,14 @@ class Mappings:
         mappings: Mappings
             Object to copy
         """
+
+        # here we keep track of the format of any date fields
+        self._date_fields_format = {}
         if (client is not None) and (index_pattern is not None):
             get_mapping = client.get_mapping(index=index_pattern)
 
             # Get all fields (including all nested) and then all field_caps
-            all_fields = Mappings._extract_fields_from_mapping(get_mapping)
+            all_fields = Mappings._extract_fields_from_mapping(get_mapping, date_format=self._date_fields_format)
             all_fields_caps = client.field_caps(index=index_pattern, fields='*')
 
             # Get top level (not sub-field multifield) mappings
@@ -76,7 +79,7 @@ class Mappings:
             self._source_field_pd_dtypes[field_name] = pd_dtype
 
     @staticmethod
-    def _extract_fields_from_mapping(mappings, source_only=False):
+    def _extract_fields_from_mapping(mappings, source_only=False, date_format=None):
         """
         Extract all field names and types from a mapping.
         ```
@@ -125,13 +128,15 @@ class Mappings:
         fields = {}
 
         # Recurse until we get a 'type: xxx'
-        def flatten(x, name=''):
+        def flatten(x, name='', date_format=None):
             if type(x) is dict:
                 for a in x:
                     if a == 'type' and type(x[a]) is str:  # 'type' can be a name of a field
                         field_name = name[:-1]
                         field_type = x[a]
-
+                        # if field_type is 'date' keep track of the format info when available
+                        if date_format is not None and field_type == "date" and "format" in x:
+                            date_format[field_name] = x["format"]
                         # If there is a conflicting type, warn - first values added wins
                         if field_name in fields and fields[field_name] != field_type:
                             warnings.warn("Field {} has conflicting types {} != {}".
@@ -142,13 +147,13 @@ class Mappings:
                     elif a == 'properties' or (not source_only and a == 'fields'):
                         flatten(x[a], name)
                     elif not (source_only and a == 'fields'):  # ignore multi-field fields for source_only
-                        flatten(x[a], name + a + '.')
+                        flatten(x[a], name + a + '.', date_format)
 
         for index in mappings:
             if 'properties' in mappings[index]['mappings']:
                 properties = mappings[index]['mappings']['properties']
 
-                flatten(properties)
+                flatten(properties, date_format=date_format)
 
         return fields
 

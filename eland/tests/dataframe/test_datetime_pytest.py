@@ -41,3 +41,40 @@ class TestDataFrameDateTime(TestData):
         ed_df_head = ed_df.head()
 
         assert_pandas_eland_frame_equal(df, ed_df_head)
+
+    def test_date_implicit_epoch_millis(self):
+        index_name = 'date_implicit_epoch_millis'
+        ed_df = ed.read_es(ELASTICSEARCH_HOST, index_name)
+
+        ser1 = ed_df["date"]._to_pandas()
+        ser2 = pd.Series(pd.to_datetime("1970-01-01T00:00:03"))
+
+        assert ser1.values == ser2.values
+
+    def test_date_implicit_strict_date_optional_time(self):
+        index_name = 'date_implicit_strict_date_optional_time'
+        ed_df = ed.read_es(ELASTICSEARCH_HOST, index_name)
+
+        ser1 = ed_df["date"]._to_pandas()
+        ser2 = pd.Series(pd.to_datetime("1970-01-01T00:00:03"))
+
+        assert ser1.values == ser2.values
+
+    def test_date_explicit_epoch_millis(self):
+        index_name = 'date_explicit_epoch_millis'
+        ed_df = ed.read_es(ELASTICSEARCH_HOST, index_name)
+
+        ser1 = ed_df["date"]._to_pandas()
+        ser2 = pd.Series(pd.to_datetime("1970-01-01T00:00:03"))
+
+        assert ser1.values == ser2.values
+
+    def test_date_explicit_epoch_second(self):
+        index_name = 'date_explicit_epoch_second'
+        ed_df = ed.read_es(ELASTICSEARCH_HOST, index_name)
+
+        ser1 = ed_df["date"]._to_pandas()
+        ser2 = pd.Series(pd.to_datetime("1970-01-01T00:00:03"))
+
+        assert ser1.values == ser2.values
+

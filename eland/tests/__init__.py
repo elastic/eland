@@ -488,3 +488,72 @@ TEST_NESTED_USER_GROUP_DOCS = [
      '_source': {'group': 'new york', 'user': [
          {'first': 'Bill', 'last': 'Jones'}]}}
 ]
+
+# Define test data and indices
+
+TEST_DATE_IMPLICIT_EPOCH_MILLIS_NAME = "date_implicit_epoch_millis"
+TEST_DATE_IMPLICIT_EPOCH_MILLIS_MAPPINGS = {
+    "mappings": {
+            "properties": {
+                "date": {"type": "date"}
+            }
+        }
+}
+TEST_DATE_IMPLICIT_EPOCH_MILLIS_DOCS = [
+    {
+        "other_field": "test",
+        "date": 3000
+    }
+]
+
+
+TEST_DATE_IMPLICIT_STRICT_DATE_OPTIONAL_TIME_NAME = "date_implicit_strict_date_optional_time"
+TEST_DATE_IMPLICIT_STRICT_DATE_OPTIONAL_TIME_MAPPINGS = {
+    "mappings": {
+            "properties": {
+                "date": {"type": "date"}
+            }
+        }
+}
+TEST_DATE_IMPLICIT_STRICT_DATE_OPTIONAL_TIME_DOCS = [
+    {
+        "other_field": "test",
+        "date": "1970-01-01T00:00:03"
+    }
+]
+
+
+TEST_DATE_EXPLICIT_EPOCH_MILLIS_NAME = "date_explicit_epoch_millis"
+TEST_DATE_EXPLICIT_EPOCH_MILLIS_MAPPINGS = {
+    "mappings": {
+        "properties": {
+            "date": {"type": "date",
+                     "format": "epoch_millis"
+                     }
+        }
+    }
+}
+TEST_DATE_EXPLICIT_EPOCH_MILLIS_DOCS = [
+    {
+        "other_field": "test",
+        "date": 3000
+    }
+]
+
+
+TEST_DATE_EXPLICIT_EPOCH_SECOND_NAME = "date_explicit_epoch_second"
+TEST_DATE_EXPLICIT_EPOCH_SECOND_MAPPINGS = {
+    "mappings": {
+        "properties": {
+            "date": {"type": "date",
+                     "format": "epoch_second"
+                     }
+        }
+    }
+}
+TEST_DATE_EXPLICIT_EPOCH_SECOND_DOCS = [
+    {
+        "other_field": "test",
+        "date": 3
+    }
+]
