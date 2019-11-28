@@ -8,5 +8,10 @@ TEST_SUITE:
   - oss
   - xpack
 
+PYTHON_VERSION:
+  - 3.7
+  - 3.6
+  - 3.5.3
+
 
 exclude: ~
