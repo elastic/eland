@@ -66,6 +66,7 @@ def _setup_test_nested(es):
 
 if __name__ == '__main__':
     # Create connection to Elasticsearch - use defaults
+    print('Connecting to ES', ELASTICSEARCH_HOST)
     es = Elasticsearch(ELASTICSEARCH_HOST)
 
     _setup_data(es)
