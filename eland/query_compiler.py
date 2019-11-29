@@ -291,14 +291,7 @@ class ElandQueryCompiler:
                     #   1484053499256 - we need to check ES type and format and add conversions like:
                     #   pd.to_datetime(x, unit='ms')
                     dates_format = self._mappings._date_fields_format
-                    if field_name in dates_format:
-                        x = date_utils.eland_date_to_pandas_date(dates_format[field_name])(x)
-                    else:
-                        try:
-                            x = int(x)
-                            x = pd.to_datetime(x, unit='ms')
-                        except ValueError:
-                            x = pd.to_datetime(x)
+                    x = date_utils.eland_date_to_pandas_date(x, dates_format.get(field_name))
 
                 # Elasticsearch can have multiple values for a field. These are represented as lists, so
                 # create lists for this pivot (see notes above)
