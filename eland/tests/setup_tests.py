@@ -81,8 +81,11 @@ def _setup_test_date_formats(es: Elasticsearch):
     ]
 
     for data in DATA_LIST_STATIC:
+        print("Deleting index:", data[0])
         es.indices.delete(index=data[0], ignore=[400, 404])
+        print("Creating index:", data[0])
         es.indices.create(index=data[0], body=data[1])
+        print("Adding", len(data[2]), "items to index:", data[0])
         for document in data[2]:
             es.index(index=data[0], body=document)
 
@@ -95,3 +98,5 @@ if __name__ == '__main__':
     _setup_test_mappings(es)
     _setup_test_nested(es)
     _setup_test_date_formats(es)
+
+
