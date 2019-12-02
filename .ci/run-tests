@@ -63,6 +63,7 @@ echo -e "\033[1m>>>>> Run [elastic/eland container] >>>>>>>>>>>>>>>>>>>>>>>>>>>>
 docker run \
   --network=elasticsearch \
   --env "ELASTICSEARCH_HOST=${elasticsearch_url}" \
+  --env "TEST_SUITE=${TEST_SUITE}" \
   --name eland-test-runner \
   --rm \
   elastic/eland \
