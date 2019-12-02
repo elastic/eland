@@ -17,7 +17,6 @@ if TEST_SUITE == 'xpack':
     ES_TEST_CLIENT = Elasticsearch(ELASTICSEARCH_HOST, use_ssl=True, verify_certs=True, ca_certs=certpath)
 else:
     ES_TEST_CLIENT = Elasticsearch(ELASTICSEARCH_HOST)
-    
 
 FLIGHTS_INDEX_NAME = 'flights'
 FLIGHTS_MAPPING = {"mappings": {
