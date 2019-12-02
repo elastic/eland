@@ -1,11 +1,23 @@
 import os
 
+from elasticsearch import Elasticsearch
 import pandas as pd
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Define test files and indices
 ELASTICSEARCH_HOST = os.environ.get('ELASTICSEARCH_HOST') or 'localhost'
+
+# Define client to use in tests
+TEST_SUITE = os.environ.get('TEST_SUITE')
+if TEST_SUITE == 'xpack':
+    print('Running xpack tests requires SSL. Setting up SSL enabled client')
+    certpath = os.path.join(os.path.dirname(__file__), '../../.ci/certs/ca.crt')
+    print(certpath)
+    ES_TEST_CLIENT = Elasticsearch(ELASTICSEARCH_HOST, use_ssl=True, verify_certs=True, ca_certs=certpath)
+else:
+    ES_TEST_CLIENT = Elasticsearch(ELASTICSEARCH_HOST)
+    
 
 FLIGHTS_INDEX_NAME = 'flights'
 FLIGHTS_MAPPING = {"mappings": {

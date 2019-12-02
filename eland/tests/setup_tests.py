@@ -78,7 +78,15 @@ def _setup_test_nested(es):
 if __name__ == '__main__':
     # Create connection to Elasticsearch - use defaults
     print('Connecting to ES', ELASTICSEARCH_HOST)
-    es = Elasticsearch(ELASTICSEARCH_HOST)
+    TEST_SUITE = os.environ.get('TEST_SUITE')
+    if TEST_SUITE == 'xpack':
+        print('Running xpack tests requires SSL. Setting up SSL enabled client')
+        certpath = os.path.join(os.path.dirname(__file__), '../../.ci/certs/ca.crt')
+        print(certpath)
+        es = Elasticsearch(ELASTICSEARCH_HOST, use_ssl=True, verify_certs=True, ca_certs=certpath)
+    else:
+        es = Elasticsearch(ELASTICSEARCH_HOST)
+        
 
     _setup_data(es)
     _setup_test_mappings(es)
