@@ -6,7 +6,6 @@ ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Define test files and indices
 ELASTICSEARCH_HOST = os.environ.get('ELASTICSEARCH_HOST') or 'localhost'
-ELASTICSEARCH_HOST = ELASTICSEARCH_HOST.lstrip('http://')
 
 FLIGHTS_INDEX_NAME = 'flights'
 FLIGHTS_MAPPING = {"mappings": {
