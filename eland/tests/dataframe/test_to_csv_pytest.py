@@ -64,3 +64,6 @@ class TestDataFrameToCSV(TestData):
         # TODO - there is a 'bug' where the Elasticsearch index returns data in a different order to the CSV
         print(ed_flights_from_csv.head())
         print(pd_flights_from_csv.head())
+
+        # clean up index
+        ES_TEST_CLIENT.indices.delete(test_index)

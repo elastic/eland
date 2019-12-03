@@ -309,8 +309,9 @@ class ElandQueryCompiler:
                 #        if the field is numeric. This implementation will currently map
                 #        any script field with "Infinity" as a string to np.inf
                 if x == 'Infinity':
-                    x = np.inf
-                out[name[:-1]] = x
+                    out[name[:-1]] = np.inf
+                else:
+                    out[name[:-1]] = x
 
         flatten(y)
 
