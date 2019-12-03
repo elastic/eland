@@ -21,7 +21,6 @@ class TestSeriesArithmetics(TestData):
             assert self.ed_ecommerce()['total_quantity'] + self.ed_ecommerce()['currency']
 
     def test_str_add_ser(self):
-
         edadd = self.ed_ecommerce()['customer_first_name'] + self.ed_ecommerce()['customer_last_name']
         pdadd = self.pd_ecommerce()['customer_first_name'] + self.pd_ecommerce()['customer_last_name']
 
