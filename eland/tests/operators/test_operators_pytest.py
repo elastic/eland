@@ -1,4 +1,3 @@
-# -*- coding: UTF-8 -*-
 from eland.filter import *
 
 
@@ -170,3 +169,83 @@ class TestOperators:
                        ]
                    }
                }
+
+    def test_must_and_must_not_filter(self):
+        exp = (GreaterEqual('a', 2) & GreaterEqual('b', 2)) & ~(IsIn('ids', [1, 2, 3]))
+        a = exp.build()
+        b = {
+               'bool': {
+                   'must': [
+                       {'range': {'a': {'gte': 2}}},
+                       {'range': {'b': {'gte': 2}}},
+                       {
+                           'bool': {
+                               'must_not': {
+                                   'ids': {'values': [1, 2, 3]}
+                               }
+                           }
+                       }
+                   ]
+               }
+           }
+        assert a == b
+
+    def test_must_not_and_must_filter(self):
+        exp = ~(IsIn('ids', [1, 2, 3])) & (GreaterEqual('a', 2) & GreaterEqual('b', 2))
+        a = exp.build()
+        b = {
+            'bool': {
+                'must': [
+                    {'range': {'a': {'gte': 2}}},
+                    {'range': {'b': {'gte': 2}}},
+                    {
+                        'bool': {
+                            'must_not': {
+                                'ids': {'values': [1, 2, 3]}
+                            }
+                        }
+                    }
+                ]
+            }
+        }
+        assert a == b
+
+    def test_must_not_or_must_filter(self):
+        exp = ~(IsIn('ids', [1, 2, 3])) | (GreaterEqual('a', 2) | GreaterEqual('b', 2))
+        a = exp.build()
+        b = {
+            'bool': {
+                'should': [
+                    {'range': {'a': {'gte': 2}}},
+                    {'range': {'b': {'gte': 2}}},
+                    {
+                        'bool': {
+                            'must_not': {
+                                'ids': {'values': [1, 2, 3]}
+                            }
+                        }
+                    }
+                ]
+            }
+        }
+        assert a == b
+
+    def test_must_or_must_not_filter(self):
+        exp = (GreaterEqual('a', 2) | GreaterEqual('b', 2)) | ~(IsIn('ids', [1, 2, 3]))
+        a = exp.build()
+        b = {
+            'bool': {
+                'should': [
+                    {'range': {'a': {'gte': 2}}},
+                    {'range': {'b': {'gte': 2}}},
+                    {
+                        'bool': {
+                            'must_not': {
+                                'ids': {'values': [1, 2, 3]}
+                            }
+                        }
+                    }
+                ]
+            }
+        }
+        assert a == b

@@ -99,6 +99,7 @@ class Operations:
         for task in reversed(self._tasks):
             if task[0] == 'field_names':
                 return task[1]
+
         return None
 
     def __repr__(self):
