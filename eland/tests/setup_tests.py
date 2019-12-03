@@ -1,5 +1,6 @@
 from elasticsearch import Elasticsearch
 from elasticsearch import helpers
+from elasticsearch.client import ClusterClient
 
 from eland.tests import *
 
@@ -50,6 +51,16 @@ def _setup_data(es):
 
         print("Done", index_name)
 
+def _update_max_compilations_limit(es, limit="10000/1m"):
+    print('Updating script.max_compilations_rate to ', limit)
+    cluster_client = ClusterClient(es)
+    body = {
+    "transient" : {
+        "script.max_compilations_rate" : limit
+    }
+    }
+    cluster_client.put_settings(body=body)
+
 
 def _setup_test_mappings(es):
     # Create a complex mapping containing many Elasticsearch features
@@ -66,8 +77,11 @@ def _setup_test_nested(es):
 
 if __name__ == '__main__':
     # Create connection to Elasticsearch - use defaults
-    es = Elasticsearch(ELASTICSEARCH_HOST)
+    print('Connecting to ES', ELASTICSEARCH_HOST)
+    es = ES_TEST_CLIENT
+        
 
     _setup_data(es)
     _setup_test_mappings(es)
     _setup_test_nested(es)
+    _update_max_compilations_limit(es)

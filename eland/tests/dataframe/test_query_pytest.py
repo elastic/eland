@@ -4,7 +4,7 @@ import pandas as pd
 from elasticsearch import Elasticsearch
 
 import eland as ed
-from eland.tests.common import ELASTICSEARCH_HOST
+from eland.tests.common import ES_TEST_CLIENT
 from eland.tests.common import TestData
 from eland.tests.common import assert_pandas_eland_frame_equal
 
@@ -25,13 +25,10 @@ class TestDataFrameQuery(TestData):
         3  4   4   7
         4  5   2   6
         """
-
-        es = Elasticsearch(ELASTICSEARCH_HOST)
-
         # Now create index
         index_name = 'eland_test_query'
 
-        ed_df = ed.pandas_to_eland(pd_df, es, index_name, if_exists="replace", refresh=True)
+        ed_df = ed.pandas_to_eland(pd_df, ES_TEST_CLIENT, index_name, if_exists="replace", refresh=True)
 
         assert_pandas_eland_frame_equal(pd_df, ed_df)
 
@@ -55,7 +52,7 @@ class TestDataFrameQuery(TestData):
 
         assert_pandas_eland_frame_equal(pd_q4, ed_q4)
 
-        es.indices.delete(index_name)
+        ES_TEST_CLIENT.indices.delete(index_name)
 
     def test_simple_query(self):
         ed_flights = self.ed_flights()
@@ -84,12 +81,10 @@ class TestDataFrameQuery(TestData):
         3  4   4   7
         4  5   2   6
         """
-        es = Elasticsearch(ELASTICSEARCH_HOST)
-
         # Now create index
         index_name = 'eland_test_query'
 
-        ed_df = ed.pandas_to_eland(pd_df, es, index_name, if_exists="replace", refresh=True)
+        ed_df = ed.pandas_to_eland(pd_df, ES_TEST_CLIENT, index_name, if_exists="replace", refresh=True)
 
         assert_pandas_eland_frame_equal(pd_df, ed_df)
 
@@ -119,4 +114,4 @@ class TestDataFrameQuery(TestData):
 
         assert_pandas_eland_frame_equal(pd_q4, ed_q4)
 
-        #es.indices.delete(index_name)
+        ES_TEST_CLIENT.indices.delete(index_name)

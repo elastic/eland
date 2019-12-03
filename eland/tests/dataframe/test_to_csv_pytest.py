@@ -8,7 +8,7 @@ from elasticsearch import Elasticsearch
 from pandas.util.testing import assert_frame_equal
 
 import eland as ed
-from eland.tests import ELASTICSEARCH_HOST
+from eland.tests import ES_TEST_CLIENT
 from eland.tests import FLIGHTS_INDEX_NAME
 from eland.tests.common import ROOT_DIR
 from eland.tests.common import TestData
@@ -52,9 +52,8 @@ class TestDataFrameToCSV(TestData):
         now_millis = int(round(time.time() * 1000))
 
         test_index = FLIGHTS_INDEX_NAME + '.' + str(now_millis)
-        es = Elasticsearch(ELASTICSEARCH_HOST)
 
-        ed_flights_from_csv = ed.read_csv(results_file, es, test_index, index_col=0, es_refresh=True,
+        ed_flights_from_csv = ed.read_csv(results_file, ES_TEST_CLIENT, test_index, index_col=0, es_refresh=True,
                                           es_geo_points=['OriginLocation', 'DestLocation'],
                                           converters={
                                               'DestLocation': lambda x: ast.literal_eval(x),
