@@ -1,4 +1,4 @@
-# Derived from pandasticsearch filters
+# Originally based on code in pandasticsearch filters
 
 # Es filter builder for BooleanCond
 class BooleanFilter:
@@ -8,20 +8,34 @@ class BooleanFilter:
     def __and__(self, x):
         # Combine results
         if isinstance(self, AndFilter):
-            self.subtree['must'].append(x.subtree)
+            if 'must_not' in x.subtree:
+                # nest a must_not under a must
+                self.subtree['must'].append(x.build()) # 'build includes bool'
+            else:
+                # append a must to a must
+                self.subtree['must'].append(x.subtree) # 'subtree strips bool'
             return self
         elif isinstance(x, AndFilter):
-            x.subtree['must'].append(self.subtree)
+            if 'must_not' in self.subtree:
+                x.subtree['must'].append(self.build())
+            else:
+                x.subtree['must'].append(self.subtree)
             return x
         return AndFilter(self, x)
 
     def __or__(self, x):
         # Combine results
         if isinstance(self, OrFilter):
-            self.subtree['should'].append(x.subtree)
+            if 'must_not' in x.subtree:
+                self.subtree['should'].append(x.build())
+            else:
+                self.subtree['should'].append(x.subtree)
             return self
         elif isinstance(x, OrFilter):
-            x.subtree['should'].append(self.subtree)
+            if 'must_not' in self.subtree:
+                x.subtree['should'].append(self.build())
+            else:
+                x.subtree['should'].append(self.subtree)
             return x
         return OrFilter(self, x)
 

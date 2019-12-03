@@ -1,6 +1,6 @@
 # File called _pytest for PyCharm compatability
 import eland as ed
-from eland.tests import ELASTICSEARCH_HOST
+from eland.tests import ES_TEST_CLIENT
 from eland.tests import FLIGHTS_INDEX_NAME
 from eland.tests.common import TestData
 
@@ -9,7 +9,7 @@ class TestSeriesRepr(TestData):
 
     def test_repr_flights_carrier(self):
         pd_s = self.pd_flights()['Carrier']
-        ed_s = ed.Series(ELASTICSEARCH_HOST, FLIGHTS_INDEX_NAME, 'Carrier')
+        ed_s = ed.Series(ES_TEST_CLIENT, FLIGHTS_INDEX_NAME, 'Carrier')
 
         pd_repr = repr(pd_s)
         ed_repr = repr(ed_s)
@@ -18,7 +18,7 @@ class TestSeriesRepr(TestData):
 
     def test_repr_flights_carrier_5(self):
         pd_s = self.pd_flights()['Carrier'].head(5)
-        ed_s = ed.Series(ELASTICSEARCH_HOST, FLIGHTS_INDEX_NAME, 'Carrier').head(5)
+        ed_s = ed.Series(ES_TEST_CLIENT, FLIGHTS_INDEX_NAME, 'Carrier').head(5)
 
         pd_repr = repr(pd_s)
         ed_repr = repr(ed_s)

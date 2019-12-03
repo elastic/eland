@@ -217,7 +217,6 @@ class NDFrame:
         <BLANKLINE>
         [4673 rows x 3 columns]
         """
-        # (derived from modin.base.BasePandasDataset)
         # Level not supported
         if level is not None:
             raise NotImplementedError("level not supported {}".format(level))
