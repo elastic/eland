@@ -1,6 +1,6 @@
 # What is it?
 
-eland is a elasticsearch client `Python <https://www.python.org/>`__ package to analyse, explore and manipulate data that resides in elasticsearch. 
+eland is a elasticsearch client Python package to analyse, explore and manipulate data that resides in elasticsearch. 
 Where possible the package uses existing Python APIs and data structures to make it easy to switch between numpy, 
 pandas, scikit-learn to their elasticsearch powered equivalents. In general, the data resides in elasticsearch and 
 not in memory, which allows eland to access large datasets stored in elasticsearch.

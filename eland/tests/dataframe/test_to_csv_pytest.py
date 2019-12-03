@@ -66,4 +66,4 @@ class TestDataFrameToCSV(TestData):
         print(pd_flights_from_csv.head())
 
         # clean up index
-        es.indices.delete(test_index)
+        ES_TEST_CLIENT.indices.delete(test_index)
