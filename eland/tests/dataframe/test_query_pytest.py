@@ -3,7 +3,7 @@
 import pandas as pd
 
 import eland as ed
-from eland.tests.common import ELASTICSEARCH_HOST
+from eland.tests.common import ES_TEST_CLIENT
 from eland.tests.common import TestData
 from eland.tests.common import assert_pandas_eland_frame_equal
 
@@ -19,7 +19,7 @@ class TestDataFrameQuery(TestData):
         # Now create index
         index_name = 'eland_test_query'
 
-        ed_df = ed.pandas_to_eland(pd_df, ELASTICSEARCH_HOST, index_name, if_exists="replace", refresh=True)
+        ed_df = ed.pandas_to_eland(pd_df, ES_TEST_CLIENT, index_name, if_exists="replace", refresh=True)
 
         assert_pandas_eland_frame_equal(pd_df, ed_df)
 
