@@ -45,3 +45,12 @@ class TestSeriesValueCounts(TestData):
         ed_s = self.ed_flights()['Carrier']
         with pytest.raises(ValueError):
             assert ed_s.value_counts(es_size=-9)
+
+    def test_value_counts_non_aggregatable(self):
+        ed_s = self.ed_ecommerce()['customer_first_name']
+        pd_s = self.pd_ecommerce()['customer_first_name']
+
+        pd_vc = pd_s.value_counts().head(10).sort_index()
+        ed_vc = ed_s.value_counts().sort_index()
+
+        assert_series_equal(pd_vc, ed_vc)
