@@ -22,7 +22,7 @@ class TestDataFrameNUnique(TestData):
         # assert_series_equal(pd_nunique, ed_nunique)
 
     def test_ecommerce_nunique(self):
-        columns = ['customer_first_name', 'customer_gender', 'day_of_week_i']
+        columns = ['customer_first_name', 'customer_last_name', 'day_of_week_i']
         pd_ecommerce = self.pd_ecommerce()[columns]
         ed_ecommerce = self.ed_ecommerce()[columns]
 
