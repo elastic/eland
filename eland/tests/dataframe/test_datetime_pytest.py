@@ -9,6 +9,7 @@ import eland as ed
 from eland.tests.common import ES_TEST_CLIENT
 from eland.tests.common import TestData
 from eland.tests.common import assert_pandas_eland_frame_equal
+from eland.tests.common import assert_pandas_eland_series_equal
 
 
 class TestDataFrameDateTime(TestData):
@@ -85,26 +86,28 @@ class TestDataFrameDateTime(TestData):
 
         assert_pandas_eland_frame_equal(df, ed_df_head)
 
+        # TODO - clean up index
+
     def test_all_formats(self):
         index_name = self.time_index_name
         ed_df = ed.read_es(ELASTICSEARCH_HOST, index_name)
 
         for format_name in self.time_formats.keys():
+            for dt in self.times:
+                ts = pd.to_datetime(datetime.strptime(dt, "%Y-%m-%dT%H:%M:%S.%f%z"))
+                str_ts = ts.strftime(self.time_formats[format_name][0])
             times = [pd.to_datetime(datetime.strptime(dt, "%Y-%m-%dT%H:%M:%S.%f%z")
                                     .strftime(self.time_formats[format_name][0]),
                                     format=self.time_formats[format_name][0],
                                     utc=self.time_formats[format_name][1])
                      for dt in self.times]
 
-            ser1 = ed.eland_to_pandas(ed_df[format_name])
-            ser2 = pd.Series(times,
+            ed_series = ed_df[format_name]
+            pd_series = pd.Series(times,
                              index=[str(i) for i in range(len(self.times))],
                              name=format_name)
-            #remove prints once debugged
-            print(format_name)
-            print(ser1)
-            print(ser2)
-            pd.testing.assert_series_equal(ser1, ser2)
+
+            assert_pandas_eland_series_equal(pd_series, ed_series)
 
     @staticmethod
     def get_time_values_from_datetime(dt: datetime) -> dict:
@@ -163,47 +166,50 @@ class TestDataFrameDateTime(TestData):
     time_formats = {
         "epoch_millis": ("%Y-%m-%dT%H:%M:%S.%f", None),
         "epoch_second": ("%Y-%m-%dT%H:%M:%S", None),
-        "strict_date_optional_time": ("%Y-%m-%dT%H:%M:%S.%f%z", True),
+        "strict_date_optional_time": ("%Y-%m-%dT%H:%M:%S.%f%z", None),
         "basic_date": ("%Y%m%d", None),
         "basic_date_time": ("%Y%m%dT%H%M%S.%f", None),
-        "basic_date_time_no_millis": ("%Y%m%dT%H%M%S%z", True),
+        "basic_date_time_no_millis": ("%Y%m%dT%H%M%S%z", None),
         "basic_ordinal_date": ("%Y%j", None),
-        "basic_ordinal_date_time": ("%Y%jT%H%M%S.%f%z", True),
+        "basic_ordinal_date_time": ("%Y%jT%H%M%S.%f%z", None),
         "basic_ordinal_date_time_no_millis": ("%Y%jT%H%M%S%z", None),
         "basic_time": ("%H%M%S.%f%z", None),
         "basic_time_no_millis": ("%H%M%S%z", None),
         "basic_t_time": ("T%H%M%S.%f%z", None),
-        "basic_t_time_no_millis": ("T%H%M%S%z", True),
-        "basic_week_date": ("%GW%V%u", False),
-        "basic_week_date_time": ("%GW%V%uT%H%M%S.%f%z", True),
-        "basic_week_date_time_no_millis": ("%GW%V%uT%H%M%S%z", True),
-        "strict_date": ("%Y-%m-%d", False),
-        "strict_date_hour": ("%Y-%m-%dT%H", False),
-        "strict_date_hour_minute": ("%Y-%m-%dT%H:%M", False),
-        "strict_date_hour_minute_second": ("%Y-%m-%dT%H:%M:%S", False),
-        "strict_date_hour_minute_second_fraction": ("%Y-%m-%dT%H:%M:%S.%f", False),
-        "strict_date_hour_minute_second_millis": ("%Y-%m-%dT%H:%M:%S.%f", False),
-        "strict_date_time": ("%Y-%m-%dT%H:%M:%S.%f%z", True),
-        "strict_date_time_no_millis": ("%Y-%m-%dT%H:%M:%S%z", True),
-        "strict_hour": ("%H", False),
-        "strict_hour_minute": ("%H:%M", False),
-        "strict_hour_minute_second": ("%H:%M:%S", False),
-        "strict_hour_minute_second_fraction": ("%H:%M:%S.%f", False),
-        "strict_hour_minute_second_millis": ("%H:%M:%S.%f", False),
-        "strict_ordinal_date": ("%Y-%j", False),
-        "strict_ordinal_date_time": ("%Y-%jT%H:%M:%S.%f%z", True),
-        "strict_ordinal_date_time_no_millis": ("%Y-%jT%H:%M:%S%z", True),
-        "strict_time": ("%H:%M:%S.%f%z", True),
-        "strict_time_no_millis": ("%H:%M:%S%z", True),
-        "strict_t_time": ("T%H:%M:%S.%f", False),
-        "strict_t_time_no_millis": ("T%H:%M:%S%z", True),
-        "strict_week_date":("%G-W%V-%u", False),
-        "strict_week_date_time": ("%G-W%V-%uT%H:%M:%S.%f%z", True),
-        "strict_week_date_time_no_millis": ("%G-W%V-%uT%H:%M:%S%z", True),
-        "strict_weekyear": ("%G", False),
-        "strict_weekyear_week": ("%G-W%V", False),
-        "strict_weekyear_week_day": ("%G-W%V-%u", False),
-        "strict_year": ("%Y", False),
-        "strict_year_month": ("%Y-%m", False),
-        "strict_year_month_day": ("%Y-%m-%d", False),
+        "basic_t_time_no_millis": ("T%H%M%S%z", None),
+        "basic_week_date": ("%GW%V%u", None),
+        "basic_week_date_time": ("%GW%V%uT%H%M%S.%f%z", None),
+        "basic_week_date_time_no_millis": ("%GW%V%uT%H%M%S%z", None),
+        "strict_date": ("%Y-%m-%d", None),
+        "strict_date_hour": ("%Y-%m-%dT%H", None),
+        "strict_date_hour_minute": ("%Y-%m-%dT%H:%M", None),
+        "strict_date_hour_minute_second": ("%Y-%m-%dT%H:%M:%S", None),
+        "strict_date_hour_minute_second_fraction": ("%Y-%m-%dT%H:%M:%S.%f", None),
+        "strict_date_hour_minute_second_millis": ("%Y-%m-%dT%H:%M:%S.%f", None),
+        "strict_date_time": ("%Y-%m-%dT%H:%M:%S.%f%z", None),
+        "strict_date_time_no_millis": ("%Y-%m-%dT%H:%M:%S%z", None),
+        "strict_hour": ("%H", None),
+        "strict_hour_minute": ("%H:%M", None),
+        "strict_hour_minute_second": ("%H:%M:%S", None),
+        "strict_hour_minute_second_fraction": ("%H:%M:%S.%f", None),
+        "strict_hour_minute_second_millis": ("%H:%M:%S.%f", None),
+        "strict_ordinal_date": ("%Y-%j", None),
+        "strict_ordinal_date_time": ("%Y-%jT%H:%M:%S.%f%z", None),
+        "strict_ordinal_date_time_no_millis": ("%Y-%jT%H:%M:%S%z", None),
+        "strict_time": ("%H:%M:%S.%f%z", None),
+        "strict_time_no_millis": ("%H:%M:%S%z", None),
+        "strict_t_time": ("T%H:%M:%S.%f%z", None),
+        "strict_t_time_no_millis": ("T%H:%M:%S%z", None),
+        "strict_week_date":("%G-W%V-%u", None),
+        "strict_week_date_time": ("%G-W%V-%uT%H:%M:%S.%f%z", None),
+        "strict_week_date_time_no_millis": ("%G-W%V-%uT%H:%M:%S%z", None),
+        "strict_weekyear_week_day": ("%G-W%V-%u", None),
+        "strict_year": ("%Y", None),
+        "strict_year_month": ("%Y-%m", None),
+        "strict_year_month_day": ("%Y-%m-%d", None),
     }
+
+    # excluding these formats as pandas throws a ValueError
+    # "strict_weekyear": ("%G", None) - not supported in pandas
+    # "strict_weekyear_week": ("%G-W%V", None),
+    # E   ValueError: ISO year directive '%G' must be used with the ISO week directive '%V' and a weekday directive '%A', '%a', '%w', or '%u'.
