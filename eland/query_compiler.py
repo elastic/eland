@@ -1,3 +1,6 @@
+from typing import Union
+import warnings
+
 import numpy as np
 import pandas as pd
 
@@ -290,8 +293,10 @@ class ElandQueryCompiler:
                     #         }
                     #   1484053499256 - we need to check ES type and format and add conversions like:
                     #   pd.to_datetime(x, unit='ms')
-                    dates_format = self._mappings._date_fields_format
-                    x = date_utils.eland_date_to_pandas_date(x, dates_format.get(field_name))
+                    x = elasticsearch_date_to_pandas_date(
+                        x,
+                        self._mappings.get_date_field_format(field_name)
+                    )
 
                 # Elasticsearch can have multiple values for a field. These are represented as lists, so
                 # create lists for this pivot (see notes above)
@@ -615,3 +620,56 @@ class ElandQueryCompiler:
                 field_to_display_names=self._field_to_display_names.copy(),
                 display_to_field_names=self._display_to_field_names.copy()
             )
+
+
+def elasticsearch_date_to_pandas_date(value: Union[int, str], date_format: str):
+    """
+    Given a specific Elasticsearch format for a date datatype, returns the
+    'partial' `to_datetime` function to parse a given value in that format
+
+    **Date Formats: https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-date-format.html#built-in-date-formats
+
+    Parameters
+    ----------
+    value: Union[int, str]
+        The date value.
+    date_format: str
+        The Elasticsearch date format (ex. 'epoch_millis', 'epoch_second', etc.)
+
+    Returns
+    -------
+    datetime if parsing succeeded.
+    """
+
+    if date_format is None:
+        try:
+            value = int(value)
+            return pd.to_datetime(value, unit='ms')
+        except ValueError:
+            return pd.to_datetime(value)
+    elif date_format == "epoch_millis":
+        return pd.to_datetime(value, unit='ms')
+    elif date_format == "epoch_second":
+        return pd.to_datetime(value, unit='s')
+    elif date_format == "basic_date":
+        return pd.to_datetime(value, format="%Y%m%d")
+    elif date_format == "basic_date_time":
+        return pd.to_datetime(value, format="%Y%m%dT%H%M%S.%f")
+    elif date_format == "basic_date_time_no_millis":
+        return pd.to_datetime(value, format="%Y%m%dT%H%M%S%z")
+    elif date_format == "strict_date_optional_time":
+        return pd.to_datetime(value, format="%Y-%m-%dT%H:%M:%S.%f%z")
+
+    elif date_format == "basic_ordinal_date":
+        return pd.to_datetime(value, format="%Y%j")
+    elif date_format == "basic_ordinal_date_time":
+        return pd.to_datetime(value, format="%Y%jT%H%M%S.%f%z")
+    elif date_format == "basic_ordinal_date_time_no_millis":
+        return pd.to_datetime(value, format="%Y%jT%H%M%S%z")
+    elif date_format == "basic_time":
+        return pd.to_datetime(value, format="%H%M%S.%f%z")
+    else:
+        warnings.warn("The '{}' format is not explicitly supported."
+                      "The parsed date might be wrong.".format(date_format),
+                      Warning)
+        return pd.to_datetime(value)
