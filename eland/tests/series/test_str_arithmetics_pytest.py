@@ -53,4 +53,4 @@ class TestSeriesArithmetics(TestData):
 
     def test_aggregatable_add_non_aggregatable(self):
             with pytest.raises(ValueError):
-                assert self.ed_ecommerce()['customer_gender'] + self.ed_ecommerce()['customer_first_name']
+                assert self.ed_ecommerce()['customer_first_name'] + self.ed_ecommerce()['customer_gender']
