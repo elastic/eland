@@ -57,11 +57,11 @@ class Mappings:
             get_mapping = client.get_mapping(index=index_pattern)
 
             # Get all fields (including all nested) and then all field_caps
-            all_fields = Mappings._extract_fields_from_mapping(get_mapping, date_format=self._date_fields_format)
+            all_fields, self._date_fields_format = Mappings._extract_fields_from_mapping(get_mapping)
             all_fields_caps = client.field_caps(index=index_pattern, fields='*')
 
             # Get top level (not sub-field multifield) mappings
-            source_fields = Mappings._extract_fields_from_mapping(get_mapping, source_only=True)
+            source_fields, _ = Mappings._extract_fields_from_mapping(get_mapping, source_only=True)
 
             # Populate capability matrix of fields
             # field_name, es_dtype, pd_dtype, is_searchable, is_aggregtable, is_source
@@ -121,22 +121,25 @@ class Mappings:
 
         Returns
         -------
-        fields: dict
-            Dict of field names and types
+        fields, dates_format: tuple(dict, dict)
+            where:
+                fields: Dict of field names and types
+                dates_format: Dict of date field names and format
 
         """
         fields = {}
+        dates_format = {}
 
         # Recurse until we get a 'type: xxx'
-        def flatten(x, name='', date_format=None):
+        def flatten(x, name=''):
             if type(x) is dict:
                 for a in x:
                     if a == 'type' and type(x[a]) is str:  # 'type' can be a name of a field
                         field_name = name[:-1]
                         field_type = x[a]
                         # if field_type is 'date' keep track of the format info when available
-                        if date_format is not None and field_type == "date" and "format" in x:
-                            date_format[field_name] = x["format"]
+                        if field_type == "date" and "format" in x:
+                            dates_format[field_name] = x["format"]
                         # If there is a conflicting type, warn - first values added wins
                         if field_name in fields and fields[field_name] != field_type:
                             warnings.warn("Field {} has conflicting types {} != {}".
@@ -147,15 +150,15 @@ class Mappings:
                     elif a == 'properties' or (not source_only and a == 'fields'):
                         flatten(x[a], name)
                     elif not (source_only and a == 'fields'):  # ignore multi-field fields for source_only
-                        flatten(x[a], name + a + '.', date_format)
+                        flatten(x[a], name + a + '.')
 
         for index in mappings:
             if 'properties' in mappings[index]['mappings']:
                 properties = mappings[index]['mappings']['properties']
 
-                flatten(properties, date_format=date_format)
+                flatten(properties)
 
-        return fields
+        return fields, dates_format
 
     @staticmethod
     def _create_capability_matrix(all_fields, source_fields, all_fields_caps):
@@ -371,6 +374,19 @@ class Mappings:
                 Is the field aggregatable in Elasticsearch?
         """
         return self._mappings_capabilities.loc[field_name]
+
+    def get_date_field_format(self, field_name):
+        """
+        Parameters
+        ----------
+        field_name: str
+
+        Returns
+        -------
+        dict
+            A dictionary (for date fields) containing the mapping {field_name:format}
+        """
+        return self._date_fields_format.get(field_name)
 
     def source_field_pd_dtype(self, field_name):
         """
