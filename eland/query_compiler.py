@@ -102,9 +102,6 @@ class ElandQueryCompiler:
     @property
     def dtypes(self):
         columns = self._operations.get_field_names()
-        #if columns is not None:
-        print("STEVE", columns)
-        print(self._name_mapper.field_to_display_names(columns))
 
         return self._mappings.dtypes(columns)
 

@@ -391,6 +391,8 @@ class DataFrame(NDFrame):
          _source: ['timestamp', 'OriginAirportID', 'DestAirportID', 'FlightDelayMin']
          body: {'query': {'bool': {'must': [{'term': {'OriginAirportID': 'AMS'}}, {'range': {'FlightDelayMin': {'gt': 60}}}]}}, 'aggs': {}}
          post_processing: [('sort_index')]
+        'field_to_display_names': {}
+        'display_to_field_names': {}
         <BLANKLINE>
         """
         buf = StringIO()
