@@ -1,3 +1,5 @@
+from io import StringIO
+
 import numpy as np
 import pandas as pd
 
@@ -100,6 +102,9 @@ class ElandQueryCompiler:
     @property
     def dtypes(self):
         columns = self._operations.get_field_names()
+        #if columns is not None:
+        print("STEVE", columns)
+        print(self._name_mapper.field_to_display_names(columns))
 
         return self._mappings.dtypes(columns)
 
@@ -462,6 +467,7 @@ class ElandQueryCompiler:
         self._index.info_es(buf)
         self._mappings.info_es(buf)
         self._operations.info_es(buf)
+        self._name_mapper.info_es(buf)
 
     def describe(self):
         return self._operations.describe(self)
@@ -648,3 +654,7 @@ class ElandQueryCompiler:
                 field_to_display_names=self._field_to_display_names.copy(),
                 display_to_field_names=self._display_to_field_names.copy()
             )
+
+        def info_es(self, buf):
+            buf.write("'field_to_display_names': {}\n".format(self._field_to_display_names))
+            buf.write("'display_to_field_names': {}\n".format(self._display_to_field_names))

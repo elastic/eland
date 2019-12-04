@@ -215,7 +215,7 @@ class Series(NDFrame):
         Returns
         -------
         pandas.Series
-            number of occurences of each value in the column
+            number of occurrences of each value in the column
 
         See Also
         --------
