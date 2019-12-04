@@ -235,8 +235,10 @@ class Operations:
         results = {}
 
         for key, value in aggregatable_field_names.items():
-            for bucket in response['aggregations'][field_names[0]]['buckets']:
-                results[bucket['key']] = bucket['doc_count']
+            # key is aggregatable field, value is label
+            # e.g. key=category.keyword, value=category
+            for bucket in response['aggregations'][key]['buckets']:
+                    results[bucket['key']] = bucket['doc_count']
 
         try:
             name = field_names[0]
