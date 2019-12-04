@@ -147,7 +147,7 @@ ECOMMERCE_MAPPING = {"mappings": {
             }
         },
         "customer_gender": {
-            "type": "keyword"
+            "type": "text"
         },
         "customer_id": {
             "type": "keyword"
