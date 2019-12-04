@@ -285,13 +285,6 @@ class ElandQueryCompiler:
 
                 # Coerce types - for now just datetime
                 if pd_dtype == 'datetime64[ns]':
-                    # TODO  - this doesn't work for certain ES date formats
-                    #   e.g. "@timestamp" : {
-                    #           "type" : "date",
-                    #           "format" : "epoch_millis"
-                    #         }
-                    #   1484053499256 - we need to check ES type and format and add conversions like:
-                    #   pd.to_datetime(x, unit='ms')
                     x = elasticsearch_date_to_pandas_date(
                         x,
                         self._mappings.get_date_field_format(field_name)
@@ -621,7 +614,7 @@ class ElandQueryCompiler:
             )
 
 
-def elasticsearch_date_to_pandas_date(value: Union[int, str], date_format: str):
+def elasticsearch_date_to_pandas_date(value: Union[int, str], date_format: str) -> pd.Timestamp:
     """
     Given a specific Elasticsearch format for a date datatype, returns the
     'partial' `to_datetime` function to parse a given value in that format
@@ -637,7 +630,12 @@ def elasticsearch_date_to_pandas_date(value: Union[int, str], date_format: str):
 
     Returns
     -------
-    datetime if parsing succeeded.
+    datetime: pd.Timestamp
+        From https://www.elastic.co/guide/en/elasticsearch/reference/current/date.html
+        Date formats can be customised, but if no format is specified then it uses the default:
+        "strict_date_optional_time||epoch_millis"
+        Therefore if no format is specified we assume either strict_date_optional_time
+        or epoch_millis.
     """
 
     if date_format is None:
@@ -680,69 +678,125 @@ def elasticsearch_date_to_pandas_date(value: Union[int, str], date_format: str):
         return pd.to_datetime(value, format="%GW%V%uT%H%M%S%z")
     elif date_format == "strict_date":
         return pd.to_datetime(value, format="%Y-%m-%d")
+    elif date_format == "date":
+        return pd.to_datetime(value, format="%Y-%m-%d")
     elif date_format == "strict_date_hour":
+        return pd.to_datetime(value, format="%Y-%m-%dT%H")
+    elif date_format == "date_hour":
         return pd.to_datetime(value, format="%Y-%m-%dT%H")
     elif date_format == "strict_date_hour_minute":
         return pd.to_datetime(value, format="%Y-%m-%dT%H:%M")
+    elif date_format == "date_hour_minute":
+        return pd.to_datetime(value, format="%Y-%m-%dT%H:%M")
     elif date_format == "strict_date_hour_minute_second":
+        return pd.to_datetime(value, format="%Y-%m-%dT%H:%M:%S")
+    elif date_format == "date_hour_minute_second":
         return pd.to_datetime(value, format="%Y-%m-%dT%H:%M:%S")
     elif date_format == "strict_date_hour_minute_second_fraction":
         return pd.to_datetime(value, format="%Y-%m-%dT%H:%M:%S.%f", exact=False)
+    elif date_format == "date_hour_minute_second_fraction":
+        return pd.to_datetime(value, format="%Y-%m-%dT%H:%M:%S.%f", exact=False)
     elif date_format == "strict_date_hour_minute_second_millis":
+        return pd.to_datetime(value, format="%Y-%m-%dT%H:%M:%S.%f", exact=False)
+    elif date_format == "date_hour_minute_second_millis":
         return pd.to_datetime(value, format="%Y-%m-%dT%H:%M:%S.%f", exact=False)
     elif date_format == "strict_date_time":
         return pd.to_datetime(value, format="%Y-%m-%dT%H:%M:%S.%f%z", exact=False)
+    elif date_format == "date_time":
+        return pd.to_datetime(value, format="%Y-%m-%dT%H:%M:%S.%f%z", exact=False)
     elif date_format == "strict_date_time_no_millis":
+        return pd.to_datetime(value, format="%Y-%m-%dT%H:%M:%S%z")
+    elif date_format == "date_time_no_millis":
         return pd.to_datetime(value, format="%Y-%m-%dT%H:%M:%S%z")
     elif date_format == "strict_hour":
         return pd.to_datetime(value, format="%H")
+    elif date_format == "hour":
+        return pd.to_datetime(value, format="%H")
     elif date_format == "strict_hour_minute":
+        return pd.to_datetime(value, format="%H:%M")
+    elif date_format == "hour_minute":
         return pd.to_datetime(value, format="%H:%M")
     elif date_format == "strict_hour_minute_second":
         return pd.to_datetime(value, format="%H:%M:%S")
+    elif date_format == "hour_minute_second":
+        return pd.to_datetime(value, format="%H:%M:%S")
     elif date_format == "strict_hour_minute_second_fraction":
+        return pd.to_datetime(value, format="%H:%M:%S.%f", exact=False)
+    elif date_format == "hour_minute_second_fraction":
         return pd.to_datetime(value, format="%H:%M:%S.%f", exact=False)
     elif date_format == "strict_hour_minute_second_millis":
         return pd.to_datetime(value, format="%H:%M:%S.%f", exact=False)
+    elif date_format == "hour_minute_second_millis":
+        return pd.to_datetime(value, format="%H:%M:%S.%f", exact=False)
     elif date_format == "strict_ordinal_date":
+        return pd.to_datetime(value, format="%Y-%j")
+    elif date_format == "ordinal_date":
         return pd.to_datetime(value, format="%Y-%j")
     elif date_format == "strict_ordinal_date_time":
         return pd.to_datetime(value, format="%Y-%jT%H:%M:%S.%f%z", exact=False)
+    elif date_format == "ordinal_date_time":
+        return pd.to_datetime(value, format="%Y-%jT%H:%M:%S.%f%z", exact=False)
     elif date_format == "strict_ordinal_date_time_no_millis":
+        return pd.to_datetime(value, format="%Y-%jT%H:%M:%S%z")
+    elif date_format == "ordinal_date_time_no_millis":
         return pd.to_datetime(value, format="%Y-%jT%H:%M:%S%z")
     elif date_format == "strict_time":
         return pd.to_datetime(value, format="%H:%M:%S.%f%z", exact=False)
+    elif date_format == "time":
+        return pd.to_datetime(value, format="%H:%M:%S.%f%z", exact=False)
     elif date_format == "strict_time_no_millis":
+        return pd.to_datetime(value, format="%H:%M:%S%z")
+    elif date_format == "time_no_millis":
         return pd.to_datetime(value, format="%H:%M:%S%z")
     elif date_format == "strict_t_time":
         return pd.to_datetime(value, format="T%H:%M:%S.%f%z", exact=False)
+    elif date_format == "t_time":
+        return pd.to_datetime(value, format="T%H:%M:%S.%f%z", exact=False)
     elif date_format == "strict_t_time_no_millis":
+        return pd.to_datetime(value, format="T%H:%M:%S%z")
+    elif date_format == "t_time_no_millis":
         return pd.to_datetime(value, format="T%H:%M:%S%z")
     elif date_format == "strict_week_date":
         return pd.to_datetime(value, format="%G-W%V-%u")
+    elif date_format == "week_date":
+        return pd.to_datetime(value, format="%G-W%V-%u")
     elif date_format == "strict_week_date_time":
+        return pd.to_datetime(value, format="%G-W%V-%uT%H:%M:%S.%f%z", exact=False)
+    elif date_format == "week_date_time":
         return pd.to_datetime(value, format="%G-W%V-%uT%H:%M:%S.%f%z", exact=False)
     elif date_format == "strict_week_date_time_no_millis":
         return pd.to_datetime(value, format="%G-W%V-%uT%H:%M:%S%z")
-    elif date_format == "strict_weekyear":
+    elif date_format == "week_date_time_no_millis":
+        return pd.to_datetime(value, format="%G-W%V-%uT%H:%M:%S%z")
+    elif date_format == "strict_weekyear" or date_format == "weekyear":
         # TODO investigate if there is a way of converting this
         raise NotImplementedError("strict_weekyear is not implemented due to support in pandas")
         return pd.to_datetime(value, format="%G")
         # Not supported in pandas
-        # ValueError: ISO year directive '%G' must be used with the ISO week directive '%V' and a weekday directive '%A', '%a', '%w', or '%u'.
-    elif date_format == "strict_weekyear_week":
+        # ValueError: ISO year directive '%G' must be used with the ISO week directive '%V'
+        # and a weekday directive '%A', '%a', '%w', or '%u'.
+    elif date_format == "strict_weekyear_week" or date_format == "weekyear_week":
         # TODO investigate if there is a way of converting this
         raise NotImplementedError("strict_weekyear_week is not implemented due to support in pandas")
         return pd.to_datetime(value, format="%G-W%V")
         # Not supported in pandas
-        # ValueError: ISO year directive '%G' must be used with the ISO week directive '%V' and a weekday directive '%A', '%a', '%w', or '%u'.
+        # ValueError: ISO year directive '%G' must be used with the ISO week directive '%V'
+        # and a weekday directive '%A', '%a', '%w', or '%u'.
     elif date_format == "strict_weekyear_week_day":
+        return pd.to_datetime(value, format="%G-W%V-%u")
+    elif date_format == "weekyear_week_day":
         return pd.to_datetime(value, format="%G-W%V-%u")
     elif date_format == "strict_year":
         return pd.to_datetime(value, format="%Y")
+    elif date_format == "year":
+        return pd.to_datetime(value, format="%Y")
     elif date_format == "strict_year_month":
         return pd.to_datetime(value, format="%Y-%m")
+    elif date_format == "year_month":
+        return pd.to_datetime(value, format="%Y-%m")
     elif date_format == "strict_year_month_day":
+        return pd.to_datetime(value, format="%Y-%m-%d")
+    elif date_format == "year_month_day":
         return pd.to_datetime(value, format="%Y-%m-%d")
     else:
         warnings.warn("The '{}' format is not explicitly supported."
