@@ -1205,16 +1205,16 @@ class TailAction(PostProcessingAction):
 
 
 class SortFieldAction(PostProcessingAction):
-    def __init__(self, input):
+    def __init__(self, sort_params_string):
         super().__init__("sort_field")
 
-        if input is None:
+        if sort_params_string is None:
             raise ValueError("Expected valid string")
 
         # Split string
-        sort_params = input.split(":")
+        sort_params = sort_params_string.split(":")
         if len(sort_params) != 2:
-            raise ValueError("Expected ES sort params string (e.g. _doc:desc)")
+            raise ValueError("Expected ES sort params string (e.g. _doc:desc). Got '{}'".format(sort_params_string))
 
         self._sort_field = sort_params[0]
         self._sort_order = Operations.SortOrder.from_string(sort_params[1])
