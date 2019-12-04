@@ -23,7 +23,7 @@ class TestDataFrameDateTime(TestData):
         """ setup any state specific to the execution of the given class (which
         usually contains tests).
         """
-        es = Elasticsearch(ES_TEST_CLIENT)
+        es = ES_TEST_CLIENT
         if es.indices.exists(cls.time_index_name):
             es.indices.delete(index=cls.time_index_name)
         dts = [datetime.strptime(time, "%Y-%m-%dT%H:%M:%S.%f%z")
@@ -52,7 +52,7 @@ class TestDataFrameDateTime(TestData):
         """ teardown any state that was previously setup with a call to
         setup_class.
         """
-        es = Elasticsearch(ES_TEST_CLIENT)
+        es = ES_TEST_CLIENT
         es.indices.delete(index=cls.time_index_name)
 
     def test_datetime_to_ms(self):
@@ -88,7 +88,7 @@ class TestDataFrameDateTime(TestData):
 
     def test_all_formats(self):
         index_name = self.time_index_name
-        ed_df = ed.read_es(ELASTICSEARCH_HOST, index_name)
+        ed_df = ed.read_es(ES_TEST_CLIENT, index_name)
 
         for format_name in self.time_formats.keys():
             times = [pd.to_datetime(datetime.strptime(dt, "%Y-%m-%dT%H:%M:%S.%f%z")

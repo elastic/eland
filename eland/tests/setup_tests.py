@@ -51,6 +51,7 @@ def _setup_data(es):
 
         print("Done", index_name)
 
+
 def _update_max_compilations_limit(es, limit="10000/1m"):
     print('Updating script.max_compilations_rate to ', limit)
     cluster_client = ClusterClient(es)
