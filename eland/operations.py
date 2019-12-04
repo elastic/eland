@@ -1,4 +1,5 @@
 import copy
+from abc import ABC, abstractmethod
 from enum import Enum
 
 import numpy as np
@@ -671,7 +672,7 @@ class Operations:
     def _count_post_processing(post_processing):
         size = None
         for action in post_processing:
-            if isinstance(SizeTask, action):
+            if isinstance(action, SizeTask):
                 if size is None or action.size() < size:
                     size = action.size()
 
@@ -680,7 +681,7 @@ class Operations:
     @staticmethod
     def _apply_df_post_processing(df, post_processing):
         for action in post_processing:
-                df = action.resolve_action(df)
+            df = action.resolve_action(df)
 
         return df
 
@@ -745,35 +746,39 @@ class Operations:
 # -------------------------------------------------------------------------------------------------------------------- #
 # Task's                                                                                                               #
 # -------------------------------------------------------------------------------------------------------------------- #
-class Task:
+class Task(ABC):
     """
     Abstract class for tasks
 
     Parameters
     ----------
-        type: str
+        task_type: str
             The task type (e.g. head, tail etc.)
     """
 
-    def __init__(self, type):
-        self._type = type
+    def __init__(self, task_type):
+        self._task_type = task_type
 
     @property
     def type(self):
-        return self._type
+        return self._task_type
 
+    @abstractmethod
     def resolve_task(self, query_params, post_processing):
         pass
 
+    @abstractmethod
+    def __repr__(self):
+        pass
 
 class SizeTask(Task):
-    def __init__(self, type):
-        super().__init__(type)
+    def __init__(self, task_type):
+        super().__init__(task_type)
 
+    @abstractmethod
     def size(self):
         # must override
         pass
-
 
 class HeadTask(SizeTask):
     def __init__(self, sort_field, count):
@@ -782,6 +787,9 @@ class HeadTask(SizeTask):
         # Add a task that is an ascending sort with size=count
         self._sort_field = sort_field
         self._count = count
+
+    def __repr__(self):
+        return "('{}': ('sort_field': '{}', 'count': {}))".format(self._task_type, self._sort_field, self._count)
 
     def resolve_task(self, query_params, post_processing):
         # head - sort asc, size n
@@ -817,7 +825,6 @@ class HeadTask(SizeTask):
     def size(self):
         return self._count
 
-
 class TailTask(SizeTask):
     def __init__(self, sort_field, count):
         super().__init__("tail")
@@ -825,6 +832,9 @@ class TailTask(SizeTask):
         # Add a task that is descending sort with size=count
         self._sort_field = sort_field
         self._count = count
+
+    def __repr__(self):
+        return "('{}': ('sort_field': '{}', 'count': {}))".format(self._task_type, self._sort_field, self._count)
 
     def resolve_task(self, query_params, post_processing):
         # tail - sort desc, size n, post-process sort asc
@@ -868,6 +878,9 @@ class TailTask(SizeTask):
 
         return query_params, post_processing
 
+    def size(self):
+        return self._count
+
 
 class QueryIdsTask(Task):
     def __init__(self, must, ids):
@@ -890,6 +903,8 @@ class QueryIdsTask(Task):
 
         return query_params, post_processing
 
+    def __repr__(self):
+        return "('{}': ('must': {}, 'ids': {}))".format(self._task_type, self._must, self._ids)
 
 class QueryTermsTask(Task):
     def __init__(self, must, field, terms):
@@ -911,11 +926,13 @@ class QueryTermsTask(Task):
         self._field = field
         self._terms = terms
 
+    def __repr__(self):
+        return "('{}': ('must': {}, 'field': '{}', 'terms': {}))".format(self._task_type, self._must, self._field, self._terms)
+
     def resolve_task(self, query_params, post_processing):
         query_params['query'].terms(self._field, self._terms, must=self._must)
 
         return query_params, post_processing
-
 
 class BooleanFilterTask(Task):
     def __init__(self, boolean_filter):
@@ -929,11 +946,13 @@ class BooleanFilterTask(Task):
 
         self._boolean_filter = boolean_filter
 
+    def __repr__(self):
+        return "('{}': ('boolean_filter': {}))".format(self._task_type, repr(self._boolean_filter))
+
     def resolve_task(self, query_params, post_processing):
         query_params['query'].update_boolean_filter(self._boolean_filter)
 
         return query_params, post_processing
-
 
 class ArithmeticOpFieldsTask(Task):
     def __init__(self, field_name, op_name, left_field, right_field, op_type):
@@ -944,6 +963,16 @@ class ArithmeticOpFieldsTask(Task):
         self._left_field = left_field
         self._right_field = right_field
         self._op_type = op_type
+
+    def __repr__(self):
+        return "('{}': (" \
+               "'field_name': {}, " \
+               "'op_name': {}, " \
+               "'left_field': {}, " \
+               "'right_field': {}, " \
+               "'op_type': {}" \
+               "))" \
+            .format(self._task_type, self._field_name, self._op_name, self._left_field, self._right_field, self._op_type)
 
     def resolve_task(self, query_params, post_processing):
         # https://www.elastic.co/guide/en/elasticsearch/painless/current/painless-api-reference-shared-java-lang.html#painless-api-reference-shared-Math
@@ -1115,23 +1144,28 @@ class ArithmeticOpFieldsTask(Task):
 # -------------------------------------------------------------------------------------------------------------------- #
 # PostProcessingAction's
 # -------------------------------------------------------------------------------------------------------------------- #
-class PostProcessingAction:
-    def __init__(self, type):
+class PostProcessingAction(ABC):
+    def __init__(self, action_type):
         """
         Abstract class for postprocessing actions
 
         Parameters
         ----------
-            type: str
+            action_type: str
                 The action type (e.g. sort_index, head etc.)
         """
-        self._type = type
+        self._action_type = action_type
 
     @property
     def type(self):
-        return self._type
+        return self._action_type
 
+    @abstractmethod
     def resolve_action(self, df):
+        pass
+
+    @abstractmethod
+    def __repr__(self):
         pass
 
 class SortIndexAction(PostProcessingAction):
@@ -1140,6 +1174,9 @@ class SortIndexAction(PostProcessingAction):
 
     def resolve_action(self, df):
         return df.sort_index()
+
+    def __repr__(self):
+        return "('{}')".format(self.type)
 
 class HeadAction(PostProcessingAction):
     def __init__(self, count):
@@ -1150,6 +1187,10 @@ class HeadAction(PostProcessingAction):
     def resolve_action(self, df):
         return df.head(self._count)
 
+    def __repr__(self):
+        return "('{}': ('count': {}))".format(self.type, self._count)
+
+
 class TailAction(PostProcessingAction):
     def __init__(self, count):
         super().__init__("tail")
@@ -1159,12 +1200,21 @@ class TailAction(PostProcessingAction):
     def resolve_action(self, df):
         return df.tail(self._count)
 
+    def __repr__(self):
+        return "('{}': ('count': {}))".format(self.type, self._count)
+
+
 class SortFieldAction(PostProcessingAction):
     def __init__(self, input):
         super().__init__("sort_field")
 
+        if input is None:
+            raise ValueError("Expected valid string")
+
         # Split string
         sort_params = input.split(":")
+        if len(sort_params) != 2:
+            raise ValueError("Expected ES sort params string (e.g. _doc:desc)")
 
         self._sort_field = sort_params[0]
         self._sort_order = Operations.SortOrder.from_string(sort_params[1])
@@ -1172,4 +1222,7 @@ class SortFieldAction(PostProcessingAction):
     def resolve_action(self, df):
         if self._sort_order == Operations.SortOrder.ASC:
             return df.sort_values(self._sort_field, True)
-        return df.sort_values(self._sort_field, false)
+        return df.sort_values(self._sort_field, False)
+
+    def __repr__(self):
+        return "('{}': ('sort_field': '{}', 'sort_order': {}))".format(self.type, self._sort_field, self._sort_order)
