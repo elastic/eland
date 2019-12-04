@@ -444,6 +444,7 @@ class Mappings:
 
         if not aggregatables:
             raise ValueError("Aggregations not supported for ", field_name)
+
         return aggregatables
 
     def numeric_source_fields(self, field_names, include_bool=True):
