@@ -43,7 +43,6 @@ class TestSeriesArithmetics(TestData):
         with pytest.raises(ValueError):
             assert self.ed_ecommerce()['customer_gender'] + "is the gender"
 
-
     def teststr_add_non_aggregatable(self):
         with pytest.raises(ValueError):
             assert "The gender is: " + self.ed_ecommerce()['customer_gender']
