@@ -1,3 +1,5 @@
+ [![Build Status](https://clients-ci.elastic.co/buildStatus/icon?job=elastic%2Beland%2Bmaster)](https://clients-ci.elastic.co/job/elastic+eland+master/)
+
 # What is it?
 
 eland is a elasticsearch client Python package to analyse, explore and manipulate data that resides in elasticsearch. 
