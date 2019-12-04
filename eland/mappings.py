@@ -365,7 +365,11 @@ class Mappings:
             aggregatable: bool
                 Is the field aggregatable in Elasticsearch?
         """
-        return self._mappings_capabilities.loc[field_name]
+        try:
+            field_capabilities = self._mappings_capabilities.loc[field_name]
+        except KeyError:
+            field_capabilities = pd.Series()
+        return field_capabilities
 
     def source_field_pd_dtype(self, field_name):
         """
@@ -426,9 +430,7 @@ class Mappings:
         """
         if field_names is None:
             field_names = self.source_fields()
-
         aggregatables = {}
-
         for field_name in field_names:
             capabilities = self.field_capabilities(field_name)
             if capabilities['aggregatable']:
@@ -437,12 +439,11 @@ class Mappings:
                 # Try 'field_name.keyword'
                 field_name_keyword = field_name + '.keyword'
                 capabilities = self.field_capabilities(field_name_keyword)
-                if capabilities['aggregatable']:
+                if not capabilities.empty and capabilities.get('aggregatable'):
                     aggregatables[field_name_keyword] = field_name
-                else:
-                    # Aggregations not supported for this field
-                    raise ValueError("Aggregations not supported for ", field_name)
 
+        if not aggregatables:
+            raise ValueError("Aggregations not supported for ", field_name)
         return aggregatables
 
     def numeric_source_fields(self, field_names, include_bool=True):

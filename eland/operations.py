@@ -249,7 +249,7 @@ class Operations:
         results = {}
 
         for key, value in aggregatable_field_names.items():
-            for bucket in response['aggregations'][field_names[0]]['buckets']:
+            for bucket in response['aggregations'][key]['buckets']:
                 results[bucket['key']] = bucket['doc_count']
 
         try:
