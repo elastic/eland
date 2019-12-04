@@ -52,6 +52,7 @@ class TestDataFrameDateTime(TestData):
         """ teardown any state that was previously setup with a call to
         setup_class.
         """
+
         es = ES_TEST_CLIENT
         es.indices.delete(index=cls.time_index_name)
 
