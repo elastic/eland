@@ -75,32 +75,6 @@ def _setup_test_nested(es):
     helpers.bulk(es, TEST_NESTED_USER_GROUP_DOCS)
 
 
-def _setup_test_date_formats(es: Elasticsearch):
-    DATA_LIST_STATIC = [
-        (TEST_DATE_IMPLICIT_EPOCH_MILLIS_NAME, TEST_DATE_IMPLICIT_EPOCH_MILLIS_MAPPINGS,
-         TEST_DATE_IMPLICIT_EPOCH_MILLIS_DOCS),
-
-        (TEST_DATE_IMPLICIT_STRICT_DATE_OPTIONAL_TIME_NAME,
-         TEST_DATE_IMPLICIT_STRICT_DATE_OPTIONAL_TIME_MAPPINGS,
-         TEST_DATE_IMPLICIT_STRICT_DATE_OPTIONAL_TIME_DOCS),
-
-        (TEST_DATE_EXPLICIT_EPOCH_MILLIS_NAME, TEST_DATE_EXPLICIT_EPOCH_MILLIS_MAPPINGS,
-         TEST_DATE_EXPLICIT_EPOCH_MILLIS_DOCS),
-
-        (TEST_DATE_EXPLICIT_EPOCH_SECOND_NAME, TEST_DATE_EXPLICIT_EPOCH_SECOND_MAPPINGS,
-         TEST_DATE_EXPLICIT_EPOCH_SECOND_DOCS)
-    ]
-
-    for data in DATA_LIST_STATIC:
-        print("Deleting index:", data[0])
-        es.indices.delete(index=data[0], ignore=[400, 404])
-        print("Creating index:", data[0])
-        es.indices.create(index=data[0], body=data[1])
-        print("Adding", len(data[2]), "items to index:", data[0])
-        for document in data[2]:
-            es.index(index=data[0], body=document)
-
-
 if __name__ == '__main__':
     # Create connection to Elasticsearch - use defaults
     print('Connecting to ES', ELASTICSEARCH_HOST)
