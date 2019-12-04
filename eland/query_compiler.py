@@ -8,7 +8,6 @@ from eland import Client
 from eland import Index
 from eland import Mappings
 from eland import Operations
-from eland import date_utils
 
 
 class ElandQueryCompiler:
