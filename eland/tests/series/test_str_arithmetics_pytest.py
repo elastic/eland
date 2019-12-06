@@ -38,3 +38,19 @@ class TestSeriesArithmetics(TestData):
         pdadd = "The last name is: " + self.pd_ecommerce()['customer_last_name']
 
         assert_pandas_eland_series_equal(pdadd, edadd)
+
+    def test_non_aggregatable_add_str(self):
+        with pytest.raises(ValueError):
+            assert self.ed_ecommerce()['customer_gender'] + "is the gender"
+
+    def teststr_add_non_aggregatable(self):
+        with pytest.raises(ValueError):
+            assert "The gender is: " + self.ed_ecommerce()['customer_gender']
+
+    def test_non_aggregatable_add_aggregatable(self):
+        with pytest.raises(ValueError):
+            assert self.ed_ecommerce()['customer_gender'] + self.ed_ecommerce()['customer_first_name']
+
+    def test_aggregatable_add_non_aggregatable(self):
+            with pytest.raises(ValueError):
+                assert self.ed_ecommerce()['customer_first_name'] + self.ed_ecommerce()['customer_gender']

@@ -45,3 +45,8 @@ class TestSeriesValueCounts(TestData):
         ed_s = self.ed_flights()['Carrier']
         with pytest.raises(ValueError):
             assert ed_s.value_counts(es_size=-9)
+
+    def test_value_counts_non_aggregatable(self):
+        ed_s = self.ed_ecommerce()['customer_gender']
+        with pytest.raises(ValueError):
+            assert ed_s.value_counts()

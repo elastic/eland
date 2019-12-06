@@ -1051,7 +1051,10 @@ class Series(NDFrame):
 
             else:
                 # TODO - support limited ops on strings https://github.com/elastic/eland/issues/65
-                raise TypeError("Unsupported operation: '{}' {} '{}'".format(self._dtype, method_name, right._dtype))
+                raise TypeError(
+                    "unsupported operation type(s) ['{}'] for operands ['{}' with dtype '{}', '{}']"
+                    .format(method_name, type(self), self._dtype, type(right).__name__)
+                )
 
         # check left number and right numeric series
         elif np.issubdtype(np.dtype(type(right)), np.number) and np.issubdtype(self._dtype, np.number):
@@ -1085,7 +1088,8 @@ class Series(NDFrame):
         else:
             # TODO - support limited ops on strings https://github.com/elastic/eland/issues/65
             raise TypeError(
-                "unsupported operand type(s) for '{}' {} '{}'".format(type(self), method_name, type(right))
+                "unsupported operation type(s) ['{}'] for operands ['{}' with dtype '{}', '{}']"
+                .format(method_name, type(self), self._dtype, type(right).__name__)
             )
 
     def _numeric_rop(self, left, method_name, op_type=None):
@@ -1127,7 +1131,8 @@ class Series(NDFrame):
         else:
             # TODO - support limited ops on strings https://github.com/elastic/eland/issues/65
             raise TypeError(
-                "unsupported operand type(s) for '{}' {} '{}'".format(type(self), method_name, type(left))
+                "unsupported operation type(s) ['{}'] for operands ['{}' with dtype '{}', '{}']"
+                .format(op_method_name, type(self), self._dtype, type(left).__name__)
             )
 
     def max(self):

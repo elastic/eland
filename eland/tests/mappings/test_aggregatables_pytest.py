@@ -15,7 +15,6 @@ class TestMappingsAggregatables(TestData):
                     'customer_birth_date': 'customer_birth_date',
                     'customer_first_name.keyword': 'customer_first_name',
                     'customer_full_name.keyword': 'customer_full_name',
-                    'customer_gender': 'customer_gender',
                     'customer_id': 'customer_id',
                     'customer_last_name.keyword': 'customer_last_name',
                     'customer_phone': 'customer_phone',
