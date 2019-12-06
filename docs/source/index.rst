@@ -25,6 +25,8 @@ In general, the data resides in elasticsearch and not in memory, which allows el
    reference/index
    implementation/index
    development/index
+   examples/index
+    
 
 * :doc:`reference/index`
 
@@ -43,3 +45,6 @@ In general, the data resides in elasticsearch and not in memory, which allows el
 * :doc:`development/index`
 
   * :doc:`development/contributing`
+
+* :doc:`examples/index`
+

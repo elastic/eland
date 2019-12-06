@@ -2,4 +2,5 @@ elasticsearch>=7.0.5
 pandas==0.25.1
 matplotlib
 pytest>=5.2.1
+nbval
 numpydoc==0.8
