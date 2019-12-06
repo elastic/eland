@@ -1,7 +1,7 @@
 """
 NDFrame
 ---------
-Base class for eland.DataFrame and eland.Series.
+Abstract base class for eland.DataFrame and eland.Series.
 
 The underlying data resides in Elasticsearch and the API aligns as much as
 possible with pandas APIs.
@@ -24,6 +24,7 @@ only Elasticsearch aggregatable fields can be aggregated or grouped.
 """
 
 import sys
+from abc import ABC
 
 import pandas as pd
 from pandas.core.dtypes.common import is_list_like
@@ -32,7 +33,7 @@ from pandas.util._validators import validate_bool_kwarg
 from eland import ElandQueryCompiler
 
 
-class NDFrame:
+class NDFrame(ABC):
 
     def __init__(self,
                  client=None,

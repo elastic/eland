@@ -85,3 +85,10 @@ class TestDataFrameHeadTail(TestData):
         ed_head_0 = ed_flights.head(0)
         pd_head_0 = pd_flights.head(0)
         assert_pandas_eland_frame_equal(pd_head_0, ed_head_0)
+
+    def test_doc_test_tail(self):
+        df = self.ed_flights()
+        df = df[(df.OriginAirportID == 'AMS') & (df.FlightDelayMin > 60)]
+        df = df[['timestamp', 'OriginAirportID', 'DestAirportID', 'FlightDelayMin']]
+        df = df.tail()
+        print(df)

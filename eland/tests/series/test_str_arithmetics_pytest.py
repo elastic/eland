@@ -20,8 +20,7 @@ class TestSeriesArithmetics(TestData):
         with pytest.raises(TypeError):
             assert self.ed_ecommerce()['total_quantity'] + self.ed_ecommerce()['currency']
 
-    def test_str_add_ser(self):
-
+    def test_ser_add_ser(self):
         edadd = self.ed_ecommerce()['customer_first_name'] + self.ed_ecommerce()['customer_last_name']
         pdadd = self.pd_ecommerce()['customer_first_name'] + self.pd_ecommerce()['customer_last_name']
 
@@ -33,9 +32,28 @@ class TestSeriesArithmetics(TestData):
 
         assert_pandas_eland_series_equal(pdadd, edadd)
 
-    def test_ser_add_ser(self):
+    def test_str_add_ser(self):
         edadd = "The last name is: " + self.ed_ecommerce()['customer_last_name']
         pdadd = "The last name is: " + self.pd_ecommerce()['customer_last_name']
+
+        assert_pandas_eland_series_equal(pdadd, edadd)
+
+    def test_bad_str_add_ser(self):
+        # TODO encode special characters better
+        #      Elasticsearch accepts this, but it will cause problems
+        edadd = " *" + self.ed_ecommerce()['customer_last_name']
+        pdadd = " *" + self.pd_ecommerce()['customer_last_name']
+
+        assert_pandas_eland_series_equal(pdadd, edadd)
+
+
+    def test_ser_add_str_add_ser(self):
+        pdadd = self.pd_ecommerce()['customer_first_name'] + self.pd_ecommerce()['customer_last_name']
+        print(pdadd.name)
+        edadd = self.ed_ecommerce()['customer_first_name'] + self.ed_ecommerce()['customer_last_name']
+        print(edadd.name)
+
+        print(edadd.info_es())
 
         assert_pandas_eland_series_equal(pdadd, edadd)
 

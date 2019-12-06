@@ -385,12 +385,14 @@ class DataFrame(NDFrame):
         <BLANKLINE>
         [27 rows x 5 columns]
         Operations:
-         tasks: [('boolean_filter', {'bool': {'must': [{'term': {'OriginAirportID': 'AMS'}}, {'range': {'FlightDelayMin': {'gt': 60}}}]}}), ('field_names', ['timestamp', 'OriginAirportID', 'DestAirportID', 'FlightDelayMin']), ('tail', ('_doc', 5))]
+         tasks: [('boolean_filter': ('boolean_filter': {'bool': {'must': [{'term': {'OriginAirportID': 'AMS'}}, {'range': {'FlightDelayMin': {'gt': 60}}}]}})), ('tail': ('sort_field': '_doc', 'count': 5))]
          size: 5
          sort_params: _doc:desc
          _source: ['timestamp', 'OriginAirportID', 'DestAirportID', 'FlightDelayMin']
          body: {'query': {'bool': {'must': [{'term': {'OriginAirportID': 'AMS'}}, {'range': {'FlightDelayMin': {'gt': 60}}}]}}, 'aggs': {}}
-         post_processing: ['sort_index']
+         post_processing: [('sort_index')]
+        'field_to_display_names': {}
+        'display_to_field_names': {}
         <BLANKLINE>
         """
         buf = StringIO()

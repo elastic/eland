@@ -461,6 +461,7 @@ class ElandQueryCompiler:
         self._index.info_es(buf)
         self._mappings.info_es(buf)
         self._operations.info_es(buf)
+        self._name_mapper.info_es(buf)
 
     def describe(self):
         return self._operations.describe(self)
@@ -548,7 +549,7 @@ class ElandQueryCompiler:
         else:
             raise ValueError(
                 "Can not perform arithmetic operations on non aggregatable fields"
-                "One of [{}, {}] is not aggregatable.".format(self.name, right.name)
+                "One of [{}, {}] is not aggregatable.".format(self_field, right_field)
         )
 
     def arithmetic_op_fields(self, new_field_name, op, left_field, right_field, op_type=None):
@@ -648,6 +649,9 @@ class ElandQueryCompiler:
                 display_to_field_names=self._display_to_field_names.copy()
             )
 
+        def info_es(self, buf):
+            buf.write("'field_to_display_names': {}\n".format(self._field_to_display_names))
+            buf.write("'display_to_field_names': {}\n".format(self._display_to_field_names))
 
 def elasticsearch_date_to_pandas_date(value: Union[int, str], date_format: str) -> pd.Timestamp:
     """

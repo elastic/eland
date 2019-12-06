@@ -1,11 +1,12 @@
 import copy
-from enum import Enum
 
-import numpy as np
 import pandas as pd
 
 from eland import Index
 from eland import Query
+from eland.actions import SortFieldAction
+from eland.tasks import HeadTask, TailTask, BooleanFilterTask, ArithmeticOpFieldsTask, QueryTermsTask, \
+    QueryIdsTask, SortOrder, SizeTask
 
 
 class Operations:
@@ -20,87 +21,46 @@ class Operations:
     This is maintained as a 'task graph' (inspired by dask)
     (see https://docs.dask.org/en/latest/spec.html)
     """
-
-    class SortOrder(Enum):
-        ASC = 0
-        DESC = 1
-
-        @staticmethod
-        def reverse(order):
-            if order == Operations.SortOrder.ASC:
-                return Operations.SortOrder.DESC
-
-            return Operations.SortOrder.ASC
-
-        @staticmethod
-        def to_string(order):
-            if order == Operations.SortOrder.ASC:
-                return "asc"
-
-            return "desc"
-
-        @staticmethod
-        def from_string(order):
-            if order == "asc":
-                return Operations.SortOrder.ASC
-
-            return Operations.SortOrder.DESC
-
-    def __init__(self, tasks=None):
+    def __init__(self, tasks=None, field_names=None):
         if tasks is None:
             self._tasks = []
         else:
             self._tasks = tasks
+        self._field_names = field_names
 
     def __constructor__(self, *args, **kwargs):
         return type(self)(*args, **kwargs)
 
     def copy(self):
-        return self.__constructor__(tasks=copy.deepcopy(self._tasks))
+        return self.__constructor__(tasks=copy.deepcopy(self._tasks), field_names=copy.deepcopy(self._field_names))
 
     def head(self, index, n):
         # Add a task that is an ascending sort with size=n
-        task = ('head', (index.sort_field, n))
+        task = HeadTask(index.sort_field, n)
         self._tasks.append(task)
 
     def tail(self, index, n):
         # Add a task that is descending sort with size=n
-        task = ('tail', (index.sort_field, n))
+        task = TailTask(index.sort_field, n)
         self._tasks.append(task)
 
     def arithmetic_op_fields(self, field_name, op_name, left_field, right_field, op_type=None):
-        if op_type:
-            task = ('arithmetic_op_fields', (field_name, (op_name, (left_field, right_field))), op_type)
-        else:
-            task = ('arithmetic_op_fields', (field_name, (op_name, (left_field, right_field))))
         # Set this as a column we want to retrieve
         self.set_field_names([field_name])
 
+        task = ArithmeticOpFieldsTask(field_name, op_name, left_field, right_field, op_type)
         self._tasks.append(task)
 
     def set_field_names(self, field_names):
-        # Setting field_names at different phases of the task list may result in different
-        # operations. So instead of setting field_names once, set when it happens in call chain
         if not isinstance(field_names, list):
             field_names = list(field_names)
 
-        # TODO - field_name renaming
-        # TODO - validate we are setting field_names to a subset of last field_names?
-        task = ('field_names', field_names)
-        self._tasks.append(task)
-        # Iterate backwards through task list looking for last 'field_names' task
-        for task in reversed(self._tasks):
-            if task[0] == 'field_names':
-                return task[1]
-        return None
+        self._field_names = field_names
+
+        return self._field_names
 
     def get_field_names(self):
-        # Iterate backwards through task list looking for last 'field_names' task
-        for task in reversed(self._tasks):
-            if task[0] == 'field_names':
-                return task[1]
-
-        return None
+        return self._field_names
 
     def __repr__(self):
         return repr(self._tasks)
@@ -248,7 +208,9 @@ class Operations:
 
         results = {}
 
-        for key, value in aggregatable_field_names.items():
+        for key in aggregatable_field_names.keys():
+            # key is aggregatable field, value is label
+            # e.g. key=category.keyword, value=category
             for bucket in response['aggregations'][key]['buckets']:
                 results[bucket['key']] = bucket['doc_count']
 
@@ -597,7 +559,7 @@ class Operations:
                 _source=field_names)
             # create post sort
             if sort_params is not None:
-                post_processing.append(self._sort_params_to_postprocessing(sort_params))
+                post_processing.append(SortFieldAction(sort_params))
 
         if is_scan:
             while True:
@@ -610,11 +572,6 @@ class Operations:
             partial_result, df = query_compiler._es_results_to_pandas(es_results)
             df = self._apply_df_post_processing(df, post_processing)
             collector.collect(df)
-
-    def iloc(self, index, field_names):
-        # index and field_names are indexers
-        task = ('iloc', (index, field_names))
-        self._tasks.append(task)
 
     def index_count(self, query_compiler, field):
         # field is the index field so count values
@@ -671,28 +628,16 @@ class Operations:
         # b not in ['a','b','c']
         # For now use term queries
         if field == Index.ID_INDEX_FIELD:
-            task = ('query_ids', ('must_not', items))
+            task = QueryIdsTask(False, items)
         else:
-            task = ('query_terms', ('must_not', (field, items)))
+            task = QueryTermsTask(False, field, items)
         self._tasks.append(task)
-
-    @staticmethod
-    def _sort_params_to_postprocessing(input):
-        # Split string
-        sort_params = input.split(":")
-
-        query_sort_field = sort_params[0]
-        query_sort_order = Operations.SortOrder.from_string(sort_params[1])
-
-        task = ('sort_field', (query_sort_field, query_sort_order))
-
-        return task
 
     @staticmethod
     def _query_params_to_size_and_sort(query_params):
         sort_params = None
         if query_params['query_sort_field'] and query_params['query_sort_order']:
-            sort_params = query_params['query_sort_field'] + ":" + Operations.SortOrder.to_string(
+            sort_params = query_params['query_sort_field'] + ":" + SortOrder.to_string(
                 query_params['query_sort_order'])
 
         size = query_params['query_size']
@@ -703,37 +648,16 @@ class Operations:
     def _count_post_processing(post_processing):
         size = None
         for action in post_processing:
-            if action[0] == 'head' or action[0] == 'tail':
-                if size is None or action[1][1] < size:
-                    size = action[1][1]
+            if isinstance(action, SizeTask):
+                if size is None or action.size() < size:
+                    size = action.size()
 
         return size
 
     @staticmethod
     def _apply_df_post_processing(df, post_processing):
         for action in post_processing:
-            if action == 'sort_index':
-                df = df.sort_index()
-            elif action[0] == 'head':
-                df = df.head(action[1][1])
-            elif action[0] == 'tail':
-                df = df.tail(action[1][1])
-            elif action[0] == 'sort_field':
-                sort_field = action[1][0]
-                sort_order = action[1][1]
-                if sort_order == Operations.SortOrder.ASC:
-                    df = df.sort_values(sort_field, True)
-                else:
-                    df = df.sort_values(sort_field, False)
-            elif action[0] == 'iloc':
-                index_indexer = action[1][0]
-                field_name_indexer = action[1][1]
-                if index_indexer is None:
-                    index_indexer = slice(None)
-                if field_name_indexer is None:
-                    field_name_indexer = slice(None)
-                df = df.iloc[index_indexer, field_name_indexer]
-            # field_names could be in here (and we ignore it)
+            df = action.resolve_action(df)
 
         return df
 
@@ -752,337 +676,7 @@ class Operations:
         post_processing = []
 
         for task in self._tasks:
-            if task[0] == 'head':
-                query_params, post_processing = self._resolve_head(task, query_params, post_processing)
-            elif task[0] == 'tail':
-                query_params, post_processing = self._resolve_tail(task, query_params, post_processing)
-            elif task[0] == 'iloc':
-                query_params, post_processing = self._resolve_iloc(task, query_params, post_processing)
-            elif task[0] == 'query_ids':
-                query_params, post_processing = self._resolve_query_ids(task, query_params, post_processing)
-            elif task[0] == 'query_terms':
-                query_params, post_processing = self._resolve_query_terms(task, query_params, post_processing)
-            elif task[0] == 'boolean_filter':
-                query_params, post_processing = self._resolve_boolean_filter(task, query_params, post_processing)
-            elif task[0] == 'arithmetic_op_fields':
-                query_params, post_processing = self._resolve_arithmetic_op_fields(task, query_params, post_processing)
-            else:  # a lot of operations simply post-process the dataframe - put these straight through
-                query_params, post_processing = self._resolve_post_processing_task(task, query_params, post_processing)
-
-        return query_params, post_processing
-
-    @staticmethod
-    def _resolve_head(item, query_params, post_processing):
-        # head - sort asc, size n
-        # |12345-------------|
-        query_sort_field = item[1][0]
-        query_sort_order = Operations.SortOrder.ASC
-        query_size = item[1][1]
-
-        # If we are already postprocessing the query results, we just get 'head' of these
-        # (note, currently we just append another head, we don't optimise by
-        # overwriting previous head)
-        if len(post_processing) > 0:
-            post_processing.append(item)
-            return query_params, post_processing
-
-        if query_params['query_sort_field'] is None:
-            query_params['query_sort_field'] = query_sort_field
-        # if it is already sorted we use existing field
-
-        if query_params['query_sort_order'] is None:
-            query_params['query_sort_order'] = query_sort_order
-        # if it is already sorted we get head of existing order
-
-        if query_params['query_size'] is None:
-            query_params['query_size'] = query_size
-        else:
-            # truncate if head is smaller
-            if query_size < query_params['query_size']:
-                query_params['query_size'] = query_size
-
-        return query_params, post_processing
-
-    @staticmethod
-    def _resolve_tail(item, query_params, post_processing):
-        # tail - sort desc, size n, post-process sort asc
-        # |-------------12345|
-        query_sort_field = item[1][0]
-        query_sort_order = Operations.SortOrder.DESC
-        query_size = item[1][1]
-
-        # If this is a tail of a tail adjust settings and return
-        if query_params['query_size'] is not None and \
-                query_params['query_sort_order'] == query_sort_order and \
-                post_processing == ['sort_index']:
-            if query_size < query_params['query_size']:
-                query_params['query_size'] = query_size
-            return query_params, post_processing
-
-        # If we are already postprocessing the query results, just get 'tail' of these
-        # (note, currently we just append another tail, we don't optimise by
-        # overwriting previous tail)
-        if len(post_processing) > 0:
-            post_processing.append(item)
-            return query_params, post_processing
-
-        # If results are already constrained, just get 'tail' of these
-        # (note, currently we just append another tail, we don't optimise by
-        # overwriting previous tail)
-        if query_params['query_size'] is not None:
-            post_processing.append(item)
-            return query_params, post_processing
-        else:
-            query_params['query_size'] = query_size
-        if query_params['query_sort_field'] is None:
-            query_params['query_sort_field'] = query_sort_field
-        if query_params['query_sort_order'] is None:
-            query_params['query_sort_order'] = query_sort_order
-        else:
-            # reverse sort order
-            query_params['query_sort_order'] = Operations.SortOrder.reverse(query_sort_order)
-
-        post_processing.append('sort_index')
-
-        return query_params, post_processing
-
-    @staticmethod
-    def _resolve_iloc(item, query_params, post_processing):
-        # tail - sort desc, size n, post-process sort asc
-        # |---4--7-9---------|
-
-        # This is a list of items we return via an integer index
-        int_index = item[1][0]
-        if int_index is not None:
-            last_item = int_index.max()
-
-            # If we have a query_size we do this post processing
-            if query_params['query_size'] is not None:
-                post_processing.append(item)
-                return query_params, post_processing
-
-            # size should be > last item
-            query_params['query_size'] = last_item + 1
-        post_processing.append(item)
-
-        return query_params, post_processing
-
-    @staticmethod
-    def _resolve_query_ids(item, query_params, post_processing):
-        # task = ('query_ids', ('must_not', items))
-        must_clause = item[1][0]
-        ids = item[1][1]
-
-        if must_clause == 'must':
-            query_params['query'].ids(ids, must=True)
-        else:
-            query_params['query'].ids(ids, must=False)
-
-        return query_params, post_processing
-
-    @staticmethod
-    def _resolve_query_terms(item, query_params, post_processing):
-        # task = ('query_terms', ('must_not', (field, terms)))
-        must_clause = item[1][0]
-        field = item[1][1][0]
-        terms = item[1][1][1]
-
-        if must_clause == 'must':
-            query_params['query'].terms(field, terms, must=True)
-        else:
-            query_params['query'].terms(field, terms, must=False)
-
-        return query_params, post_processing
-
-    @staticmethod
-    def _resolve_boolean_filter(item, query_params, post_processing):
-        # task = ('boolean_filter', object)
-        boolean_filter = item[1]
-
-        query_params['query'].update_boolean_filter(boolean_filter)
-
-        return query_params, post_processing
-
-    def _resolve_arithmetic_op_fields(self, item, query_params, post_processing):
-        # task = ('arithmetic_op_fields', (field_name, (op_name, (left_field, right_field))))
-        field_name = item[1][0]
-        op_name = item[1][1][0]
-        left_field = item[1][1][1][0]
-        right_field = item[1][1][1][1]
-
-        try:
-            op_type = item[2]
-        except IndexError:
-            op_type = None
-
-        # https://www.elastic.co/guide/en/elasticsearch/painless/current/painless-api-reference-shared-java-lang.html#painless-api-reference-shared-Math
-        if not op_type:
-            if isinstance(left_field, str) and isinstance(right_field, str):
-                """
-                (if op_name = '__truediv__')
-
-                "script_fields": {
-                    "field_name": {
-                    "script": {
-                        "source": "doc[left_field].value / doc[right_field].value"
-                    }
-                    }
-                }
-                """
-                if op_name == '__add__':
-                    source = "doc['{0}'].value + doc['{1}'].value".format(left_field, right_field)
-                elif op_name == '__truediv__':
-                    source = "doc['{0}'].value / doc['{1}'].value".format(left_field, right_field)
-                elif op_name == '__floordiv__':
-                    source = "Math.floor(doc['{0}'].value / doc['{1}'].value)".format(left_field, right_field)
-                elif op_name == '__pow__':
-                    source = "Math.pow(doc['{0}'].value, doc['{1}'].value)".format(left_field, right_field)
-                elif op_name == '__mod__':
-                    source = "doc['{0}'].value % doc['{1}'].value".format(left_field, right_field)
-                elif op_name == '__mul__':
-                    source = "doc['{0}'].value * doc['{1}'].value".format(left_field, right_field)
-                elif op_name == '__sub__':
-                    source = "doc['{0}'].value - doc['{1}'].value".format(left_field, right_field)
-                else:
-                    raise NotImplementedError("Not implemented operation '{0}'".format(op_name))
-
-                if query_params['query_script_fields'] is None:
-                    query_params['query_script_fields'] = {}
-                query_params['query_script_fields'][field_name] = {
-                    'script': {
-                        'source': source
-                    }
-                }
-            elif isinstance(left_field, str) and np.issubdtype(np.dtype(type(right_field)), np.number):
-                """
-                (if op_name = '__truediv__')
-
-                "script_fields": {
-                    "field_name": {
-                    "script": {
-                        "source": "doc[left_field].value / right_field"
-                    }
-                    }
-                }
-                """
-                if op_name == '__add__':
-                    source = "doc['{0}'].value + {1}".format(left_field, right_field)
-                elif op_name == '__truediv__':
-                    source = "doc['{0}'].value / {1}".format(left_field, right_field)
-                elif op_name == '__floordiv__':
-                    source = "Math.floor(doc['{0}'].value / {1})".format(left_field, right_field)
-                elif op_name == '__pow__':
-                    source = "Math.pow(doc['{0}'].value, {1})".format(left_field, right_field)
-                elif op_name == '__mod__':
-                    source = "doc['{0}'].value % {1}".format(left_field, right_field)
-                elif op_name == '__mul__':
-                    source = "doc['{0}'].value * {1}".format(left_field, right_field)
-                elif op_name == '__sub__':
-                    source = "doc['{0}'].value - {1}".format(left_field, right_field)
-                else:
-                    raise NotImplementedError("Not implemented operation '{0}'".format(op_name))
-            elif np.issubdtype(np.dtype(type(left_field)), np.number) and isinstance(right_field, str):
-                """
-                (if op_name = '__truediv__')
-
-                "script_fields": {
-                    "field_name": {
-                    "script": {
-                        "source": "left_field / doc['right_field'].value"
-                    }
-                    }
-                }
-                """
-                if op_name == '__add__':
-                    source = "{0} + doc['{1}'].value".format(left_field, right_field)
-                elif op_name == '__truediv__':
-                    source = "{0} / doc['{1}'].value".format(left_field, right_field)
-                elif op_name == '__floordiv__':
-                    source = "Math.floor({0} / doc['{1}'].value)".format(left_field, right_field)
-                elif op_name == '__pow__':
-                    source = "Math.pow({0}, doc['{1}'].value)".format(left_field, right_field)
-                elif op_name == '__mod__':
-                    source = "{0} % doc['{1}'].value".format(left_field, right_field)
-                elif op_name == '__mul__':
-                    source = "{0} * doc['{1}'].value".format(left_field, right_field)
-                elif op_name == '__sub__':
-                    source = "{0} - doc['{1}'].value".format(left_field, right_field)
-                else:
-                    raise NotImplementedError("Not implemented operation '{0}'".format(op_name))
-
-            else:
-                raise TypeError("Types for operation inconsistent {} {} {}", type(left_field), type(right_field), op_name)
-
-        elif op_type[0] == "string":
-            # we need to check the type of string addition
-            if op_type[1] == "s":
-                """
-                (if op_name = '__add__')
-
-                "script_fields": {
-                    "field_name": {
-                    "script": {
-                        "source": "doc[left_field].value + doc[right_field].value"
-                    }
-                    }
-                }
-                """
-                if op_name == '__add__':
-                    source = "doc['{0}'].value + doc['{1}'].value".format(left_field, right_field)
-                else:
-                    raise NotImplementedError("Not implemented operation '{0}'".format(op_name))
-
-            elif op_type[1] == "r":
-                if isinstance(left_field, str) and isinstance(right_field, str):
-                    """
-                    (if op_name = '__add__')
-
-                    "script_fields": {
-                        "field_name": {
-                        "script": {
-                            "source": "doc[left_field].value + right_field"
-                        }
-                        }
-                    }
-                    """
-                    if op_name == '__add__':
-                        source = "doc['{0}'].value + '{1}'".format(left_field, right_field)
-                    else:
-                        raise NotImplementedError("Not implemented operation '{0}'".format(op_name))
-
-            elif op_type[1] == 'l':
-                if isinstance(left_field, str) and isinstance(right_field, str):
-                    """
-                    (if op_name = '__add__')
-
-                    "script_fields": {
-                        "field_name": {
-                        "script": {
-                            "source": "left_field + doc[right_field].value"
-                        }
-                        }
-                    }
-                    """
-                    if op_name == '__add__':
-                        source = "'{0}' + doc['{1}'].value".format(left_field, right_field)
-                    else:
-                        raise NotImplementedError("Not implemented operation '{0}'".format(op_name))
-
-        if query_params['query_script_fields'] is None:
-            query_params['query_script_fields'] = {}
-        query_params['query_script_fields'][field_name] = {
-            'script': {
-                'source': source
-            }
-        }
-
-        return query_params, post_processing
-
-    @staticmethod
-    def _resolve_post_processing_task(item, query_params, post_processing):
-        # Just do this in post-processing
-        if item[0] != 'field_names':
-            post_processing.append(item)
+            query_params, post_processing = task.resolve_task(query_params, post_processing)
 
         return query_params, post_processing
 
@@ -1121,5 +715,5 @@ class Operations:
         buf.write(" post_processing: {0}\n".format(post_processing))
 
     def update_query(self, boolean_filter):
-        task = ('boolean_filter', boolean_filter)
+        task = BooleanFilterTask(boolean_filter)
         self._tasks.append(task)
