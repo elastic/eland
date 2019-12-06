@@ -208,7 +208,7 @@ class Operations:
 
         results = {}
 
-        for key, value in aggregatable_field_names.items():
+        for key in aggregatable_field_names.keys():
             # key is aggregatable field, value is label
             # e.g. key=category.keyword, value=category
             for bucket in response['aggregations'][key]['buckets']:

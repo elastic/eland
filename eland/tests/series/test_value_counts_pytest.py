@@ -54,3 +54,7 @@ class TestSeriesValueCounts(TestData):
         ed_vc = ed_s.value_counts(es_size=20).sort_index()
 
         assert_series_equal(pd_vc, ed_vc)
+
+        ed_s = self.ed_ecommerce()['customer_gender']
+        with pytest.raises(ValueError):
+            assert ed_s.value_counts()
