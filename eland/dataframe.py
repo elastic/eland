@@ -312,8 +312,7 @@ class DataFrame(NDFrame):
                 max_rows = min_rows
 
             return self.to_html(max_rows=max_rows, max_cols=max_cols,
-                                show_dimensions=show_dimensions, notebook=True,
-                                bold_rows=False)  # set for consistency with pandas output
+                                show_dimensions=show_dimensions, notebook=True)  # set for consistency with pandas output
         else:
             return None
 
