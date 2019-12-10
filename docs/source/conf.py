@@ -70,8 +70,8 @@ except ImportError:
 '''
 
 extlinks = {
-    'pandas_api_docs': ('https://pandas.pydata.org/pandas-docs/stable/reference/api/%s.html', ''),
-    'pandas_user_guide': ('https://pandas.pydata.org/pandas-docs/stable/user_guide/%s.html', 'Pandas User Guide/'),
+    'pandas_api_docs': ('https://pandas.pydata.org/pandas-docs/version/0.25.3/reference/api/%s.html', ''),
+    'pandas_user_guide': ('https://pandas.pydata.org/pandas-docs/version/0.25.3/user_guide/%s.html', 'Pandas User Guide/'),
     'es_api_docs': ('https://www.elastic.co/guide/en/elasticsearch/reference/current/%s.html', '')
 }
 
