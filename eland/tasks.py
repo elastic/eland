@@ -3,6 +3,7 @@ from enum import Enum
 
 import numpy as np
 
+from eland import compat_dict
 from eland.actions import HeadAction, TailAction, SortIndexAction
 
 
@@ -305,7 +306,7 @@ class ArithmeticOpFieldsTask(Task):
                     raise NotImplementedError("Not implemented operation '{0}'".format(self._op_name))
 
                 if query_params['query_script_fields'] is None:
-                    query_params['query_script_fields'] = {}
+                    query_params['query_script_fields'] = compat_dict()
                 query_params['query_script_fields'][self._field_name] = {
                     'script': {
                         'source': source
@@ -428,7 +429,7 @@ class ArithmeticOpFieldsTask(Task):
                         raise NotImplementedError("Not implemented operation '{0}'".format(self._op_name))
 
         if query_params['query_script_fields'] is None:
-            query_params['query_script_fields'] = {}
+            query_params['query_script_fields'] = compat_dict()
         query_params['query_script_fields'][self._field_name] = {
             'script': {
                 'source': source

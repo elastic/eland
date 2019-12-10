@@ -13,10 +13,11 @@
 #      limitations under the License.
 
 import copy
+from collections import OrderedDict
 
 import pandas as pd
 
-from eland import Index
+from eland import Index, PY36, compat_dict
 from eland import Query
 from eland.actions import SortFieldAction
 from eland.tasks import HeadTask, TailTask, BooleanFilterTask, ArithmeticOpFieldsTask, QueryTermsTask, \
@@ -94,7 +95,7 @@ class Operations:
         # Only return requested field_names
         fields = query_compiler.field_names
 
-        counts = {}
+        counts = compat_dict()
         for field in fields:
             body = Query(query_params['query'])
             body.exists(field, must=True)
@@ -171,7 +172,7 @@ class Operations:
         #     "value" : 628.2536888148849
         #   }
         # }
-        results = {}
+        results = compat_dict()
 
         if field_types == 'aggregatable':
             for key, value in source_fields.items():
@@ -220,7 +221,7 @@ class Operations:
             size=0,
             body=body.to_search_body())
 
-        results = {}
+        results = compat_dict()
 
         for key in aggregatable_field_names.keys():
             # key is aggregatable field, value is label
@@ -276,8 +277,8 @@ class Operations:
         #         },
         #         ...
 
-        bins = {}
-        weights = {}
+        bins = compat_dict()
+        weights = compat_dict()
 
         # There is one more bin that weights
         # len(bins) = len(weights) + 1
@@ -415,7 +416,7 @@ class Operations:
         sum    8.204365e+06        9.261629e+07   5.754909e+07          618150
         min    1.000205e+02        0.000000e+00   0.000000e+00               0
         """
-        results = {}
+        results = compat_dict()
 
         for field in field_names:
             values = list()
@@ -455,7 +456,7 @@ class Operations:
             size=0,
             body=body.to_search_body())
 
-        results = {}
+        results = compat_dict()
 
         for field in numeric_source_fields:
             values = list()

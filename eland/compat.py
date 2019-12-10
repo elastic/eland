@@ -12,23 +12,13 @@
 #      See the License for the specific language governing permissions and
 #      limitations under the License.
 
-# File called _pytest for PyCharm compatability
+import sys
+from collections import OrderedDict
 
-from pandas.util.testing import assert_series_equal
+PY36 = sys.version_info >= (3, 6)
 
-from eland.tests.common import TestData
-
-
-class TestDataFrameCount(TestData):
-
-    def test_ecommerce_count(self):
-        pd_ecommerce = self.pd_ecommerce()
-        ed_ecommerce = self.ed_ecommerce()
-
-        pd_count = pd_ecommerce.count()
-        ed_count = ed_ecommerce.count()
-
-        print(pd_count)
-        print(ed_count)
-
-        assert_series_equal(pd_count, ed_count)
+def compat_dict():
+    # If version >= 3.6 use standard dict which preserves order
+    if PY36:
+        return dict()
+    return OrderedDict()

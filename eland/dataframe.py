@@ -417,7 +417,7 @@ class DataFrame(NDFrame):
          size: 5
          sort_params: _doc:desc
          _source: ['timestamp', 'OriginAirportID', 'DestAirportID', 'FlightDelayMin']
-         body: {'query': {'bool': {'must': [{'term': {'OriginAirportID': 'AMS'}}, {'range': {'FlightDelayMin': {'gt': 60}}}]}}, 'aggs': {}}
+         body: {'query': {'bool': {'must': [{'term': {'OriginAirportID': 'AMS'}}, {'range': {'FlightDelayMin': {'gt': 60}}}]}}}
          post_processing: [('sort_index')]
         'field_to_display_names': {}
         'display_to_field_names': {}

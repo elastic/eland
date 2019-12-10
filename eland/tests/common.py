@@ -105,3 +105,26 @@ def assert_pandas_eland_series_equal(left, right, check_less_precise=False):
 
     # Use pandas tests to check similarity
     assert_series_equal(left, right._to_pandas(), check_less_precise=check_less_precise)
+
+
+def assert_series_equal_with_check_like(left,
+                                        right,
+                                        check_dtype=True,
+                                        check_index_type="equiv",
+                                        check_series_type=True,
+                                        check_less_precise=False,
+                                        check_names=True,
+                                        check_exact=False,
+                                        check_datetimelike_compat=False,
+                                        check_categorical=True,
+                                        check_like=False,
+                                        obj="Series",
+                                        ):
+    """
+    A derivative of pandas.util.testing.assert_series_equal that
+    check_like : bool, default False
+        If True, ignore the order of index & columns.
+        Note: index labels must match their respective rows
+        (same as in columns) - same labels must be with the same data.
+    """
+    # these

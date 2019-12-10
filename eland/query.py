@@ -15,6 +15,7 @@
 import warnings
 from copy import deepcopy
 
+from eland import compat_dict
 from eland.filter import BooleanFilter, NotNull, IsNull, IsIn
 
 
@@ -152,9 +153,15 @@ class Query:
 
     def to_search_body(self):
         if self._query.empty():
-            body = {"aggs": self._aggs}
+            if self._aggs:
+                body = {"aggs": self._aggs}
+            else:
+                body = {}
         else:
-            body = {"query": self._query.build(), "aggs": self._aggs}
+            if self._aggs:
+                body = {"query": self._query.build(), "aggs": self._aggs}
+            else:
+                body = {"query": self._query.build()}
         return body
 
     def to_count_body(self):

@@ -22,6 +22,7 @@ from eland import Client
 from eland import Index
 from eland import Mappings
 from eland import Operations
+from eland.compat import compat_dict
 
 
 class ElandQueryCompiler:
@@ -276,7 +277,7 @@ class ElandQueryCompiler:
         return partial_result, df
 
     def _flatten_dict(self, y):
-        out = {}
+        out = compat_dict()
 
         def flatten(x, name=''):
             # We flatten into source fields e.g. if type=geo_point
@@ -360,7 +361,7 @@ class ElandQueryCompiler:
     def _empty_pd_ef(self):
         # Return an empty dataframe with correct columns and dtypes
         df = pd.DataFrame()
-        for c, d in zip(self.columns, self.dtypes):
+        for c, d in zip(self.dtypes.index, self.dtypes.values):
             df[c] = pd.Series(dtype=d)
         return df
 
@@ -585,12 +586,12 @@ class ElandQueryCompiler:
             if field_to_display_names is not None:
                 self._field_to_display_names = field_to_display_names
             else:
-                self._field_to_display_names = dict()
+                self._field_to_display_names = {}
 
             if display_to_field_names is not None:
                 self._display_to_field_names = display_to_field_names
             else:
-                self._display_to_field_names = dict()
+                self._display_to_field_names = {}
 
         def rename_display_name(self, renames):
             for current_display_name, new_display_name in renames.items():
