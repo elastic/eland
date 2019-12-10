@@ -312,8 +312,7 @@ class DataFrame(NDFrame):
                 max_rows = min_rows
 
             return self.to_html(max_rows=max_rows, max_cols=max_cols,
-                                show_dimensions=show_dimensions, notebook=True,
-                                bold_rows=False)  # set for consistency with pandas output
+                                show_dimensions=show_dimensions, notebook=True)
         else:
             return None
 
@@ -384,20 +383,35 @@ class DataFrame(NDFrame):
          index_field: _id
          is_source_field: False
         Mappings:
-         capabilities:                 _source   es_dtype        pd_dtype  searchable  aggregatable
-        AvgTicketPrice     True      float         float64        True          True
-        Cancelled          True    boolean            bool        True          True
-        Carrier            True    keyword          object        True          True
-        Dest               True    keyword          object        True          True
-        DestAirportID      True    keyword          object        True          True
-        ...                 ...        ...             ...         ...           ...
-        OriginLocation     True  geo_point          object        True          True
-        OriginRegion       True    keyword          object        True          True
-        OriginWeather      True    keyword          object        True          True
-        dayOfWeek          True    integer           int64        True          True
-        timestamp          True       date  datetime64[ns]        True          True
-        <BLANKLINE>
-        [27 rows x 5 columns]
+         capabilities:                     _source   es_dtype        pd_dtype  searchable  aggregatable
+        AvgTicketPrice         True      float         float64        True          True
+        Cancelled              True    boolean            bool        True          True
+        Carrier                True    keyword          object        True          True
+        Dest                   True    keyword          object        True          True
+        DestAirportID          True    keyword          object        True          True
+        DestCityName           True    keyword          object        True          True
+        DestCountry            True    keyword          object        True          True
+        DestLocation           True  geo_point          object        True          True
+        DestRegion             True    keyword          object        True          True
+        DestWeather            True    keyword          object        True          True
+        DistanceKilometers     True      float         float64        True          True
+        DistanceMiles          True      float         float64        True          True
+        FlightDelay            True    boolean            bool        True          True
+        FlightDelayMin         True    integer           int64        True          True
+        FlightDelayType        True    keyword          object        True          True
+        FlightNum              True    keyword          object        True          True
+        FlightTimeHour         True      float         float64        True          True
+        FlightTimeMin          True      float         float64        True          True
+        Origin                 True    keyword          object        True          True
+        OriginAirportID        True    keyword          object        True          True
+        OriginCityName         True    keyword          object        True          True
+        OriginCountry          True    keyword          object        True          True
+        OriginLocation         True  geo_point          object        True          True
+        OriginRegion           True    keyword          object        True          True
+        OriginWeather          True    keyword          object        True          True
+        dayOfWeek              True    integer           int64        True          True
+        timestamp              True       date  datetime64[ns]        True          True
+         date_fields_format: {}
         Operations:
          tasks: [('boolean_filter': ('boolean_filter': {'bool': {'must': [{'term': {'OriginAirportID': 'AMS'}}, {'range': {'FlightDelayMin': {'gt': 60}}}]}})), ('tail': ('sort_field': '_doc', 'count': 5))]
          size: 5

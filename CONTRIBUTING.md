@@ -154,9 +154,9 @@ currently using a minimum version of PyCharm 2019.2.4.
 -   Setup Elasticsearch instance (assumes `localhost:9200`), and run
     `python -m eland.tests.setup_tests` to setup test environment -*note
     this modifies Elasticsearch indices*
--   Run `pytest --doctest-modules` to validate install
+-   Run `pytest --nbval  --doctest-modules` to validate install
 
 ### Documentation
 
 -   Install documentation requirements. Open terminal in virtual
-    environment and run `pip install -r requirements-dev.txt`
+    environment and run `pip install -r docs/requirements-docs.txt`

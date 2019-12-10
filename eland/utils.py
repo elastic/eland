@@ -280,6 +280,7 @@ def read_csv(filepath_or_buffer,
     kwds = dict()
 
     kwds.update(
+        sep=sep,
         delimiter=delimiter,
         engine=engine,
         dialect=dialect,

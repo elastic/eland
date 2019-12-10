@@ -55,6 +55,7 @@ extensions = [
     'numpydoc',
     "matplotlib.sphinxext.plot_directive",
     "sphinx.ext.todo",
+    "nbsphinx",
 ]
 
 doctest_global_setup = '''
@@ -91,7 +92,7 @@ templates_path = ['_templates']
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = []
+exclude_patterns = ['**.ipynb_checkpoints']
 
 # -- Options for HTML output -------------------------------------------------
 
