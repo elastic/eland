@@ -590,7 +590,7 @@ class DataFrame(NDFrame):
 
         See Also
         --------
-        :pandas_api_docs:`pandas.DataFrame.to_html` for argument details.
+        :pandas_api_docs:`pandas.DataFrame.to_html`
         """
         # In pandas calling 'to_string' without max_rows set, will dump ALL rows - we avoid this
         # by limiting rows by default.
@@ -655,7 +655,7 @@ class DataFrame(NDFrame):
 
         See Also
         --------
-        :pandas_api_docs:`pandas.DataFrame.to_string` for argument details.
+        :pandas_api_docs:`pandas.DataFrame.to_string`
         """
         # In pandas calling 'to_string' without max_rows set, will dump ALL rows - we avoid this
         # by limiting rows by default.
@@ -826,7 +826,7 @@ class DataFrame(NDFrame):
 
         See Also
         --------
-        :pandas_api_docs:`pandas.DataFrame.to_csv` for argument details.
+        :pandas_api_docs:`pandas.DataFrame.to_csv`
         """
         kwargs = {
             "path_or_buf": path_or_buf,
