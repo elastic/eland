@@ -271,7 +271,7 @@ def read_csv(filepath_or_buffer,
 
     See Also
     --------
-    :pandas_api_docs:`pandas.read_csv` - for all parameters
+    :pandas_api_docs:`pandas.read_csv`
 
     Notes
     -----
