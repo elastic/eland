@@ -46,7 +46,7 @@ setup(
     packages=['eland'],
     install_requires=[
         'elasticsearch>=7.0.5',
-        'pandas==0.25.1',
+        'pandas==0.25.3',
         'matplotlib'
     ]
 )
