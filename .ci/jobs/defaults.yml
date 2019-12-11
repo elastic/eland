@@ -51,6 +51,10 @@
         type: yaml
         filename: .ci/test-matrix.yml
         name: TEST_SUITE
+    - axis:
+        type: yaml
+        filename: .ci/test-matrix.yml
+        name: PYTHON_VERSION
     yaml-strategy:
       exclude-key: exclude
       filename: .ci/test-matrix.yml
