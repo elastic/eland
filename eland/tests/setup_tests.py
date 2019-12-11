@@ -12,7 +12,6 @@
 #      See the License for the specific language governing permissions and
 #      limitations under the License.
 
-from elasticsearch import Elasticsearch
 from elasticsearch import helpers
 from elasticsearch.client import ClusterClient
 
@@ -70,9 +69,9 @@ def _update_max_compilations_limit(es, limit="10000/1m"):
     print('Updating script.max_compilations_rate to ', limit)
     cluster_client = ClusterClient(es)
     body = {
-    "transient" : {
-        "script.max_compilations_rate" : limit
-    }
+        "transient": {
+            "script.max_compilations_rate": limit
+        }
     }
     cluster_client.put_settings(body=body)
 

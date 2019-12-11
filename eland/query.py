@@ -15,7 +15,6 @@
 import warnings
 from copy import deepcopy
 
-from eland import compat_dict
 from eland.filter import BooleanFilter, NotNull, IsNull, IsIn
 
 

@@ -188,20 +188,20 @@ class TestOperators:
         exp = (GreaterEqual('a', 2) & GreaterEqual('b', 2)) & ~(IsIn('ids', [1, 2, 3]))
         a = exp.build()
         b = {
-               'bool': {
-                   'must': [
-                       {'range': {'a': {'gte': 2}}},
-                       {'range': {'b': {'gte': 2}}},
-                       {
-                           'bool': {
-                               'must_not': {
-                                   'ids': {'values': [1, 2, 3]}
-                               }
-                           }
-                       }
-                   ]
-               }
-           }
+            'bool': {
+                'must': [
+                    {'range': {'a': {'gte': 2}}},
+                    {'range': {'b': {'gte': 2}}},
+                    {
+                        'bool': {
+                            'must_not': {
+                                'ids': {'values': [1, 2, 3]}
+                            }
+                        }
+                    }
+                ]
+            }
+        }
         assert a == b
 
     def test_must_not_and_must_filter(self):

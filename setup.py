@@ -12,9 +12,10 @@
 #      See the License for the specific language governing permissions and
 #      limitations under the License.
 
-from setuptools import setup, find_packages
 from codecs import open
 from os import path
+
+from setuptools import setup
 
 here = path.abspath(path.dirname(__file__))
 

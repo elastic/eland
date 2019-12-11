@@ -13,12 +13,5 @@
 #      limitations under the License.
 
 import sys
-from collections import OrderedDict
 
 PY36 = sys.version_info >= (3, 6)
-
-def compat_dict():
-    # If version >= 3.6 use standard dict which preserves order
-    if PY36:
-        return dict()
-    return OrderedDict()

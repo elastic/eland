@@ -13,6 +13,7 @@
 #      limitations under the License.
 
 import warnings
+from collections import OrderedDict
 from typing import Union
 
 import numpy as np
@@ -22,10 +23,9 @@ from eland import Client
 from eland import Index
 from eland import Mappings
 from eland import Operations
-from eland.compat import compat_dict
 
 
-class ElandQueryCompiler:
+class QueryCompiler:
     """
     Some notes on what can and can not be mapped:
 
@@ -74,7 +74,7 @@ class ElandQueryCompiler:
             self.field_names = field_names
 
         if name_mapper is None:
-            self._name_mapper = ElandQueryCompiler.DisplayNameToFieldNameMapper()
+            self._name_mapper = QueryCompiler.DisplayNameToFieldNameMapper()
         else:
             self._name_mapper = name_mapper
 
@@ -277,7 +277,7 @@ class ElandQueryCompiler:
         return partial_result, df
 
     def _flatten_dict(self, y):
-        out = compat_dict()
+        out = OrderedDict()
 
         def flatten(x, name=''):
             # We flatten into source fields e.g. if type=geo_point
@@ -366,9 +366,9 @@ class ElandQueryCompiler:
         return df
 
     def copy(self):
-        return ElandQueryCompiler(client=self._client, index_pattern=self._index_pattern, field_names=None,
-                                  index_field=self._index.index_field, operations=self._operations.copy(),
-                                  name_mapper=self._name_mapper.copy())
+        return QueryCompiler(client=self._client, index_pattern=self._index_pattern, field_names=None,
+                             index_field=self._index.index_field, operations=self._operations.copy(),
+                             name_mapper=self._name_mapper.copy())
 
     def rename(self, renames, inplace=False):
         if inplace:
@@ -501,7 +501,7 @@ class ElandQueryCompiler:
 
         Parameters
         ----------
-        right: ElandQueryCompiler
+        right: QueryCompiler
             The query compiler to compare self to
 
         Raises
@@ -509,7 +509,7 @@ class ElandQueryCompiler:
         TypeError, ValueError
             If arithmetic operations aren't possible
         """
-        if not isinstance(right, ElandQueryCompiler):
+        if not isinstance(right, QueryCompiler):
             raise TypeError(
                 "Incompatible types "
                 "{0} != {1}".format(type(self), type(right))
@@ -540,7 +540,7 @@ class ElandQueryCompiler:
 
         Parameters
         ----------
-        right: ElandQueryCompiler
+        right: QueryCompiler
             The query compiler to compare self to
 
         Raises

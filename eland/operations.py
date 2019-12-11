@@ -17,11 +17,11 @@ from collections import OrderedDict
 
 import pandas as pd
 
-from eland import Index, PY36, compat_dict
+from eland import Index, SortOrder
 from eland import Query
 from eland.actions import SortFieldAction
 from eland.tasks import HeadTask, TailTask, BooleanFilterTask, ArithmeticOpFieldsTask, QueryTermsTask, \
-    QueryIdsTask, SortOrder, SizeTask
+    QueryIdsTask, SizeTask
 
 
 class Operations:
@@ -36,6 +36,7 @@ class Operations:
     This is maintained as a 'task graph' (inspired by dask)
     (see https://docs.dask.org/en/latest/spec.html)
     """
+
     def __init__(self, tasks=None, field_names=None):
         if tasks is None:
             self._tasks = []
@@ -95,7 +96,7 @@ class Operations:
         # Only return requested field_names
         fields = query_compiler.field_names
 
-        counts = compat_dict()
+        counts = OrderedDict()
         for field in fields:
             body = Query(query_params['query'])
             body.exists(field, must=True)
@@ -172,7 +173,7 @@ class Operations:
         #     "value" : 628.2536888148849
         #   }
         # }
-        results = compat_dict()
+        results = OrderedDict()
 
         if field_types == 'aggregatable':
             for key, value in source_fields.items():
@@ -221,7 +222,7 @@ class Operations:
             size=0,
             body=body.to_search_body())
 
-        results = compat_dict()
+        results = OrderedDict()
 
         for key in aggregatable_field_names.keys():
             # key is aggregatable field, value is label
@@ -277,8 +278,8 @@ class Operations:
         #         },
         #         ...
 
-        bins = compat_dict()
-        weights = compat_dict()
+        bins = OrderedDict()
+        weights = OrderedDict()
 
         # There is one more bin that weights
         # len(bins) = len(weights) + 1
@@ -416,7 +417,7 @@ class Operations:
         sum    8.204365e+06        9.261629e+07   5.754909e+07          618150
         min    1.000205e+02        0.000000e+00   0.000000e+00               0
         """
-        results = compat_dict()
+        results = OrderedDict()
 
         for field in field_names:
             values = list()
@@ -456,7 +457,7 @@ class Operations:
             size=0,
             body=body.to_search_body())
 
-        results = compat_dict()
+        results = OrderedDict()
 
         for field in numeric_source_fields:
             values = list()

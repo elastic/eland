@@ -54,3 +54,6 @@ class TestDataFrameUtils(TestData):
         ed_df_head = ed_df.head()
 
         assert_pandas_eland_frame_equal(df, ed_df_head)
+
+    def test_eland_to_pandas_performance(self):
+        pd_df = ed.eland_to_pandas(self.ed_flights())

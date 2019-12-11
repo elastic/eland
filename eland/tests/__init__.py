@@ -14,8 +14,8 @@
 
 import os
 
-from elasticsearch import Elasticsearch
 import pandas as pd
+from elasticsearch import Elasticsearch
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 

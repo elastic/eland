@@ -24,10 +24,10 @@ class BooleanFilter:
         if isinstance(self, AndFilter):
             if 'must_not' in x.subtree:
                 # nest a must_not under a must
-                self.subtree['must'].append(x.build()) # 'build includes bool'
+                self.subtree['must'].append(x.build())  # 'build includes bool'
             else:
                 # append a must to a must
-                self.subtree['must'].append(x.subtree) # 'subtree strips bool'
+                self.subtree['must'].append(x.subtree)  # 'subtree strips bool'
             return self
         elif isinstance(x, AndFilter):
             if 'must_not' in self.subtree:

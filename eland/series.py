@@ -1055,7 +1055,8 @@ class Series(NDFrame):
                 # our operation is between series
                 op_type = op_type + tuple('s')
                 # check if fields are aggregatable
-                self.name, right.name = self._query_compiler.check_str_arithmetics(right._query_compiler, self.name, right.name)
+                self.name, right.name = self._query_compiler.check_str_arithmetics(right._query_compiler, self.name,
+                                                                                   right.name)
 
                 series = Series(query_compiler=self._query_compiler.arithmetic_op_fields(
                     new_field_name, method_name, self.name, right.name, op_type))
@@ -1067,7 +1068,7 @@ class Series(NDFrame):
                 # TODO - support limited ops on strings https://github.com/elastic/eland/issues/65
                 raise TypeError(
                     "unsupported operation type(s) ['{}'] for operands ['{}' with dtype '{}', '{}']"
-                    .format(method_name, type(self), self._dtype, type(right).__name__)
+                        .format(method_name, type(self), self._dtype, type(right).__name__)
                 )
 
         # check left number and right numeric series
@@ -1103,7 +1104,7 @@ class Series(NDFrame):
             # TODO - support limited ops on strings https://github.com/elastic/eland/issues/65
             raise TypeError(
                 "unsupported operation type(s) ['{}'] for operands ['{}' with dtype '{}', '{}']"
-                .format(method_name, type(self), self._dtype, type(right).__name__)
+                    .format(method_name, type(self), self._dtype, type(right).__name__)
             )
 
     def _numeric_rop(self, left, method_name, op_type=None):
@@ -1146,7 +1147,7 @@ class Series(NDFrame):
             # TODO - support limited ops on strings https://github.com/elastic/eland/issues/65
             raise TypeError(
                 "unsupported operation type(s) ['{}'] for operands ['{}' with dtype '{}', '{}']"
-                .format(op_method_name, type(self), self._dtype, type(left).__name__)
+                    .format(op_method_name, type(self), self._dtype, type(left).__name__)
             )
 
     def max(self):
