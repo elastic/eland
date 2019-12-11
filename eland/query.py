@@ -148,7 +148,10 @@ class Query:
                 "interval": interval
             }
         }
-        self._aggs[name] = agg
+
+        if not min == max == 0:
+            self._aggs[name] = agg
+
 
     def to_search_body(self):
         if self._query.empty():
