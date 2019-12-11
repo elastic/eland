@@ -86,3 +86,48 @@ def ed_hist_frame(ed_df, column=None, by=None, grid=True, xlabelsize=None,
     fig.subplots_adjust(wspace=0.3, hspace=0.3)
 
     return axes
+
+def ed_hist_series(ed_s, column=None, by=None, grid=True, xlabelsize=None,
+                  xrot=None, ylabelsize=None, yrot=None, ax=None,
+                  figsize=None, layout=None, bins=10, **kwds):
+    """
+    See :pandas_api_docs:`pandas.Series.hist` for usage.
+
+    Notes
+    -----
+    Derived from ``pandas.plotting._core.hist_frame 0.24.2`` - TODO update to ``0.25.1``
+
+
+    Examples
+    --------
+    >>> df = ed.DataFrame('localhost', 'ecommerce')
+    >>> hist = df['taxful_total_price'].hist(figsize=[10,10]) # doctest: +SKIP
+    """
+    # this is mostly the same code as above, it has been split out
+    # to a series specific method now so we can expand series plotting
+
+
+    # Start with empty pandas data frame derived from
+    ed_s_bins, ed_s_weights = ed_s._hist(num_bins=bins)
+
+    if by is not None:
+        raise NotImplementedError("TODO")
+
+    # raise error rather than warning when series is not plottable
+    if ed_s_bins.empty:
+        raise ValueError("{} has no meaningful histogram interval. All values 0."
+                        .format(ed_s.name))
+
+    naxes = len(ed_s_bins.columns)
+    fig, axes = _subplots(naxes=naxes, ax=ax, squeeze=False, figsize=figsize, layout=layout)
+    _axes = _flatten(axes)
+    for i, col in enumerate(com.try_sort(ed_s_bins.columns)):
+        ax = _axes[i]
+        ax.hist(ed_s_bins[col][:-1], bins=ed_s_bins[col], weights=ed_s_weights[col], **kwds)
+        ax.grid(grid)
+
+    _set_ticks_props(axes, xlabelsize=xlabelsize, xrot=xrot,
+                     ylabelsize=ylabelsize, yrot=yrot)
+    fig.subplots_adjust(wspace=0.3, hspace=0.3)
+
+    return axes

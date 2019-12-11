@@ -14,6 +14,7 @@
 
 import copy
 from collections import OrderedDict
+import warnings
 
 import pandas as pd
 
@@ -258,12 +259,10 @@ class Operations:
 
         for field in numeric_source_fields:
             body.hist_aggs(field, field, min_aggs, max_aggs, num_bins)
-
         response = query_compiler._client.search(
             index=query_compiler._index_pattern,
             size=0,
             body=body.to_search_body())
-
         # results are like
         # "aggregations" : {
         #     "DistanceKilometers" : {
@@ -293,6 +292,19 @@ class Operations:
         # weights = [10066.,   263.,   386.,   264.,   273.,   390.,   324.,   438.,   261.,   252.,    142.]
         # So sum last 2 buckets
         for field in numeric_source_fields:
+
+            # in case of series let plotting.ed_hist_series thrown an exception
+            if not response.get('aggregations'):
+                continue
+
+            # in case of dataframe, throw warning that field is excluded
+            if not response['aggregations'].get(field):
+                warnings.warn("{} has no meaningful histogram interval and will be excluded. "
+                                "All values 0."
+                            .format(field),
+                            UserWarning)
+                continue
+
             buckets = response['aggregations'][field]['buckets']
 
             bins[field] = []
