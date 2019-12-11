@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+echo $PYTHON_VERSION
+
 if [[ -z $ELASTICSEARCH_VERSION ]]; then
   echo -e "\033[31;1mERROR:\033[0m Required environment variable [ELASTICSEARCH_VERSION] not set\033[0m"
   exit 1
