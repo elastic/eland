@@ -103,12 +103,17 @@ def ed_hist_series(ed_s, column=None, by=None, grid=True, xlabelsize=None,
     >>> df = ed.DataFrame('localhost', 'ecommerce')
     >>> hist = df['taxful_total_price'].hist(figsize=[10,10]) # doctest: +SKIP
     """
+    # this is mostly the same code as above, it has been split out
+    # to a series specific method now so we can expand series plotting
+
+
     # Start with empty pandas data frame derived from
     ed_s_bins, ed_s_weights = ed_s._hist(num_bins=bins)
 
     if by is not None:
         raise NotImplementedError("TODO")
 
+    # raise error rather than warning when series is not plottable
     if ed_s_bins.empty:
         raise ValueError("{} has no meaningful histogram interval. All values 0."
                         .format(ed_s.name))
@@ -118,11 +123,6 @@ def ed_hist_series(ed_s, column=None, by=None, grid=True, xlabelsize=None,
     _axes = _flatten(axes)
     for i, col in enumerate(com.try_sort(ed_s_bins.columns)):
         ax = _axes[i]
-
-        # pandas code
-        # pandas / plotting / _core.py: 2410
-        # ax.hist(data[col].dropna().values, bins=bins, **kwds)
-
         ax.hist(ed_s_bins[col][:-1], bins=ed_s_bins[col], weights=ed_s_weights[col], **kwds)
         ax.grid(grid)
 
