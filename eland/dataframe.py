@@ -27,6 +27,7 @@ from pandas.io.common import _expand_user, _stringify_path
 from pandas.io.formats import console
 from pandas.io.formats import format as fmt
 from pandas.io.formats.printing import pprint_thing
+from pandas.util._validators import validate_bool_kwarg
 
 import eland.plotting as gfx
 from eland import NDFrame
@@ -255,6 +256,151 @@ class DataFrame(NDFrame):
         """
         return DataFrame(query_compiler=self._query_compiler.tail(n))
 
+    def drop(
+            self,
+            labels=None,
+            axis=0,
+            index=None,
+            columns=None,
+            level=None,
+            inplace=False,
+            errors="raise",
+    ):
+        """Return new object with labels in requested axis removed.
+
+        Parameters
+        ----------
+        labels:
+            Index or column labels to drop.
+        axis:
+            Whether to drop labels from the index (0 / 'index') or columns (1 / 'columns').
+        index, columns:
+            Alternative to specifying axis (labels, axis=1 is equivalent to columns=labels).
+        level:
+            For MultiIndex - not supported
+        inplace:
+            If True, do operation inplace and return None.
+        errors:
+            If 'ignore', suppress error and existing labels are dropped.
+
+        Returns
+        -------
+        dropped:
+            type of caller
+
+        See Also
+        --------
+        :pandas_api_docs:`pandas.DataFrame.drop`
+
+        Examples
+        --------
+        Drop a column
+
+        >>> df = ed.DataFrame('localhost', 'ecommerce', columns=['customer_first_name', 'email', 'user'])
+        >>> df.drop(columns=['user'])
+             customer_first_name                       email
+        0                  Eddie  eddie@underwood-family.zzz
+        1                   Mary      mary@bailey-family.zzz
+        2                   Gwen      gwen@butler-family.zzz
+        3                  Diane   diane@chandler-family.zzz
+        4                  Eddie      eddie@weber-family.zzz
+        ...                  ...                         ...
+        4670                Mary     mary@lambert-family.zzz
+        4671                 Jim      jim@gilbert-family.zzz
+        4672               Yahya     yahya@rivera-family.zzz
+        4673                Mary     mary@hampton-family.zzz
+        4674             Jackson  jackson@hopkins-family.zzz
+        <BLANKLINE>
+        [4675 rows x 2 columns]
+
+        Drop rows by index value (axis=0)
+
+        >>> df.drop(['1', '2'])
+             customer_first_name                       email     user
+        0                  Eddie  eddie@underwood-family.zzz    eddie
+        3                  Diane   diane@chandler-family.zzz    diane
+        4                  Eddie      eddie@weber-family.zzz    eddie
+        5                  Diane    diane@goodwin-family.zzz    diane
+        6                 Oliver      oliver@rios-family.zzz   oliver
+        ...                  ...                         ...      ...
+        4670                Mary     mary@lambert-family.zzz     mary
+        4671                 Jim      jim@gilbert-family.zzz      jim
+        4672               Yahya     yahya@rivera-family.zzz    yahya
+        4673                Mary     mary@hampton-family.zzz     mary
+        4674             Jackson  jackson@hopkins-family.zzz  jackson
+        <BLANKLINE>
+        [4673 rows x 3 columns]
+        """
+        # Level not supported
+        if level is not None:
+            raise NotImplementedError("level not supported {}".format(level))
+
+        inplace = validate_bool_kwarg(inplace, "inplace")
+        if labels is not None:
+            if index is not None or columns is not None:
+                raise ValueError("Cannot specify both 'labels' and 'index'/'columns'")
+            axis = pd.DataFrame()._get_axis_name(axis)
+            axes = {axis: labels}
+        elif index is not None or columns is not None:
+            axes, _ = pd.DataFrame()._construct_axes_from_arguments(
+                (index, columns), {}
+            )
+        else:
+            raise ValueError(
+                "Need to specify at least one of 'labels', 'index' or 'columns'"
+            )
+
+        # TODO Clean up this error checking
+        if "index" not in axes:
+            axes["index"] = None
+        elif axes["index"] is not None:
+            if not is_list_like(axes["index"]):
+                axes["index"] = [axes["index"]]
+            if errors == "raise":
+                # Check if axes['index'] values exists in index
+                count = self._query_compiler._index_matches_count(axes["index"])
+                if count != len(axes["index"]):
+                    raise ValueError(
+                        "number of labels {}!={} not contained in axis".format(count, len(axes["index"]))
+                    )
+            else:
+                """
+                axes["index"] = self._query_compiler.index_matches(axes["index"])
+                # If the length is zero, we will just do nothing
+                if not len(axes["index"]):
+                    axes["index"] = None
+                """
+                raise NotImplementedError()
+
+        if "columns" not in axes:
+            axes["columns"] = None
+        elif axes["columns"] is not None:
+            if not is_list_like(axes["columns"]):
+                axes["columns"] = [axes["columns"]]
+            if errors == "raise":
+                non_existant = [
+                    obj for obj in axes["columns"] if obj not in self.columns
+                ]
+                if len(non_existant):
+                    raise ValueError(
+                        "labels {} not contained in axis".format(non_existant)
+                    )
+            else:
+                axes["columns"] = [
+                    obj for obj in axes["columns"] if obj in self.columns
+                ]
+                # If the length is zero, we will just do nothing
+                if not len(axes["columns"]):
+                    axes["columns"] = None
+
+        new_query_compiler = self._query_compiler.drop(
+            index=axes["index"], columns=axes["columns"]
+        )
+        return self._create_or_update_from_compiler(new_query_compiler, inplace)
+
+    def __getitem__(self, key):
+        return self._getitem(key)
+
     def __repr__(self):
         """
         From pandas
@@ -312,7 +458,8 @@ class DataFrame(NDFrame):
                 max_rows = min_rows
 
             return self.to_html(max_rows=max_rows, max_cols=max_cols,
-                                show_dimensions=show_dimensions, notebook=True)  # set for consistency with pandas output
+                                show_dimensions=show_dimensions,
+                                notebook=True)  # set for consistency with pandas output
         else:
             return None
 
@@ -417,7 +564,7 @@ class DataFrame(NDFrame):
          size: 5
          sort_params: _doc:desc
          _source: ['timestamp', 'OriginAirportID', 'DestAirportID', 'FlightDelayMin']
-         body: {'query': {'bool': {'must': [{'term': {'OriginAirportID': 'AMS'}}, {'range': {'FlightDelayMin': {'gt': 60}}}]}}, 'aggs': {}}
+         body: {'query': {'bool': {'must': [{'term': {'OriginAirportID': 'AMS'}}, {'range': {'FlightDelayMin': {'gt': 60}}}]}}}
          post_processing: [('sort_index')]
         'field_to_display_names': {}
         'display_to_field_names': {}

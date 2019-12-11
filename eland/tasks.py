@@ -1,35 +1,9 @@
 from abc import ABC, abstractmethod
-from enum import Enum
 
 import numpy as np
 
+from eland import SortOrder
 from eland.actions import HeadAction, TailAction, SortIndexAction
-
-
-class SortOrder(Enum):
-    ASC = 0
-    DESC = 1
-
-    @staticmethod
-    def reverse(order):
-        if order == SortOrder.ASC:
-            return SortOrder.DESC
-
-        return SortOrder.ASC
-
-    @staticmethod
-    def to_string(order):
-        if order == SortOrder.ASC:
-            return "asc"
-
-        return "desc"
-
-    @staticmethod
-    def from_string(order):
-        if order == "asc":
-            return SortOrder.ASC
-
-        return SortOrder.DESC
 
 
 # -------------------------------------------------------------------------------------------------------------------- #
@@ -305,7 +279,7 @@ class ArithmeticOpFieldsTask(Task):
                     raise NotImplementedError("Not implemented operation '{0}'".format(self._op_name))
 
                 if query_params['query_script_fields'] is None:
-                    query_params['query_script_fields'] = {}
+                    query_params['query_script_fields'] = dict()
                 query_params['query_script_fields'][self._field_name] = {
                     'script': {
                         'source': source
@@ -428,7 +402,7 @@ class ArithmeticOpFieldsTask(Task):
                         raise NotImplementedError("Not implemented operation '{0}'".format(self._op_name))
 
         if query_params['query_script_fields'] is None:
-            query_params['query_script_fields'] = {}
+            query_params['query_script_fields'] = dict()
         query_params['query_script_fields'][self._field_name] = {
             'script': {
                 'source': source

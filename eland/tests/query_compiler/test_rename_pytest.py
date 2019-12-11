@@ -14,7 +14,7 @@
 
 # File called _pytest for PyCharm compatability
 
-from eland import ElandQueryCompiler
+from eland import QueryCompiler
 from eland.tests.common import TestData
 
 
@@ -24,7 +24,7 @@ class TestQueryCompilerRename(TestData):
         field_names = []
         display_names = []
 
-        mapper = ElandQueryCompiler.DisplayNameToFieldNameMapper()
+        mapper = QueryCompiler.DisplayNameToFieldNameMapper()
 
         assert field_names == mapper.field_names_to_list()
         assert display_names == mapper.display_names_to_list()
@@ -58,7 +58,7 @@ class TestQueryCompilerRename(TestData):
     def test_query_compiler_basic_rename_columns(self):
         columns = ['a', 'b', 'c', 'd']
 
-        mapper = ElandQueryCompiler.DisplayNameToFieldNameMapper()
+        mapper = QueryCompiler.DisplayNameToFieldNameMapper()
 
         display_names = ['A', 'b', 'c', 'd']
         update_A = {'a': 'A'}

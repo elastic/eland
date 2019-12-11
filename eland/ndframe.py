@@ -1,3 +1,22 @@
+#  Copyright 2019 Elasticsearch BV
+#
+#      Licensed under the Apache License, Version 2.0 (the "License");
+#      you may not use this file except in compliance with the License.
+#      You may obtain a copy of the License at
+#
+#          http://www.apache.org/licenses/LICENSE-2.0
+#
+#      Unless required by applicable law or agreed to in writing, software
+#      distributed under the License is distributed on an "AS IS" BASIS,
+#      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#      See the License for the specific language governing permissions and
+#      limitations under the License.
+
+import sys
+from abc import ABC, abstractmethod
+
+from eland import QueryCompiler
+
 """
 NDFrame
 ---------
@@ -23,29 +42,6 @@ only Elasticsearch aggregatable fields can be aggregated or grouped.
 
 """
 
-#  Copyright 2019 Elasticsearch BV
-#
-#      Licensed under the Apache License, Version 2.0 (the "License");
-#      you may not use this file except in compliance with the License.
-#      You may obtain a copy of the License at
-#
-#          http://www.apache.org/licenses/LICENSE-2.0
-#
-#      Unless required by applicable law or agreed to in writing, software
-#      distributed under the License is distributed on an "AS IS" BASIS,
-#      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#      See the License for the specific language governing permissions and
-#      limitations under the License.
-
-import sys
-from abc import ABC
-
-import pandas as pd
-from pandas.core.dtypes.common import is_list_like
-from pandas.util._validators import validate_bool_kwarg
-
-from eland import ElandQueryCompiler
-
 
 class NDFrame(ABC):
 
@@ -64,8 +60,8 @@ class NDFrame(ABC):
             A reference to a Elasticsearch python client
         """
         if query_compiler is None:
-            query_compiler = ElandQueryCompiler(client=client, index_pattern=index_pattern, field_names=columns,
-                                                index_field=index_field)
+            query_compiler = QueryCompiler(client=client, index_pattern=index_pattern, field_names=columns,
+                                           index_field=index_field)
         self._query_compiler = query_compiler
 
     def _get_index(self):
@@ -139,9 +135,6 @@ class NDFrame(ABC):
 
         return head.append(tail)
 
-    def __getitem__(self, key):
-        return self._getitem(key)
-
     def __sizeof__(self):
         # Don't default to pandas, just return approximation TODO - make this more accurate
         return sys.getsizeof(self._query_compiler)
@@ -156,148 +149,6 @@ class NDFrame(ABC):
 
     def _info_es(self, buf):
         self._query_compiler.info_es(buf)
-
-    def drop(
-            self,
-            labels=None,
-            axis=0,
-            index=None,
-            columns=None,
-            level=None,
-            inplace=False,
-            errors="raise",
-    ):
-        """Return new object with labels in requested axis removed.
-
-        Parameters
-        ----------
-        labels:
-            Index or column labels to drop.
-        axis:
-            Whether to drop labels from the index (0 / 'index') or columns (1 / 'columns').
-        index, columns:
-            Alternative to specifying axis (labels, axis=1 is equivalent to columns=labels).
-        level:
-            For MultiIndex - not supported
-        inplace:
-            If True, do operation inplace and return None.
-        errors:
-            If 'ignore', suppress error and existing labels are dropped.
-
-        Returns
-        -------
-        dropped:
-            type of caller
-
-        See Also
-        --------
-        :pandas_api_docs:`pandas.DataFrame.drop`
-
-        Examples
-        --------
-        Drop a column
-
-        >>> df = ed.DataFrame('localhost', 'ecommerce', columns=['customer_first_name', 'email', 'user'])
-        >>> df.drop(columns=['user'])
-             customer_first_name                       email
-        0                  Eddie  eddie@underwood-family.zzz
-        1                   Mary      mary@bailey-family.zzz
-        2                   Gwen      gwen@butler-family.zzz
-        3                  Diane   diane@chandler-family.zzz
-        4                  Eddie      eddie@weber-family.zzz
-        ...                  ...                         ...
-        4670                Mary     mary@lambert-family.zzz
-        4671                 Jim      jim@gilbert-family.zzz
-        4672               Yahya     yahya@rivera-family.zzz
-        4673                Mary     mary@hampton-family.zzz
-        4674             Jackson  jackson@hopkins-family.zzz
-        <BLANKLINE>
-        [4675 rows x 2 columns]
-
-        Drop rows by index value (axis=0)
-
-        >>> df.drop(['1', '2'])
-             customer_first_name                       email     user
-        0                  Eddie  eddie@underwood-family.zzz    eddie
-        3                  Diane   diane@chandler-family.zzz    diane
-        4                  Eddie      eddie@weber-family.zzz    eddie
-        5                  Diane    diane@goodwin-family.zzz    diane
-        6                 Oliver      oliver@rios-family.zzz   oliver
-        ...                  ...                         ...      ...
-        4670                Mary     mary@lambert-family.zzz     mary
-        4671                 Jim      jim@gilbert-family.zzz      jim
-        4672               Yahya     yahya@rivera-family.zzz    yahya
-        4673                Mary     mary@hampton-family.zzz     mary
-        4674             Jackson  jackson@hopkins-family.zzz  jackson
-        <BLANKLINE>
-        [4673 rows x 3 columns]
-        """
-        # Level not supported
-        if level is not None:
-            raise NotImplementedError("level not supported {}".format(level))
-
-        inplace = validate_bool_kwarg(inplace, "inplace")
-        if labels is not None:
-            if index is not None or columns is not None:
-                raise ValueError("Cannot specify both 'labels' and 'index'/'columns'")
-            axis = pd.DataFrame()._get_axis_name(axis)
-            axes = {axis: labels}
-        elif index is not None or columns is not None:
-            axes, _ = pd.DataFrame()._construct_axes_from_arguments(
-                (index, columns), {}
-            )
-        else:
-            raise ValueError(
-                "Need to specify at least one of 'labels', 'index' or 'columns'"
-            )
-
-        # TODO Clean up this error checking
-        if "index" not in axes:
-            axes["index"] = None
-        elif axes["index"] is not None:
-            if not is_list_like(axes["index"]):
-                axes["index"] = [axes["index"]]
-            if errors == "raise":
-                # Check if axes['index'] values exists in index
-                count = self._query_compiler._index_matches_count(axes["index"])
-                if count != len(axes["index"]):
-                    raise ValueError(
-                        "number of labels {}!={} not contained in axis".format(count, len(axes["index"]))
-                    )
-            else:
-                """
-                axes["index"] = self._query_compiler.index_matches(axes["index"])
-                # If the length is zero, we will just do nothing
-                if not len(axes["index"]):
-                    axes["index"] = None
-                """
-                raise NotImplementedError()
-
-        if "columns" not in axes:
-            axes["columns"] = None
-        elif axes["columns"] is not None:
-            if not is_list_like(axes["columns"]):
-                axes["columns"] = [axes["columns"]]
-            if errors == "raise":
-                non_existant = [
-                    obj for obj in axes["columns"] if obj not in self.columns
-                ]
-                if len(non_existant):
-                    raise ValueError(
-                        "labels {} not contained in axis".format(non_existant)
-                    )
-            else:
-                axes["columns"] = [
-                    obj for obj in axes["columns"] if obj in self.columns
-                ]
-                # If the length is zero, we will just do nothing
-                if not len(axes["columns"]):
-                    axes["columns"] = None
-
-        new_query_compiler = self._query_compiler.drop(
-            index=axes["index"], columns=axes["columns"]
-        )
-        return self._create_or_update_from_compiler(new_query_compiler, inplace)
 
     def mean(self, numeric_only=True):
         """
@@ -518,3 +369,15 @@ class NDFrame(ABC):
         max       1199.729004      360.000000
         """
         return self._query_compiler.describe()
+
+    @abstractmethod
+    def _to_pandas(self):
+        pass
+
+    @abstractmethod
+    def head(self, n=5):
+        pass
+
+    @abstractmethod
+    def tail(self, n=5):
+        pass

@@ -40,5 +40,5 @@ class TestDataFrameInit:
         df0 = ed.DataFrame(ES_TEST_CLIENT, FLIGHTS_INDEX_NAME)
         df1 = ed.DataFrame(client=ES_TEST_CLIENT, index_pattern=FLIGHTS_INDEX_NAME)
 
-        qc = ed.ElandQueryCompiler(client=ES_TEST_CLIENT, index_pattern=FLIGHTS_INDEX_NAME)
+        qc = ed.QueryCompiler(client=ES_TEST_CLIENT, index_pattern=FLIGHTS_INDEX_NAME)
         df2 = ed.DataFrame(query_compiler=qc)

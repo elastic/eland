@@ -13,6 +13,8 @@
 #      limitations under the License.
 
 # Default number of rows displayed (different to pandas where ALL could be displayed)
+from enum import Enum
+
 DEFAULT_NUM_ROWS_DISPLAYED = 60
 
 
@@ -22,3 +24,29 @@ def docstring_parameter(*sub):
         return obj
 
     return dec
+
+
+class SortOrder(Enum):
+    ASC = 0
+    DESC = 1
+
+    @staticmethod
+    def reverse(order):
+        if order == SortOrder.ASC:
+            return SortOrder.DESC
+
+        return SortOrder.ASC
+
+    @staticmethod
+    def to_string(order):
+        if order == SortOrder.ASC:
+            return "asc"
+
+        return "desc"
+
+    @staticmethod
+    def from_string(order):
+        if order == "asc":
+            return SortOrder.ASC
+
+        return SortOrder.DESC

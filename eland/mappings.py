@@ -11,8 +11,8 @@
 #      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #      See the License for the specific language governing permissions and
 #      limitations under the License.
-
 import warnings
+from collections import OrderedDict
 
 import numpy as np
 import pandas as pd
@@ -66,7 +66,7 @@ class Mappings:
         """
 
         # here we keep track of the format of any date fields
-        self._date_fields_format = {}
+        self._date_fields_format = dict()
         if (client is not None) and (index_pattern is not None):
             get_mapping = client.get_mapping(index=index_pattern)
 
@@ -86,7 +86,8 @@ class Mappings:
 
         # Cache source field types for efficient lookup
         # (this massively improves performance of DataFrame.flatten)
-        self._source_field_pd_dtypes = {}
+
+        self._source_field_pd_dtypes = OrderedDict()
 
         for field_name in self._mappings_capabilities[self._mappings_capabilities._source].index:
             pd_dtype = self._mappings_capabilities.loc[field_name]['pd_dtype']
@@ -135,14 +136,14 @@ class Mappings:
 
         Returns
         -------
-        fields, dates_format: tuple(dict, dict)
+        fields, dates_format: tuple(OrderedDict, dict)
             where:
-                fields: Dict of field names and types
+                fields: OrderedDict of field names and types
                 dates_format: Dict of date field names and format
 
         """
-        fields = {}
-        dates_format = {}
+        fields = OrderedDict()
+        dates_format = dict()
 
         # Recurse until we get a 'type: xxx'
         def flatten(x, name=''):
@@ -206,7 +207,7 @@ class Mappings:
         all_fields_caps_fields = all_fields_caps['fields']
 
         field_names = ['_source', 'es_dtype', 'pd_dtype', 'searchable', 'aggregatable']
-        capability_matrix = {}
+        capability_matrix = OrderedDict()
 
         for field, field_caps in all_fields_caps_fields.items():
             if field in all_fields:
@@ -353,7 +354,7 @@ class Mappings:
             else:
                 es_dtype = Mappings._pd_dtype_to_es_dtype(dtype)
 
-            mappings['properties'][field_name_name] = {}
+            mappings['properties'][field_name_name] = OrderedDict()
             mappings['properties'][field_name_name]['type'] = es_dtype
 
         return {"mappings": mappings}
@@ -401,8 +402,8 @@ class Mappings:
 
         Returns
         -------
-        dict
-            A dictionary (for date fields) containing the mapping {field_name:format}
+        str
+            A string (for date fields) containing the date format for the field
         """
         return self._date_fields_format.get(field_name)
 
@@ -460,12 +461,12 @@ class Mappings:
 
         Returns
         -------
-        dict
+        OrderedDict
             e.g. {'customer_full_name': 'customer_full_name.keyword', ...}
         """
         if field_names is None:
             field_names = self.source_fields()
-        aggregatables = {}
+        aggregatables = OrderedDict()
         for field_name in field_names:
             capabilities = self.field_capabilities(field_name)
             if capabilities['aggregatable']:
@@ -478,7 +479,7 @@ class Mappings:
                     aggregatables[field_name_keyword] = field_name
 
         if not aggregatables:
-            raise ValueError("Aggregations not supported for ", field_name)
+            raise ValueError("Aggregations not supported for ", field_names)
 
         return aggregatables
 
@@ -533,11 +534,15 @@ class Mappings:
             Source field name + pd_dtype as np.dtype
         """
         if field_names is not None:
-            return pd.Series(
-                {key: np.dtype(self._source_field_pd_dtypes[key]) for key in field_names})
+            data = OrderedDict()
+            for key in field_names:
+                data[key] = np.dtype(self._source_field_pd_dtypes[key])
+            return pd.Series(data)
 
-        return pd.Series(
-            {key: np.dtype(value) for key, value in self._source_field_pd_dtypes.items()})
+        data = OrderedDict()
+        for key, value in self._source_field_pd_dtypes.items():
+            data[key] = np.dtype(value)
+        return pd.Series(data)
 
     def info_es(self, buf):
         buf.write("Mappings:\n")

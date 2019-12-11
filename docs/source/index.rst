@@ -48,3 +48,5 @@ In general, the data resides in elasticsearch and not in memory, which allows el
 
 * :doc:`examples/index`
 
+  * :doc:`examples/demo_notebook`
+  * :doc:`examples/online_retail_analysis`

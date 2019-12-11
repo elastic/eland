@@ -5,7 +5,7 @@ Examples
 ========
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
 
    demo_notebook
    online_retail_analysis

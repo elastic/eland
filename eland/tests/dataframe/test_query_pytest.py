@@ -15,7 +15,6 @@
 # File called _pytest for PyCharm compatability
 
 import pandas as pd
-from elasticsearch import Elasticsearch
 
 import eland as ed
 from eland.tests.common import ES_TEST_CLIENT

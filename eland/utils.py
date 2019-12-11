@@ -243,7 +243,7 @@ def read_csv(filepath_or_buffer,
 
     Parameters
     ----------
-    es_params: Elasticsearch client argument(s)
+    es_client: Elasticsearch client argument(s)
         - elasticsearch-py parameters or
         - elasticsearch-py instance or
         - eland.Client instance
@@ -260,8 +260,6 @@ def read_csv(filepath_or_buffer,
         * False: Include missing values - may cause bulk to fail
     es_geo_points: list, default None
         List of columns to map to geo_point data type
-    iterator
-        not supported
     chunksize
         number of csv rows to read before bulk index into Elasticsearch
 
@@ -275,6 +273,8 @@ def read_csv(filepath_or_buffer,
 
     Notes
     -----
+    iterator not supported
+
     TODO - currently the eland.DataFrame may not retain the order of the data in the csv.
     """
     kwds = dict()

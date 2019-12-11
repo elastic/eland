@@ -15,7 +15,6 @@
 # File called _pytest for PyCharm compatability
 from datetime import datetime
 
-from elasticsearch import Elasticsearch
 import numpy as np
 import pandas as pd
 
@@ -27,7 +26,6 @@ from eland.tests.common import assert_pandas_eland_series_equal
 
 
 class TestDataFrameDateTime(TestData):
-
     times = ["2019-11-26T19:58:15.246+0000",
              "1970-01-01T00:00:03.000+0000"]
     time_index_name = 'test_time_formats'

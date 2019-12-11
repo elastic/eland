@@ -3,6 +3,9 @@ from abc import ABC, abstractmethod
 # -------------------------------------------------------------------------------------------------------------------- #
 # PostProcessingActions                                                                                                #
 # -------------------------------------------------------------------------------------------------------------------- #
+from eland import SortOrder
+
+
 class PostProcessingAction(ABC):
     def __init__(self, action_type):
         """
@@ -27,6 +30,7 @@ class PostProcessingAction(ABC):
     def __repr__(self):
         pass
 
+
 class SortIndexAction(PostProcessingAction):
     def __init__(self):
         super().__init__("sort_index")
@@ -36,6 +40,7 @@ class SortIndexAction(PostProcessingAction):
 
     def __repr__(self):
         return "('{}')".format(self.type)
+
 
 class HeadAction(PostProcessingAction):
     def __init__(self, count):
@@ -76,10 +81,10 @@ class SortFieldAction(PostProcessingAction):
             raise ValueError("Expected ES sort params string (e.g. _doc:desc). Got '{}'".format(sort_params_string))
 
         self._sort_field = sort_params[0]
-        self._sort_order = Operations.SortOrder.from_string(sort_params[1])
+        self._sort_order = SortOrder.from_string(sort_params[1])
 
     def resolve_action(self, df):
-        if self._sort_order == Operations.SortOrder.ASC:
+        if self._sort_order == SortOrder.ASC:
             return df.sort_values(self._sort_field, True)
         return df.sort_values(self._sort_field, False)
 

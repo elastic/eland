@@ -18,7 +18,6 @@ import ast
 import time
 
 import pandas as pd
-from elasticsearch import Elasticsearch
 from pandas.util.testing import assert_frame_equal
 
 import eland as ed
