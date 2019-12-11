@@ -1,4 +1,4 @@
-eland.Serues.hist
+eland.Series.hist
 ====================
 
 .. currentmodule:: eland
