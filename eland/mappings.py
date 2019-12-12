@@ -546,5 +546,5 @@ class Mappings:
 
     def info_es(self, buf):
         buf.write("Mappings:\n")
-        buf.write(" capabilities: {0}\n".format(self._mappings_capabilities.to_string()))
-        buf.write(" date_fields_format: {0}\n".format(self._date_fields_format))
+        buf.write(" capabilities:\n{}\n".format(self._mappings_capabilities.to_string()))
+        buf.write(" date_fields_format: {}\n".format(self._date_fields_format))

@@ -530,7 +530,8 @@ class DataFrame(NDFrame):
          index_field: _id
          is_source_field: False
         Mappings:
-         capabilities:                     _source   es_dtype        pd_dtype  searchable  aggregatable
+         capabilities:
+                            _source   es_dtype        pd_dtype  searchable  aggregatable
         AvgTicketPrice         True      float         float64        True          True
         Cancelled              True    boolean            bool        True          True
         Carrier                True    keyword          object        True          True
