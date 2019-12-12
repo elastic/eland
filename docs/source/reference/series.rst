@@ -74,6 +74,13 @@ Reindexing / selection / label manipulation
 
    Series.rename
 
+Plotting
+~~~~~~~~
+.. autosummary::
+   :toctree: api/
+
+   Series.hist
+
 Serialization / IO / conversion
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. autosummary::
