@@ -29,6 +29,19 @@ class TestDataFrameRepr(TestData):
         # conftest.py changes this default - restore to original setting
         pd.set_option('display.max_rows', 60)
 
+    # Override these methods as:
+    # {'lat': '-33.94609833', 'lon': '151.177002'} order is not consistent in python 3.5 (dict's not ordered)
+    # remove from test for now
+    def ed_flights(self):
+        if not PY36:
+            return super().ed_flights().drop(columns=['OriginLocation', 'DestLocation'])
+        return super().ed_flights()
+
+    def pd_flights(self):
+        if not PY36:
+            return super().pd_flights().drop(columns=['OriginLocation', 'DestLocation'])
+        return super().pd_flights()
+
     """
     to_string
     """
@@ -52,14 +65,8 @@ class TestDataFrameRepr(TestData):
         self.num_rows_to_string(100, 200, 200)
 
     def num_rows_to_string(self, rows, max_rows_eland=None, max_rows_pandas=None):
-        # {'lat': '-33.94609833', 'lon': '151.177002'} order is not consistent in python 3.5 (dict's not ordered)
-        # remove from test for now
-        if not PY36:
-            ed_flights = self.ed_flights().drop(columns=['OriginLocation', 'DestLocation'])
-            pd_flights = self.pd_flights().drop(columns=['OriginLocation', 'DestLocation'])
-        else:
-            ed_flights = self.ed_flights()
-            pd_flights = self.pd_flights()
+        ed_flights = self.ed_flights()
+        pd_flights = self.pd_flights()
 
         ed_head = ed_flights.head(rows)
         pd_head = pd_flights.head(rows)
@@ -86,9 +93,6 @@ class TestDataFrameRepr(TestData):
     """
 
     def test_num_rows_repr(self):
-        ed_flights = self.ed_flights()
-        pd_flights = self.pd_flights()
-
         self.num_rows_repr(pd.get_option('display.max_rows') - 1, pd.get_option('display.max_rows') - 1)
         self.num_rows_repr(pd.get_option('display.max_rows'), pd.get_option('display.max_rows'))
         self.num_rows_repr(pd.get_option('display.max_rows') + 1, pd.get_option('display.min_rows'))
