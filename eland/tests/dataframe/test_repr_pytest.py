@@ -52,8 +52,14 @@ class TestDataFrameRepr(TestData):
         self.num_rows_to_string(100, 200, 200)
 
     def num_rows_to_string(self, rows, max_rows_eland=None, max_rows_pandas=None):
-        ed_flights = self.ed_flights()
-        pd_flights = self.pd_flights()
+        # {'lat': '-33.94609833', 'lon': '151.177002'} order is not consistent in python 3.5 (dict's not ordered)
+        # remove from test for now
+        if not PY36:
+            ed_flights = self.ed_flights().drop(columns=['OriginLocation', 'DestLocation'])
+            pd_flights = self.pd_flights().drop(columns=['OriginLocation', 'DestLocation'])
+        else:
+            ed_flights = self.ed_flights()
+            pd_flights = self.pd_flights()
 
         ed_head = ed_flights.head(rows)
         pd_head = pd_flights.head(rows)
