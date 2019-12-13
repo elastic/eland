@@ -447,10 +447,56 @@ class Mappings:
 
         return is_source_field
 
+    def aggregatable_field_name(self, field_name):
+        """
+        Return a single aggregatable field_name from field_name
+
+        Logic here is that field_name names are '_source' fields and keyword fields
+        may be nested beneath the field. E.g.
+        customer_full_name: text
+        customer_full_name.keyword: keyword
+
+        customer_full_name.keyword is the aggregatable field for customer_full_name
+
+        Parameters
+        ----------
+        field_name: str
+
+        Returns
+        -------
+        aggregatable_field_name: str or None
+            The aggregatable field name associated with field_name. This could be the field_name, or the
+            field_name.keyword.
+            or None if the field_name doesn't exist in the mapping, or isn't aggregatable
+        """
+        try:
+            capabilities = self._mappings_capabilities.loc[field_name]
+        except KeyError:
+            warnings.warn("Can not get field capabilities for field that is not in mappings '{}'".format(field_name))
+            return None
+
+        # check if capabilities['aggregatable'] == True
+        # 'aggregatable' must always exist
+        if capabilities['aggregatable']:
+            return field_name
+
+        # Try 'field_name.keyword'
+        field_name_keyword = field_name + '.keyword'
+        try:
+            capabilities = self._mappings_capabilities.loc[field_name_keyword]
+            if capabilities['aggregatable']:
+                return field_name_keyword
+        except KeyError:
+            pass
+
+        # If we get here we don't support aggs
+        warnings.warn("Aggregations not supported for '{}' or '{}'".format(field_name, field_name_keyword))
+        return None
+
     def aggregatable_field_names(self, field_names=None):
         """
         Return a dict of aggregatable field_names from all field_names or field_names list
-        {'customer_full_name': 'customer_full_name.keyword', ...}
+        {'customer_full_name.keyword': 'customer_full_name', ...}
 
         Logic here is that field_name names are '_source' fields and keyword fields
         may be nested beneath the field. E.g.
@@ -462,24 +508,16 @@ class Mappings:
         Returns
         -------
         OrderedDict
-            e.g. {'customer_full_name': 'customer_full_name.keyword', ...}
+            key = aggregatable_field_name, value = field_name
+            e.g. {'customer_full_name.keyword': 'customer_full_name', ...}
         """
         if field_names is None:
             field_names = self.source_fields()
         aggregatables = OrderedDict()
         for field_name in field_names:
-            capabilities = self.field_capabilities(field_name)
-            if capabilities['aggregatable']:
-                aggregatables[field_name] = field_name
-            else:
-                # Try 'field_name.keyword'
-                field_name_keyword = field_name + '.keyword'
-                capabilities = self.field_capabilities(field_name_keyword)
-                if not capabilities.empty and capabilities.get('aggregatable'):
-                    aggregatables[field_name_keyword] = field_name
-
-        if not aggregatables:
-            raise ValueError("Aggregations not supported for ", field_names)
+            aggregatable_field_name = self.aggregatable_field_name(field_name)
+            if aggregatable_field_name is not None:
+                aggregatables[aggregatable_field_name] = field_name
 
         return aggregatables
 

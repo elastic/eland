@@ -118,7 +118,7 @@ class DataFrame(NDFrame):
         There are effectively 2 constructors:
 
         1. client, index_pattern, columns, index_field
-        2. query_compiler (eland.ElandQueryCompiler)
+        2. query_compiler (eland.QueryCompiler)
 
         The constructor with 'query_compiler' is for internal use only.
         """

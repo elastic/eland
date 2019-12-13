@@ -90,6 +90,8 @@ class QueryCompiler:
         return pd.Index(field_names)
 
     def _set_field_names(self, field_names):
+        # update name mapper
+        self._name_mapper.set_field_names(field_names)
         self._operations.set_field_names(field_names)
 
     field_names = property(_get_field_names, _set_field_names)
@@ -118,6 +120,9 @@ class QueryCompiler:
     @property
     def dtypes(self):
         columns = self._operations.get_field_names()
+
+        # map renames
+        columns = self._name_mapper.field_to_display_names(columns)
 
         return self._mappings.dtypes(columns)
 
@@ -475,7 +480,7 @@ class QueryCompiler:
 
         self._index.info_es(buf)
         self._mappings.info_es(buf)
-        self._operations.info_es(buf)
+        self._operations.info_es(self, buf)
         self._name_mapper.info_es(buf)
 
     def describe(self):
@@ -533,15 +538,28 @@ class QueryCompiler:
                 "{0} != {1}".format(self._index_pattern, right._index_pattern)
             )
 
-    def check_str_arithmetics(self, right, self_field, right_field):
+    def check_str_arithmetics(self, right_query_compiler, self_field, right_field):
         """
         In the case of string arithmetics, we need an additional check to ensure that the
         selected fields are aggregatable.
 
+        This is because the derived scripted metric field using `doc['field'].value - which requires
+        a doc_values field.
+
         Parameters
         ----------
-        right: QueryCompiler
+        right_query_compiler: QueryCompiler
             The query compiler to compare self to
+        self_field: str
+            Field from this query compiler to check
+        right_field: str
+            Field from the right query compiler to check
+
+        Returns
+        -------
+        tuple: (str, str)
+            self_aggregatable_field - aggregatable field corresponding to self_field
+            right_aggregatable_field - aggregatable field corresponding to right_field
 
         Raises
         ------
@@ -549,30 +567,48 @@ class QueryCompiler:
             If string arithmetic operations aren't possible
         """
 
-        # only check compatibility if right is an ElandQueryCompiler
+        # only check compatibility if right is an QueryCompiler
         # else return the raw string as the new field name
-        right_agg = {right_field: right_field}
-        if right:
-            self.check_arithmetics(right)
-            right_agg = right._mappings.aggregatable_field_names([right_field])
+        right_aggregatable_field = right_field
+        if right_query_compiler:
+            self.check_arithmetics(right_query_compiler)
 
-        self_agg = self._mappings.aggregatable_field_names([self_field])
+            # right_field is a display field. See if a mapping exists for it first
+            right_field = self._name_mapper.display_to_field_names([right_field])[0]
+            right_aggregatable_field = right_query_compiler._mappings.aggregatable_field_name(right_field)
 
-        if self_agg and right_agg:
-            return list(self_agg.keys())[0], list(right_agg.keys())[0]
+        self_field = self._name_mapper.display_to_field_names([self_field])[0]
+        self_aggregatable_field = self._mappings.aggregatable_field_name(self_field)
 
+        if self_aggregatable_field is not None and right_aggregatable_field is not None:
+            return self_aggregatable_field, right_aggregatable_field
         else:
             raise ValueError(
-                "Can not perform arithmetic operations on non aggregatable fields"
+                "Can not perform arithmetic operations on non aggregatable fields. "
                 "One of [{}, {}] is not aggregatable.".format(self_field, right_field)
             )
 
-    def arithmetic_op_fields(self, new_field_name, op, left_field, right_field, op_type=None):
+    def arithmetic_op_fields(self, display_name, arithmetic_object):
         result = self.copy()
 
-        result._operations.arithmetic_op_fields(new_field_name, op, left_field, right_field, op_type)
+        # create a new field name for this display name
+        field_name = "script_field_{}".format(display_name)
+        result.field_names = [field_name]
+        result.rename({field_name: display_name}, inplace=True)
+
+        result._operations.arithmetic_op_fields(field_name, arithmetic_object)
 
         return result
+
+    def get_arithmetic_op_fields(self):
+        return self._operations.get_arithmetic_op_fields()
+
+    def display_name_to_aggregatable_name(self, display_name):
+        field_name = self._name_mapper.display_to_field_names(display_name)[0]
+
+        aggregatable_field_name = self._mappings.aggregatable_field_name(field_name)
+
+        return aggregatable_field_name
 
     """
     Internal class to deal with column renaming and script_fields
@@ -621,11 +657,27 @@ class QueryCompiler:
         def display_names_mapper(self):
             return self._field_to_display_names
 
+        def set_field_names(self, field_names):
+            field_to_display_names = {}
+            display_to_field_names = {}
+
+            for field_name in field_names:
+                if field_name in self._field_to_display_names:
+                    display_name = self._field_to_display_names[field_name]
+                    field_to_display_names[field_name] = display_name
+                    display_to_field_names[display_name] = field_name
+
+            self._field_to_display_names = field_to_display_names
+            self._display_to_field_names = display_to_field_names
+
         @property
         def empty(self):
             return not self._display_to_field_names
 
         def field_to_display_names(self, field_names):
+            if type(field_names) is str or field_names is None:
+                field_names = [field_names]
+
             if self.empty:
                 return field_names
 
@@ -641,6 +693,9 @@ class QueryCompiler:
             return display_names
 
         def display_to_field_names(self, display_names):
+            if type(display_names) is str or display_names is None:
+                display_names = [display_names]
+
             if self.empty:
                 return display_names
 

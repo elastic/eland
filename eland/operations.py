@@ -42,6 +42,7 @@ class Operations:
             self._tasks = []
         else:
             self._tasks = tasks
+        self._arithmetic_op_fields_task = None
         self._field_names = field_names
 
     def __constructor__(self, *args, **kwargs):
@@ -60,12 +61,15 @@ class Operations:
         task = TailTask(index.sort_field, n)
         self._tasks.append(task)
 
-    def arithmetic_op_fields(self, field_name, op_name, left_field, right_field, op_type=None):
-        # Set this as a column we want to retrieve
-        self.set_field_names([field_name])
+    def arithmetic_op_fields(self, display_name, arithmetic_series):
+        if self._arithmetic_op_fields_task is None:
+            self._arithmetic_op_fields_task = ArithmeticOpFieldsTask(display_name, arithmetic_series)
+        else:
+            self._arithmetic_op_fields_task.update(display_name, arithmetic_series)
 
-        task = ArithmeticOpFieldsTask(field_name, op_name, left_field, right_field, op_type)
-        self._tasks.append(task)
+    def get_arithmetic_op_fields(self):
+        # get an ArithmeticOpFieldsTask if it exists
+        return self._arithmetic_op_fields_task
 
     def set_field_names(self, field_names):
         if not isinstance(field_names, list):
@@ -82,7 +86,7 @@ class Operations:
         return repr(self._tasks)
 
     def count(self, query_compiler):
-        query_params, post_processing = self._resolve_tasks()
+        query_params, post_processing = self._resolve_tasks(query_compiler)
 
         # Elasticsearch _count is very efficient and so used to return results here. This means that
         # data frames that have restricted size or sort params will not return valid results
@@ -141,7 +145,7 @@ class Operations:
         pandas.Series
             Series containing results of `func` applied to the field_name(s)
         """
-        query_params, post_processing = self._resolve_tasks()
+        query_params, post_processing = self._resolve_tasks(query_compiler)
 
         size = self._size(query_params, post_processing)
         if size is not None:
@@ -201,7 +205,7 @@ class Operations:
         pandas.Series
             Series containing results of `func` applied to the field_name(s)
         """
-        query_params, post_processing = self._resolve_tasks()
+        query_params, post_processing = self._resolve_tasks(query_compiler)
 
         size = self._size(query_params, post_processing)
         if size is not None:
@@ -241,7 +245,7 @@ class Operations:
 
     def _hist_aggs(self, query_compiler, num_bins):
         # Get histogram bins and weights for numeric field_names
-        query_params, post_processing = self._resolve_tasks()
+        query_params, post_processing = self._resolve_tasks(query_compiler)
 
         size = self._size(query_params, post_processing)
         if size is not None:
@@ -384,7 +388,7 @@ class Operations:
         return ed_aggs
 
     def aggs(self, query_compiler, pd_aggs):
-        query_params, post_processing = self._resolve_tasks()
+        query_params, post_processing = self._resolve_tasks(query_compiler)
 
         size = self._size(query_params, post_processing)
         if size is not None:
@@ -434,7 +438,7 @@ class Operations:
         return df
 
     def describe(self, query_compiler):
-        query_params, post_processing = self._resolve_tasks()
+        query_params, post_processing = self._resolve_tasks(query_compiler)
 
         size = self._size(query_params, post_processing)
         if size is not None:
@@ -528,7 +532,7 @@ class Operations:
         return collector.ret
 
     def _es_results(self, query_compiler, collector):
-        query_params, post_processing = self._resolve_tasks()
+        query_params, post_processing = self._resolve_tasks(query_compiler)
 
         size, sort_params = Operations._query_params_to_size_and_sort(query_params)
 
@@ -591,7 +595,7 @@ class Operations:
 
     def index_count(self, query_compiler, field):
         # field is the index field so count values
-        query_params, post_processing = self._resolve_tasks()
+        query_params, post_processing = self._resolve_tasks(query_compiler)
 
         size = self._size(query_params, post_processing)
 
@@ -605,12 +609,12 @@ class Operations:
 
         return query_compiler._client.count(index=query_compiler._index_pattern, body=body.to_count_body())
 
-    def _validate_index_operation(self, items):
+    def _validate_index_operation(self, query_compiler, items):
         if not isinstance(items, list):
             raise TypeError("list item required - not {}".format(type(items)))
 
         # field is the index field so count values
-        query_params, post_processing = self._resolve_tasks()
+        query_params, post_processing = self._resolve_tasks(query_compiler)
 
         size = self._size(query_params, post_processing)
 
@@ -621,7 +625,7 @@ class Operations:
         return query_params, post_processing
 
     def index_matches_count(self, query_compiler, field, items):
-        query_params, post_processing = self._validate_index_operation(items)
+        query_params, post_processing = self._validate_index_operation(query_compiler, items)
 
         body = Query(query_params['query'])
 
@@ -633,7 +637,7 @@ class Operations:
         return query_compiler._client.count(index=query_compiler._index_pattern, body=body.to_count_body())
 
     def drop_index_values(self, query_compiler, field, items):
-        self._validate_index_operation(items)
+        self._validate_index_operation(query_compiler, items)
 
         # Putting boolean queries together
         # i = 10
@@ -677,7 +681,7 @@ class Operations:
 
         return df
 
-    def _resolve_tasks(self):
+    def _resolve_tasks(self, query_compiler):
         # We now try and combine all tasks into an Elasticsearch query
         # Some operations can be simply combined into a single query
         # other operations require pre-queries and then combinations
@@ -692,7 +696,10 @@ class Operations:
         post_processing = []
 
         for task in self._tasks:
-            query_params, post_processing = task.resolve_task(query_params, post_processing)
+            query_params, post_processing = task.resolve_task(query_params, post_processing, query_compiler)
+
+        query_params, post_processing = self._arithmetic_op_fields_task.resolve_task(query_params, post_processing,
+                                                                                     query_compiler)
 
         return query_params, post_processing
 
@@ -710,11 +717,11 @@ class Operations:
         # This can return None
         return size
 
-    def info_es(self, buf):
+    def info_es(self, query_compiler, buf):
         buf.write("Operations:\n")
         buf.write(" tasks: {0}\n".format(self._tasks))
 
-        query_params, post_processing = self._resolve_tasks()
+        query_params, post_processing = self._resolve_tasks(query_compiler)
         size, sort_params = Operations._query_params_to_size_and_sort(query_params)
         field_names = self.get_field_names()
 

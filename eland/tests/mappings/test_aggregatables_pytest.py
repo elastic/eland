@@ -13,12 +13,15 @@
 #      limitations under the License.
 
 # File called _pytest for PyCharm compatability
+import pytest
 
 from eland.tests.common import TestData
 
 
 class TestMappingsAggregatables(TestData):
 
+    # Ignores 'customer.gender' field
+    @pytest.mark.filterwarnings("ignore:Aggregations not supported")
     def test_ecommerce_all_aggregatables(self):
         ed_ecommerce = self.ed_ecommerce()
 
@@ -83,3 +86,39 @@ class TestMappingsAggregatables(TestData):
         aggregatables = ed_ecommerce._query_compiler._mappings.aggregatable_field_names(expected.values())
 
         assert expected == aggregatables
+
+    @pytest.mark.filterwarnings("ignore:Can not get field capabilities")
+    def test_ecommerce_non_existant_aggregatables(self):
+        ed_ecommerce = self.ed_ecommerce()
+
+        aggregatables = ed_ecommerce._query_compiler._mappings.aggregatable_field_names(['doesnt_exist', 'none'])
+
+    def test_ecommerce_single_aggregatable_field(self):
+        ed_ecommerce = self.ed_ecommerce()
+
+        aggregatable = ed_ecommerce._query_compiler._mappings.aggregatable_field_name('user')
+
+        assert 'user' == aggregatable
+
+    def test_ecommerce_single_keyword_aggregatable_field(self):
+        ed_ecommerce = self.ed_ecommerce()
+
+        aggregatable = ed_ecommerce._query_compiler._mappings.aggregatable_field_name('customer_first_name')
+
+        assert 'customer_first_name.keyword' == aggregatable
+
+    @pytest.mark.filterwarnings("ignore:Can not get field capabilities")
+    def test_ecommerce_single_non_existant_field(self):
+        ed_ecommerce = self.ed_ecommerce()
+
+        aggregatable = ed_ecommerce._query_compiler._mappings.aggregatable_field_name('non_existant')
+
+        assert None == aggregatable
+
+    @pytest.mark.filterwarnings("ignore:Aggregations not supported")
+    def test_ecommerce_single_non_aggregatable_field(self):
+        ed_ecommerce = self.ed_ecommerce()
+
+        aggregatable = ed_ecommerce._query_compiler._mappings.aggregatable_field_name('customer_gender')
+
+        assert None == aggregatable
