@@ -25,35 +25,31 @@
 #      limitations under the License.
 
 # File called _pytest for PyCharm compatability
+import pandas as pd
+from pandas.util.testing import assert_index_equal
 
-from eland.arithmetics import *
 from eland.tests.common import TestData
 
 
-class TestQueryCopy(TestData):
+class TestGetFieldNames(TestData):
 
-    def test_numeric(self):
-        v = 10.0
-        s = ArithmeticSeries("name")
+    def test_get_field_names_all(self):
+        ed_flights = self.ed_flights()
+        pd_flights = self.pd_flights()
 
-        v = 10.0 + 10.0 / v
-        v = v / 10.0 - 5.0
+        fields1 = ed_flights._query_compiler.get_field_names(include_scripted_fields=False)
+        fields2 = ed_flights._query_compiler.get_field_names(include_scripted_fields=True)
 
-        s = (10.0) + (10.0) / s
-        s = s / (10.0) - (5.0)
+        assert fields1 == fields2
+        assert_index_equal(pd_flights.columns, pd.Index(fields1))
 
-        print(s.resolve())
-        print(v)
+    def test_get_field_names_selected(self):
+        ed_flights = self.ed_flights()[['Carrier', 'AvgTicketPrice']]
+        pd_flights = self.pd_flights()[['Carrier', 'AvgTicketPrice']]
 
-    def test_string(self):
-        v = "first"
-        first = ArithmeticSeries("first")
-        last = ArithmeticSeries("last")
+        fields1 = ed_flights._query_compiler.get_field_names(include_scripted_fields=False)
+        fields2 = ed_flights._query_compiler.get_field_names(include_scripted_fields=True)
 
-        v = v + " last"
-
-        s = first + ArithmeticString(" ") + last
-
-        print(s.resolve())
-        print(v)
+        assert fields1 == fields2
+        assert_index_equal(pd_flights.columns, pd.Index(fields1))
 

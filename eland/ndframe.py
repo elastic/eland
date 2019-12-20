@@ -60,7 +60,7 @@ class NDFrame(ABC):
             A reference to a Elasticsearch python client
         """
         if query_compiler is None:
-            query_compiler = QueryCompiler(client=client, index_pattern=index_pattern, field_names=columns,
+            query_compiler = QueryCompiler(client=client, index_pattern=index_pattern, display_names=columns,
                                            index_field=index_field)
         self._query_compiler = query_compiler
 

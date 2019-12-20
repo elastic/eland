@@ -26,11 +26,17 @@
 from abc import ABC, abstractmethod
 from io import StringIO
 
+import numpy as np
+
 
 class ArithmeticObject(ABC):
     @property
     @abstractmethod
     def value(self):
+        pass
+
+    @abstractmethod
+    def dtype(self):
         pass
 
     @abstractmethod
@@ -50,15 +56,21 @@ class ArithmeticString(ArithmeticObject):
         return self.value
 
     @property
+    def dtype(self):
+        return np.dtype(object)
+
+    @property
     def value(self):
         return "'{}'".format(self._value)
 
     def __repr__(self):
         return self.value
 
+
 class ArithmeticNumber(ArithmeticObject):
-    def __init__(self, value):
+    def __init__(self, value, dtype):
         self._value = value
+        self._dtype = dtype
 
     def resolve(self):
         return self.value
@@ -67,22 +79,40 @@ class ArithmeticNumber(ArithmeticObject):
     def value(self):
         return "{}".format(self._value)
 
+    @property
+    def dtype(self):
+        return self._dtype
+
     def __repr__(self):
         return self.value
 
+
 class ArithmeticSeries(ArithmeticObject):
-    def __init__(self, query_compiler, display_name):
+    def __init__(self, query_compiler, display_name, dtype):
         task = query_compiler.get_arithmetic_op_fields()
         if task is not None:
             self._value = task._arithmetic_series.value
             self._tasks = task._arithmetic_series._tasks.copy()
+            self._dtype = dtype
         else:
-            self._value = "doc['{}'].value".format(display_name)
+            aggregatable_field_name = query_compiler.display_name_to_aggregatable_name(display_name)
+            if aggregatable_field_name is None:
+                raise ValueError(
+                    "Can not perform arithmetic operations on non aggregatable fields"
+                    "{} is not aggregatable.".format(display_name)
+                )
+
+            self._value = "doc['{}'].value".format(aggregatable_field_name)
             self._tasks = []
+            self._dtype = dtype
 
     @property
     def value(self):
         return self._value
+
+    @property
+    def dtype(self):
+        return self._dtype
 
     def __repr__(self):
         buf = StringIO()
@@ -128,9 +158,39 @@ class ArithmeticSeries(ArithmeticObject):
         return value
 
     def arithmetic_operation(self, op_name, right):
+        # check if operation is supported (raises on unsupported)
+        self.check_is_supported(op_name, right)
+
         task = ArithmeticTask(op_name, right)
         self._tasks.append(task)
         return self
+
+    def check_is_supported(self, op_name, right):
+        # supported set is
+        # series.number op_name number (all ops)
+        # series.string op_name string (only add)
+        # series.string op_name int (only mul)
+        # series.string op_name float (none)
+        # series.int op_name string (none)
+        # series.float op_name string (no1ne)
+
+        # see end of https://pandas.pydata.org/pandas-docs/stable/getting_started/basics.html?highlight=dtype for
+        # dtype heirarchy
+        if np.issubdtype(self.dtype, np.number) and np.issubdtype(right.dtype, np.number):
+            # series.number op_name number (all ops)
+            return True
+        elif np.issubdtype(self.dtype, np.object_) and np.issubdtype(right.dtype, np.object_):
+            # series.string op_name string (only add)
+            if op_name == '__add__' or op_name == '__radd__':
+                return True
+        elif np.issubdtype(self.dtype, np.object_) and np.issubdtype(right.dtype, np.integer):
+            # series.string op_name int (only mul)
+            if op_name == '__mul__':
+                return True
+
+        raise TypeError(
+            "Arithmetic operation on incompatible types {} {} {}".format(self.dtype, op_name, right.dtype))
+
 
 class ArithmeticTask:
     def __init__(self, op_name, object):
@@ -153,4 +213,3 @@ class ArithmeticTask:
     @property
     def object(self):
         return self._object
-

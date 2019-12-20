@@ -31,10 +31,17 @@ class TestSeriesRename(TestData):
         pd_renamed = pd_carrier.rename("renamed")
         ed_renamed = ed_carrier.rename("renamed")
 
+        print(pd_renamed)
+        print(ed_renamed)
+
+        print(ed_renamed.info_es())
+
         assert_pandas_eland_series_equal(pd_renamed, ed_renamed)
 
         pd_renamed2 = pd_renamed.rename("renamed2")
         ed_renamed2 = ed_renamed.rename("renamed2")
+
+        print(ed_renamed2.info_es())
 
         assert "renamed2" == ed_renamed2.name
 

@@ -38,6 +38,9 @@ class TestDataFrameHist(TestData):
         pd_weights = pd.DataFrame(
             {'DistanceKilometers': pd_distancekilometers[0], 'FlightDelayMin': pd_flightdelaymin[0]})
 
+        t = ed_flights[['DistanceKilometers', 'FlightDelayMin']]
+        print(t.columns)
+
         ed_bins, ed_weights = ed_flights[['DistanceKilometers', 'FlightDelayMin']]._hist(num_bins=num_bins)
 
         # Numbers are slightly different

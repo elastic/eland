@@ -75,23 +75,25 @@ class TestMappingsAggregatables(TestData):
         assert expected == aggregatables
 
     def test_ecommerce_selected_aggregatables(self):
-        ed_ecommerce = self.ed_ecommerce()
-
         expected = {'category.keyword': 'category',
                     'currency': 'currency',
                     'customer_birth_date': 'customer_birth_date',
                     'customer_first_name.keyword': 'customer_first_name',
                     'type': 'type', 'user': 'user'}
 
-        aggregatables = ed_ecommerce._query_compiler._mappings.aggregatable_field_names(expected.values())
+        ed_ecommerce = self.ed_ecommerce()[list(expected.values())]
+
+        print(ed_ecommerce.info_es())
+
+        aggregatables = ed_ecommerce._query_compiler._mappings.aggregatable_field_names()
 
         assert expected == aggregatables
 
-    @pytest.mark.filterwarnings("ignore:Can not get field capabilities")
     def test_ecommerce_non_existant_aggregatables(self):
         ed_ecommerce = self.ed_ecommerce()
 
-        aggregatables = ed_ecommerce._query_compiler._mappings.aggregatable_field_names(['doesnt_exist', 'none'])
+        with pytest.raises(KeyError):
+            ed_ecommerce._query_compiler._mappings.display_names = ['doesnt_exist', 'none']
 
     def test_ecommerce_single_aggregatable_field(self):
         ed_ecommerce = self.ed_ecommerce()
@@ -107,13 +109,11 @@ class TestMappingsAggregatables(TestData):
 
         assert 'customer_first_name.keyword' == aggregatable
 
-    @pytest.mark.filterwarnings("ignore:Can not get field capabilities")
     def test_ecommerce_single_non_existant_field(self):
         ed_ecommerce = self.ed_ecommerce()
 
-        aggregatable = ed_ecommerce._query_compiler._mappings.aggregatable_field_name('non_existant')
-
-        assert None == aggregatable
+        with pytest.raises(KeyError):
+            aggregatable = ed_ecommerce._query_compiler._mappings.aggregatable_field_name('non_existant')
 
     @pytest.mark.filterwarnings("ignore:Aggregations not supported")
     def test_ecommerce_single_non_aggregatable_field(self):

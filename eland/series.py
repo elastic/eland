@@ -159,7 +159,7 @@ class Series(NDFrame):
         return self._query_compiler.columns[0]
 
     def _set_name(self, name):
-        self._query_compiler.rename({self.name: name}, inplace=True, is_series=True)
+        self._query_compiler.rename({self.name: name}, inplace=True)
 
     name = property(_get_name, _set_name)
 
@@ -273,6 +273,8 @@ class Series(NDFrame):
         """
         Return a string representation for a particular Series.
         """
+        buf = StringIO()
+
         # max_rows and max_cols determine the maximum size of the pretty printed tabular
         # representation of the series. pandas defaults are 60 and 20 respectively.
         # series where len(series) > max_rows shows a truncated view with 10 rows shown.
@@ -1052,10 +1054,10 @@ class Series(NDFrame):
             # Check we can the 2 Series are compatible (raises on error):
             self._query_compiler.check_arithmetics(right._query_compiler)
 
-            right_object = ArithmeticSeries(right._query_compiler, right.name)
+            right_object = ArithmeticSeries(right._query_compiler, right.name, right._dtype)
             display_name = None
         elif np.issubdtype(np.dtype(type(right)), np.number):
-            right_object = ArithmeticNumber(right)
+            right_object = ArithmeticNumber(right, np.dtype(type(right)))
             display_name = self.name
         elif isinstance(right, str):
             right_object = ArithmeticString(right)
@@ -1066,10 +1068,13 @@ class Series(NDFrame):
                     .format(method_name, type(self), self._dtype, type(right).__name__)
             )
 
-        left_object = ArithmeticSeries(self._query_compiler, self.name)
+        left_object = ArithmeticSeries(self._query_compiler, self.name, self._dtype)
         left_object.arithmetic_operation(method_name, right_object)
 
         series = Series(query_compiler=self._query_compiler.arithmetic_op_fields(display_name, left_object))
+
+        # force set name to 'display_name'
+        series._query_compiler._mappings._display_names = [display_name]
 
         return series
 

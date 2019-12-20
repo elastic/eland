@@ -37,6 +37,27 @@ class TestSeriesArithmetics(TestData):
             'total_unique_products'] * 10.0 + pd_df['total_quantity']
         ed_series = ed_df['taxful_total_price'] + 5 + ed_df['total_quantity'] / ed_df['taxless_total_price'] - ed_df[
             'total_unique_products'] * 10.0 + ed_df['total_quantity']
+        print(ed_series.info_es())
+        assert_pandas_eland_series_equal(pd_series, ed_series, check_less_precise=True)
+
+    def test_ecommerce_series_simple_integer_addition(self):
+        pd_df = self.pd_ecommerce().head(100)
+        ed_df = self.ed_ecommerce().head(100)
+
+        pd_series = pd_df['taxful_total_price'] + 5
+        ed_series = ed_df['taxful_total_price'] + 5
+
+        assert_pandas_eland_series_equal(pd_series, ed_series, check_less_precise=True)
+
+    def test_ecommerce_series_simple_series_addition(self):
+        pd_df = self.pd_ecommerce().head(100)
+        ed_df = self.ed_ecommerce().head(100)
+
+        pd_series = pd_df['taxful_total_price'] + pd_df['total_quantity']
+        ed_series = ed_df['taxful_total_price'] + ed_df['total_quantity']
+
+        print(ed_series.info_es())
+
         assert_pandas_eland_series_equal(pd_series, ed_series, check_less_precise=True)
 
     def test_ecommerce_series_basic_arithmetics(self):
@@ -209,7 +230,6 @@ class TestSeriesArithmetics(TestData):
 
         # str op int (throws)
         for op in non_string_numeric_ops:
-            print(op)
             with pytest.raises(TypeError):
                 pd_series = getattr(pd_df['currency'], op)(pd_df['total_quantity'])
             with pytest.raises(TypeError):

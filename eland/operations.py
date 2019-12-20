@@ -37,19 +37,9 @@ class Operations:
     (see https://docs.dask.org/en/latest/spec.html)
     """
 
-    def __init__(self, tasks=None, field_names=None):
-        if tasks is None:
+    def __init__(self):
             self._tasks = []
-        else:
-            self._tasks = tasks
-        self._arithmetic_op_fields_task = None
-        self._field_names = field_names
-
-    def __constructor__(self, *args, **kwargs):
-        return type(self)(*args, **kwargs)
-
-    def copy(self):
-        return self.__constructor__(tasks=copy.deepcopy(self._tasks), field_names=copy.deepcopy(self._field_names))
+            self._arithmetic_op_fields_task = None
 
     def head(self, index, n):
         # Add a task that is an ascending sort with size=n
@@ -71,17 +61,6 @@ class Operations:
         # get an ArithmeticOpFieldsTask if it exists
         return self._arithmetic_op_fields_task
 
-    def set_field_names(self, field_names):
-        if not isinstance(field_names, list):
-            field_names = list(field_names)
-
-        self._field_names = field_names
-
-        return self._field_names
-
-    def get_field_names(self):
-        return self._field_names
-
     def __repr__(self):
         return repr(self._tasks)
 
@@ -98,7 +77,7 @@ class Operations:
                                       .format(query_params, post_processing))
 
         # Only return requested field_names
-        fields = query_compiler.field_names
+        fields = query_compiler.get_field_names(include_scripted_fields=False)
 
         counts = OrderedDict()
         for field in fields:
@@ -151,17 +130,15 @@ class Operations:
         if size is not None:
             raise NotImplementedError("Can not count field matches if size is set {}".format(size))
 
-        field_names = self.get_field_names()
-
         body = Query(query_params['query'])
 
         # some metrics aggs (including cardinality) work on all aggregatable fields
         # therefore we include an optional all parameter on operations
         # that call _metric_aggs
         if field_types == 'aggregatable':
-            source_fields = query_compiler._mappings.aggregatable_field_names(field_names)
+            source_fields = query_compiler._mappings.aggregatable_field_names()
         else:
-            source_fields = query_compiler._mappings.numeric_source_fields(field_names)
+            source_fields = query_compiler._mappings.numeric_source_fields()
 
         for field in source_fields:
             body.metric_aggs(field, func, field)
@@ -211,10 +188,8 @@ class Operations:
         if size is not None:
             raise NotImplementedError("Can not count field matches if size is set {}".format(size))
 
-        field_names = self.get_field_names()
-
         # Get just aggregatable field_names
-        aggregatable_field_names = query_compiler._mappings.aggregatable_field_names(field_names)
+        aggregatable_field_names = query_compiler._mappings.aggregatable_field_names()
 
         body = Query(query_params['query'])
 
@@ -235,7 +210,7 @@ class Operations:
                 results[bucket['key']] = bucket['doc_count']
 
         try:
-            name = field_names[0]
+            name = aggregatable_field_names.keys()[0]
         except IndexError:
             name = None
 
@@ -251,9 +226,7 @@ class Operations:
         if size is not None:
             raise NotImplementedError("Can not count field matches if size is set {}".format(size))
 
-        field_names = self.get_field_names()
-
-        numeric_source_fields = query_compiler._mappings.numeric_source_fields(field_names)
+        numeric_source_fields = query_compiler._mappings.numeric_source_fields()
 
         body = Query(query_params['query'])
 
@@ -394,7 +367,7 @@ class Operations:
         if size is not None:
             raise NotImplementedError("Can not count field matches if size is set {}".format(size))
 
-        field_names = self.get_field_names()
+        field_names = query_compiler.get_field_names(include_scripted_fields=False)
 
         body = Query(query_params['query'])
 
@@ -444,9 +417,7 @@ class Operations:
         if size is not None:
             raise NotImplementedError("Can not count field matches if size is set {}".format(size))
 
-        field_names = self.get_field_names()
-
-        numeric_source_fields = query_compiler._mappings.numeric_source_fields(field_names, include_bool=False)
+        numeric_source_fields = query_compiler._mappings.numeric_source_fields(include_bool=False)
 
         # for each field we compute:
         # count, mean, std, min, 25%, 50%, 75%, max
@@ -544,7 +515,9 @@ class Operations:
             body['script_fields'] = script_fields
 
         # Only return requested field_names
-        field_names = self.get_field_names()
+        _source = query_compiler.get_field_names(include_scripted_fields=False)
+        if not _source:
+            _source = False
 
         es_results = None
 
@@ -559,7 +532,7 @@ class Operations:
                         size=size,
                         sort=sort_params,
                         body=body,
-                        _source=field_names)
+                        _source=_source)
                 except Exception:
                     # Catch all ES errors and print debug (currently to stdout)
                     error = {
@@ -567,7 +540,7 @@ class Operations:
                         'size': size,
                         'sort': sort_params,
                         'body': body,
-                        '_source': field_names
+                        '_source': _source
                     }
                     print("Elasticsearch error:", error)
                     raise
@@ -576,7 +549,7 @@ class Operations:
             es_results = query_compiler._client.scan(
                 index=query_compiler._index_pattern,
                 query=body,
-                _source=field_names)
+                _source=_source)
             # create post sort
             if sort_params is not None:
                 post_processing.append(SortFieldAction(sort_params))
@@ -698,8 +671,9 @@ class Operations:
         for task in self._tasks:
             query_params, post_processing = task.resolve_task(query_params, post_processing, query_compiler)
 
-        query_params, post_processing = self._arithmetic_op_fields_task.resolve_task(query_params, post_processing,
-                                                                                     query_compiler)
+        if self._arithmetic_op_fields_task is not None:
+            query_params, post_processing = self._arithmetic_op_fields_task.resolve_task(query_params, post_processing,
+                                                                                         query_compiler)
 
         return query_params, post_processing
 
@@ -723,7 +697,7 @@ class Operations:
 
         query_params, post_processing = self._resolve_tasks(query_compiler)
         size, sort_params = Operations._query_params_to_size_and_sort(query_params)
-        field_names = self.get_field_names()
+        _source = query_compiler._mappings.get_field_names()
 
         script_fields = query_params['query_script_fields']
         query = Query(query_params['query'])
@@ -733,7 +707,7 @@ class Operations:
 
         buf.write(" size: {0}\n".format(size))
         buf.write(" sort_params: {0}\n".format(sort_params))
-        buf.write(" _source: {0}\n".format(field_names))
+        buf.write(" _source: {0}\n".format(_source))
         buf.write(" body: {0}\n".format(body))
         buf.write(" post_processing: {0}\n".format(post_processing))
 

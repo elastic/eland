@@ -30,26 +30,22 @@ class Mappings:
     _mappings_capabilities: pandas.DataFrame
         A data frame summarising the capabilities of the index mapping
 
-        _source     - is top level field (i.e. not a multi-field sub-field)
-        es_dtype    - Elasticsearch field datatype
-        pd_dtype    - Pandas datatype
-        searchable  - is the field searchable?
-        aggregatable- is the field aggregatable?
-                                        _source es_dtype    pd_dtype    searchable  aggregatable
-        maps-telemetry.min              True    long        int64       True        True
-        maps-telemetry.avg              True    float       float64     True        True
-        city                            True    text        object      True        False
-        user_name                       True    keyword     object      True        True
-        origin_location.lat.keyword     False   keyword     object      True        True
-        type                            True    keyword     object      True        True
-        origin_location.lat             True    text        object      True        False
-
+        ed_display_name - what is this field displayed as in eland?
+        _source         - is top level field (i.e. not a multi-field sub-field)
+        es_dtype        - Elasticsearch field datatype
+        pd_dtype        - Pandas datatype
+        searchable      - is the field searchable?
+        aggregatable    - is the field aggregatable?
+        scripted        - is the field a scripted_field?
     """
+
+    # the labels for each column
+    column_labels = ['ed_display_name', '_source', 'es_dtype', 'pd_dtype', 'searchable', 'aggregatable', 'scripted']
 
     def __init__(self,
                  client=None,
                  index_pattern=None,
-                 mappings=None):
+                 display_names=None):
         """
         Parameters
         ----------
@@ -59,39 +55,40 @@ class Mappings:
         index_pattern: str
             Elasticsearch index pattern
 
-        Copy constructor arguments
-
-        mappings: Mappings
-            Object to copy
+        display_names: list of str
+            Field names to display
         """
+        if (client is None) or (index_pattern is None):
+            raise ValueError("Can not initialise mapping without client or index_pattern {} {}", client, index_pattern)
 
         # here we keep track of the format of any date fields
         self._date_fields_format = dict()
-        if (client is not None) and (index_pattern is not None):
-            get_mapping = client.get_mapping(index=index_pattern)
+        get_mapping = client.get_mapping(index=index_pattern)
 
-            # Get all fields (including all nested) and then all field_caps
-            all_fields, self._date_fields_format = Mappings._extract_fields_from_mapping(get_mapping)
-            all_fields_caps = client.field_caps(index=index_pattern, fields='*')
+        # Get all fields (including all nested) and then all field_caps
+        all_fields, self._date_fields_format = Mappings._extract_fields_from_mapping(get_mapping)
+        all_fields_caps = client.field_caps(index=index_pattern, fields='*')
 
-            # Get top level (not sub-field multifield) mappings
-            source_fields, _ = Mappings._extract_fields_from_mapping(get_mapping, source_only=True)
+        # Get top level (not sub-field multifield) mappings
+        source_fields, _ = Mappings._extract_fields_from_mapping(get_mapping, source_only=True)
 
-            # Populate capability matrix of fields
-            # field_name, es_dtype, pd_dtype, is_searchable, is_aggregtable, is_source
-            self._mappings_capabilities = Mappings._create_capability_matrix(all_fields, source_fields, all_fields_caps)
-        else:
-            # straight copy
-            self._mappings_capabilities = mappings._mappings_capabilities.copy()
+        # Populate capability matrix of fields
+        self._mappings_capabilities = Mappings._create_capability_matrix(all_fields, source_fields, all_fields_caps)
 
         # Cache source field types for efficient lookup
         # (this massively improves performance of DataFrame.flatten)
-
         self._source_field_pd_dtypes = OrderedDict()
 
         for field_name in self._mappings_capabilities[self._mappings_capabilities._source].index:
             pd_dtype = self._mappings_capabilities.loc[field_name]['pd_dtype']
             self._source_field_pd_dtypes[field_name] = pd_dtype
+
+        # Store the display names we present back
+        self._display_names = self._mappings_capabilities[self._mappings_capabilities['ed_display_name'].notna()][
+            'ed_display_name'].to_list()
+        if display_names is not None:
+            # use setter to validate names
+            self.display_names = display_names
 
     @staticmethod
     def _extract_fields_from_mapping(mappings, source_only=False, date_format=None):
@@ -206,7 +203,6 @@ class Mappings:
         """
         all_fields_caps_fields = all_fields_caps['fields']
 
-        field_names = ['_source', 'es_dtype', 'pd_dtype', 'searchable', 'aggregatable']
         capability_matrix = OrderedDict()
 
         for field, field_caps in all_fields_caps_fields.items():
@@ -214,12 +210,17 @@ class Mappings:
                 # v = {'long': {'type': 'long', 'searchable': True, 'aggregatable': True}}
                 for kk, vv in field_caps.items():
                     _source = (field in source_fields)
+                    if _source:
+                        ed_display_name = field  # set display to field name for now
+                    else:
+                        ed_display_name = None
                     es_dtype = vv['type']
                     pd_dtype = Mappings._es_dtype_to_pd_dtype(vv['type'])
                     searchable = vv['searchable']
                     aggregatable = vv['aggregatable']
+                    scripted = False
 
-                    caps = [_source, es_dtype, pd_dtype, searchable, aggregatable]
+                    caps = [ed_display_name, _source, es_dtype, pd_dtype, searchable, aggregatable, scripted]
 
                     capability_matrix[field] = caps
 
@@ -232,7 +233,7 @@ class Mappings:
                                       format(field, vv['non_searchable_indices']),
                                       UserWarning)
 
-        capability_matrix_df = pd.DataFrame.from_dict(capability_matrix, orient='index', columns=field_names)
+        capability_matrix_df = pd.DataFrame.from_dict(capability_matrix, orient='index', columns=Mappings.column_labels)
 
         return capability_matrix_df.sort_index()
 
@@ -376,7 +377,9 @@ class Mappings:
 
         Returns
         -------
-        mappings_capabilities: pd.Series with index values:
+        mappings_capabilities: pd.Series with index values representing Elasticsearch field names:
+            ed_display_name: str
+                What is this field displayed as in eland?
             _source: bool
                 Is this field name a top-level source field?
             ed_dtype: str
@@ -387,6 +390,8 @@ class Mappings:
                 Is the field searchable in Elasticsearch?
             aggregatable: bool
                 Is the field aggregatable in Elasticsearch?
+            scripted: bool
+                Is this a scripted field?
         """
         try:
             field_capabilities = self._mappings_capabilities.loc[field_name]
@@ -407,7 +412,7 @@ class Mappings:
         """
         return self._date_fields_format.get(field_name)
 
-    def source_field_pd_dtype(self, field_name):
+    def field_name_pd_dtype(self, field_name):
         """
         Parameters
         ----------
@@ -426,6 +431,9 @@ class Mappings:
         if field_name in self._source_field_pd_dtypes:
             is_source_field = True
             pd_dtype = self._source_field_pd_dtypes[field_name]
+        else:
+            is_source_field = False
+            pd_dtype = self._mappings_capabilities.loc[field_name, 'pd_dtype']
 
         return is_source_field, pd_dtype
 
@@ -447,9 +455,9 @@ class Mappings:
 
         return is_source_field
 
-    def aggregatable_field_name(self, field_name):
+    def aggregatable_field_name(self, display_name):
         """
-        Return a single aggregatable field_name from field_name
+        Return a single aggregatable field_name from display_name
 
         Logic here is that field_name names are '_source' fields and keyword fields
         may be nested beneath the field. E.g.
@@ -460,20 +468,23 @@ class Mappings:
 
         Parameters
         ----------
-        field_name: str
+        display_name: str
 
         Returns
         -------
         aggregatable_field_name: str or None
-            The aggregatable field name associated with field_name. This could be the field_name, or the
+            The aggregatable field name associated with display_name. This could be the field_name, or the
             field_name.keyword.
-            or None if the field_name doesn't exist in the mapping, or isn't aggregatable
+
+        raise KeyError if the field_name doesn't exist in the mapping, or isn't aggregatable
         """
-        try:
-            capabilities = self._mappings_capabilities.loc[field_name]
-        except KeyError:
-            warnings.warn("Can not get field capabilities for field that is not in mappings '{}'".format(field_name))
-            return None
+        if display_name not in self._display_names:
+            raise KeyError("Can not get aggregatable field name for invalid display name {}".format(display_name))
+
+        capabilities = self._mappings_capabilities.loc[
+            self._mappings_capabilities.ed_display_name == display_name].squeeze()
+
+        field_name = capabilities.name
 
         # check if capabilities['aggregatable'] == True
         # 'aggregatable' must always exist
@@ -493,7 +504,7 @@ class Mappings:
         warnings.warn("Aggregations not supported for '{}' or '{}'".format(field_name, field_name_keyword))
         return None
 
-    def aggregatable_field_names(self, field_names=None):
+    def aggregatable_field_names(self):
         """
         Return a dict of aggregatable field_names from all field_names or field_names list
         {'customer_full_name.keyword': 'customer_full_name', ...}
@@ -511,17 +522,33 @@ class Mappings:
             key = aggregatable_field_name, value = field_name
             e.g. {'customer_full_name.keyword': 'customer_full_name', ...}
         """
-        if field_names is None:
-            field_names = self.source_fields()
         aggregatables = OrderedDict()
-        for field_name in field_names:
-            aggregatable_field_name = self.aggregatable_field_name(field_name)
+        for display_name in self.display_names:
+            aggregatable_field_name = self.aggregatable_field_name(display_name)
             if aggregatable_field_name is not None:
-                aggregatables[aggregatable_field_name] = field_name
+                aggregatables[aggregatable_field_name] = display_name
 
         return aggregatables
 
-    def numeric_source_fields(self, field_names, include_bool=True):
+    def add_scripted_field(self, scripted_field_name, display_name, pd_dtype):
+        # if this display name is used somewhere else, make it None
+        self._mappings_capabilities.loc[
+            self._mappings_capabilities.ed_display_name == display_name,
+            ['ed_display_name']] = None
+
+        capabilities = {scripted_field_name: [display_name,
+                                              False,
+                                              self._pd_dtype_to_es_dtype(pd_dtype),
+                                              pd_dtype,
+                                              True,
+                                              True,
+                                              True]}
+
+        capability_matrix_row = pd.DataFrame.from_dict(capabilities, orient='index', columns=Mappings.column_labels)
+
+        self._mappings_capabilities = self._mappings_capabilities.append(capability_matrix_row)
+
+    def numeric_source_fields(self, include_bool=True):
         """
         Returns
         -------
@@ -537,14 +564,14 @@ class Mappings:
             df = self._mappings_capabilities[self._mappings_capabilities._source &
                                              ((self._mappings_capabilities.pd_dtype == 'int64') |
                                               (self._mappings_capabilities.pd_dtype == 'float64'))]
-        # if field_names exists, filter index with field_names
-        if field_names is not None:
-            # reindex adds NA for non-existing field_names (non-numeric), so drop these after reindex
-            df = df.reindex(field_names)
-            df.dropna(inplace=True)
 
-        # return as list
-        return df.index.to_list()
+        # return as list for display names (in display_name order)
+        results = []
+        for display_name in self.display_names:
+            if display_name in df.ed_display_name:
+                results.append(display_name)
+
+        return results
 
     def source_fields(self):
         """
@@ -564,25 +591,99 @@ class Mappings:
         """
         return len(self._source_field_pd_dtypes)
 
-    def dtypes(self, field_names=None):
+    def get_field_names(self, include_scripted_fields=True):
+        field_names = []
+        for display_name in self.display_names:
+            field_name = self.get_field_name_from_display_name(display_name, include_scripted_fields)
+            if field_name is not None:
+                field_names.append(field_name)
+
+        return field_names
+
+    def _get_display_names(self):
+        return self._display_names
+
+    def _set_display_names(self, display_names):
+        if list(set(display_names) - set(self._display_names)):
+            raise KeyError("{} not in display names {}".format(display_names, self._display_names))
+
+        self._display_names = display_names
+
+    display_names = property(_get_display_names, _set_display_names)
+
+    def dtypes(self):
         """
         Returns
         -------
         dtypes: pd.Series
             Source field name + pd_dtype as np.dtype
         """
-        if field_names is not None:
-            data = OrderedDict()
-            for key in field_names:
-                data[key] = np.dtype(self._source_field_pd_dtypes[key])
-            return pd.Series(data)
-
         data = OrderedDict()
-        for key, value in self._source_field_pd_dtypes.items():
-            data[key] = np.dtype(value)
+        for display_name in self.display_names:
+            field_name = self.get_field_name_from_display_name(display_name, include_scripted_fields=True)
+            data[display_name] = np.dtype(self._mappings_capabilities.loc[field_name, 'pd_dtype'])
         return pd.Series(data)
 
     def info_es(self, buf):
         buf.write("Mappings:\n")
-        buf.write(" capabilities: {0}\n".format(self._mappings_capabilities.to_string()))
+        buf.write(" capabilities:\n{0}\n".format(self._mappings_capabilities.to_string()))
         buf.write(" date_fields_format: {0}\n".format(self._date_fields_format))
+        buf.write(" display_names: {0}\n".format(self._display_names))
+
+    def rename(self, old_name_new_name_dict):
+        # Not efficient... TODO optimize
+        for old_display_name, new_display_name in old_name_new_name_dict.items():
+            found = False
+            for i, display_name in enumerate(self._display_names):
+                if display_name == old_display_name:
+                    self._mappings_capabilities.loc[
+                        self._mappings_capabilities.ed_display_name == display_name,
+                        ['ed_display_name']] = new_display_name
+                    self._display_names[i] = new_display_name
+                    found = True
+                    break
+            if not found:
+                raise KeyError("No match for {} in display names", old_display_name)
+
+    def get_renames(self):
+        # return dict of renames { old_name: new_name, ... }
+        renames = {}
+
+        for display_name in self.display_names:
+            field_name = self.get_field_name_from_display_name(display_name, include_scripted_fields=True)
+            if field_name != display_name:
+                renames[field_name] = display_name
+
+        return renames
+
+    def get_field_name_from_display_name(self, display_name, include_scripted_fields):
+        if include_scripted_fields:
+            if display_name is None:
+                # look only in scripted_fields for None display_names
+                scripted_rows = self._mappings_capabilities.loc[
+                    self._mappings_capabilities.scripted == True
+                    ]
+                display_name_rows = scripted_rows.loc[
+                    scripted_rows.ed_display_name.isnull()
+                ]
+            else:
+                display_name_rows = self._mappings_capabilities.loc[
+                    self._mappings_capabilities.ed_display_name == display_name
+                    ]
+        else:
+            if display_name is None:
+                # None only applies to script fields, so in this case return None
+                return None
+
+            # look only in non scripted_fields
+            scripted_rows = self._mappings_capabilities.loc[
+                self._mappings_capabilities.scripted == False
+                ]
+            display_name_rows = scripted_rows.loc[
+                scripted_rows.ed_display_name == display_name
+                ]
+
+        if len(display_name_rows.index) != 1:
+            raise ValueError("{} should return 1 item not {} {}\n{}", display_name, include_scripted_fields, len(display_name_rows.index),
+                             self._mappings_capabilities.to_string())
+        return display_name_rows.index[0]
