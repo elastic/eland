@@ -77,7 +77,7 @@ class TestDateTime(TestData):
         # print(buf.getvalue())
 
         for format_name in self.time_formats.keys():
-            es_date_format = ed_field_mappings.get_date_field_format(format_name)
+            es_date_format = ed_field_mappings.date_field_format(format_name)
 
             assert format_name == es_date_format
 

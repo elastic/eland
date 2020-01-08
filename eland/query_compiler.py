@@ -203,6 +203,11 @@ class QueryCompiler:
         if results is None:
             return partial_result, self._empty_pd_ef()
 
+        # This is one of the most performance critical areas of eland, and it repeatedly calls
+        # self._mappings.field_name_pd_dtype and self._mappings.date_field_format
+        # therefore create a simple cache for this data
+        field_mapping_cache = FieldMappingCache(self._mappings)
+
         rows = []
         index = []
         if isinstance(results, dict):
@@ -236,7 +241,7 @@ class QueryCompiler:
             index.append(index_field)
 
             # flatten row to map correctly to 2D DataFrame
-            rows.append(self._flatten_dict(row))
+            rows.append(self._flatten_dict(row, field_mapping_cache))
 
             if batch_size is not None:
                 if i >= batch_size:
@@ -264,7 +269,7 @@ class QueryCompiler:
 
         return partial_result, df
 
-    def _flatten_dict(self, y):
+    def _flatten_dict(self, y, field_mapping_cache):
         out = OrderedDict()
 
         def flatten(x, name=''):
@@ -275,10 +280,11 @@ class QueryCompiler:
                 pd_dtype = 'object'
             else:
                 try:
-                    pd_dtype = self._mappings.field_name_pd_dtype(name[:-1])
+                    pd_dtype = field_mapping_cache.field_name_pd_dtype(name[:-1])
                     is_source_field = True
                 except KeyError:
                     is_source_field = False
+                    pd_dtype = 'object'
 
             if not is_source_field and type(x) is dict:
                 for a in x:
@@ -294,7 +300,7 @@ class QueryCompiler:
                 if pd_dtype == 'datetime64[ns]':
                     x = elasticsearch_date_to_pandas_date(
                         x,
-                        self._mappings.get_date_field_format(field_name)
+                        field_mapping_cache.date_field_format(field_name)
                     )
 
                 # Elasticsearch can have multiple values for a field. These are represented as lists, so
@@ -725,3 +731,37 @@ def elasticsearch_date_to_pandas_date(value: Union[int, str], date_format: str) 
                       Warning)
         # TODO investigate how we could generate this just once for a bulk read.
         return pd.to_datetime(value)
+
+class FieldMappingCache:
+    """
+    Very simple dict cache for field mappings. This improves performance > 3 times on large datasets as
+    DataFrame access is slower than dict access.
+    """
+    def __init__(self, mappings):
+        self._mappings = mappings
+
+        self._field_name_pd_dtype = dict()
+        self._date_field_format = dict()
+
+    def field_name_pd_dtype(self, es_field_name):
+        if es_field_name in self._field_name_pd_dtype:
+            return self._field_name_pd_dtype[es_field_name]
+
+        pd_dtype = self._mappings.field_name_pd_dtype(es_field_name)
+
+        # cache this
+        self._field_name_pd_dtype[es_field_name] = pd_dtype
+
+        return pd_dtype
+
+    def date_field_format(self, es_field_name):
+        if es_field_name in self._date_field_format:
+            return self._date_field_format[es_field_name]
+
+        es_date_field_format = self._mappings.date_field_format(es_field_name)
+
+        # cache this
+        self._date_field_format[es_field_name] = es_date_field_format
+
+        return es_date_field_format
+

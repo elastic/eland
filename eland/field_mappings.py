@@ -454,7 +454,7 @@ class FieldMappings:
         # <class 'dict'>: {'category.keyword': 'category', 'currency': 'currency', ...
         return OrderedDict(aggregatables[['aggregatable_es_field_name', 'es_field_name']].to_dict(orient='split')['data'])
 
-    def get_date_field_format(self, es_field_name):
+    def date_field_format(self, es_field_name):
         """
         Parameters
         ----------
