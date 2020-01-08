@@ -16,7 +16,7 @@
 import pytest
 
 import eland as ed
-from eland.tests import ES_TEST_CLIENT, FLIGHTS_INDEX_NAME, FLIGHTS_MAPPING
+from eland.tests import ES_TEST_CLIENT, FLIGHTS_INDEX_NAME
 from eland.tests.common import TestData
 
 
@@ -28,7 +28,7 @@ class TestDisplayNames(TestData):
             index_pattern=FLIGHTS_INDEX_NAME
         )
 
-        expected = list(FLIGHTS_MAPPING['mappings']['properties'].keys())
+        expected = self.pd_flights().columns.to_list()
 
         assert expected == field_mappings.display_names
 
@@ -72,7 +72,7 @@ class TestDisplayNames(TestData):
         with pytest.raises(KeyError):
             field_mappings.display_names = not_found
 
-        expected = list(FLIGHTS_MAPPING['mappings']['properties'].keys())
+        expected = self.pd_flights().columns.to_list()
 
         assert expected == field_mappings.display_names
 

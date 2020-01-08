@@ -37,7 +37,7 @@ class TestScriptedFields(TestData):
         # ed_field_mappings.info_es(buf)
         # print(buf.getvalue())
 
-        expected = list(FLIGHTS_MAPPING['mappings']['properties'].keys())
+        expected = self.pd_flights().columns.to_list()
         expected.append(None)
 
         assert expected == ed_field_mappings.display_names
@@ -55,7 +55,7 @@ class TestScriptedFields(TestData):
         ed_field_mappings.info_es(buf)
         print(buf.getvalue())
 
-        expected = list(FLIGHTS_MAPPING['mappings']['properties'].keys())
+        expected = self.pd_flights().columns.to_list()
         expected.remove('Carrier')
         expected.append('Carrier')
 
