@@ -15,18 +15,12 @@
 # File called _pytest for PyCharm compatability
 from datetime import datetime
 
-import numpy as np
-import pandas as pd
-from pandas.util.testing import assert_series_equal
-
 import eland as ed
 from eland.tests.common import ES_TEST_CLIENT
 from eland.tests.common import TestData
-from eland.tests.common import assert_pandas_eland_frame_equal
-from eland.tests.common import assert_pandas_eland_series_equal
 
 
-class TestDataFrameDateTime(TestData):
+class TestDateTime(TestData):
     times = ["2019-11-26T19:58:15.246+0000",
              "1970-01-01T00:00:03.000+0000"]
     time_index_name = 'test_time_formats'
@@ -42,7 +36,7 @@ class TestDataFrameDateTime(TestData):
         dts = [datetime.strptime(time, "%Y-%m-%dT%H:%M:%S.%f%z")
                for time in cls.times]
 
-        time_formats_docs = [TestDataFrameDateTime.get_time_values_from_datetime(dt)
+        time_formats_docs = [TestDateTime.get_time_values_from_datetime(dt)
                              for dt in dts]
         mappings = {'properties': {}}
 
@@ -69,60 +63,23 @@ class TestDataFrameDateTime(TestData):
         es = ES_TEST_CLIENT
         es.indices.delete(index=cls.time_index_name)
 
-    def test_datetime_to_ms(self):
-        df = pd.DataFrame(data={'A': np.random.rand(3),
-                                'B': 1,
-                                'C': 'foo',
-                                'D': pd.Timestamp('20190102'),
-                                'E': [1.0, 2.0, 3.0],
-                                'F': False,
-                                'G': [1, 2, 3]},
-                          index=['0', '1', '2'])
-
-        expected_mappings = {'mappings': {
-            'properties': {'A': {'type': 'double'},
-                           'B': {'type': 'long'},
-                           'C': {'type': 'keyword'},
-                           'D': {'type': 'date'},
-                           'E': {'type': 'double'},
-                           'F': {'type': 'boolean'},
-                           'G': {'type': 'long'}}}}
-
-        mappings = ed.FieldMappings._generate_es_mappings(df)
-
-        assert expected_mappings == mappings
-
-        # Now create index
-        index_name = 'eland_test_generate_es_mappings'
-
-        ed_df = ed.pandas_to_eland(df, ES_TEST_CLIENT, index_name, if_exists="replace", refresh=True)
-        ed_df_head = ed_df.head()
-
-        print(df.to_string())
-        print(ed_df.to_string())
-        print(ed_df.dtypes)
-        print(ed_df._to_pandas().dtypes)
-
-        assert_series_equal(df.dtypes, ed_df.dtypes)
-
-        assert_pandas_eland_frame_equal(df, ed_df)
-
     def test_all_formats(self):
-        index_name = self.time_index_name
-        ed_df = ed.read_es(ES_TEST_CLIENT, index_name)
+        ed_field_mappings = ed.FieldMappings(
+            client=ed.Client(ES_TEST_CLIENT),
+            index_pattern=self.time_index_name
+        )
+
+        # do a rename so display_name for a field is different to es_field_name
+        ed_field_mappings.rename({'strict_year_month': 'renamed_strict_year_month'})
+
+        # buf = StringIO()
+        # ed_field_mappings.info_es(buf)
+        # print(buf.getvalue())
 
         for format_name in self.time_formats.keys():
-            times = [pd.to_datetime(datetime.strptime(dt, "%Y-%m-%dT%H:%M:%S.%f%z")
-                                    .strftime(self.time_formats[format_name]),
-                                    format=self.time_formats[format_name])
-                     for dt in self.times]
+            es_date_format = ed_field_mappings.get_date_field_format(format_name)
 
-            ed_series = ed_df[format_name]
-            pd_series = pd.Series(times,
-                                  index=[str(i) for i in range(len(self.times))],
-                                  name=format_name)
-
-            assert_pandas_eland_series_equal(pd_series, ed_series)
+            assert format_name == es_date_format
 
     @staticmethod
     def get_time_values_from_datetime(dt: datetime) -> dict:

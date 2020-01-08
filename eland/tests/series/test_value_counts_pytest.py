@@ -60,6 +60,7 @@ class TestSeriesValueCounts(TestData):
         with pytest.raises(ValueError):
             assert ed_s.value_counts(es_size=-9)
 
+    @pytest.mark.filterwarnings("ignore:Aggregations not supported")
     def test_value_counts_non_aggregatable(self):
         ed_s = self.ed_ecommerce()['customer_first_name']
         pd_s = self.pd_ecommerce()['customer_first_name']

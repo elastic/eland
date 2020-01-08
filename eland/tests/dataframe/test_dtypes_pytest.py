@@ -24,8 +24,11 @@ from eland.tests.common import assert_pandas_eland_frame_equal
 class TestDataFrameDtypes(TestData):
 
     def test_flights_dtypes(self):
-        ed_flights = self.ed_flights()
         pd_flights = self.pd_flights()
+        ed_flights = self.ed_flights()
+
+        print(pd_flights.dtypes)
+        print(ed_flights.dtypes)
 
         assert_series_equal(pd_flights.dtypes, ed_flights.dtypes)
 
@@ -33,8 +36,8 @@ class TestDataFrameDtypes(TestData):
             assert isinstance(pd_flights.dtypes[i], type(ed_flights.dtypes[i]))
 
     def test_flights_select_dtypes(self):
-        ed_flights = self.ed_flights_small()
         pd_flights = self.pd_flights_small()
+        ed_flights = self.ed_flights_small()
 
         assert_pandas_eland_frame_equal(
             pd_flights.select_dtypes(include=np.number),

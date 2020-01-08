@@ -20,8 +20,8 @@ import numpy as np
 import pandas as pd
 
 from eland import Client
+from eland import FieldMappings
 from eland import Index
-from eland import Mappings
 from eland import Operations
 
 
@@ -72,8 +72,8 @@ class QueryCompiler:
             self._index_pattern = index_pattern
             # Get and persist mappings, this allows us to correctly
             # map returned types from Elasticsearch to pandas datatypes
-            self._mappings = Mappings(client=self._client, index_pattern=self._index_pattern,
-                                      display_names=display_names)
+            self._mappings = FieldMappings(client=self._client, index_pattern=self._index_pattern,
+                                           display_names=display_names)
             self._index = Index(self, index_field)
             self._operations = Operations()
 
@@ -252,7 +252,7 @@ class QueryCompiler:
         missing_field_names = list(set(self.get_field_names(include_scripted_fields=True)) - set(df.columns))
 
         for missing in missing_field_names:
-            is_source_field, pd_dtype = self._mappings.field_name_pd_dtype(missing)
+            pd_dtype = self._mappings.field_name_pd_dtype(missing)
             df[missing] = pd.Series(dtype=pd_dtype)
 
         # Rename columns
@@ -274,7 +274,11 @@ class QueryCompiler:
                 is_source_field = False
                 pd_dtype = 'object'
             else:
-                is_source_field, pd_dtype = self._mappings.field_name_pd_dtype(name[:-1])
+                try:
+                    pd_dtype = self._mappings.field_name_pd_dtype(name[:-1])
+                    is_source_field = True
+                except KeyError:
+                    is_source_field = False
 
             if not is_source_field and type(x) is dict:
                 for a in x:
@@ -516,7 +520,7 @@ class QueryCompiler:
         scripted_field_name = "script_field_{}".format(display_name)
 
         # add scripted field
-        result._mappings.add_scripted_field(scripted_field_name, display_name, arithmetic_object.dtype)
+        result._mappings.add_scripted_field(scripted_field_name, display_name, arithmetic_object.dtype.name)
 
         result._operations.arithmetic_op_fields(scripted_field_name, arithmetic_object)
 

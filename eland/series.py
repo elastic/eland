@@ -1049,7 +1049,7 @@ class Series(NDFrame):
 
         Naming is consistent for rops
         """
-        #print("_numeric_op", self, right, method_name)
+        # print("_numeric_op", self, right, method_name)
         if isinstance(right, Series):
             # Check we can the 2 Series are compatible (raises on error):
             self._query_compiler.check_arithmetics(right._query_compiler)
@@ -1074,7 +1074,7 @@ class Series(NDFrame):
         series = Series(query_compiler=self._query_compiler.arithmetic_op_fields(display_name, left_object))
 
         # force set name to 'display_name'
-        series._query_compiler._mappings._display_names = [display_name]
+        series._query_compiler._mappings.display_names = [display_name]
 
         return series
 

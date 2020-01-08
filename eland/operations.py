@@ -12,7 +12,6 @@
 #      See the License for the specific language governing permissions and
 #      limitations under the License.
 
-import copy
 from collections import OrderedDict
 
 import pandas as pd
@@ -38,8 +37,8 @@ class Operations:
     """
 
     def __init__(self):
-            self._tasks = []
-            self._arithmetic_op_fields_task = None
+        self._tasks = []
+        self._arithmetic_op_fields_task = None
 
     def head(self, index, n):
         # Add a task that is an ascending sort with size=n
@@ -132,35 +131,50 @@ class Operations:
 
         body = Query(query_params['query'])
 
+        results = OrderedDict()
+
         # some metrics aggs (including cardinality) work on all aggregatable fields
         # therefore we include an optional all parameter on operations
         # that call _metric_aggs
         if field_types == 'aggregatable':
-            source_fields = query_compiler._mappings.aggregatable_field_names()
-        else:
-            source_fields = query_compiler._mappings.numeric_source_fields()
+            aggregatable_field_names = query_compiler._mappings.aggregatable_field_names()
 
-        for field in source_fields:
-            body.metric_aggs(field, func, field)
+            for field in aggregatable_field_names.keys():
+                body.metric_aggs(field, func, field)
 
-        response = query_compiler._client.search(
-            index=query_compiler._index_pattern,
-            size=0,
-            body=body.to_search_body())
+            response = query_compiler._client.search(
+                index=query_compiler._index_pattern,
+                size=0,
+                body=body.to_search_body())
 
-        # Results are of the form
-        # "aggregations" : {
-        #   "AvgTicketPrice" : {
-        #     "value" : 628.2536888148849
-        #   }
-        # }
-        results = OrderedDict()
+            # Results are of the form
+            # "aggregations" : {
+            #   "customer_full_name.keyword" : {
+            #     "value" : 10
+            #   }
+            # }
 
-        if field_types == 'aggregatable':
-            for key, value in source_fields.items():
+            # map aggregatable (e.g. x.keyword) to field_name
+            for key, value in aggregatable_field_names.items():
                 results[value] = response['aggregations'][key]['value']
         else:
-            for field in source_fields:
+            numeric_source_fields = query_compiler._mappings.numeric_source_fields()
+
+            for field in numeric_source_fields:
+                body.metric_aggs(field, func, field)
+
+            response = query_compiler._client.search(
+                index=query_compiler._index_pattern,
+                size=0,
+                body=body.to_search_body())
+
+            # Results are of the form
+            # "aggregations" : {
+            #   "AvgTicketPrice" : {
+            #     "value" : 628.2536888148849
+            #   }
+            # }
+            for field in numeric_source_fields:
                 results[field] = response['aggregations'][field]['value']
 
         # Return single value if this is a series
@@ -210,7 +224,8 @@ class Operations:
                 results[bucket['key']] = bucket['doc_count']
 
         try:
-            name = aggregatable_field_names.keys()[0]
+            # get first value in dict (key is .keyword)
+            name = list(aggregatable_field_names.values())[0]
         except IndexError:
             name = None
 

@@ -15,17 +15,21 @@
 # File called _pytest for PyCharm compatability
 import pytest
 
+import eland as ed
+from eland.tests import ES_TEST_CLIENT, ECOMMERCE_INDEX_NAME
 from eland.tests.common import TestData
 
 
-class TestMappingsAggregatables(TestData):
+class TestAggregatables(TestData):
 
-    # Ignores 'customer.gender' field
     @pytest.mark.filterwarnings("ignore:Aggregations not supported")
     def test_ecommerce_all_aggregatables(self):
-        ed_ecommerce = self.ed_ecommerce()
+        ed_field_mappings = ed.FieldMappings(
+            client=ed.Client(ES_TEST_CLIENT),
+            index_pattern=ECOMMERCE_INDEX_NAME
+        )
 
-        aggregatables = ed_ecommerce._query_compiler._mappings.aggregatable_field_names()
+        aggregatables = ed_field_mappings.aggregatable_field_names()
 
         expected = {'category.keyword': 'category',
                     'currency': 'currency',
@@ -81,44 +85,46 @@ class TestMappingsAggregatables(TestData):
                     'customer_first_name.keyword': 'customer_first_name',
                     'type': 'type', 'user': 'user'}
 
-        ed_ecommerce = self.ed_ecommerce()[list(expected.values())]
+        ed_field_mappings = ed.FieldMappings(
+            client=ed.Client(ES_TEST_CLIENT),
+            index_pattern=ECOMMERCE_INDEX_NAME,
+            display_names=expected.values()
+        )
 
-        print(ed_ecommerce.info_es())
-
-        aggregatables = ed_ecommerce._query_compiler._mappings.aggregatable_field_names()
+        aggregatables = ed_field_mappings.aggregatable_field_names()
 
         assert expected == aggregatables
 
-    def test_ecommerce_non_existant_aggregatables(self):
-        ed_ecommerce = self.ed_ecommerce()
-
-        with pytest.raises(KeyError):
-            ed_ecommerce._query_compiler._mappings.display_names = ['doesnt_exist', 'none']
-
     def test_ecommerce_single_aggregatable_field(self):
-        ed_ecommerce = self.ed_ecommerce()
+        ed_field_mappings = ed.FieldMappings(
+            client=ed.Client(ES_TEST_CLIENT),
+            index_pattern=ECOMMERCE_INDEX_NAME
+        )
 
-        aggregatable = ed_ecommerce._query_compiler._mappings.aggregatable_field_name('user')
-
-        assert 'user' == aggregatable
+        assert 'user' == ed_field_mappings.aggregatable_field_name('user')
 
     def test_ecommerce_single_keyword_aggregatable_field(self):
-        ed_ecommerce = self.ed_ecommerce()
+        ed_field_mappings = ed.FieldMappings(
+            client=ed.Client(ES_TEST_CLIENT),
+            index_pattern=ECOMMERCE_INDEX_NAME
+        )
 
-        aggregatable = ed_ecommerce._query_compiler._mappings.aggregatable_field_name('customer_first_name')
-
-        assert 'customer_first_name.keyword' == aggregatable
+        assert 'customer_first_name.keyword' == ed_field_mappings.aggregatable_field_name('customer_first_name')
 
     def test_ecommerce_single_non_existant_field(self):
-        ed_ecommerce = self.ed_ecommerce()
+        ed_field_mappings = ed.FieldMappings(
+            client=ed.Client(ES_TEST_CLIENT),
+            index_pattern=ECOMMERCE_INDEX_NAME
+        )
 
         with pytest.raises(KeyError):
-            aggregatable = ed_ecommerce._query_compiler._mappings.aggregatable_field_name('non_existant')
+            aggregatable = ed_field_mappings.aggregatable_field_name('non_existant')
 
     @pytest.mark.filterwarnings("ignore:Aggregations not supported")
     def test_ecommerce_single_non_aggregatable_field(self):
-        ed_ecommerce = self.ed_ecommerce()
+        ed_field_mappings = ed.FieldMappings(
+            client=ed.Client(ES_TEST_CLIENT),
+            index_pattern=ECOMMERCE_INDEX_NAME
+        )
 
-        aggregatable = ed_ecommerce._query_compiler._mappings.aggregatable_field_name('customer_gender')
-
-        assert None == aggregatable
+        assert None == ed_field_mappings.aggregatable_field_name('customer_gender')

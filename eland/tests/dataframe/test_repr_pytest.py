@@ -14,7 +14,6 @@
 
 # File called _pytest for PyCharm compatability
 
-import eland as ed
 import pandas as pd
 import pytest
 
@@ -33,6 +32,7 @@ class TestDataFrameRepr(TestData):
     """
     to_string
     """
+
     def test_simple_lat_lon(self):
         """
         Note on nested object order - this can change when
@@ -101,8 +101,8 @@ class TestDataFrameRepr(TestData):
         ed_head_str = ed_head.to_string(max_rows=max_rows_eland)
         pd_head_str = pd_head.to_string(max_rows=max_rows_pandas)
 
-        #print("\n", ed_head_str)
-        #print("\n", pd_head_str)
+        # print("\n", ed_head_str)
+        # print("\n", pd_head_str)
 
         assert pd_head_str == ed_head_str
 

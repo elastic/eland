@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from io import StringIO
 
 from eland import SortOrder
 from eland.actions import HeadAction, TailAction, SortIndexAction
@@ -243,8 +242,7 @@ class ArithmeticOpFieldsTask(Task):
 
     def update(self, display_name, arithmetic_series):
         self._display_name = display_name
-        print(self._arithmetic_series)
-        print(arithmetic_series)
+        self._arithmetic_series = arithmetic_series
 
     def resolve_task(self, query_params, post_processing, query_compiler):
         # https://www.elastic.co/guide/en/elasticsearch/painless/current/painless-api-reference-shared-java-lang.html#painless-api-reference-shared-Math
@@ -263,9 +261,10 @@ class ArithmeticOpFieldsTask(Task):
 
         if self._display_name in query_params['query_script_fields']:
             raise NotImplementedError(
-                "TODO code path - combine multiple ops '{}'\n{}\n{}\n{}".format(self, query_params['query_script_fields'],
-                                                                          self._display_name,
-                                                                          self._arithmetic_series.resolve()))
+                "TODO code path - combine multiple ops '{}'\n{}\n{}\n{}".format(self,
+                                                                                query_params['query_script_fields'],
+                                                                                self._display_name,
+                                                                                self._arithmetic_series.resolve()))
 
         query_params['query_script_fields'][self._display_name] = {
             'script': {

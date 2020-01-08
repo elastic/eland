@@ -172,7 +172,7 @@ class ArithmeticSeries(ArithmeticObject):
         # series.string op_name int (only mul)
         # series.string op_name float (none)
         # series.int op_name string (none)
-        # series.float op_name string (no1ne)
+        # series.float op_name string (none)
 
         # see end of https://pandas.pydata.org/pandas-docs/stable/getting_started/basics.html?highlight=dtype for
         # dtype heirarchy
