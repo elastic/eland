@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+echo $PYTHON_VERSION
+
 if [[ -z $ELASTICSEARCH_VERSION ]]; then
   echo -e "\033[31;1mERROR:\033[0m Required environment variable [ELASTICSEARCH_VERSION] not set\033[0m"
   exit 1
@@ -56,7 +58,7 @@ echo -e "\033[1m>>>>> YOUR STEPS HERE >>>>>>>>>>>>>>>>>>>>>>>>>>>>>\033[0m"
 
 echo -e "\033[1m>>>>> Build [elastic/eland container] >>>>>>>>>>>>>>>>>>>>>>>>>>>>>\033[0m"
 
-docker build --file .ci/Dockerfile --tag elastic/eland .
+docker build --file .ci/Dockerfile --tag elastic/eland --build-arg PYTHON_VERSION=${PYTHON_VERSION} .
 
 echo -e "\033[1m>>>>> Run [elastic/eland container] >>>>>>>>>>>>>>>>>>>>>>>>>>>>>\033[0m"
 

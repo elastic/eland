@@ -246,7 +246,6 @@ class ArithmeticOpFieldsTask(Task):
 
     def resolve_task(self, query_params, post_processing, query_compiler):
         # https://www.elastic.co/guide/en/elasticsearch/painless/current/painless-api-reference-shared-java-lang.html#painless-api-reference-shared-Math
-
         """
         "script_fields": {
             "field_name": {

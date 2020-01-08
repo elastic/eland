@@ -11,7 +11,8 @@
 #      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #      See the License for the specific language governing permissions and
 #      limitations under the License.
-
+import copy
+import warnings
 from collections import OrderedDict
 
 import pandas as pd
@@ -36,9 +37,19 @@ class Operations:
     (see https://docs.dask.org/en/latest/spec.html)
     """
 
-    def __init__(self):
-        self._tasks = []
-        self._arithmetic_op_fields_task = None
+    def __init__(self, tasks=None, arithmetic_op_fields_task=None):
+        if tasks is None:
+            self._tasks = []
+        else:
+            self._tasks = tasks
+        self._arithmetic_op_fields_task = arithmetic_op_fields_task
+
+    def __constructor__(self, *args, **kwargs):
+        return type(self)(*args, **kwargs)
+
+    def copy(self):
+        return self.__constructor__(tasks=copy.deepcopy(self._tasks),
+                                    arithmetic_op_fields_task=copy.deepcopy(self._arithmetic_op_fields_task))
 
     def head(self, index, n):
         # Add a task that is an ascending sort with size=n
@@ -250,12 +261,10 @@ class Operations:
 
         for field in numeric_source_fields:
             body.hist_aggs(field, field, min_aggs, max_aggs, num_bins)
-
         response = query_compiler._client.search(
             index=query_compiler._index_pattern,
             size=0,
             body=body.to_search_body())
-
         # results are like
         # "aggregations" : {
         #     "DistanceKilometers" : {
@@ -285,6 +294,19 @@ class Operations:
         # weights = [10066.,   263.,   386.,   264.,   273.,   390.,   324.,   438.,   261.,   252.,    142.]
         # So sum last 2 buckets
         for field in numeric_source_fields:
+
+            # in case of series let plotting.ed_hist_series thrown an exception
+            if not response.get('aggregations'):
+                continue
+
+            # in case of dataframe, throw warning that field is excluded
+            if not response['aggregations'].get(field):
+                warnings.warn("{} has no meaningful histogram interval and will be excluded. "
+                              "All values 0."
+                              .format(field),
+                              UserWarning)
+                continue
+
             buckets = response['aggregations'][field]['buckets']
 
             bins[field] = []
@@ -488,8 +510,8 @@ class Operations:
 
     def to_csv(self, query_compiler, **kwargs):
         class PandasToCSVCollector:
-            def __init__(self, **kwargs):
-                self.kwargs = kwargs
+            def __init__(self, **args):
+                self.args = args
                 self.ret = None
                 self.first_time = True
 
@@ -498,12 +520,12 @@ class Operations:
                 # and append results
                 if self.first_time:
                     self.first_time = False
-                    df.to_csv(**self.kwargs)
+                    df.to_csv(**self.args)
                 else:
                     # Don't write header, and change mode to append
-                    self.kwargs['header'] = False
-                    self.kwargs['mode'] = 'a'
-                    df.to_csv(**self.kwargs)
+                    self.args['header'] = False
+                    self.args['mode'] = 'a'
+                    df.to_csv(**self.args)
 
             @staticmethod
             def batch_size():

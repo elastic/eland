@@ -13,22 +13,21 @@
 #      limitations under the License.
 
 # File called _pytest for PyCharm compatability
-
-from pandas.util.testing import assert_series_equal
+import pytest
+from matplotlib.testing.decorators import check_figures_equal
 
 from eland.tests.common import TestData
 
 
-class TestDataFrameCount(TestData):
+@check_figures_equal(extensions=['png'])
+def test_plot_hist(fig_test, fig_ref):
+    test_data = TestData()
 
-    def test_ecommerce_count(self):
-        pd_ecommerce = self.pd_ecommerce()
-        ed_ecommerce = self.ed_ecommerce()
+    pd_flights = test_data.pd_flights()['FlightDelayMin']
+    ed_flights = test_data.ed_flights()['FlightDelayMin']
 
-        pd_count = pd_ecommerce.count()
-        ed_count = ed_ecommerce.count()
+    pd_ax = fig_ref.subplots()
+    ed_ax = fig_test.subplots()
 
-        print(pd_count)
-        print(ed_count)
-
-        assert_series_equal(pd_count, ed_count)
+    pd_flights.hist(ax=pd_ax)
+    ed_flights.hist(ax=ed_ax)

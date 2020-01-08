@@ -41,6 +41,7 @@ from eland import NDFrame
 from eland.arithmetics import ArithmeticSeries, ArithmeticString, ArithmeticNumber
 from eland.common import DEFAULT_NUM_ROWS_DISPLAYED, docstring_parameter
 from eland.filter import NotFilter, Equal, Greater, Less, GreaterEqual, LessEqual, ScriptFilter, IsIn
+import eland.plotting as gfx
 
 
 def _get_method_name():
@@ -106,6 +107,8 @@ class Series(NDFrame):
             columns=columns,
             index_field=index_field,
             query_compiler=query_compiler)
+
+    hist = gfx.ed_hist_series
 
     @property
     def empty(self):
