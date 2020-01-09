@@ -13,7 +13,6 @@
 #      limitations under the License.
 
 # File called _pytest for PyCharm compatability
-import pytest
 from matplotlib.testing.decorators import check_figures_equal
 
 from eland.tests.common import TestData
