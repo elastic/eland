@@ -37,6 +37,8 @@ min         0.000000       0.000000       0.000000
 max    400140.000000     246.000000       5.000000
 ```
 
+See [docs](https://eland.readthedocs.io/en/latest) and [demo_notebook.ipynb](https://eland.readthedocs.io/en/latest/examples/demo_notebook.html) for more examples.
+
 ## Connecting to Elasticsearch Cloud
 
 ```
