@@ -1,13 +1,16 @@
  [![Build Status](https://clients-ci.elastic.co/buildStatus/icon?job=elastic%2Beland%2Bmaster)](https://clients-ci.elastic.co/job/elastic+eland+master/)
+ 
+_Note, this project is still very much a work in progress and in an alpha state; input and contributions welcome!_
 
 # What is it?
 
-eland is a elasticsearch client Python package to analyse, explore and manipulate data that resides in elasticsearch. 
+eland is a Elasticsearch client Python package to analyse, explore and manipulate data that resides in Elasticsearch. 
 Where possible the package uses existing Python APIs and data structures to make it easy to switch between numpy, 
-pandas, scikit-learn to their elasticsearch powered equivalents. In general, the data resides in elasticsearch and 
-not in memory, which allows eland to access large datasets stored in elasticsearch.
+pandas, scikit-learn to their Elasticsearch powered equivalents. In general, the data resides in Elasticsearch and 
+not in memory, which allows eland to access large datasets stored in Elasticsearch.
 
-For example, to explore data in a large elasticsearch index, simply create an eland DataFrame from an elasticsearch index pattern, and explore using an API that mirrors a subset of the pandas.DataFrame API: 
+For example, to explore data in a large Elasticsearch index, simply create an eland DataFrame from an Elasticsearch 
+index pattern, and explore using an API that mirrors a subset of the pandas.DataFrame API: 
 
 ```
 >>> import eland as ed
@@ -49,7 +52,6 @@ max    400140.000000     246.000000       5.000000
 ```
 
 
-
 ## Development Setup
 
 1. Create a virtual environment in Python 
@@ -72,11 +74,31 @@ source env/bin/activate
 pip install -r requirements.txt
 ```
 
+## Versions and Compatibility
+
+### Python Version Support
+
+Officially Python 3.5.3 and above, 3.6, 3.7, and 3.8.
+
+eland depends on pandas version 0.25.3. 
+
+#### Elasticsearch Versions
+
+eland is versioned like the Elastic stack. E.g. eland 7.5 compatible with Elasticsearch 7.5 etc.
+
+A major version of the client is compatible with the same major version of Elasticsearch. 
+
+No compatibility assurances are given between different major versions of the client and Elasticsearch. 
+Major differences likely exist between major versions of Elasticsearch, 
+particularly around request and response object formats, but also around API urls and behaviour.
+
 ## Why eland?
 
 Naming is difficult, but as we had to call it something:
 
-* eland = elastic and data
-* eland = 'Elk/Moose' in Dutch (Alces alces)
-* Elandsgracht = Amsterdam street near Elastic's Amsterdam office where historically hides from, among others, Elk were worked
+* eland: elastic and data
+* eland: 'Elk/Moose' in Dutch (Alces alces)
+* [Elandsgracht](https://goo.gl/maps/3hGBMqeGRcsBJfKx8): Amsterdam street near Elastic's Amsterdam office 
+
+[Pronunciation](https://commons.wikimedia.org/wiki/File:Nl-eland.ogg): /ˈeːlɑnt/
 
