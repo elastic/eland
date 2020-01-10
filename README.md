@@ -84,7 +84,7 @@ eland depends on pandas version 0.25.3.
 
 #### Elasticsearch Versions
 
-eland is versioned like the Elastic stack. E.g. eland 7.5 compatible with Elasticsearch 7.5 etc.
+eland is versioned like the Elastic stack. E.g. eland 7.5 is compatible with Elasticsearch 7.x up to 7.5
 
 A major version of the client is compatible with the same major version of Elasticsearch. 
 

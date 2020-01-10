@@ -110,3 +110,5 @@ html_theme = "pandas_sphinx_theme"
 
 html_logo = "logo/eland.png"
 html_favicon = "logo/eland_favicon.png"
+
+master_doc = 'index'
