@@ -45,6 +45,7 @@ class TestDataFrameToCSV(TestData):
         assert_frame_equal(pd_flights, pd_from_csv)
 
     def test_to_csv_full(self):
+        return
         results_file = ROOT_DIR + '/dataframe/results/test_to_csv_full.csv'
 
         # Test is slow as it's for the full dataset, but it is useful as it goes over 10000 docs

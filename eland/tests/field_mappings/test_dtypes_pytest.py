@@ -13,28 +13,34 @@
 #      limitations under the License.
 
 # File called _pytest for PyCharm compatability
-
 from pandas.util.testing import assert_series_equal
 
+import eland as ed
+from eland.tests import ES_TEST_CLIENT, FLIGHTS_INDEX_NAME
 from eland.tests.common import TestData
 
 
-class TestMappingsDtypes(TestData):
+class TestDTypes(TestData):
 
-    def test_flights_dtypes_all(self):
-        ed_flights = self.ed_flights()
+    def test_all_fields(self):
+        field_mappings = ed.FieldMappings(
+            client=ed.Client(ES_TEST_CLIENT),
+            index_pattern=FLIGHTS_INDEX_NAME
+        )
+
         pd_flights = self.pd_flights()
 
-        pd_dtypes = pd_flights.dtypes
-        ed_dtypes = ed_flights._query_compiler._mappings.dtypes()
+        assert_series_equal(pd_flights.dtypes, field_mappings.dtypes())
 
-        assert_series_equal(pd_dtypes, ed_dtypes)
+    def test_selected_fields(self):
+        expected = ['timestamp', 'DestWeather', 'DistanceKilometers', 'AvgTicketPrice']
 
-    def test_flights_dtypes_columns(self):
-        ed_flights = self.ed_flights()
-        pd_flights = self.pd_flights()[['Carrier', 'AvgTicketPrice', 'Cancelled']]
+        field_mappings = ed.FieldMappings(
+            client=ed.Client(ES_TEST_CLIENT),
+            index_pattern=FLIGHTS_INDEX_NAME,
+            display_names=expected
+        )
 
-        pd_dtypes = pd_flights.dtypes
-        ed_dtypes = ed_flights._query_compiler._mappings.dtypes(field_names=['Carrier', 'AvgTicketPrice', 'Cancelled'])
+        pd_flights = self.pd_flights()[expected]
 
-        assert_series_equal(pd_dtypes, ed_dtypes)
+        assert_series_equal(pd_flights.dtypes, field_mappings.dtypes())

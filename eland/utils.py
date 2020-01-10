@@ -19,7 +19,7 @@ from pandas.io.parsers import _c_parser_defaults
 
 from eland import Client
 from eland import DataFrame
-from eland import Mappings
+from eland import FieldMappings
 
 DEFAULT_CHUNK_SIZE = 10000
 
@@ -97,7 +97,7 @@ def pandas_to_eland(pd_df, es_params, destination_index, if_exists='fail', chunk
 
     client = Client(es_params)
 
-    mapping = Mappings._generate_es_mappings(pd_df, geo_points)
+    mapping = FieldMappings._generate_es_mappings(pd_df, geo_points)
 
     # If table exists, check if_exists parameter
     if client.index_exists(index=destination_index):

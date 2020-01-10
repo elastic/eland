@@ -38,6 +38,7 @@ import pandas as pd
 from pandas.io.common import _expand_user, _stringify_path
 
 from eland import NDFrame
+from eland.arithmetics import ArithmeticSeries, ArithmeticString, ArithmeticNumber
 from eland.common import DEFAULT_NUM_ROWS_DISPLAYED, docstring_parameter
 from eland.filter import NotFilter, Equal, Greater, Less, GreaterEqual, LessEqual, ScriptFilter, IsIn
 import eland.plotting as gfx
@@ -147,6 +148,16 @@ class Series(NDFrame):
 
         return num_rows, num_columns
 
+    @property
+    def field_name(self):
+        """
+        Returns
+        -------
+        field_name: str
+            Return the Elasticsearch field name for this series
+        """
+        return self._query_compiler.field_names[0]
+
     def _get_name(self):
         return self._query_compiler.columns[0]
 
@@ -160,7 +171,7 @@ class Series(NDFrame):
         Rename name of series. Only column rename is supported. This does not change the underlying
         Elasticsearch index, but adds a symbolic link from the new name (column) to the Elasticsearch field name.
 
-        For instance, if a field was called 'tot_quan' it could be renamed 'Total Quantity'.
+        For instance, if a field was called 'total_quantity' it could be renamed 'Total Quantity'.
 
         Parameters
         ----------
@@ -535,12 +546,7 @@ class Series(NDFrame):
         4    First name: Eddie
         Name: customer_first_name, dtype: object
         """
-        if self._dtype == 'object':
-            op_type = ('string',)
-        else:
-            op_type = ('numeric',)
-
-        return self._numeric_op(right, _get_method_name(), op_type)
+        return self._numeric_op(right, _get_method_name())
 
     def __truediv__(self, right):
         """
@@ -806,12 +812,7 @@ class Series(NDFrame):
         4     81.980003
         Name: taxful_total_price, dtype: float64
         """
-        if self._dtype == 'object':
-            op_type = ('string',)
-        else:
-            op_type = ('numeric',)
-
-        return self._numeric_rop(left, _get_method_name(), op_type)
+        return self._numeric_op(left, _get_method_name())
 
     def __rtruediv__(self, left):
         """
@@ -843,7 +844,7 @@ class Series(NDFrame):
         4    0.012349
         Name: taxful_total_price, dtype: float64
         """
-        return self._numeric_rop(left, _get_method_name())
+        return self._numeric_op(left, _get_method_name())
 
     def __rfloordiv__(self, left):
         """
@@ -875,7 +876,7 @@ class Series(NDFrame):
         4     6.0
         Name: taxful_total_price, dtype: float64
         """
-        return self._numeric_rop(left, _get_method_name())
+        return self._numeric_op(left, _get_method_name())
 
     def __rmod__(self, left):
         """
@@ -907,7 +908,7 @@ class Series(NDFrame):
         4     14.119980
         Name: taxful_total_price, dtype: float64
         """
-        return self._numeric_rop(left, _get_method_name())
+        return self._numeric_op(left, _get_method_name())
 
     def __rmul__(self, left):
         """
@@ -939,7 +940,7 @@ class Series(NDFrame):
         4     809.800034
         Name: taxful_total_price, dtype: float64
         """
-        return self._numeric_rop(left, _get_method_name())
+        return self._numeric_op(left, _get_method_name())
 
     def __rpow__(self, left):
         """
@@ -971,7 +972,7 @@ class Series(NDFrame):
         4    4.0
         Name: total_quantity, dtype: float64
         """
-        return self._numeric_rop(left, _get_method_name())
+        return self._numeric_op(left, _get_method_name())
 
     def __rsub__(self, left):
         """
@@ -1003,7 +1004,7 @@ class Series(NDFrame):
         4    -79.980003
         Name: taxful_total_price, dtype: float64
         """
-        return self._numeric_rop(left, _get_method_name())
+        return self._numeric_op(left, _get_method_name())
 
     add = __add__
     div = __truediv__
@@ -1029,131 +1030,58 @@ class Series(NDFrame):
     rsubtract = __rsub__
     rtruediv = __rtruediv__
 
-    def _numeric_op(self, right, method_name, op_type=None):
+    def _numeric_op(self, right, method_name):
         """
         return a op b
 
         a & b == Series
             a & b must share same eland.Client, index_pattern and index_field
-        a == Series, b == numeric
+        a == Series, b == numeric or string
+
+        Naming of the resulting Series
+        ------------------------------
+
+        result = SeriesA op SeriesB
+        result.name == None
+
+        result = SeriesA op np.number
+        result.name == SeriesA.name
+
+        result = SeriesA op str
+        result.name == SeriesA.name
+
+        Naming is consistent for rops
         """
+        # print("_numeric_op", self, right, method_name)
         if isinstance(right, Series):
-            # Check compatibility of Elasticsearch cluster
+            # Check we can the 2 Series are compatible (raises on error):
             self._query_compiler.check_arithmetics(right._query_compiler)
 
-            # check left numeric series and right numeric series
-            if (np.issubdtype(self._dtype, np.number) and np.issubdtype(right._dtype, np.number)):
-                new_field_name = "{0}_{1}_{2}".format(self.name, method_name, right.name)
-
-                # Compatible, so create new Series
-                series = Series(query_compiler=self._query_compiler.arithmetic_op_fields(
-                    new_field_name, method_name, self.name, right.name))
-                series.name = None
-
-                return series
-
-            # check left object series and right object series
-            elif self._dtype == 'object' and right._dtype == 'object':
-                new_field_name = "{0}_{1}_{2}".format(self.name, method_name, right.name)
-                # our operation is between series
-                op_type = op_type + tuple('s')
-                # check if fields are aggregatable
-                self.name, right.name = self._query_compiler.check_str_arithmetics(right._query_compiler, self.name,
-                                                                                   right.name)
-
-                series = Series(query_compiler=self._query_compiler.arithmetic_op_fields(
-                    new_field_name, method_name, self.name, right.name, op_type))
-                series.name = None
-
-                return series
-
-            else:
-                # TODO - support limited ops on strings https://github.com/elastic/eland/issues/65
-                raise TypeError(
-                    "unsupported operation type(s) ['{}'] for operands ['{}' with dtype '{}', '{}']"
-                        .format(method_name, type(self), self._dtype, type(right).__name__)
-                )
-
-        # check left number and right numeric series
-        elif np.issubdtype(np.dtype(type(right)), np.number) and np.issubdtype(self._dtype, np.number):
-            new_field_name = "{0}_{1}_{2}".format(self.name, method_name, str(right).replace('.', '_'))
-
-            # Compatible, so create new Series
-            series = Series(query_compiler=self._query_compiler.arithmetic_op_fields(
-                new_field_name, method_name, self.name, right))
-
-            # name of Series remains original name
-            series.name = self.name
-
-            return series
-
-        # check left str series and right str
-        elif isinstance(right, str) and self._dtype == 'object':
-            new_field_name = "{0}_{1}_{2}".format(self.name, method_name, str(right).replace('.', '_'))
-            self.name, right = self._query_compiler.check_str_arithmetics(None, self.name, right)
-            # our operation is between a series and a string on the right
-            op_type = op_type + tuple('r')
-            # Compatible, so create new Series
-            series = Series(query_compiler=self._query_compiler.arithmetic_op_fields(
-                new_field_name, method_name, self.name, right, op_type))
-
-            # truncate last occurence of '.keyword'
-            new_series_name = self.name.rsplit('.keyword', 1)[0]
-            series.name = new_series_name
-
-            return series
-
+            right_object = ArithmeticSeries(right._query_compiler, right.name, right._dtype)
+            display_name = None
+        elif np.issubdtype(np.dtype(type(right)), np.number):
+            right_object = ArithmeticNumber(right, np.dtype(type(right)))
+            display_name = self.name
+        elif isinstance(right, str):
+            right_object = ArithmeticString(right)
+            display_name = self.name
         else:
-            # TODO - support limited ops on strings https://github.com/elastic/eland/issues/65
             raise TypeError(
                 "unsupported operation type(s) ['{}'] for operands ['{}' with dtype '{}', '{}']"
                     .format(method_name, type(self), self._dtype, type(right).__name__)
             )
 
-    def _numeric_rop(self, left, method_name, op_type=None):
-        """
-        e.g. 1 + ed.Series
-        """
-        op_method_name = str(method_name).replace('__r', '__')
-        if isinstance(left, Series):
-            # if both are Series, revese args and call normal op method and remove 'r' from radd etc.
-            return left._numeric_op(self, op_method_name)
-        elif np.issubdtype(np.dtype(type(left)), np.number) and np.issubdtype(self._dtype, np.number):
-            # Prefix new field name with 'f_' so it's a valid ES field name
-            new_field_name = "f_{0}_{1}_{2}".format(str(left).replace('.', '_'), op_method_name, self.name)
+        left_object = ArithmeticSeries(self._query_compiler, self.name, self._dtype)
+        left_object.arithmetic_operation(method_name, right_object)
 
-            # Compatible, so create new Series
-            series = Series(query_compiler=self._query_compiler.arithmetic_op_fields(
-                new_field_name, op_method_name, left, self.name))
+        series = Series(query_compiler=self._query_compiler.arithmetic_op_fields(display_name, left_object))
 
-            # name of Series pinned to valid series (like pandas)
-            series.name = self.name
+        # force set name to 'display_name'
+        series._query_compiler._mappings.display_names = [display_name]
 
-            return series
+        return series
 
-        elif isinstance(left, str) and self._dtype == 'object':
-            new_field_name = "{0}_{1}_{2}".format(self.name, op_method_name, str(left).replace('.', '_'))
-            self.name, left = self._query_compiler.check_str_arithmetics(None, self.name, left)
-            # our operation is between a series and a string on the right
-            op_type = op_type + tuple('l')
-            # Compatible, so create new Series
-            series = Series(query_compiler=self._query_compiler.arithmetic_op_fields(
-                new_field_name, op_method_name, left, self.name, op_type))
-
-            # truncate last occurence of '.keyword'
-            new_series_name = self.name.rsplit('.keyword', 1)[0]
-            series.name = new_series_name
-
-            return series
-
-        else:
-            # TODO - support limited ops on strings https://github.com/elastic/eland/issues/65
-            raise TypeError(
-                "unsupported operation type(s) ['{}'] for operands ['{}' with dtype '{}', '{}']"
-                    .format(op_method_name, type(self), self._dtype, type(left).__name__)
-            )
-
-    def max(self):
+    def max(self, numeric_only=True):
         """
         Return the maximum of the Series values
 
@@ -1177,7 +1105,7 @@ class Series(NDFrame):
         results = super().max()
         return results.squeeze()
 
-    def mean(self):
+    def mean(self, numeric_only=True):
         """
         Return the mean of the Series values
 
@@ -1201,7 +1129,7 @@ class Series(NDFrame):
         results = super().mean()
         return results.squeeze()
 
-    def min(self):
+    def min(self, numeric_only=True):
         """
         Return the minimum of the Series values
 
@@ -1225,7 +1153,7 @@ class Series(NDFrame):
         results = super().min()
         return results.squeeze()
 
-    def sum(self):
+    def sum(self, numeric_only=True):
         """
         Return the sum of the Series values
 

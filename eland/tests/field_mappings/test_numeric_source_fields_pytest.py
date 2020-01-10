@@ -16,16 +16,21 @@
 
 import numpy as np
 
+import eland as ed
+from eland.tests import ES_TEST_CLIENT, ECOMMERCE_INDEX_NAME, FLIGHTS_INDEX_NAME
 from eland.tests.common import TestData
 
 
-class TestMappingsNumericSourceFields(TestData):
+class TestNumericSourceFields(TestData):
 
-    def test_flights_numeric_source_fields(self):
-        ed_flights = self.ed_flights()
+    def test_flights_all_numeric_source_fields(self):
+        ed_field_mappings = ed.FieldMappings(
+            client=ed.Client(ES_TEST_CLIENT),
+            index_pattern=FLIGHTS_INDEX_NAME
+        )
         pd_flights = self.pd_flights()
 
-        ed_numeric = ed_flights._query_compiler._mappings.numeric_source_fields(field_names=None, include_bool=False)
+        ed_numeric = ed_field_mappings.numeric_source_fields(include_bool=False)
         pd_numeric = pd_flights.select_dtypes(include=np.number)
 
         assert pd_numeric.columns.to_list() == ed_numeric
@@ -40,19 +45,20 @@ class TestMappingsNumericSourceFields(TestData):
         customer_first_name            object
         user                           object
         """
-
-        ed_ecommerce = self.ed_ecommerce()[field_names]
+        ed_field_mappings = ed.FieldMappings(
+            client=ed.Client(ES_TEST_CLIENT),
+            index_pattern=ECOMMERCE_INDEX_NAME,
+            display_names=field_names
+        )
         pd_ecommerce = self.pd_ecommerce()[field_names]
 
-        ed_numeric = ed_ecommerce._query_compiler._mappings.numeric_source_fields(field_names=field_names,
-                                                                                  include_bool=False)
+        ed_numeric = ed_field_mappings.numeric_source_fields(include_bool=False)
         pd_numeric = pd_ecommerce.select_dtypes(include=np.number)
 
         assert pd_numeric.columns.to_list() == ed_numeric
 
     def test_ecommerce_selected_mixed_numeric_source_fields(self):
         field_names = ['category', 'currency', 'customer_birth_date', 'customer_first_name', 'total_quantity', 'user']
-
         """
         Note: one is numeric
         category                       object
@@ -62,31 +68,34 @@ class TestMappingsNumericSourceFields(TestData):
         total_quantity                 int64
         user                           object
         """
-
-        ed_ecommerce = self.ed_ecommerce()[field_names]
+        ed_field_mappings = ed.FieldMappings(
+            client=ed.Client(ES_TEST_CLIENT),
+            index_pattern=ECOMMERCE_INDEX_NAME,
+            display_names=field_names
+        )
         pd_ecommerce = self.pd_ecommerce()[field_names]
 
-        ed_numeric = ed_ecommerce._query_compiler._mappings.numeric_source_fields(field_names=field_names,
-                                                                                  include_bool=False)
+        ed_numeric = ed_field_mappings.numeric_source_fields(include_bool=False)
         pd_numeric = pd_ecommerce.select_dtypes(include=np.number)
 
         assert pd_numeric.columns.to_list() == ed_numeric
 
     def test_ecommerce_selected_all_numeric_source_fields(self):
         field_names = ['total_quantity', 'taxful_total_price', 'taxless_total_price']
-
         """
         Note: all are numeric
         total_quantity           int64
         taxful_total_price     float64
         taxless_total_price    float64
         """
-
-        ed_ecommerce = self.ed_ecommerce()[field_names]
+        ed_field_mappings = ed.FieldMappings(
+            client=ed.Client(ES_TEST_CLIENT),
+            index_pattern=ECOMMERCE_INDEX_NAME,
+            display_names=field_names
+        )
         pd_ecommerce = self.pd_ecommerce()[field_names]
 
-        ed_numeric = ed_ecommerce._query_compiler._mappings.numeric_source_fields(field_names=field_names,
-                                                                                  include_bool=False)
+        ed_numeric = ed_field_mappings.numeric_source_fields(include_bool=False)
         pd_numeric = pd_ecommerce.select_dtypes(include=np.number)
 
         assert pd_numeric.columns.to_list() == ed_numeric

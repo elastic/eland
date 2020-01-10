@@ -11,7 +11,7 @@
 #      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #      See the License for the specific language governing permissions and
 #      limitations under the License.
-
+import copy
 import warnings
 from collections import OrderedDict
 from typing import Union
@@ -20,8 +20,8 @@ import numpy as np
 import pandas as pd
 
 from eland import Client
+from eland import FieldMappings
 from eland import Index
-from eland import Mappings
 from eland import Operations
 
 
@@ -54,72 +54,58 @@ class QueryCompiler:
     A way to mitigate this would be to post process this drop - TODO
     """
 
-    def __init__(self, client=None, index_pattern=None, field_names=None, index_field=None, operations=None,
-                 name_mapper=None):
-        self._client = Client(client)
-        self._index_pattern = index_pattern
-
-        # Get and persist mappings, this allows us to correctly
-        # map returned types from Elasticsearch to pandas datatypes
-        self._mappings = Mappings(client=self._client, index_pattern=self._index_pattern)
-
-        self._index = Index(self, index_field)
-
-        if operations is None:
+    def __init__(self,
+                 client=None,
+                 index_pattern=None,
+                 display_names=None,
+                 index_field=None,
+                 to_copy=None):
+        # Implement copy as we don't deep copy the client
+        if to_copy is not None:
+            self._client = Client(to_copy._client)
+            self._index_pattern = to_copy._index_pattern
+            self._index = Index(self, to_copy._index.index_field)
+            self._operations = copy.deepcopy(to_copy._operations)
+            self._mappings = copy.deepcopy(to_copy._mappings)
+        else:
+            self._client = Client(client)
+            self._index_pattern = index_pattern
+            # Get and persist mappings, this allows us to correctly
+            # map returned types from Elasticsearch to pandas datatypes
+            self._mappings = FieldMappings(client=self._client, index_pattern=self._index_pattern,
+                                           display_names=display_names)
+            self._index = Index(self, index_field)
             self._operations = Operations()
-        else:
-            self._operations = operations
 
-        if field_names is not None:
-            self.field_names = field_names
-
-        if name_mapper is None:
-            self._name_mapper = QueryCompiler.DisplayNameToFieldNameMapper()
-        else:
-            self._name_mapper = name_mapper
-
-    def _get_index(self):
+    @property
+    def index(self):
         return self._index
 
-    def _get_field_names(self):
-        field_names = self._operations.get_field_names()
-        if field_names is None:
-            # default to all
-            field_names = self._mappings.source_fields()
-
-        return pd.Index(field_names)
-
-    def _set_field_names(self, field_names):
-        self._operations.set_field_names(field_names)
-
-    field_names = property(_get_field_names, _set_field_names)
-
-    def _get_columns(self):
-        columns = self._operations.get_field_names()
-        if columns is None:
-            # default to all
-            columns = self._mappings.source_fields()
-
-        # map renames
-        columns = self._name_mapper.field_to_display_names(columns)
+    @property
+    def columns(self):
+        columns = self._mappings.display_names
 
         return pd.Index(columns)
 
-    def _set_columns(self, columns):
-        # map renames
-        columns = self._name_mapper.display_to_field_names(columns)
+    def _get_display_names(self):
+        display_names = self._mappings.display_names
 
-        self._operations.set_field_names(columns)
+        return pd.Index(display_names)
 
-    columns = property(_get_columns, _set_columns)
+    def _set_display_names(self, display_names):
+        self._mappings.display_names = display_names
 
-    index = property(_get_index)
+    def get_field_names(self, include_scripted_fields):
+        return self._mappings.get_field_names(include_scripted_fields)
+
+    def add_scripted_field(self, scripted_field_name, display_name, pd_dtype):
+        result = self.copy()
+        self._mappings.add_scripted_field(scripted_field_name, display_name, pd_dtype)
+        return result
 
     @property
     def dtypes(self):
-        columns = self._operations.get_field_names()
-
-        return self._mappings.dtypes(columns)
+        return self._mappings.dtypes()
 
     # END Index, columns, and dtypes objects
 
@@ -231,7 +217,10 @@ class QueryCompiler:
         for hit in iterator:
             i = i + 1
 
-            row = hit['_source']
+            if '_source' in hit:
+                row = hit['_source']
+            else:
+                row = {}
 
             # script_fields appear in 'fields'
             if 'fields' in hit:
@@ -260,15 +249,14 @@ class QueryCompiler:
         # _source may not contain all field_names in the mapping
         # therefore, fill in missing field_names
         # (note this returns self.field_names NOT IN df.columns)
-        missing_field_names = list(set(self.field_names) - set(df.columns))
+        missing_field_names = list(set(self.get_field_names(include_scripted_fields=True)) - set(df.columns))
 
         for missing in missing_field_names:
-            is_source_field, pd_dtype = self._mappings.source_field_pd_dtype(missing)
+            pd_dtype = self._mappings.field_name_pd_dtype(missing)
             df[missing] = pd.Series(dtype=pd_dtype)
 
         # Rename columns
-        if not self._name_mapper.empty:
-            df.rename(columns=self._name_mapper.display_names_mapper(), inplace=True)
+        df.rename(columns=self._mappings.get_renames(), inplace=True)
 
         # Sort columns in mapping order
         if len(self.columns) > 1:
@@ -286,7 +274,11 @@ class QueryCompiler:
                 is_source_field = False
                 pd_dtype = 'object'
             else:
-                is_source_field, pd_dtype = self._mappings.source_field_pd_dtype(name[:-1])
+                try:
+                    pd_dtype = self._mappings.field_name_pd_dtype(name[:-1])
+                    is_source_field = True
+                except KeyError:
+                    is_source_field = False
 
             if not is_source_field and type(x) is dict:
                 for a in x:
@@ -349,15 +341,6 @@ class QueryCompiler:
         """
         return self._operations.index_matches_count(self, self.index.index_field, items)
 
-    def _index_matches(self, items):
-        """
-        Returns
-        -------
-        index_count: int
-            Count of list of the items that match
-        """
-        return self._operations.index_matches(self, self.index.index_field, items)
-
     def _empty_pd_ef(self):
         # Return an empty dataframe with correct columns and dtypes
         df = pd.DataFrame()
@@ -366,17 +349,15 @@ class QueryCompiler:
         return df
 
     def copy(self):
-        return QueryCompiler(client=self._client, index_pattern=self._index_pattern, field_names=None,
-                             index_field=self._index.index_field, operations=self._operations.copy(),
-                             name_mapper=self._name_mapper.copy())
+        return QueryCompiler(to_copy=self)
 
     def rename(self, renames, inplace=False):
         if inplace:
-            self._name_mapper.rename_display_name(renames)
+            self._mappings.rename(renames)
             return self
         else:
             result = self.copy()
-            result._name_mapper.rename_display_name(renames)
+            result._mappings.rename(renames)
             return result
 
     def head(self, n):
@@ -428,7 +409,7 @@ class QueryCompiler:
         if numeric:
             raise NotImplementedError("Not implemented yet...")
 
-        result._operations.set_field_names(list(key))
+        result._mappings.display_names = list(key)
 
         return result
 
@@ -439,7 +420,7 @@ class QueryCompiler:
         if columns is not None:
             # columns is a pandas.Index so we can use pandas drop feature
             new_columns = self.columns.drop(columns)
-            result._operations.set_field_names(new_columns.to_list())
+            result._mappings.display_names = new_columns.to_list()
 
         if index is not None:
             result._operations.drop_index_values(self, self.index.index_field, index)
@@ -475,8 +456,7 @@ class QueryCompiler:
 
         self._index.info_es(buf)
         self._mappings.info_es(buf)
-        self._operations.info_es(buf)
-        self._name_mapper.info_es(buf)
+        self._operations.info_es(self, buf)
 
     def describe(self):
         return self._operations.describe(self)
@@ -533,140 +513,26 @@ class QueryCompiler:
                 "{0} != {1}".format(self._index_pattern, right._index_pattern)
             )
 
-    def check_str_arithmetics(self, right, self_field, right_field):
-        """
-        In the case of string arithmetics, we need an additional check to ensure that the
-        selected fields are aggregatable.
-
-        Parameters
-        ----------
-        right: QueryCompiler
-            The query compiler to compare self to
-
-        Raises
-        ------
-        TypeError, ValueError
-            If string arithmetic operations aren't possible
-        """
-
-        # only check compatibility if right is an ElandQueryCompiler
-        # else return the raw string as the new field name
-        right_agg = {right_field: right_field}
-        if right:
-            self.check_arithmetics(right)
-            right_agg = right._mappings.aggregatable_field_names([right_field])
-
-        self_agg = self._mappings.aggregatable_field_names([self_field])
-
-        if self_agg and right_agg:
-            return list(self_agg.keys())[0], list(right_agg.keys())[0]
-
-        else:
-            raise ValueError(
-                "Can not perform arithmetic operations on non aggregatable fields"
-                "One of [{}, {}] is not aggregatable.".format(self_field, right_field)
-            )
-
-    def arithmetic_op_fields(self, new_field_name, op, left_field, right_field, op_type=None):
+    def arithmetic_op_fields(self, display_name, arithmetic_object):
         result = self.copy()
 
-        result._operations.arithmetic_op_fields(new_field_name, op, left_field, right_field, op_type)
+        # create a new field name for this display name
+        scripted_field_name = "script_field_{}".format(display_name)
+
+        # add scripted field
+        result._mappings.add_scripted_field(scripted_field_name, display_name, arithmetic_object.dtype.name)
+
+        result._operations.arithmetic_op_fields(scripted_field_name, arithmetic_object)
 
         return result
 
-    """
-    Internal class to deal with column renaming and script_fields
-    """
+    def get_arithmetic_op_fields(self):
+        return self._operations.get_arithmetic_op_fields()
 
-    class DisplayNameToFieldNameMapper:
-        def __init__(self,
-                     field_to_display_names=None,
-                     display_to_field_names=None):
+    def display_name_to_aggregatable_name(self, display_name):
+        aggregatable_field_name = self._mappings.aggregatable_field_name(display_name)
 
-            if field_to_display_names is not None:
-                self._field_to_display_names = field_to_display_names
-            else:
-                self._field_to_display_names = {}
-
-            if display_to_field_names is not None:
-                self._display_to_field_names = display_to_field_names
-            else:
-                self._display_to_field_names = {}
-
-        def rename_display_name(self, renames):
-            for current_display_name, new_display_name in renames.items():
-                if current_display_name in self._display_to_field_names:
-                    # has been renamed already - update name
-                    field_name = self._display_to_field_names[current_display_name]
-                    del self._display_to_field_names[current_display_name]
-                    del self._field_to_display_names[field_name]
-                    self._display_to_field_names[new_display_name] = field_name
-                    self._field_to_display_names[field_name] = new_display_name
-                else:
-                    # new rename - assume 'current_display_name' is 'field_name'
-                    field_name = current_display_name
-
-                    # if field_name is already mapped ignore
-                    if field_name not in self._field_to_display_names:
-                        self._display_to_field_names[new_display_name] = field_name
-                        self._field_to_display_names[field_name] = new_display_name
-
-        def field_names_to_list(self):
-            return sorted(list(self._field_to_display_names.keys()))
-
-        def display_names_to_list(self):
-            return sorted(list(self._display_to_field_names.keys()))
-
-        # Return mapper values as dict
-        def display_names_mapper(self):
-            return self._field_to_display_names
-
-        @property
-        def empty(self):
-            return not self._display_to_field_names
-
-        def field_to_display_names(self, field_names):
-            if self.empty:
-                return field_names
-
-            display_names = []
-
-            for field_name in field_names:
-                if field_name in self._field_to_display_names:
-                    display_name = self._field_to_display_names[field_name]
-                else:
-                    display_name = field_name
-                display_names.append(display_name)
-
-            return display_names
-
-        def display_to_field_names(self, display_names):
-            if self.empty:
-                return display_names
-
-            field_names = []
-
-            for display_name in display_names:
-                if display_name in self._display_to_field_names:
-                    field_name = self._display_to_field_names[display_name]
-                else:
-                    field_name = display_name
-                field_names.append(field_name)
-
-            return field_names
-
-        def __constructor__(self, *args, **kwargs):
-            return type(self)(*args, **kwargs)
-
-        def copy(self):
-            return self.__constructor__(
-                field_to_display_names=self._field_to_display_names.copy(),
-                display_to_field_names=self._display_to_field_names.copy()
-            )
-
-        def info_es(self, buf):
-            buf.write("'field_to_display_names': {}\n".format(self._field_to_display_names))
-            buf.write("'display_to_field_names': {}\n".format(self._display_to_field_names))
+        return aggregatable_field_name
 
 
 def elasticsearch_date_to_pandas_date(value: Union[int, str], date_format: str) -> pd.Timestamp:

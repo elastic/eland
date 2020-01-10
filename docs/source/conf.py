@@ -71,7 +71,8 @@ except ImportError:
 
 extlinks = {
     'pandas_api_docs': ('https://pandas.pydata.org/pandas-docs/version/0.25.3/reference/api/%s.html', ''),
-    'pandas_user_guide': ('https://pandas.pydata.org/pandas-docs/version/0.25.3/user_guide/%s.html', 'Pandas User Guide/'),
+    'pandas_user_guide': (
+    'https://pandas.pydata.org/pandas-docs/version/0.25.3/user_guide/%s.html', 'Pandas User Guide/'),
     'es_api_docs': ('https://www.elastic.co/guide/en/elasticsearch/reference/current/%s.html', '')
 }
 
@@ -106,3 +107,6 @@ html_theme = "pandas_sphinx_theme"
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 # html_static_path = ['_static']
+
+html_logo = "logo/eland.png"
+html_favicon = "logo/eland_favicon.png"

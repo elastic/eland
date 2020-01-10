@@ -43,7 +43,7 @@ class TestDataFrameUtils(TestData):
                            'F': {'type': 'boolean'},
                            'G': {'type': 'long'}}}}
 
-        mappings = ed.Mappings._generate_es_mappings(df)
+        mappings = ed.FieldMappings._generate_es_mappings(df)
 
         assert expected_mappings == mappings
 
@@ -56,4 +56,6 @@ class TestDataFrameUtils(TestData):
         assert_pandas_eland_frame_equal(df, ed_df_head)
 
     def test_eland_to_pandas_performance(self):
+        # TODO  - commented out for now for performance reasons
+        return
         pd_df = ed.eland_to_pandas(self.ed_flights())

@@ -45,6 +45,11 @@ class TestSeriesArithmetics(TestData):
 
         assert_pandas_eland_series_equal(pdadd, edadd)
 
+    def test_frame_add_str(self):
+        pdadd = self.pd_ecommerce()[['customer_first_name', 'customer_last_name']] + "_steve"
+        print(pdadd.head())
+        print(pdadd.columns)
+
     def test_str_add_ser(self):
         edadd = "The last name is: " + self.ed_ecommerce()['customer_last_name']
         pdadd = "The last name is: " + self.pd_ecommerce()['customer_last_name']
@@ -60,27 +65,27 @@ class TestSeriesArithmetics(TestData):
         assert_pandas_eland_series_equal(pdadd, edadd)
 
     def test_ser_add_str_add_ser(self):
-        pdadd = self.pd_ecommerce()['customer_first_name'] + self.pd_ecommerce()['customer_last_name']
-        print(pdadd.name)
-        edadd = self.ed_ecommerce()['customer_first_name'] + self.ed_ecommerce()['customer_last_name']
-        print(edadd.name)
-
-        print(edadd.info_es())
+        pdadd = self.pd_ecommerce()['customer_first_name'] + " " + self.pd_ecommerce()['customer_last_name']
+        edadd = self.ed_ecommerce()['customer_first_name'] + " " + self.ed_ecommerce()['customer_last_name']
 
         assert_pandas_eland_series_equal(pdadd, edadd)
 
+    @pytest.mark.filterwarnings("ignore:Aggregations not supported")
     def test_non_aggregatable_add_str(self):
         with pytest.raises(ValueError):
             assert self.ed_ecommerce()['customer_gender'] + "is the gender"
 
+    @pytest.mark.filterwarnings("ignore:Aggregations not supported")
     def teststr_add_non_aggregatable(self):
         with pytest.raises(ValueError):
             assert "The gender is: " + self.ed_ecommerce()['customer_gender']
 
+    @pytest.mark.filterwarnings("ignore:Aggregations not supported")
     def test_non_aggregatable_add_aggregatable(self):
         with pytest.raises(ValueError):
             assert self.ed_ecommerce()['customer_gender'] + self.ed_ecommerce()['customer_first_name']
 
+    @pytest.mark.filterwarnings("ignore:Aggregations not supported")
     def test_aggregatable_add_non_aggregatable(self):
         with pytest.raises(ValueError):
             assert self.ed_ecommerce()['customer_first_name'] + self.ed_ecommerce()['customer_gender']

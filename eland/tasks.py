@@ -1,9 +1,8 @@
 from abc import ABC, abstractmethod
 
-import numpy as np
-
 from eland import SortOrder
 from eland.actions import HeadAction, TailAction, SortIndexAction
+from eland.arithmetics import ArithmeticSeries
 
 
 # -------------------------------------------------------------------------------------------------------------------- #
@@ -27,7 +26,7 @@ class Task(ABC):
         return self._task_type
 
     @abstractmethod
-    def resolve_task(self, query_params, post_processing):
+    def resolve_task(self, query_params, post_processing, query_compiler):
         pass
 
     @abstractmethod
@@ -56,7 +55,7 @@ class HeadTask(SizeTask):
     def __repr__(self):
         return "('{}': ('sort_field': '{}', 'count': {}))".format(self._task_type, self._sort_field, self._count)
 
-    def resolve_task(self, query_params, post_processing):
+    def resolve_task(self, query_params, post_processing, query_compiler):
         # head - sort asc, size n
         # |12345-------------|
         query_sort_field = self._sort_field
@@ -102,7 +101,7 @@ class TailTask(SizeTask):
     def __repr__(self):
         return "('{}': ('sort_field': '{}', 'count': {}))".format(self._task_type, self._sort_field, self._count)
 
-    def resolve_task(self, query_params, post_processing):
+    def resolve_task(self, query_params, post_processing, query_compiler):
         # tail - sort desc, size n, post-process sort asc
         # |-------------12345|
         query_sort_field = self._sort_field
@@ -164,7 +163,7 @@ class QueryIdsTask(Task):
         self._must = must
         self._ids = ids
 
-    def resolve_task(self, query_params, post_processing):
+    def resolve_task(self, query_params, post_processing, query_compiler):
         query_params['query'].ids(self._ids, must=self._must)
 
         return query_params, post_processing
@@ -197,7 +196,7 @@ class QueryTermsTask(Task):
         return "('{}': ('must': {}, 'field': '{}', 'terms': {}))".format(self._task_type, self._must, self._field,
                                                                          self._terms)
 
-    def resolve_task(self, query_params, post_processing):
+    def resolve_task(self, query_params, post_processing, query_compiler):
         query_params['query'].terms(self._field, self._terms, must=self._must)
 
         return query_params, post_processing
@@ -218,194 +217,57 @@ class BooleanFilterTask(Task):
     def __repr__(self):
         return "('{}': ('boolean_filter': {}))".format(self._task_type, repr(self._boolean_filter))
 
-    def resolve_task(self, query_params, post_processing):
+    def resolve_task(self, query_params, post_processing, query_compiler):
         query_params['query'].update_boolean_filter(self._boolean_filter)
 
         return query_params, post_processing
 
 
 class ArithmeticOpFieldsTask(Task):
-    def __init__(self, field_name, op_name, left_field, right_field, op_type):
+    def __init__(self, display_name, arithmetic_series):
         super().__init__("arithmetic_op_fields")
 
-        self._field_name = field_name
-        self._op_name = op_name
-        self._left_field = left_field
-        self._right_field = right_field
-        self._op_type = op_type
+        self._display_name = display_name
+
+        if not isinstance(arithmetic_series, ArithmeticSeries):
+            raise TypeError("Expecting ArithmeticSeries got {}".format(type(arithmetic_series)))
+        self._arithmetic_series = arithmetic_series
 
     def __repr__(self):
         return "('{}': (" \
-               "'field_name': {}, " \
-               "'op_name': {}, " \
-               "'left_field': {}, " \
-               "'right_field': {}, " \
-               "'op_type': {}" \
+               "'display_name': {}, " \
+               "'arithmetic_object': {}" \
                "))" \
-            .format(self._task_type, self._field_name, self._op_name, self._left_field, self._right_field,
-                    self._op_type)
+            .format(self._task_type, self._display_name, self._arithmetic_series)
 
-    def resolve_task(self, query_params, post_processing):
+    def update(self, display_name, arithmetic_series):
+        self._display_name = display_name
+        self._arithmetic_series = arithmetic_series
+
+    def resolve_task(self, query_params, post_processing, query_compiler):
         # https://www.elastic.co/guide/en/elasticsearch/painless/current/painless-api-reference-shared-java-lang.html#painless-api-reference-shared-Math
-        if not self._op_type:
-            if isinstance(self._left_field, str) and isinstance(self._right_field, str):
-                """
-                (if op_name = '__truediv__')
-
-                "script_fields": {
-                    "field_name": {
-                    "script": {
-                        "source": "doc[left_field].value / doc[right_field].value"
-                    }
-                    }
-                }
-                """
-                if self._op_name == '__add__':
-                    source = "doc['{0}'].value + doc['{1}'].value".format(self._left_field, self._right_field)
-                elif self._op_name == '__truediv__':
-                    source = "doc['{0}'].value / doc['{1}'].value".format(self._left_field, self._right_field)
-                elif self._op_name == '__floordiv__':
-                    source = "Math.floor(doc['{0}'].value / doc['{1}'].value)".format(self._left_field,
-                                                                                      self._right_field)
-                elif self._op_name == '__pow__':
-                    source = "Math.pow(doc['{0}'].value, doc['{1}'].value)".format(self._left_field, self._right_field)
-                elif self._op_name == '__mod__':
-                    source = "doc['{0}'].value % doc['{1}'].value".format(self._left_field, self._right_field)
-                elif self._op_name == '__mul__':
-                    source = "doc['{0}'].value * doc['{1}'].value".format(self._left_field, self._right_field)
-                elif self._op_name == '__sub__':
-                    source = "doc['{0}'].value - doc['{1}'].value".format(self._left_field, self._right_field)
-                else:
-                    raise NotImplementedError("Not implemented operation '{0}'".format(self._op_name))
-
-                if query_params['query_script_fields'] is None:
-                    query_params['query_script_fields'] = dict()
-                query_params['query_script_fields'][self._field_name] = {
-                    'script': {
-                        'source': source
-                    }
-                }
-            elif isinstance(self._left_field, str) and np.issubdtype(np.dtype(type(self._right_field)), np.number):
-                """
-                (if self._op_name = '__truediv__')
-
-                "script_fields": {
-                    "field_name": {
-                    "script": {
-                        "source": "doc[self._left_field].value / self._right_field"
-                    }
-                    }
-                }
-                """
-                if self._op_name == '__add__':
-                    source = "doc['{0}'].value + {1}".format(self._left_field, self._right_field)
-                elif self._op_name == '__truediv__':
-                    source = "doc['{0}'].value / {1}".format(self._left_field, self._right_field)
-                elif self._op_name == '__floordiv__':
-                    source = "Math.floor(doc['{0}'].value / {1})".format(self._left_field, self._right_field)
-                elif self._op_name == '__pow__':
-                    source = "Math.pow(doc['{0}'].value, {1})".format(self._left_field, self._right_field)
-                elif self._op_name == '__mod__':
-                    source = "doc['{0}'].value % {1}".format(self._left_field, self._right_field)
-                elif self._op_name == '__mul__':
-                    source = "doc['{0}'].value * {1}".format(self._left_field, self._right_field)
-                elif self._op_name == '__sub__':
-                    source = "doc['{0}'].value - {1}".format(self._left_field, self._right_field)
-                else:
-                    raise NotImplementedError("Not implemented operation '{0}'".format(self._op_name))
-            elif np.issubdtype(np.dtype(type(self._left_field)), np.number) and isinstance(self._right_field, str):
-                """
-                (if self._op_name = '__truediv__')
-
-                "script_fields": {
-                    "field_name": {
-                    "script": {
-                        "source": "self._left_field / doc['self._right_field'].value"
-                    }
-                    }
-                }
-                """
-                if self._op_name == '__add__':
-                    source = "{0} + doc['{1}'].value".format(self._left_field, self._right_field)
-                elif self._op_name == '__truediv__':
-                    source = "{0} / doc['{1}'].value".format(self._left_field, self._right_field)
-                elif self._op_name == '__floordiv__':
-                    source = "Math.floor({0} / doc['{1}'].value)".format(self._left_field, self._right_field)
-                elif self._op_name == '__pow__':
-                    source = "Math.pow({0}, doc['{1}'].value)".format(self._left_field, self._right_field)
-                elif self._op_name == '__mod__':
-                    source = "{0} % doc['{1}'].value".format(self._left_field, self._right_field)
-                elif self._op_name == '__mul__':
-                    source = "{0} * doc['{1}'].value".format(self._left_field, self._right_field)
-                elif self._op_name == '__sub__':
-                    source = "{0} - doc['{1}'].value".format(self._left_field, self._right_field)
-                else:
-                    raise NotImplementedError("Not implemented operation '{0}'".format(self._op_name))
-
-            else:
-                raise TypeError("Types for operation inconsistent {} {} {}", type(self._left_field),
-                                type(self._right_field), self._op_name)
-
-        elif self._op_type[0] == "string":
-            # we need to check the type of string addition
-            if self._op_type[1] == "s":
-                """
-                (if self._op_name = '__add__')
-
-                "script_fields": {
-                    "field_name": {
-                    "script": {
-                        "source": "doc[self._left_field].value + doc[self._right_field].value"
-                    }
-                    }
-                }
-                """
-                if self._op_name == '__add__':
-                    source = "doc['{0}'].value + doc['{1}'].value".format(self._left_field, self._right_field)
-                else:
-                    raise NotImplementedError("Not implemented operation '{0}'".format(self._op_name))
-
-            elif self._op_type[1] == "r":
-                if isinstance(self._left_field, str) and isinstance(self._right_field, str):
-                    """
-                    (if self._op_name = '__add__')
-
-                    "script_fields": {
-                        "field_name": {
-                        "script": {
-                            "source": "doc[self._left_field].value + self._right_field"
-                        }
-                        }
-                    }
-                    """
-                    if self._op_name == '__add__':
-                        source = "doc['{0}'].value + '{1}'".format(self._left_field, self._right_field)
-                    else:
-                        raise NotImplementedError("Not implemented operation '{0}'".format(self._op_name))
-
-            elif self._op_type[1] == 'l':
-                if isinstance(self._left_field, str) and isinstance(self._right_field, str):
-                    """
-                    (if self._op_name = '__add__')
-
-                    "script_fields": {
-                        "field_name": {
-                        "script": {
-                            "source": "self._left_field + doc[self._right_field].value"
-                        }
-                        }
-                    }
-                    """
-                    if self._op_name == '__add__':
-                        source = "'{0}' + doc['{1}'].value".format(self._left_field, self._right_field)
-                    else:
-                        raise NotImplementedError("Not implemented operation '{0}'".format(self._op_name))
-
+        """
+        "script_fields": {
+            "field_name": {
+            "script": {
+                "source": "doc[self._left_field].value / self._right_field"
+            }
+            }
+        }
+        """
         if query_params['query_script_fields'] is None:
             query_params['query_script_fields'] = dict()
-        query_params['query_script_fields'][self._field_name] = {
+
+        if self._display_name in query_params['query_script_fields']:
+            raise NotImplementedError(
+                "TODO code path - combine multiple ops '{}'\n{}\n{}\n{}".format(self,
+                                                                                query_params['query_script_fields'],
+                                                                                self._display_name,
+                                                                                self._arithmetic_series.resolve()))
+
+        query_params['query_script_fields'][self._display_name] = {
             'script': {
-                'source': source
+                'source': self._arithmetic_series.resolve()
             }
         }
 

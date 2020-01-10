@@ -118,7 +118,7 @@ class DataFrame(NDFrame):
         There are effectively 2 constructors:
 
         1. client, index_pattern, columns, index_field
-        2. query_compiler (eland.ElandQueryCompiler)
+        2. query_compiler (eland.QueryCompiler)
 
         The constructor with 'query_compiler' is for internal use only.
         """
@@ -531,35 +531,11 @@ class DataFrame(NDFrame):
          is_source_field: False
         Mappings:
          capabilities:
-                            _source   es_dtype        pd_dtype  searchable  aggregatable
-        AvgTicketPrice         True      float         float64        True          True
-        Cancelled              True    boolean            bool        True          True
-        Carrier                True    keyword          object        True          True
-        Dest                   True    keyword          object        True          True
-        DestAirportID          True    keyword          object        True          True
-        DestCityName           True    keyword          object        True          True
-        DestCountry            True    keyword          object        True          True
-        DestLocation           True  geo_point          object        True          True
-        DestRegion             True    keyword          object        True          True
-        DestWeather            True    keyword          object        True          True
-        DistanceKilometers     True      float         float64        True          True
-        DistanceMiles          True      float         float64        True          True
-        FlightDelay            True    boolean            bool        True          True
-        FlightDelayMin         True    integer           int64        True          True
-        FlightDelayType        True    keyword          object        True          True
-        FlightNum              True    keyword          object        True          True
-        FlightTimeHour         True      float         float64        True          True
-        FlightTimeMin          True      float         float64        True          True
-        Origin                 True    keyword          object        True          True
-        OriginAirportID        True    keyword          object        True          True
-        OriginCityName         True    keyword          object        True          True
-        OriginCountry          True    keyword          object        True          True
-        OriginLocation         True  geo_point          object        True          True
-        OriginRegion           True    keyword          object        True          True
-        OriginWeather          True    keyword          object        True          True
-        dayOfWeek              True    integer           int64        True          True
-        timestamp              True       date  datetime64[ns]        True          True
-         date_fields_format: {}
+                           es_field_name  is_source es_dtype es_date_format        pd_dtype  is_searchable  is_aggregatable  is_scripted aggregatable_es_field_name
+        timestamp              timestamp       True     date           None  datetime64[ns]           True             True        False                  timestamp
+        OriginAirportID  OriginAirportID       True  keyword           None          object           True             True        False            OriginAirportID
+        DestAirportID      DestAirportID       True  keyword           None          object           True             True        False              DestAirportID
+        FlightDelayMin    FlightDelayMin       True  integer           None           int64           True             True        False             FlightDelayMin
         Operations:
          tasks: [('boolean_filter': ('boolean_filter': {'bool': {'must': [{'term': {'OriginAirportID': 'AMS'}}, {'range': {'FlightDelayMin': {'gt': 60}}}]}})), ('tail': ('sort_field': '_doc', 'count': 5))]
          size: 5
@@ -567,8 +543,6 @@ class DataFrame(NDFrame):
          _source: ['timestamp', 'OriginAirportID', 'DestAirportID', 'FlightDelayMin']
          body: {'query': {'bool': {'must': [{'term': {'OriginAirportID': 'AMS'}}, {'range': {'FlightDelayMin': {'gt': 60}}}]}}}
          post_processing: [('sort_index')]
-        'field_to_display_names': {}
-        'display_to_field_names': {}
         <BLANKLINE>
         """
         buf = StringIO()
