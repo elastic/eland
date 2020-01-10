@@ -261,6 +261,7 @@ class Operations:
 
         for field in numeric_source_fields:
             body.hist_aggs(field, field, min_aggs, max_aggs, num_bins)
+
         response = query_compiler._client.search(
             index=query_compiler._index_pattern,
             size=0,

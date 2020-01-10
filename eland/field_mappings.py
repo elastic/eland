@@ -80,8 +80,6 @@ class FieldMappings:
         if (client is None) or (index_pattern is None):
             raise ValueError("Can not initialise mapping without client or index_pattern {} {}", client, index_pattern)
 
-        # here we keep track of the format of any date fields
-        self._date_fields_format = dict()
         get_mapping = client.get_mapping(index=index_pattern)
 
         # Get all fields (including all nested) and then all field_caps

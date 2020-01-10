@@ -136,15 +136,17 @@ class Query:
         max = max_aggs[field]
 
         interval = (max - min) / num_bins
+        offset = min
 
         agg = {
             "histogram": {
                 "field": field,
-                "interval": interval
+                "interval": interval,
+                "offset": offset
             }
         }
 
-        if not min == max == 0:
+        if interval != 0:
             self._aggs[name] = agg
 
 
