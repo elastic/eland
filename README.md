@@ -21,7 +21,7 @@ _Note, this project is still very much a work in progress and in an alpha state;
 <tr>
   <td>License</td>
   <td>
-    <a href="https://github.com/elastic/eland/LICENSE.txt">
+    <a href="https://github.com/elastic/eland/blob/master/LICENSE.txt">
     <img src="https://img.shields.io/pypi/l/eland.svg" alt="license" />
     </a>
 </td>
