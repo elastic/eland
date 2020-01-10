@@ -24,7 +24,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 
 here = path.abspath(path.dirname(__file__))
 about = {}
-with open(path.join(here, 'eland', '__version__.py'), 'r', 'utf-8') as f:
+with open(path.join(here, 'eland', '_version.py'), 'r', 'utf-8') as f:
     exec(f.read(), about)
 
 setup(

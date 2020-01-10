@@ -1,6 +1,40 @@
- [![Build Status](https://clients-ci.elastic.co/buildStatus/icon?job=elastic%2Beland%2Bmaster)](https://clients-ci.elastic.co/job/elastic+eland+master/)
- 
 _Note, this project is still very much a work in progress and in an alpha state; input and contributions welcome!_
+
+# eland: pandas-like Python client for analysis of Elasticsearch data
+
+<table>
+<tr>
+  <td>Latest Release</td>
+  <td>
+    <a href="https://pypi.org/project/eland/">
+    <img src="https://img.shields.io/pypi/v/eland.svg" alt="latest release" />
+    </a>
+  </td>
+<tr>
+  <td>Package Status</td>
+  <td>
+		<a href="https://pypi.org/project/eland/">
+		<img src="https://img.shields.io/pypi/status/eland.svg" alt="status" />
+		</a>
+  </td>
+</tr>
+<tr>
+  <td>License</td>
+  <td>
+    <a href="https://github.com/elastic/eland/LICENSE.txt">
+    <img src="https://img.shields.io/pypi/l/eland.svg" alt="license" />
+    </a>
+</td>
+</tr>
+<tr>
+  <td>Build Status</td>
+  <td>
+    <a href="https://clients-ci.elastic.co/job/elastic+eland+master/">
+    <img src="https://clients-ci.elastic.co/buildStatus/icon?job=elastic%2Beland%2Bmaster" alt="Build Status" />
+    </a>
+  </td>
+</tr>
+</table>
 
 # What is it?
 
@@ -39,20 +73,16 @@ max    400140.000000     246.000000       5.000000
 
 See [docs](https://eland.readthedocs.io/en/latest) and [demo_notebook.ipynb](https://eland.readthedocs.io/en/latest/examples/demo_notebook.html) for more examples.
 
-## Connecting to Elasticsearch Cloud
+## Where to get it
+The source code is currently hosted on GitHub at:
+https://github.com/elastic/eland
 
+Binary installers for the latest released version are available at the [Python
+package index](https://pypi.org/project/eland).
+
+```sh
+pip install eland
 ```
->>> import eland as ed
->>> from elasticsearch import Elasticsearch
-
->>> es = Elasticsearch(cloud_id="<cloud_id>", http_auth=('<user>','<password>'))
-
->>> es.info()
-{'name': 'instance-0000000000', 'cluster_name': 'bf900cfce5684a81bca0be0cce5913bc', 'cluster_uuid': 'xLPvrV3jQNeadA7oM4l1jA', 'version': {'number': '7.4.2', 'build_flavor': 'default', 'build_type': 'tar', 'build_hash': '2f90bbf7b93631e52bafb59b3b049cb44ec25e96', 'build_date': '2019-10-28T20:40:44.881551Z', 'build_snapshot': False, 'lucene_version': '8.2.0', 'minimum_wire_compatibility_version': '6.8.0', 'minimum_index_compatibility_version': '6.0.0-beta1'}, 'tagline': 'You Know, for Search'}
-
->>> df = ed.read_es(es, 'reviews')
-```
-
 
 ## Development Setup
 
@@ -86,13 +116,27 @@ eland depends on pandas version 0.25.3.
 
 #### Elasticsearch Versions
 
-eland is versioned like the Elastic stack. E.g. eland 7.5 is compatible with Elasticsearch 7.x up to 7.5
+eland is versioned like the Elastic stack (eland 7.5.1 is compatible with Elasticsearch 7.x up to 7.5.1)
 
 A major version of the client is compatible with the same major version of Elasticsearch. 
 
 No compatibility assurances are given between different major versions of the client and Elasticsearch. 
 Major differences likely exist between major versions of Elasticsearch, 
 particularly around request and response object formats, but also around API urls and behaviour.
+
+## Connecting to Elasticsearch Cloud
+
+```
+>>> import eland as ed
+>>> from elasticsearch import Elasticsearch
+
+>>> es = Elasticsearch(cloud_id="<cloud_id>", http_auth=('<user>','<password>'))
+
+>>> es.info()
+{'name': 'instance-0000000000', 'cluster_name': 'bf900cfce5684a81bca0be0cce5913bc', 'cluster_uuid': 'xLPvrV3jQNeadA7oM4l1jA', 'version': {'number': '7.4.2', 'build_flavor': 'default', 'build_type': 'tar', 'build_hash': '2f90bbf7b93631e52bafb59b3b049cb44ec25e96', 'build_date': '2019-10-28T20:40:44.881551Z', 'build_snapshot': False, 'lucene_version': '8.2.0', 'minimum_wire_compatibility_version': '6.8.0', 'minimum_index_compatibility_version': '6.0.0-beta1'}, 'tagline': 'You Know, for Search'}
+
+>>> df = ed.read_es(es, 'reviews')
+```
 
 ## Why eland?
 
