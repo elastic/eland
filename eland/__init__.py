@@ -14,6 +14,7 @@
 
 from __future__ import absolute_import
 
+from eland._version import *
 from eland.common import *
 from eland.client import *
 from eland.filter import *

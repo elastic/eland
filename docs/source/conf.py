@@ -41,7 +41,11 @@ project = 'eland'
 copyright = '2019, Elasticsearch B.V.'
 
 # The full version, including alpha/beta/rc tags
-release = '0.1'
+import eland
+
+version = str(eland._version.__version__)
+
+release = version
 
 # -- General configuration ---------------------------------------------------
 
