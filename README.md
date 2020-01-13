@@ -1,7 +1,10 @@
 _Note, this project is still very much a work in progress and in an alpha state; input and contributions welcome!_
 
-# eland: pandas-like Python client for analysis of Elasticsearch data
-
+<p align="center">
+      <a href="https://github.com/elastic/eland">
+         <img src="./docs/source/logo/eland.png" width="60%" alt="eland" />
+      </a>
+</p>
 <table>
 <tr>
   <td>Latest Release</td>
