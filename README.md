@@ -171,28 +171,6 @@ package index](https://pypi.org/project/eland).
 pip install eland
 ```
 
-## Development Setup
-
-1. Create a virtual environment in Python 
-
-For example, 
-
-```
-python3 -m venv env
-```
-
-2. Activate the virtual environment
-
-```
-source env/bin/activate
-```
-
-3. Install dependencies from the `requirements.txt` file
-
-```
-pip install -r requirements.txt
-```
-
 ## Versions and Compatibility
 
 ### Python Version Support
@@ -211,7 +189,48 @@ No compatibility assurances are given between different major versions of the cl
 Major differences likely exist between major versions of Elasticsearch, 
 particularly around request and response object formats, but also around API urls and behaviour.
 
-## Connecting to Elasticsearch Cloud
+## Connecting to Elasticsearch 
+
+eland uses the [Elasticsearch low level client](https://elasticsearch-py.readthedocs.io/) to connect to Elasticsearch. 
+This client supports a range of [connection options and authentication mechanisms]
+(https://elasticsearch-py.readthedocs.io/en/master/api.html#elasticsearch). 
+
+### Basic Connection Options
+
+```
+>>> import eland as ed
+
+>>> # Connect to flights index via localhost Elasticsearch node
+>>> ed.DataFrame('localhost', 'flights')
+
+>>> # Connect to flights index via localhost Elasticsearch node on port 9200
+>>> ed.DataFrame('localhost:9200', 'flights')
+
+>>> # Connect to flights index via localhost Elasticsearch node on port 9200 with <user>:<password> credentials
+>>> ed.DataFrame('http://<user>:<password>@localhost:9200', 'flights')
+
+>>> # Connect to flights index via ssl
+>>> es = Elasticsearch(
+    'https://<user>:<password>@localhost:443', 
+    use_ssl=True, 
+    verify_certs=True, 
+    ca_certs='/path/to/ca.crt'
+)
+>>> ed.DataFrame(es, 'flights')
+
+>>> # Connect to flights index via ssl using Urllib3HttpConnection options 
+>>> es = Elasticsearch(
+    ['localhost:443', 'other_host:443'],
+    use_ssl=True,
+    verify_certs=True,
+    ca_certs='/path/to/CA_certs',
+    client_cert='/path/to/clientcert.pem',
+    client_key='/path/to/clientkey.pem'
+)
+>>> ed.DataFrame(es, 'flights')
+```
+
+### Connecting to an Elasticsearch Cloud Cluster
 
 ```
 >>> import eland as ed
