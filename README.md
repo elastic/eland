@@ -52,7 +52,7 @@ index pattern, and explore using an API that mirrors a subset of the pandas.Data
 ```
 >>> import eland as ed
 
->>> # Connect to 'flights' index via localhost Elasticsearch node)
+>>> # Connect to 'flights' index via localhost Elasticsearch node
 >>> df = ed.DataFrame('localhost:9200', 'flights') 
 
 >>> df.head()
