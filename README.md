@@ -117,7 +117,7 @@ Officially Python 3.5.3 and above, 3.6, 3.7, and 3.8.
 
 eland depends on pandas version 0.25.3. 
 
-#### Elasticsearch Versions
+### Elasticsearch Versions
 
 eland is versioned like the Elastic stack (eland 7.5.1 is compatible with Elasticsearch 7.x up to 7.5.1)
 
