@@ -41,7 +41,7 @@ class TestDataFrameQuery(TestData):
         # Now create index
         index_name = 'eland_test_query'
 
-        ed_df = ed.pandas_to_eland(pd_df, ES_TEST_CLIENT, index_name, if_exists="replace", refresh=True)
+        ed_df = ed.pandas_to_eland(pd_df, ES_TEST_CLIENT, index_name, es_if_exists="replace", es_refresh=True)
 
         assert_pandas_eland_frame_equal(pd_df, ed_df)
 
@@ -97,7 +97,7 @@ class TestDataFrameQuery(TestData):
         # Now create index
         index_name = 'eland_test_query'
 
-        ed_df = ed.pandas_to_eland(pd_df, ES_TEST_CLIENT, index_name, if_exists="replace", refresh=True)
+        ed_df = ed.pandas_to_eland(pd_df, ES_TEST_CLIENT, index_name, es_if_exists="replace", es_refresh=True)
 
         assert_pandas_eland_frame_equal(pd_df, ed_df)
 
