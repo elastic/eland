@@ -49,8 +49,6 @@ def test_plot_filtered_hist(fig_test, fig_ref):
     pd_flights = pd_flights[pd_flights.FlightDelayMin > 0]
     ed_flights = ed_flights[ed_flights.FlightDelayMin > 0]
 
-    print(ed_flights.head())
-
     # This throws a userwarning
     # (https://github.com/pandas-dev/pandas/blob/171c71611886aab8549a8620c5b0071a129ad685/pandas/plotting/_matplotlib/tools.py#L222)
     with pytest.warns(UserWarning):
