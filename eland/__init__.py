@@ -23,7 +23,6 @@ from eland.field_mappings import *
 from eland.query import *
 from eland.operations import *
 from eland.query_compiler import *
-from eland.plotting import *
 from eland.ndframe import *
 from eland.series import *
 from eland.dataframe import *

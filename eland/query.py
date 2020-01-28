@@ -149,7 +149,6 @@ class Query:
         if interval != 0:
             self._aggs[name] = agg
 
-
     def to_search_body(self):
         if self._query.empty():
             if self._aggs:

@@ -19,7 +19,6 @@ import numpy as np
 
 import eland as ed
 from eland.tests import FLIGHTS_INDEX_NAME, ES_TEST_CLIENT
-
 from eland.tests.common import TestData
 
 

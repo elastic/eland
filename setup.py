@@ -15,7 +15,7 @@
 from codecs import open
 from os import path
 
-from setuptools import setup
+from setuptools import setup, find_packages
 
 here = path.abspath(path.dirname(__file__))
 about = {}
@@ -183,7 +183,7 @@ setup(
     license='Apache 2.0',
     classifiers=CLASSIFIERS,
     keywords='elastic eland pandas python',
-    packages=['eland'],
+    packages=find_packages(include=["eland", "eland.*"]),
     install_requires=[
         'elasticsearch>=7.0.5',
         'pandas==0.25.3',

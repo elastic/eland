@@ -39,6 +39,7 @@ def test_plot_hist(fig_test, fig_ref):
         ed_ax = fig_test.subplots()
         ed_flights.hist(ax=ed_ax)
 
+
 @check_figures_equal(extensions=['png'])
 def test_plot_filtered_hist(fig_test, fig_ref):
     test_data = TestData()
