@@ -371,7 +371,7 @@ class NDFrame(ABC):
         return self._query_compiler.describe()
 
     @abstractmethod
-    def _to_pandas(self):
+    def _to_pandas(self, show_progress=False):
         pass
 
     @abstractmethod

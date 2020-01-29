@@ -17,11 +17,9 @@ import csv
 import pandas as pd
 from pandas.io.parsers import _c_parser_defaults
 
-from eland import Client
+from eland import Client, DEFAULT_CHUNK_SIZE
 from eland import DataFrame
 from eland import FieldMappings
-
-DEFAULT_CHUNK_SIZE = 10000
 
 
 def read_es(es_client, es_index_pattern):
@@ -58,7 +56,7 @@ def pandas_to_eland(pd_df,
                     es_refresh=False,
                     es_dropna=False,
                     es_geo_points=None,
-                    chunksize = None):
+                    chunksize=None):
     """
     Append a pandas DataFrame to an Elasticsearch index.
     Mainly used in testing.
@@ -211,7 +209,7 @@ def pandas_to_eland(pd_df,
     return ed_df
 
 
-def eland_to_pandas(ed_df):
+def eland_to_pandas(ed_df, show_progress=False):
     """
     Convert an eland.Dataframe to a pandas.DataFrame
 
@@ -222,6 +220,8 @@ def eland_to_pandas(ed_df):
     ----------
     ed_df: eland.DataFrame
         The source eland.Dataframe referencing the Elasticsearch index
+    show_progress: bool
+        Output progress of option to stdout? By default False.
 
     Returns
     -------
@@ -258,12 +258,18 @@ def eland_to_pandas(ed_df):
     <BLANKLINE>
     [5 rows x 27 columns]
 
+    Convert `eland.DataFrame` to `pandas.DataFrame` and show progress every 10000 rows
+
+    >>> pd_df = ed.eland_to_pandas(ed.DataFrame('localhost', 'flights'), show_progress=True) # doctest: +SKIP
+    2020-01-29 12:43:36.572395: read 10000 rows
+    2020-01-29 12:43:37.309031: read 13059 rows
+
     See Also
     --------
     eland.read_es: Create an eland.Dataframe from an Elasticsearch index
     eland.pandas_to_eland: Create an eland.Dataframe from pandas.DataFrame
     """
-    return ed_df._to_pandas()
+    return ed_df._to_pandas(show_progress=show_progress)
 
 
 def read_csv(filepath_or_buffer,

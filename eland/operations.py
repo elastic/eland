@@ -17,7 +17,7 @@ from collections import OrderedDict
 
 import pandas as pd
 
-from eland import Index, SortOrder
+from eland import Index, SortOrder, DEFAULT_CSV_BATCH_OUTPUT_SIZE, DEFAULT_ES_MAX_RESULT_WINDOW
 from eland import Query
 from eland.actions import SortFieldAction
 from eland.tasks import HeadTask, TailTask, BooleanFilterTask, ArithmeticOpFieldsTask, QueryTermsTask, \
@@ -491,54 +491,70 @@ class Operations:
 
         return df
 
-    def to_pandas(self, query_compiler):
+    def to_pandas(self, query_compiler, show_progress=False):
         class PandasDataFrameCollector:
-            def __init__(self):
-                self.df = None
+            def __init__(self, show_progress):
+                self._df = None
+                self._show_progress = show_progress
 
             def collect(self, df):
-                self.df = df
+                # This collector does not batch data on output. Therefore, batch_size is fixed to None and this method
+                # is only called once.
+                if self._df is not None:
+                    raise RuntimeError("Logic error in execution, this method must only be called once for this"
+                                              "collector - batch_size == None")
+                self._df = df
 
             @staticmethod
             def batch_size():
+                # Do not change (see notes on collect)
                 return None
 
-        collector = PandasDataFrameCollector()
+            @property
+            def show_progress(self):
+                return self._show_progress
+
+        collector = PandasDataFrameCollector(show_progress)
 
         self._es_results(query_compiler, collector)
 
-        return collector.df
+        return collector._df
 
-    def to_csv(self, query_compiler, **kwargs):
+    def to_csv(self, query_compiler, show_progress=False, **kwargs):
         class PandasToCSVCollector:
-            def __init__(self, **args):
-                self.args = args
-                self.ret = None
-                self.first_time = True
+            def __init__(self, show_progress, **args):
+                self._args = args
+                self._show_progress = show_progress
+                self._ret = None
+                self._first_time = True
 
             def collect(self, df):
                 # If this is the first time we collect results, then write header, otherwise don't write header
                 # and append results
-                if self.first_time:
-                    self.first_time = False
-                    df.to_csv(**self.args)
+                if self._first_time:
+                    self._first_time = False
+                    df.to_csv(**self._args)
                 else:
                     # Don't write header, and change mode to append
-                    self.args['header'] = False
-                    self.args['mode'] = 'a'
-                    df.to_csv(**self.args)
+                    self._args['header'] = False
+                    self._args['mode'] = 'a'
+                    df.to_csv(**self._args)
 
             @staticmethod
             def batch_size():
-                # By default read 10000 docs to csv
-                batch_size = 10000
+                # By default read n docs and then dump to csv
+                batch_size = DEFAULT_CSV_BATCH_OUTPUT_SIZE
                 return batch_size
 
-        collector = PandasToCSVCollector(**kwargs)
+            @property
+            def show_progress(self):
+                return self._show_progress
+
+        collector = PandasToCSVCollector(show_progress, **kwargs)
 
         self._es_results(query_compiler, collector)
 
-        return collector.ret
+        return collector._ret
 
     def _es_results(self, query_compiler, collector):
         query_params, post_processing = self._resolve_tasks(query_compiler)
@@ -562,7 +578,7 @@ class Operations:
         # If size=None use scan not search - then post sort results when in df
         # If size>10000 use scan
         is_scan = False
-        if size is not None and size <= 10000:
+        if size is not None and size <= DEFAULT_ES_MAX_RESULT_WINDOW:
             if size > 0:
                 try:
                     es_results = query_compiler._client.search(
@@ -594,7 +610,8 @@ class Operations:
 
         if is_scan:
             while True:
-                partial_result, df = query_compiler._es_results_to_pandas(es_results, collector.batch_size())
+                partial_result, df = query_compiler._es_results_to_pandas(es_results, collector.batch_size(),
+                                                                          collector.show_progress)
                 df = self._apply_df_post_processing(df, post_processing)
                 collector.collect(df)
                 if not partial_result:

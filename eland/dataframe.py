@@ -973,7 +973,7 @@ class DataFrame(NDFrame):
         }
         return self._query_compiler.to_csv(**kwargs)
 
-    def _to_pandas(self):
+    def _to_pandas(self, show_progress=False):
         """
         Utility method to convert eland.Dataframe to pandas.Dataframe
 
@@ -981,7 +981,7 @@ class DataFrame(NDFrame):
         -------
         pandas.DataFrame
         """
-        return self._query_compiler.to_pandas()
+        return self._query_compiler.to_pandas(show_progress=show_progress)
 
     def _empty_pd_df(self):
         return self._query_compiler._empty_pd_ef()

@@ -57,4 +57,7 @@ class TestDataFrameUtils(TestData):
 
     def test_eland_to_pandas_performance(self):
         # TODO quantify this
-        pd_df = ed.eland_to_pandas(self.ed_flights())
+        pd_df = ed.eland_to_pandas(self.ed_flights(), show_progress=True)
+
+        # This test calls the same method so is redundant
+        #assert_pandas_eland_frame_equal(pd_df, self.ed_flights())

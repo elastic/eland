@@ -14,12 +14,13 @@
 import copy
 import warnings
 from collections import OrderedDict
+from datetime import datetime
 from typing import Union
 
 import numpy as np
 import pandas as pd
 
-from eland import Client
+from eland import Client, DEFAULT_PROGRESS_REPORTING_NUM_ROWS
 from eland import FieldMappings
 from eland import Index
 from eland import Operations
@@ -109,7 +110,7 @@ class QueryCompiler:
 
     # END Index, columns, and dtypes objects
 
-    def _es_results_to_pandas(self, results, batch_size=None):
+    def _es_results_to_pandas(self, results, batch_size=None, show_progress=False):
         """
         Parameters
         ----------
@@ -248,6 +249,10 @@ class QueryCompiler:
                     partial_result = True
                     break
 
+            if show_progress:
+                if i % DEFAULT_PROGRESS_REPORTING_NUM_ROWS == 0:
+                    print("{}: read {} rows".format(datetime.now(), i))
+
         # Create pandas DataFrame
         df = pd.DataFrame(data=rows, index=index)
 
@@ -266,6 +271,9 @@ class QueryCompiler:
         # Sort columns in mapping order
         if len(self.columns) > 1:
             df = df[self.columns]
+
+        if show_progress:
+            print("{}: read {} rows".format(datetime.now(), i))
 
         return partial_result, df
 
@@ -381,13 +389,13 @@ class QueryCompiler:
         return result
 
     # To/From Pandas
-    def to_pandas(self):
+    def to_pandas(self, show_progress=False):
         """Converts Eland DataFrame to Pandas DataFrame.
 
         Returns:
             Pandas DataFrame
         """
-        return self._operations.to_pandas(self)
+        return self._operations.to_pandas(self, show_progress)
 
     # To CSV
     def to_csv(self, **kwargs):
