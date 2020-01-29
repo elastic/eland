@@ -258,7 +258,7 @@ def eland_to_pandas(ed_df, show_progress=False):
     <BLANKLINE>
     [5 rows x 27 columns]
 
-    Convert `eland.DataFrame` to `pandas.DataFrame` and show progress
+    Convert `eland.DataFrame` to `pandas.DataFrame` and show progress every 10000 rows
 
     >>> pd_df = ed.eland_to_pandas(ed.DataFrame('localhost', 'flights'), show_progress=True) # doctest: +SKIP
     2020-01-29 12:43:36.572395: read 10000 rows
