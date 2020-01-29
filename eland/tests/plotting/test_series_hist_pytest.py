@@ -25,8 +25,32 @@ def test_plot_hist(fig_test, fig_ref):
     pd_flights = test_data.pd_flights()['FlightDelayMin']
     ed_flights = test_data.ed_flights()['FlightDelayMin']
 
-    pd_ax = fig_ref.subplots()
-    ed_ax = fig_test.subplots()
+    pd_flights.hist(figure=fig_ref)
+    ed_flights.hist(figure=fig_test)
 
-    pd_flights.hist(ax=pd_ax)
-    ed_flights.hist(ax=ed_ax)
+
+@check_figures_equal(extensions=['png'])
+def test_plot_multiple_hists(fig_test, fig_ref):
+    test_data = TestData()
+
+    pd_flights = test_data.pd_flights()
+    ed_flights = test_data.ed_flights()
+
+    pd_flights[pd_flights.AvgTicketPrice < 250]['FlightDelayMin'].hist(figure=fig_ref, alpha=0.5, density=True)
+    pd_flights[pd_flights.AvgTicketPrice > 250]['FlightDelayMin'].hist(figure=fig_ref, alpha=0.5, density=True)
+
+    ed_flights[ed_flights.AvgTicketPrice < 250]['FlightDelayMin'].hist(figure=fig_test, alpha=0.5, density=True)
+    ed_flights[ed_flights.AvgTicketPrice > 250]['FlightDelayMin'].hist(figure=fig_test, alpha=0.5, density=True)
+
+@check_figures_equal(extensions=['png'])
+def test_plot_multiple_hists_pretty(fig_test, fig_ref):
+    test_data = TestData()
+
+    pd_flights = test_data.pd_flights()
+    ed_flights = test_data.ed_flights()
+
+    pd_flights[pd_flights.OriginWeather == 'Sunny']['FlightTimeMin'].hist(figure=fig_ref, alpha=0.5, density=True)
+    pd_flights[pd_flights.OriginWeather != 'Sunny']['FlightTimeMin'].hist(figure=fig_ref, alpha=0.5, density=True)
+
+    ed_flights[ed_flights.OriginWeather == 'Sunny']['FlightTimeMin'].hist(figure=fig_test, alpha=0.5, density=True)
+    ed_flights[ed_flights.OriginWeather != 'Sunny']['FlightTimeMin'].hist(figure=fig_test, alpha=0.5, density=True)

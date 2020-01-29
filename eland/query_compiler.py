@@ -732,11 +732,13 @@ def elasticsearch_date_to_pandas_date(value: Union[int, str], date_format: str) 
         # TODO investigate how we could generate this just once for a bulk read.
         return pd.to_datetime(value)
 
+
 class FieldMappingCache:
     """
     Very simple dict cache for field mappings. This improves performance > 3 times on large datasets as
     DataFrame access is slower than dict access.
     """
+
     def __init__(self, mappings):
         self._mappings = mappings
 
@@ -764,4 +766,3 @@ class FieldMappingCache:
         self._date_field_format[es_field_name] = es_date_field_format
 
         return es_date_field_format
-

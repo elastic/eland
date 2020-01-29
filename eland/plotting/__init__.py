@@ -11,19 +11,18 @@
 #      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #      See the License for the specific language governing permissions and
 #      limitations under the License.
+"""
+Public plotting API
 
-from __future__ import absolute_import
+Based from https://github.com/pandas-dev/pandas/blob/v0.25.3/pandas/plotting/__init__.py
+but only supporting a subset of plotting methods (for now).
+"""
+from eland.plotting._core import (
+    ed_hist_frame,
+    ed_hist_series,
+)
 
-from eland._version import *
-from eland.common import *
-from eland.client import *
-from eland.filter import *
-from eland.index import *
-from eland.field_mappings import *
-from eland.query import *
-from eland.operations import *
-from eland.query_compiler import *
-from eland.ndframe import *
-from eland.series import *
-from eland.dataframe import *
-from eland.utils import *
+__all___ = [
+    "ed_hist_frame",
+    "ed_hist_series",
+]

@@ -16,8 +16,8 @@
 
 import numpy as np
 import pandas as pd
-from pandas.util.testing import assert_almost_equal
 import pytest
+from pandas.util.testing import assert_almost_equal
 
 from eland.tests.common import TestData
 

@@ -37,11 +37,11 @@ import numpy as np
 import pandas as pd
 from pandas.io.common import _expand_user, _stringify_path
 
+import eland.plotting
 from eland import NDFrame
 from eland.arithmetics import ArithmeticSeries, ArithmeticString, ArithmeticNumber
 from eland.common import DEFAULT_NUM_ROWS_DISPLAYED, docstring_parameter
 from eland.filter import NotFilter, Equal, Greater, Less, GreaterEqual, LessEqual, ScriptFilter, IsIn
-import eland.plotting as gfx
 
 
 def _get_method_name():
@@ -108,7 +108,7 @@ class Series(NDFrame):
             index_field=index_field,
             query_compiler=query_compiler)
 
-    hist = gfx.ed_hist_series
+    hist = eland.plotting.ed_hist_series
 
     @property
     def empty(self):
