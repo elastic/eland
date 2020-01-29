@@ -17,6 +17,11 @@ from enum import Enum
 
 DEFAULT_NUM_ROWS_DISPLAYED = 60
 
+DEFAULT_CHUNK_SIZE = 10000
+DEFAULT_CSV_BATCH_OUTPUT_SIZE = 10000
+DEFAULT_PROGRESS_REPORTING_NUM_ROWS = 10000
+DEFAULT_ES_MAX_RESULT_WINDOW = 10000  # index.max_result_window
+
 
 def docstring_parameter(*sub):
     def dec(obj):

@@ -387,8 +387,8 @@ class Series(NDFrame):
             result = _buf.getvalue()
             return result
 
-    def _to_pandas(self):
-        return self._query_compiler.to_pandas()[self.name]
+    def _to_pandas(self, show_progress=False):
+        return self._query_compiler.to_pandas(show_progress=show_progress)[self.name]
 
     @property
     def _dtype(self):
