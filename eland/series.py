@@ -1081,7 +1081,7 @@ class Series(NDFrame):
 
         return series
 
-    def max(self, numeric_only=True):
+    def max(self, numeric_only=None):
         """
         Return the maximum of the Series values
 
@@ -1102,10 +1102,10 @@ class Series(NDFrame):
         >>> int(s.max())
         1199
         """
-        results = super().max()
+        results = super().max(numeric_only=numeric_only)
         return results.squeeze()
 
-    def mean(self, numeric_only=True):
+    def mean(self, numeric_only=None):
         """
         Return the mean of the Series values
 
@@ -1126,10 +1126,10 @@ class Series(NDFrame):
         >>> int(s.mean())
         628
         """
-        results = super().mean()
+        results = super().mean(numeric_only=numeric_only)
         return results.squeeze()
 
-    def min(self, numeric_only=True):
+    def min(self, numeric_only=None):
         """
         Return the minimum of the Series values
 
@@ -1150,10 +1150,10 @@ class Series(NDFrame):
         >>> int(s.min())
         100
         """
-        results = super().min()
+        results = super().min(numeric_only=numeric_only)
         return results.squeeze()
 
-    def sum(self, numeric_only=True):
+    def sum(self, numeric_only=None):
         """
         Return the sum of the Series values
 
@@ -1174,7 +1174,7 @@ class Series(NDFrame):
         >>> int(s.sum())
         8204364
         """
-        results = super().sum()
+        results = super().sum(numeric_only=numeric_only)
         return results.squeeze()
 
     def nunique(self):
