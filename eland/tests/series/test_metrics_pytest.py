@@ -21,6 +21,7 @@ from eland.tests.common import TestData
 
 class TestSeriesMetrics(TestData):
     funcs = ['max', 'min', 'mean', 'sum']
+    timestamp_funcs = ['max', 'min', 'mean']
 
     def test_flights_metrics(self):
         pd_flights = self.pd_flights()['AvgTicketPrice']
@@ -29,6 +30,16 @@ class TestSeriesMetrics(TestData):
         for func in self.funcs:
             pd_metric = getattr(pd_flights, func)()
             ed_metric = getattr(ed_flights, func)()
+            assert_almost_equal(pd_metric, ed_metric, check_less_precise=True)
+
+    def test_flights_timestamp(self):
+        pd_flights = self.pd_flights()['timestamp']
+        ed_flights = self.ed_flights()['timestamp']
+
+        for func in self.timestamp_funcs:
+            pd_metric = getattr(pd_flights, func)()
+            ed_metric = getattr(ed_flights, func)()
+            pd_metric = pd_metric.floor("S") # floor or pandas mean with have ns
             assert_almost_equal(pd_metric, ed_metric, check_less_precise=True)
 
     def test_ecommerce_selected_non_numeric_source_fields(self):

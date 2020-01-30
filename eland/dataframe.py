@@ -531,11 +531,11 @@ class DataFrame(NDFrame):
          is_source_field: False
         Mappings:
          capabilities:
-                           es_field_name  is_source es_dtype es_date_format        pd_dtype  is_searchable  is_aggregatable  is_scripted aggregatable_es_field_name
-        timestamp              timestamp       True     date           None  datetime64[ns]           True             True        False                  timestamp
-        OriginAirportID  OriginAirportID       True  keyword           None          object           True             True        False            OriginAirportID
-        DestAirportID      DestAirportID       True  keyword           None          object           True             True        False              DestAirportID
-        FlightDelayMin    FlightDelayMin       True  integer           None           int64           True             True        False             FlightDelayMin
+                           es_field_name  is_source es_dtype                  es_date_format        pd_dtype  is_searchable  is_aggregatable  is_scripted aggregatable_es_field_name
+        timestamp              timestamp       True     date  strict_date_hour_minute_second  datetime64[ns]           True             True        False                  timestamp
+        OriginAirportID  OriginAirportID       True  keyword                            None          object           True             True        False            OriginAirportID
+        DestAirportID      DestAirportID       True  keyword                            None          object           True             True        False              DestAirportID
+        FlightDelayMin    FlightDelayMin       True  integer                            None           int64           True             True        False             FlightDelayMin
         Operations:
          tasks: [('boolean_filter': ('boolean_filter': {'bool': {'must': [{'term': {'OriginAirportID': 'AMS'}}, {'range': {'FlightDelayMin': {'gt': 60}}}]}})), ('tail': ('sort_field': '_doc', 'count': 5))]
          size: 5

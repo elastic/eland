@@ -180,9 +180,7 @@ class NDFrame(ABC):
         dayOfWeek                2.835975
         dtype: float64
         """
-        if not numeric_only:
-            raise NotImplementedError("Only mean of numeric fields is implemented")
-        return self._query_compiler.mean()
+        return self._query_compiler.mean(numeric_only=numeric_only)
 
     def sum(self, numeric_only=True):
         """
@@ -214,9 +212,7 @@ class NDFrame(ABC):
         dayOfWeek             3.703500e+04
         dtype: float64
         """
-        if not numeric_only:
-            raise NotImplementedError("Only sum of numeric fields is implemented")
-        return self._query_compiler.sum()
+        return self._query_compiler.sum(numeric_only=numeric_only)
 
     def min(self, numeric_only=True):
         """
@@ -248,9 +244,7 @@ class NDFrame(ABC):
         dayOfWeek               0.000000
         dtype: float64
         """
-        if not numeric_only:
-            raise NotImplementedError("Only min of numeric fields is implemented")
-        return self._query_compiler.min()
+        return self._query_compiler.min(numeric_only=numeric_only)
 
     def max(self, numeric_only=True):
         """
@@ -282,9 +276,7 @@ class NDFrame(ABC):
         dayOfWeek                 6.000000
         dtype: float64
         """
-        if not numeric_only:
-            raise NotImplementedError("Only max of numeric fields is implemented")
-        return self._query_compiler.max()
+        return self._query_compiler.max(numeric_only=numeric_only)
 
     def nunique(self):
         """

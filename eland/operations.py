@@ -16,8 +16,10 @@ import warnings
 from collections import OrderedDict
 
 import pandas as pd
+from pandas.core.dtypes.common import is_bool_dtype, is_datetime_or_timedelta_dtype
 
-from eland import Index, SortOrder, DEFAULT_CSV_BATCH_OUTPUT_SIZE, DEFAULT_ES_MAX_RESULT_WINDOW
+from eland import Index, SortOrder, DEFAULT_CSV_BATCH_OUTPUT_SIZE, DEFAULT_ES_MAX_RESULT_WINDOW, \
+    elasticsearch_date_to_pandas_date
 from eland import Query
 from eland.actions import SortFieldAction
 from eland.tasks import HeadTask, TailTask, BooleanFilterTask, ArithmeticOpFieldsTask, QueryTermsTask, \
@@ -100,17 +102,17 @@ class Operations:
 
         return pd.Series(data=counts, index=fields)
 
-    def mean(self, query_compiler):
-        return self._metric_aggs(query_compiler, 'avg')
+    def mean(self, query_compiler, numeric_only=True):
+        return self._metric_aggs(query_compiler, 'avg', numeric_only=numeric_only)
 
-    def sum(self, query_compiler):
-        return self._metric_aggs(query_compiler, 'sum')
+    def sum(self, query_compiler, numeric_only=True):
+        return self._metric_aggs(query_compiler, 'sum', numeric_only=numeric_only)
 
-    def max(self, query_compiler):
-        return self._metric_aggs(query_compiler, 'max')
+    def max(self, query_compiler, numeric_only=True):
+        return self._metric_aggs(query_compiler, 'max', numeric_only=numeric_only)
 
-    def min(self, query_compiler):
-        return self._metric_aggs(query_compiler, 'min')
+    def min(self, query_compiler, numeric_only=True):
+        return self._metric_aggs(query_compiler, 'min', numeric_only=numeric_only)
 
     def nunique(self, query_compiler):
         return self._metric_aggs(query_compiler, 'cardinality', field_types='aggregatable')
@@ -121,7 +123,7 @@ class Operations:
     def hist(self, query_compiler, bins):
         return self._hist_aggs(query_compiler, bins)
 
-    def _metric_aggs(self, query_compiler, func, field_types=None):
+    def _metric_aggs(self, query_compiler, func, field_types=None, numeric_only=None):
         """
         Parameters
         ----------
@@ -169,9 +171,18 @@ class Operations:
             for key, value in aggregatable_field_names.items():
                 results[value] = response['aggregations'][key]['value']
         else:
-            numeric_source_fields = query_compiler._mappings.numeric_source_fields()
+            if numeric_only:
+                pd_dtypes, source_fields, date_formats = query_compiler._mappings.metric_source_fields(
+                    include_bool=True)
+            else:
+                # The only non-numerics we support are bool and timestamps currently
+                # strings are not supported by metric aggs in ES
+                # TODO - sum isn't supported for Timestamp in pandas - although ES does attempt to do it
+                pd_dtypes, source_fields, date_formats = query_compiler._mappings.metric_source_fields(
+                    include_bool=True,
+                    include_timestamp=True)
 
-            for field in numeric_source_fields:
+            for field in source_fields:
                 body.metric_aggs(field, func, field)
 
             response = query_compiler._client.search(
@@ -183,10 +194,20 @@ class Operations:
             # "aggregations" : {
             #   "AvgTicketPrice" : {
             #     "value" : 628.2536888148849
+            #   },
+            #   "timestamp": {
+            #     "value": 1.5165624455644382E12,
+            #     "value_as_string": "2018-01-21T19:20:45.564Z"
             #   }
             # }
-            for field in numeric_source_fields:
-                results[field] = response['aggregations'][field]['value']
+            for pd_dtype, field, date_format in zip(pd_dtypes, source_fields, date_formats):
+                if is_datetime_or_timedelta_dtype(pd_dtype):
+                    results[field] = elasticsearch_date_to_pandas_date(
+                        response['aggregations'][field]['value_as_string'],
+                        date_format
+                    )
+                else:
+                    results[field] = response['aggregations'][field]['value']
 
         # Return single value if this is a series
         # if len(numeric_source_fields) == 1:
@@ -256,8 +277,8 @@ class Operations:
 
         body = Query(query_params['query'])
 
-        min_aggs = self._metric_aggs(query_compiler, 'min')
-        max_aggs = self._metric_aggs(query_compiler, 'max')
+        min_aggs = self._metric_aggs(query_compiler, 'min', numeric_only=True)
+        max_aggs = self._metric_aggs(query_compiler, 'max', numeric_only=True)
 
         for field in numeric_source_fields:
             body.hist_aggs(field, field, min_aggs, max_aggs, num_bins)
@@ -455,7 +476,7 @@ class Operations:
         if size is not None:
             raise NotImplementedError("Can not count field matches if size is set {}".format(size))
 
-        numeric_source_fields = query_compiler._mappings.numeric_source_fields(include_bool=False)
+        numeric_source_fields = query_compiler._mappings.numeric_source_fields()
 
         # for each field we compute:
         # count, mean, std, min, 25%, 50%, 75%, max
@@ -502,7 +523,7 @@ class Operations:
                 # is only called once.
                 if self._df is not None:
                     raise RuntimeError("Logic error in execution, this method must only be called once for this"
-                                              "collector - batch_size == None")
+                                       "collector - batch_size == None")
                 self._df = df
 
             @staticmethod

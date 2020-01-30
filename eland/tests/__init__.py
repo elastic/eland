@@ -114,7 +114,8 @@ FLIGHTS_MAPPING = {"mappings": {
             "type": "integer"
         },
         "timestamp": {
-            "type": "date"
+            "type": "date",
+            "format": "strict_date_hour_minute_second"
         }
     }
 }}

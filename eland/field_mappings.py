@@ -504,23 +504,46 @@ class FieldMappings:
 
         self._mappings_capabilities = self._mappings_capabilities.append(capability_matrix_row)
 
-    def numeric_source_fields(self, include_bool=True):
+    def numeric_source_fields(self):
+        pd_dtypes, es_field_names, es_date_formats = self.metric_source_fields()
+        return es_field_names
+
+    def metric_source_fields(self, include_bool=False, include_timestamp=False):
         """
         Returns
         -------
-        numeric_source_fields: list of str
-            List of source fields where pd_dtype == (int64 or float64 or bool)
-        """
-        if include_bool:
-            df = self._mappings_capabilities[((self._mappings_capabilities.pd_dtype == 'int64') |
-                                              (self._mappings_capabilities.pd_dtype == 'float64') |
-                                              (self._mappings_capabilities.pd_dtype == 'bool'))]
-        else:
-            df = self._mappings_capabilities[((self._mappings_capabilities.pd_dtype == 'int64') |
-                                              (self._mappings_capabilities.pd_dtype == 'float64'))]
+        pd_dtypes: list of np.dtype
+            List of pd_dtypes for es_field_names
+        es_field_names: list of str
+            List of source fields where pd_dtype == (int64 or float64 or bool or timestamp)
+        es_date_formats: list of str (can be None)
+            List of es date formats for es_field
 
-        # return as list for display names (in display_name order)
-        return df.es_field_name.to_list()
+        TODO - not very efficient, but unless called per row, this should be ok
+        """
+        pd_dtypes = []
+        es_field_names = []
+        es_date_formats = []
+        for index, row in self._mappings_capabilities.iterrows():
+            pd_dtype = row['pd_dtype']
+            es_field_name = row['es_field_name']
+            es_date_format = row['es_date_format']
+
+            if is_integer_dtype(pd_dtype) or is_float_dtype(pd_dtype):
+                pd_dtypes.append(np.dtype(pd_dtype))
+                es_field_names.append(es_field_name)
+                es_date_formats.append(es_date_format)
+            elif include_bool and is_bool_dtype(pd_dtype):
+                pd_dtypes.append(np.dtype(pd_dtype))
+                es_field_names.append(es_field_name)
+                es_date_formats.append(es_date_format)
+            elif include_timestamp and is_datetime_or_timedelta_dtype(pd_dtype):
+                pd_dtypes.append(np.dtype(pd_dtype))
+                es_field_names.append(es_field_name)
+                es_date_formats.append(es_date_format)
+
+        # return in display_name order
+        return pd_dtypes, es_field_names, es_date_formats
 
     def get_field_names(self, include_scripted_fields=True):
         if include_scripted_fields:
