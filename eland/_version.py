@@ -15,6 +15,6 @@
 __title__ = 'eland'
 __description__ = 'Python elasticsearch client to analyse, explore and manipulate data that resides in elasticsearch.'
 __url__ = 'https://github.com/elastic/eland'
-__version__ = '7.5.1a3'
+__version__ = '7.5.1a4'
 __maintainer__ = 'Elasticsearch B.V.'
 __maintainer_email__ = 'steve.dodson@elastic.co'
