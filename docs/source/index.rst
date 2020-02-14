@@ -35,6 +35,7 @@ In general, the data resides in elasticsearch and not in memory, which allows el
   * :doc:`reference/dataframe`
   * :doc:`reference/series`
   * :doc:`reference/indexing`
+  * :doc:`reference/ml`
 
 * :doc:`implementation/index`
 

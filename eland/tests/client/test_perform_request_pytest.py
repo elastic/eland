@@ -13,28 +13,29 @@
 #      limitations under the License.
 
 # File called _pytest for PyCharm compatability
-from elasticsearch import Elasticsearch
+import elasticsearch
+import pytest
 
 import eland as ed
+from eland.tests import ES_TEST_CLIENT
 from eland.tests.common import TestData
 
 
 class TestClientEq(TestData):
 
-    def test_self_eq(self):
-        es = Elasticsearch('localhost')
+    def test_perform_request(self):
+        client = ed.Client(ES_TEST_CLIENT)
 
-        client = ed.Client(es)
+        response = client.perform_request("GET", "/_cat/indices/flights")
 
-        assert client != es
+        # yellow open flights TNUv0iysQSi7F-N5ykWfWQ 1 1 13059 0 5.7mb 5.7mb
+        tokens = response.split(' ')
 
-        assert client == client
+        assert tokens[2] == 'flights'
+        assert tokens[6] == '13059'
 
-    def test_non_self_ne(self):
-        es1 = Elasticsearch('localhost')
-        es2 = Elasticsearch('localhost')
+    def test_bad_perform_request(self):
+        client = ed.Client(ES_TEST_CLIENT)
 
-        client1 = ed.Client(es1)
-        client2 = ed.Client(es2)
-
-        assert client1 != client2
+        with pytest.raises(elasticsearch.exceptions.NotFoundError):
+            response = client.perform_request("GET", "/_cat/indices/non_existant_index")

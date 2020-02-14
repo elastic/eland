@@ -15,3 +15,4 @@ methods. All classes and functions exposed in ``eland.*`` namespace are public.
    dataframe
    series
    indexing
+   ml

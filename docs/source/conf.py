@@ -38,7 +38,7 @@ sys.path.extend(
 # -- Project information -----------------------------------------------------
 
 project = 'eland'
-copyright = '2019, Elasticsearch B.V.'
+copyright = '2020, Elasticsearch B.V.'
 
 # The full version, including alpha/beta/rc tags
 import eland
