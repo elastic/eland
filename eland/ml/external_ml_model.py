@@ -30,8 +30,8 @@ from xgboost import XGBRegressor, XGBClassifier
 
 class ExternalMLModel(MLModel):
     """
-    Put a trained inference model in Elasticsearch based on an external model.
-    An external model that is transformed and added to Elasticsearch.
+    Transform and serialize a trained 3rd party model into Elasticsearch.
+    This model can then be used for inference in the Elastic Stack.
 
     Parameters
     ----------
@@ -152,9 +152,9 @@ class ExternalMLModel(MLModel):
 
     def predict(self, X):
         """
-        Make a prediction using a trained inference model in Elasticsearch.
+        Make a prediction using a trained model stored in Elasticsearch.
 
-        Parameters for this method are not fully compatible with standard sklearn.predict.
+        Parameters for this method are not yet fully compatible with standard sklearn.predict.
 
         Parameters
         ----------
