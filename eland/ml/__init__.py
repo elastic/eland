@@ -12,19 +12,5 @@
 #      See the License for the specific language governing permissions and
 #      limitations under the License.
 
-from __future__ import absolute_import
-
-from eland._version import *
-from eland.common import *
-from eland.client import *
-from eland.filter import *
-from eland.index import *
-from eland.field_mappings import *
-from eland.query import *
-from eland.operations import *
-from eland.query_compiler import *
-from eland.ndframe import *
-from eland.series import *
-from eland.dataframe import *
-from eland.utils import *
-
+from eland.ml.ml_model import *
+from eland.ml.external_ml_model import *

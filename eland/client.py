@@ -56,3 +56,6 @@ class Client:
     def count(self, **kwargs):
         count_json = self._es.count(**kwargs)
         return count_json['count']
+
+    def perform_request(self, method, url, headers=None, params=None, body=None):
+        return self._es.transport.perform_request(method, url, headers, params, body)
