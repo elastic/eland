@@ -28,7 +28,7 @@ from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from xgboost import XGBRegressor, XGBClassifier
 
 
-class ExternalMLModel(MLModel):
+class ImportedMLModel(MLModel):
     """
     Transform and serialize a trained 3rd party model into Elasticsearch.
     This model can then be used for inference in the Elastic Stack.
@@ -67,7 +67,7 @@ class ExternalMLModel(MLModel):
     --------
     >>> from sklearn import datasets
     >>> from sklearn.tree import DecisionTreeClassifier
-    >>> from eland.ml import ExternalMLModel
+    >>> from eland.ml import ImportedMLModel
 
     >>> # Train model
     >>> training_data = datasets.make_classification(n_features=5, random_state=0)
@@ -82,7 +82,7 @@ class ExternalMLModel(MLModel):
     >>> # Serialise the model to Elasticsearch
     >>> feature_names = ["f0", "f1", "f2", "f3", "f4"]
     >>> model_id = "test_decision_tree_classifier"
-    >>> es_model = ExternalMLModel('localhost', model_id, classifier, feature_names, overwrite=True)
+    >>> es_model = ImportedMLModel('localhost', model_id, classifier, feature_names, overwrite=True)
 
     >>> # Get some test results from Elasticsearch model
     >>> es_model.predict(test_data)
@@ -169,7 +169,7 @@ class ExternalMLModel(MLModel):
         --------
         >>> from sklearn import datasets
         >>> from xgboost import XGBRegressor
-        >>> from eland.ml import ExternalMLModel
+        >>> from eland.ml import ImportedMLModel
 
         >>> # Train model
         >>> training_data = datasets.make_classification(n_features=6, random_state=0)
@@ -184,7 +184,7 @@ class ExternalMLModel(MLModel):
         >>> # Serialise the model to Elasticsearch
         >>> feature_names = ["f0", "f1", "f2", "f3", "f4", "f5"]
         >>> model_id = "test_xgb_regressor"
-        >>> es_model = ExternalMLModel('localhost', model_id, regressor, feature_names, overwrite=True)
+        >>> es_model = ImportedMLModel('localhost', model_id, regressor, feature_names, overwrite=True)
 
         >>> # Get some test results from Elasticsearch model
         >>> es_model.predict(test_data)

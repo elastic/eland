@@ -13,4 +13,4 @@
 #      limitations under the License.
 
 from eland.ml.ml_model import *
-from eland.ml.external_ml_model import *
+from eland.ml.imported_ml_model import *
