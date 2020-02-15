@@ -1,4 +1,4 @@
-#  Copyright 2019 Elasticsearch BV
+#  Copyright 2020 Elasticsearch BV
 #
 #      Licensed under the Apache License, Version 2.0 (the "License");
 #      you may not use this file except in compliance with the License.
@@ -15,6 +15,6 @@
 __title__ = 'eland'
 __description__ = 'Python elasticsearch client to analyse, explore and manipulate data that resides in elasticsearch.'
 __url__ = 'https://github.com/elastic/eland'
-__version__ = '7.6.0a1'
+__version__ = '7.6.0a2'
 __maintainer__ = 'Elasticsearch B.V.'
 __maintainer_email__ = 'steve.dodson@elastic.co'
