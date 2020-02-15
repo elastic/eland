@@ -17,7 +17,7 @@ The fastest way to get started with machine learning features is to start a free
 
 See https://www.elastic.co/guide/en/machine-learning/current/setup.html and other documentation for more detail.
 
-ExternalMLModel
+ImportedMLModel
 ~~~~~~~~~~~~~~~
 .. currentmodule:: eland.ml
 
@@ -26,12 +26,12 @@ Constructor
 .. autosummary::
    :toctree: api/
 
-   ExternalMLModel
+   ImportedMLModel
 
 Learning API
 ^^^^^^^^^^^^
 .. autosummary::
    :toctree: api/
 
-   ExternalMLModel.predict
+   ImportedMLModel.predict
 
