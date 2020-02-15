@@ -3,11 +3,23 @@
 ================
 Machine Learning
 ================
-.. currentmodule:: eland
+.. currentmodule:: eland.ml
 
-Manage Models
-~~~~~~~~~~~~~
+ExternalMLModel
+~~~~~~~~~~~~~~~
+.. currentmodule:: eland.ml
+
+Constructor
+^^^^^^^^^^^
 .. autosummary::
    :toctree: api/
 
-   ml.model_import.put_model
+   ExternalMLModel
+
+Learning API
+^^^^^^^^^^^^
+.. autosummary::
+   :toctree: api/
+
+   ExternalMLModel.predict
+
