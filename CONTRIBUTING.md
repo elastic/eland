@@ -154,6 +154,8 @@ currently using a minimum version of PyCharm 2019.2.4.
 -   Setup Elasticsearch instance (assumes `localhost:9200`), and run
     `python -m eland.tests.setup_tests` to setup test environment -*note
     this modifies Elasticsearch indices*
+-   Install local `eland` module (required to execute notebook tests)
+    `python install setup.py`
 -   Run `pytest --nbval  --doctest-modules` to validate install
 
 ### Documentation
