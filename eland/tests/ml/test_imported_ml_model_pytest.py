@@ -18,11 +18,11 @@ from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from xgboost import XGBRegressor, XGBClassifier
 
-from eland.ml import ExternalMLModel
+from eland.ml import ImportedMLModel
 from eland.tests import ES_TEST_CLIENT
 
 
-class TestExternalMLModel:
+class TestImportedMLModel:
 
     def test_decision_tree_classifier(self):
         # Train model
@@ -38,7 +38,7 @@ class TestExternalMLModel:
         feature_names = ["f0", "f1", "f2", "f3", "f4"]
         model_id = "test_decision_tree_classifier"
 
-        es_model = ExternalMLModel(ES_TEST_CLIENT, model_id, classifier, feature_names, overwrite=True)
+        es_model = ImportedMLModel(ES_TEST_CLIENT, model_id, classifier, feature_names, overwrite=True)
         es_results = es_model.predict(test_data)
 
         np.testing.assert_almost_equal(test_results, es_results, decimal=4)
@@ -60,7 +60,7 @@ class TestExternalMLModel:
         feature_names = ["f0", "f1", "f2", "f3", "f4"]
         model_id = "test_decision_tree_regressor"
 
-        es_model = ExternalMLModel(ES_TEST_CLIENT, model_id, regressor, feature_names, overwrite=True)
+        es_model = ImportedMLModel(ES_TEST_CLIENT, model_id, regressor, feature_names, overwrite=True)
         es_results = es_model.predict(test_data)
 
         np.testing.assert_almost_equal(test_results, es_results, decimal=4)
@@ -82,7 +82,7 @@ class TestExternalMLModel:
         feature_names = ["f0", "f1", "f2", "f3", "f4"]
         model_id = "test_random_forest_classifier"
 
-        es_model = ExternalMLModel(ES_TEST_CLIENT, model_id, classifier, feature_names, overwrite=True)
+        es_model = ImportedMLModel(ES_TEST_CLIENT, model_id, classifier, feature_names, overwrite=True)
         es_results = es_model.predict(test_data)
 
         np.testing.assert_almost_equal(test_results, es_results, decimal=4)
@@ -104,7 +104,7 @@ class TestExternalMLModel:
         feature_names = ["f0", "f1", "f2", "f3", "f4"]
         model_id = "test_random_forest_regressor"
 
-        es_model = ExternalMLModel(ES_TEST_CLIENT, model_id, regressor, feature_names, overwrite=True)
+        es_model = ImportedMLModel(ES_TEST_CLIENT, model_id, regressor, feature_names, overwrite=True)
         es_results = es_model.predict(test_data)
 
         np.testing.assert_almost_equal(test_results, es_results, decimal=4)
@@ -126,7 +126,7 @@ class TestExternalMLModel:
         feature_names = ["f0", "f1", "f2", "f3", "f4"]
         model_id = "test_xgb_classifier"
 
-        es_model = ExternalMLModel(ES_TEST_CLIENT, model_id, classifier, feature_names, overwrite=True)
+        es_model = ImportedMLModel(ES_TEST_CLIENT, model_id, classifier, feature_names, overwrite=True)
         es_results = es_model.predict(test_data)
 
         np.testing.assert_almost_equal(test_results, es_results, decimal=4)
@@ -148,7 +148,7 @@ class TestExternalMLModel:
         feature_names = ["f0", "f1", "f2", "f3", "f4"]
         model_id = "test_xgb_regressor"
 
-        es_model = ExternalMLModel(ES_TEST_CLIENT, model_id, regressor, feature_names, overwrite=True)
+        es_model = ImportedMLModel(ES_TEST_CLIENT, model_id, regressor, feature_names, overwrite=True)
         es_results = es_model.predict(test_data)
 
         np.testing.assert_almost_equal(test_results, es_results, decimal=4)
