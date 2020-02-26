@@ -555,8 +555,13 @@ class DataFrame(NDFrame):
         # Print index summary e.g.
         # Index: 103 entries, 0 to 102
         # Do this by getting head and tail of dataframe
-        head = self.head(1)._to_pandas().index[0]
-        tail = self.tail(1)._to_pandas().index[0]
+        if self.empty:
+            # index[0] is out of bounds for empty df
+            head = self.head(1)._to_pandas()
+            tail = self.tail(1)._to_pandas()
+        else:
+            head = self.head(1)._to_pandas().index[0]
+            tail = self.tail(1)._to_pandas().index[0]
         index_summary = ', %s to %s' % (pprint_thing(head),
                                         pprint_thing(tail))
 
