@@ -15,6 +15,10 @@
 # File called _pytest for PyCharm compatability
 from io import StringIO
 
+import eland as ed
+
+from eland.tests import ES_TEST_CLIENT
+
 from eland.tests.common import TestData
 
 
@@ -39,3 +43,18 @@ class TestDataFrameInfo(TestData):
         # NOTE: info does not work on truncated data frames (e.g. head/tail) TODO
 
         print(self.ed_ecommerce().info())
+
+    def test_empty_info(self):
+        mapping = {'mappings': {'properties': {}}}
+
+        for i in range(0, 10):
+            field_name = "field_name_" + str(i)
+            mapping['mappings']['properties'][field_name] = {'type': 'float'}
+
+        ES_TEST_CLIENT.indices.delete(index='empty_index', ignore=[400, 404])
+        ES_TEST_CLIENT.indices.create(index='empty_index', body=mapping)
+
+        ed_df = ed.DataFrame(ES_TEST_CLIENT, 'empty_index')
+        ed_df.info()
+
+        ES_TEST_CLIENT.indices.delete(index='empty_index')
