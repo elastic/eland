@@ -16,7 +16,7 @@ import warnings
 from collections import OrderedDict
 
 import pandas as pd
-from pandas.core.dtypes.common import is_bool_dtype, is_datetime_or_timedelta_dtype
+from pandas.core.dtypes.common import is_datetime_or_timedelta_dtype
 
 from eland import Index, SortOrder, DEFAULT_CSV_BATCH_OUTPUT_SIZE, DEFAULT_ES_MAX_RESULT_WINDOW, \
     elasticsearch_date_to_pandas_date
@@ -602,12 +602,22 @@ class Operations:
         if size is not None and size <= DEFAULT_ES_MAX_RESULT_WINDOW:
             if size > 0:
                 try:
+                    # For query_compiler._client.search we could add _source
+                    # as a parameter, or add this value in body.
+                    #
+                    # If _source is a parameter it is encoded into to the url.
+                    #
+                    # If _source is a large number of fields (1000+) then this can result in an
+                    # extremely long url and a `too_long_frame_exception`. Therefore, add
+                    # _source to the body rather than as a _source parameter
+                    if _source:
+                        body['_source'] = _source
+
                     es_results = query_compiler._client.search(
                         index=query_compiler._index_pattern,
                         size=size,
                         sort=sort_params,
-                        body=body,
-                        _source=_source)
+                        body=body)
                 except Exception:
                     # Catch all ES errors and print debug (currently to stdout)
                     error = {

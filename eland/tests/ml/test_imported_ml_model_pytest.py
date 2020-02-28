@@ -120,7 +120,7 @@ class TestImportedMLModel:
 
         # Get some test results
         test_data = [[0.1, 0.2, 0.3, -0.5, 1.0], [1.6, 2.1, -10, 50, -1.0]]
-        test_results = classifier.predict(test_data)
+        test_results = classifier.predict(np.asarray(test_data))
 
         # Serialise the models to Elasticsearch
         feature_names = ["f0", "f1", "f2", "f3", "f4"]
@@ -142,7 +142,7 @@ class TestImportedMLModel:
 
         # Get some test results
         test_data = [[0.1, 0.2, 0.3, -0.5, 1.0], [1.6, 2.1, -10, 50, -1.0]]
-        test_results = regressor.predict(test_data)
+        test_results = regressor.predict(np.asarray(test_data))
 
         # Serialise the models to Elasticsearch
         feature_names = ["f0", "f1", "f2", "f3", "f4"]
