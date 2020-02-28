@@ -591,7 +591,17 @@ class Operations:
 
         # Only return requested field_names
         _source = query_compiler.get_field_names(include_scripted_fields=False)
-        if not _source:
+        if _source:
+            # For query_compiler._client.search we could add _source
+            # as a parameter, or add this value in body.
+            #
+            # If _source is a parameter it is encoded into to the url.
+            #
+            # If _source is a large number of fields (1000+) then this can result in an
+            # extremely long url and a `too_long_frame_exception`. Therefore, add
+            # _source to the body rather than as a _source parameter
+            body['_source'] = _source
+        else:
             _source = False
 
         es_results = None
@@ -602,16 +612,7 @@ class Operations:
         if size is not None and size <= DEFAULT_ES_MAX_RESULT_WINDOW:
             if size > 0:
                 try:
-                    # For query_compiler._client.search we could add _source
-                    # as a parameter, or add this value in body.
-                    #
-                    # If _source is a parameter it is encoded into to the url.
-                    #
-                    # If _source is a large number of fields (1000+) then this can result in an
-                    # extremely long url and a `too_long_frame_exception`. Therefore, add
-                    # _source to the body rather than as a _source parameter
-                    if _source:
-                        body['_source'] = _source
+
 
                     es_results = query_compiler._client.search(
                         index=query_compiler._index_pattern,
@@ -624,8 +625,7 @@ class Operations:
                         'index': query_compiler._index_pattern,
                         'size': size,
                         'sort': sort_params,
-                        'body': body,
-                        '_source': _source
+                        'body': body
                     }
                     print("Elasticsearch error:", error)
                     raise
@@ -633,8 +633,7 @@ class Operations:
             is_scan = True
             es_results = query_compiler._client.scan(
                 index=query_compiler._index_pattern,
-                query=body,
-                _source=_source)
+                query=body)
             # create post sort
             if sort_params is not None:
                 post_processing.append(SortFieldAction(sort_params))
