@@ -2,7 +2,7 @@ _Note, this project is still very much a work in progress and in an alpha state;
 
 <p align="center">
       <a href="https://github.com/elastic/eland">
-         <img src="./docs/source/logo/eland.png" width="60%" alt="eland" />
+         <img src="./docs/source/logo/eland.png" width="30%" alt="eland" />
       </a>
 </p>
 <table>
