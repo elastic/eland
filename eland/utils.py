@@ -166,7 +166,7 @@ def pandas_to_eland(pd_df,
     if client.index_exists(index=es_dest_index):
         if es_if_exists == "fail":
             raise ValueError(
-                "Could not create the index [{0}] because it "
+                "Could not create the index [{}] because it "
                 "already exists. "
                 "Change the if_exists parameter to "
                 "'append' or 'replace' data.".format(es_dest_index)

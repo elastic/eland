@@ -50,7 +50,7 @@ class ArithmeticString(ArithmeticObject):
 
     @property
     def value(self):
-        return "'{}'".format(self._value)
+        return f"'{self._value}'"
 
     def __repr__(self):
         return self.value
@@ -66,7 +66,7 @@ class ArithmeticNumber(ArithmeticObject):
 
     @property
     def value(self):
-        return "{}".format(self._value)
+        return f"{self._value}"
 
     @property
     def dtype(self):
@@ -91,7 +91,7 @@ class ArithmeticSeries(ArithmeticObject):
                     "{} is not aggregatable.".format(display_name)
                 )
 
-            self._value = "doc['{}'].value".format(aggregatable_field_name)
+            self._value = f"doc['{aggregatable_field_name}'].value"
             self._tasks = []
             self._dtype = dtype
 
@@ -105,7 +105,7 @@ class ArithmeticSeries(ArithmeticObject):
 
     def __repr__(self):
         buf = StringIO()
-        buf.write("Series: {} ".format(self.value))
+        buf.write(f"Series: {self.value} ")
         buf.write("Tasks: ")
         for task in self._tasks:
             buf.write("{} ".format(repr(task)))
@@ -116,33 +116,33 @@ class ArithmeticSeries(ArithmeticObject):
 
         for task in self._tasks:
             if task.op_name == '__add__':
-                value = "({} + {})".format(value, task.object.resolve())
+                value = f"({value} + {task.object.resolve()})"
             elif task.op_name == '__truediv__':
-                value = "({} / {})".format(value, task.object.resolve())
+                value = f"({value} / {task.object.resolve()})"
             elif task.op_name == '__floordiv__':
-                value = "Math.floor({} / {})".format(value, task.object.resolve())
+                value = f"Math.floor({value} / {task.object.resolve()})"
             elif task.op_name == '__mod__':
-                value = "({} % {})".format(value, task.object.resolve())
+                value = f"({value} % {task.object.resolve()})"
             elif task.op_name == '__mul__':
-                value = "({} * {})".format(value, task.object.resolve())
+                value = f"({value} * {task.object.resolve()})"
             elif task.op_name == '__pow__':
-                value = "Math.pow({}, {})".format(value, task.object.resolve())
+                value = f"Math.pow({value}, {task.object.resolve()})"
             elif task.op_name == '__sub__':
-                value = "({} - {})".format(value, task.object.resolve())
+                value = f"({value} - {task.object.resolve()})"
             elif task.op_name == '__radd__':
-                value = "({} + {})".format(task.object.resolve(), value)
+                value = f"({task.object.resolve()} + {value})"
             elif task.op_name == '__rtruediv__':
-                value = "({} / {})".format(task.object.resolve(), value)
+                value = f"({task.object.resolve()} / {value})"
             elif task.op_name == '__rfloordiv__':
-                value = "Math.floor({} / {})".format(task.object.resolve(), value)
+                value = f"Math.floor({task.object.resolve()} / {value})"
             elif task.op_name == '__rmod__':
-                value = "({} % {})".format(task.object.resolve(), value)
+                value = f"({task.object.resolve()} % {value})"
             elif task.op_name == '__rmul__':
-                value = "({} * {})".format(task.object.resolve(), value)
+                value = f"({task.object.resolve()} * {value})"
             elif task.op_name == '__rpow__':
-                value = "Math.pow({}, {})".format(task.object.resolve(), value)
+                value = f"Math.pow({task.object.resolve()}, {value})"
             elif task.op_name == '__rsub__':
-                value = "({} - {})".format(task.object.resolve(), value)
+                value = f"({task.object.resolve()} - {value})"
 
         return value
 
@@ -178,7 +178,7 @@ class ArithmeticSeries(ArithmeticObject):
                 return True
 
         raise TypeError(
-            "Arithmetic operation on incompatible types {} {} {}".format(self.dtype, op_name, right.dtype))
+            f"Arithmetic operation on incompatible types {self.dtype} {op_name} {right.dtype}")
 
 
 class ArithmeticTask:
@@ -191,7 +191,7 @@ class ArithmeticTask:
 
     def __repr__(self):
         buf = StringIO()
-        buf.write("op_name: {} ".format(self.op_name))
+        buf.write(f"op_name: {self.op_name} ")
         buf.write("object: {} ".format(repr(self.object)))
         return buf.getvalue()
 

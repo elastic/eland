@@ -13,7 +13,6 @@
 #      limitations under the License.
 
 import warnings
-from collections import OrderedDict
 
 import numpy as np
 import pandas as pd
@@ -128,13 +127,13 @@ class FieldMappings:
 
         Returns
         -------
-        fields, dates_format: tuple(OrderedDict, dict)
+        fields, dates_format: tuple(dict, dict)
             where:
-                fields: OrderedDict of field names and types
+                fields: dict of field names and types
                 dates_format: Dict of date field names and format
 
         """
-        fields = OrderedDict()
+        fields = {}
 
         # Recurse until we get a 'type: xxx'
         def flatten(x, name=''):
@@ -198,7 +197,7 @@ class FieldMappings:
         """
         all_fields_caps_fields = all_fields_caps['fields']
 
-        capability_matrix = OrderedDict()
+        capability_matrix = {}
 
         for field, field_caps in all_fields_caps_fields.items():
             if field in all_fields:
@@ -331,7 +330,7 @@ class FieldMappings:
         elif is_datetime_or_timedelta_dtype(pd_dtype):
             es_dtype = 'date'
         else:
-            warnings.warn('No mapping for pd_dtype: [{0}], using default mapping'.format(pd_dtype))
+            warnings.warn(f'No mapping for pd_dtype: [{pd_dtype}], using default mapping')
 
         return es_dtype
 
@@ -375,7 +374,7 @@ class FieldMappings:
             else:
                 es_dtype = FieldMappings._pd_dtype_to_es_dtype(dtype)
 
-            mappings['properties'][field_name_name] = OrderedDict()
+            mappings['properties'][field_name_name] = {}
             mappings['properties'][field_name_name]['type'] = es_dtype
 
         return {"mappings": mappings}
@@ -404,7 +403,7 @@ class FieldMappings:
         raise KeyError if the field_name doesn't exist in the mapping, or isn't aggregatable
         """
         if display_name not in self._mappings_capabilities.index:
-            raise KeyError("Can not get aggregatable field name for invalid display name {}".format(display_name))
+            raise KeyError(f"Can not get aggregatable field name for invalid display name {display_name}")
 
         if self._mappings_capabilities.loc[display_name].aggregatable_es_field_name is None:
             warnings.warn("Aggregations not supported for '{}' '{}'".format(display_name,
@@ -433,14 +432,13 @@ class FieldMappings:
         """
         non_aggregatables = self._mappings_capabilities[self._mappings_capabilities.aggregatable_es_field_name.isna()]
         if not non_aggregatables.empty:
-            warnings.warn("Aggregations not supported for '{}'".format(non_aggregatables))
+            warnings.warn(f"Aggregations not supported for '{non_aggregatables}'")
 
         aggregatables = self._mappings_capabilities[self._mappings_capabilities.aggregatable_es_field_name.notna()]
 
         # extract relevant fields and convert to dict
         # <class 'dict'>: {'category.keyword': 'category', 'currency': 'currency', ...
-        return OrderedDict(
-            aggregatables[['aggregatable_es_field_name', 'es_field_name']].to_dict(orient='split')['data'])
+        return dict(aggregatables[['aggregatable_es_field_name', 'es_field_name']].to_dict(orient='split')['data'])
 
     def date_field_format(self, es_field_name):
         """
@@ -474,7 +472,7 @@ class FieldMappings:
             If es_field_name does not exist in mapping
         """
         if es_field_name not in self._mappings_capabilities.es_field_name:
-            raise KeyError("es_field_name {} does not exist".format(es_field_name))
+            raise KeyError(f"es_field_name {es_field_name} does not exist")
 
         pd_dtype = self._mappings_capabilities.loc[
             self._mappings_capabilities.es_field_name == es_field_name
@@ -558,10 +556,10 @@ class FieldMappings:
 
     def _set_display_names(self, display_names):
         if not is_list_like(display_names):
-            raise ValueError("'{}' is not list like".format(display_names))
+            raise ValueError(f"'{display_names}' is not list like")
 
         if list(set(display_names) - set(self.display_names)):
-            raise KeyError("{} not in display names {}".format(display_names, self.display_names))
+            raise KeyError(f"{display_names} not in display names {self.display_names}")
 
         self._mappings_capabilities = self._mappings_capabilities.reindex(display_names)
 
@@ -585,7 +583,7 @@ class FieldMappings:
 
     def info_es(self, buf):
         buf.write("Mappings:\n")
-        buf.write(" capabilities:\n{0}\n".format(self._mappings_capabilities.to_string()))
+        buf.write(f" capabilities:\n{self._mappings_capabilities.to_string()}\n")
 
     def rename(self, old_name_new_name_dict):
         """

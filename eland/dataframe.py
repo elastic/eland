@@ -333,7 +333,7 @@ class DataFrame(NDFrame):
         """
         # Level not supported
         if level is not None:
-            raise NotImplementedError("level not supported {}".format(level))
+            raise NotImplementedError(f"level not supported {level}")
 
         inplace = validate_bool_kwarg(inplace, "inplace")
         if labels is not None:
@@ -383,7 +383,7 @@ class DataFrame(NDFrame):
                 ]
                 if len(non_existant):
                     raise ValueError(
-                        "labels {} not contained in axis".format(non_existant)
+                        f"labels {non_existant} not contained in axis"
                     )
             else:
                 axes["columns"] = [
@@ -562,11 +562,11 @@ class DataFrame(NDFrame):
         else:
             head = self.head(1)._to_pandas().index[0]
             tail = self.tail(1)._to_pandas().index[0]
-        index_summary = ', %s to %s' % (pprint_thing(head),
+        index_summary = ', {} to {}'.format(pprint_thing(head),
                                         pprint_thing(tail))
 
         name = "Index"
-        return '%s: %s entries%s' % (name, len(self), index_summary)
+        return '{}: {} entries{}'.format(name, len(self), index_summary)
 
     def info(self, verbose=None, buf=None, max_cols=None, memory_usage=None,
              null_counts=None):
@@ -624,7 +624,7 @@ class DataFrame(NDFrame):
 
         # From pandas.DataFrame
         def _put_str(s, space):
-            return '{s}'.format(s=s)[:space].ljust(space)
+            return f'{s}'[:space].ljust(space)
 
         def _verbose_repr():
             lines.append('Data columns (total %d columns):' %
@@ -885,7 +885,7 @@ class DataFrame(NDFrame):
 
     def _getitem_column(self, key):
         if key not in self.columns:
-            raise KeyError("Requested column [{}] is not in the DataFrame.".format(key))
+            raise KeyError(f"Requested column [{key}] is not in the DataFrame.")
         s = self._reduce_dimension(self._query_compiler.getitem_column_array([key]))
         return s
 
@@ -1169,7 +1169,7 @@ class DataFrame(NDFrame):
             return DataFrame(
                 query_compiler=self._query_compiler._update_query(BooleanFilter(expr))
             )
-        elif isinstance(expr, six.string_types):
+        elif isinstance(expr, str):
             column_resolver = {}
             for key in self.keys():
                 column_resolver[key] = self.get(key)

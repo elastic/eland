@@ -13,7 +13,6 @@
 #      limitations under the License.
 import copy
 import warnings
-from collections import OrderedDict
 from datetime import datetime
 from typing import Union
 
@@ -251,7 +250,7 @@ class QueryCompiler:
 
             if show_progress:
                 if i % DEFAULT_PROGRESS_REPORTING_NUM_ROWS == 0:
-                    print("{}: read {} rows".format(datetime.now(), i))
+                    print(f"{datetime.now()}: read {i} rows")
 
         # Create pandas DataFrame
         df = pd.DataFrame(data=rows, index=index)
@@ -273,12 +272,12 @@ class QueryCompiler:
             df = df[self.columns]
 
         if show_progress:
-            print("{}: read {} rows".format(datetime.now(), i))
+            print(f"{datetime.now()}: read {i} rows")
 
         return partial_result, df
 
     def _flatten_dict(self, y, field_mapping_cache):
-        out = OrderedDict()
+        out = {}
 
         def flatten(x, name=''):
             # We flatten into source fields e.g. if type=geo_point
@@ -466,7 +465,7 @@ class QueryCompiler:
         return self._operations.value_counts(self, es_size)
 
     def info_es(self, buf):
-        buf.write("index_pattern: {index_pattern}\n".format(index_pattern=self._index_pattern))
+        buf.write(f"index_pattern: {self._index_pattern}\n")
 
         self._index.info_es(buf)
         self._mappings.info_es(buf)
@@ -506,32 +505,32 @@ class QueryCompiler:
         if not isinstance(right, QueryCompiler):
             raise TypeError(
                 "Incompatible types "
-                "{0} != {1}".format(type(self), type(right))
+                "{} != {}".format(type(self), type(right))
             )
 
         if self._client._es != right._client._es:
             raise ValueError(
                 "Can not perform arithmetic operations across different clients"
-                "{0} != {1}".format(self._client._es, right._client._es)
+                "{} != {}".format(self._client._es, right._client._es)
             )
 
         if self._index.index_field != right._index.index_field:
             raise ValueError(
                 "Can not perform arithmetic operations across different index fields "
-                "{0} != {1}".format(self._index.index_field, right._index.index_field)
+                "{} != {}".format(self._index.index_field, right._index.index_field)
             )
 
         if self._index_pattern != right._index_pattern:
             raise ValueError(
                 "Can not perform arithmetic operations across different index patterns"
-                "{0} != {1}".format(self._index_pattern, right._index_pattern)
+                "{} != {}".format(self._index_pattern, right._index_pattern)
             )
 
     def arithmetic_op_fields(self, display_name, arithmetic_object):
         result = self.copy()
 
         # create a new field name for this display name
-        scripted_field_name = "script_field_{}".format(display_name)
+        scripted_field_name = f"script_field_{display_name}"
 
         # add scripted field
         result._mappings.add_scripted_field(scripted_field_name, display_name, arithmetic_object.dtype.name)

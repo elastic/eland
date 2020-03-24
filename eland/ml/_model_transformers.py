@@ -85,7 +85,7 @@ class SKLearnTransformer(ModelTransformer):
         :return: TreeNode object
         """
         if value.shape[0] != 1:
-            raise ValueError("unexpected multiple values returned from leaf node '{0}'".format(node_index))
+            raise ValueError(f"unexpected multiple values returned from leaf node '{node_index}'")
         if node_data[0] == -1:  # is leaf node
             if value.shape[1] == 1:  # classification requires more than one value, so assume regression
                 leaf_value = float(value[0][0])
@@ -250,27 +250,27 @@ class XGBoostForestTransformer(ModelTransformer):
             try:
                 return int(feature_id[1:])
             except ValueError:
-                raise RuntimeError("Unable to interpret '{0}'".format(feature_id))
+                raise RuntimeError(f"Unable to interpret '{feature_id}'")
         else:
             try:
                 return int(feature_id)
             except ValueError:
-                raise RuntimeError("Unable to interpret '{0}'".format(feature_id))
+                raise RuntimeError(f"Unable to interpret '{feature_id}'")
 
     def extract_node_id(self, node_id: str, curr_tree: int) -> int:
         t_id, n_id = node_id.split("-")
         if t_id is None or n_id is None:
             raise RuntimeError(
-                "cannot determine node index or tree from '{0}' for tree {1}".format(node_id, curr_tree))
+                f"cannot determine node index or tree from '{node_id}' for tree {curr_tree}")
         try:
             t_id = int(t_id)
             n_id = int(n_id)
             if t_id != curr_tree:
-                raise RuntimeError("extracted tree id {0} does not match current tree {1}".format(t_id, curr_tree))
+                raise RuntimeError(f"extracted tree id {t_id} does not match current tree {curr_tree}")
             return n_id
         except ValueError:
             raise RuntimeError(
-                "cannot determine node index or tree from '{0}' for tree {1}".format(node_id, curr_tree))
+                f"cannot determine node index or tree from '{node_id}' for tree {curr_tree}")
 
     def build_tree_node(self, row, curr_tree: int) -> TreeNode:
         node_index = row["Node"]
@@ -335,7 +335,7 @@ class XGBoostForestTransformer(ModelTransformer):
             raise ValueError("booster must exist and be of type dart or gbtree")
 
         if not self.is_objective_supported():
-            raise ValueError("Unsupported objective '{0}'".format(self._objective))
+            raise ValueError(f"Unsupported objective '{self._objective}'")
 
         forest = self.build_forest()
         return Ensemble(feature_names=self._feature_names,

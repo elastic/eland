@@ -13,7 +13,6 @@
 #      limitations under the License.
 import copy
 import warnings
-from collections import OrderedDict
 
 import pandas as pd
 from pandas.core.dtypes.common import is_datetime_or_timedelta_dtype
@@ -85,13 +84,13 @@ class Operations:
         # Longer term we may fall back to pandas, but this may result in loading all index into memory.
         if self._size(query_params, post_processing) is not None:
             raise NotImplementedError("Requesting count with additional query and processing parameters "
-                                      "not supported {0} {1}"
+                                      "not supported {} {}"
                                       .format(query_params, post_processing))
 
         # Only return requested field_names
         fields = query_compiler.get_field_names(include_scripted_fields=False)
 
-        counts = OrderedDict()
+        counts = {}
         for field in fields:
             body = Query(query_params['query'])
             body.exists(field, must=True)
@@ -140,11 +139,11 @@ class Operations:
 
         size = self._size(query_params, post_processing)
         if size is not None:
-            raise NotImplementedError("Can not count field matches if size is set {}".format(size))
+            raise NotImplementedError(f"Can not count field matches if size is set {size}")
 
         body = Query(query_params['query'])
 
-        results = OrderedDict()
+        results = {}
 
         # some metrics aggs (including cardinality) work on all aggregatable fields
         # therefore we include an optional all parameter on operations
@@ -232,7 +231,7 @@ class Operations:
 
         size = self._size(query_params, post_processing)
         if size is not None:
-            raise NotImplementedError("Can not count field matches if size is set {}".format(size))
+            raise NotImplementedError(f"Can not count field matches if size is set {size}")
 
         # Get just aggregatable field_names
         aggregatable_field_names = query_compiler._mappings.aggregatable_field_names()
@@ -247,7 +246,7 @@ class Operations:
             size=0,
             body=body.to_search_body())
 
-        results = OrderedDict()
+        results = {}
 
         for key in aggregatable_field_names.keys():
             # key is aggregatable field, value is label
@@ -271,7 +270,7 @@ class Operations:
 
         size = self._size(query_params, post_processing)
         if size is not None:
-            raise NotImplementedError("Can not count field matches if size is set {}".format(size))
+            raise NotImplementedError(f"Can not count field matches if size is set {size}")
 
         numeric_source_fields = query_compiler._mappings.numeric_source_fields()
 
@@ -301,8 +300,8 @@ class Operations:
         #         },
         #         ...
 
-        bins = OrderedDict()
-        weights = OrderedDict()
+        bins = {}
+        weights = {}
 
         # There is one more bin that weights
         # len(bins) = len(weights) + 1
@@ -424,7 +423,7 @@ class Operations:
 
         size = self._size(query_params, post_processing)
         if size is not None:
-            raise NotImplementedError("Can not count field matches if size is set {}".format(size))
+            raise NotImplementedError(f"Can not count field matches if size is set {size}")
 
         field_names = query_compiler.get_field_names(include_scripted_fields=False)
 
@@ -453,7 +452,7 @@ class Operations:
         sum    8.204365e+06        9.261629e+07   5.754909e+07          618150
         min    1.000205e+02        0.000000e+00   0.000000e+00               0
         """
-        results = OrderedDict()
+        results = {}
 
         for field in field_names:
             values = list()
@@ -474,7 +473,7 @@ class Operations:
 
         size = self._size(query_params, post_processing)
         if size is not None:
-            raise NotImplementedError("Can not count field matches if size is set {}".format(size))
+            raise NotImplementedError(f"Can not count field matches if size is set {size}")
 
         numeric_source_fields = query_compiler._mappings.numeric_source_fields()
 
@@ -491,7 +490,7 @@ class Operations:
             size=0,
             body=body.to_search_body())
 
-        results = OrderedDict()
+        results = {}
 
         for field in numeric_source_fields:
             values = list()
@@ -678,7 +677,7 @@ class Operations:
 
         # Size is dictated by operations
         if size is not None:
-            raise NotImplementedError("Can not count field matches if size is set {}".format(size))
+            raise NotImplementedError(f"Can not count field matches if size is set {size}")
 
         return query_params, post_processing
 
@@ -778,7 +777,7 @@ class Operations:
 
     def info_es(self, query_compiler, buf):
         buf.write("Operations:\n")
-        buf.write(" tasks: {0}\n".format(self._tasks))
+        buf.write(f" tasks: {self._tasks}\n")
 
         query_params, post_processing = self._resolve_tasks(query_compiler)
         size, sort_params = Operations._query_params_to_size_and_sort(query_params)
@@ -790,11 +789,11 @@ class Operations:
         if script_fields is not None:
             body['script_fields'] = script_fields
 
-        buf.write(" size: {0}\n".format(size))
-        buf.write(" sort_params: {0}\n".format(sort_params))
-        buf.write(" _source: {0}\n".format(_source))
-        buf.write(" body: {0}\n".format(body))
-        buf.write(" post_processing: {0}\n".format(post_processing))
+        buf.write(f" size: {size}\n")
+        buf.write(f" sort_params: {sort_params}\n")
+        buf.write(f" _source: {_source}\n")
+        buf.write(f" body: {body}\n")
+        buf.write(f" post_processing: {post_processing}\n")
 
     def update_query(self, boolean_filter):
         task = BooleanFilterTask(boolean_filter)

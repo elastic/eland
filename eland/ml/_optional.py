@@ -49,7 +49,7 @@ def _get_version(module: types.ModuleType) -> str:
         version = getattr(module, "__VERSION__", None)
 
     if version is None:
-        raise ImportError("Can't determine version for {}".format(module.__name__))
+        raise ImportError(f"Can't determine version for {module.__name__}")
     return version
 
 

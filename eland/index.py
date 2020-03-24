@@ -72,5 +72,5 @@ class Index:
 
     def info_es(self, buf):
         buf.write("Index:\n")
-        buf.write(" index_field: {0}\n".format(self.index_field))
-        buf.write(" is_source_field: {0}\n".format(self.is_source_field))
+        buf.write(f" index_field: {self.index_field}\n")
+        buf.write(f" is_source_field: {self.is_source_field}\n")

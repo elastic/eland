@@ -79,58 +79,58 @@ class BooleanFilter:
 class AndFilter(BooleanFilter):
     def __init__(self, *args):
         [isinstance(x, BooleanFilter) for x in args]
-        super(AndFilter, self).__init__()
+        super().__init__()
         self._filter = {'bool': {'must': [x.build() for x in args]}}
 
 
 class OrFilter(BooleanFilter):
     def __init__(self, *args):
         [isinstance(x, BooleanFilter) for x in args]
-        super(OrFilter, self).__init__()
+        super().__init__()
         self._filter = {'bool': {'should': [x.build() for x in args]}}
 
 
 class NotFilter(BooleanFilter):
     def __init__(self, x):
         assert isinstance(x, BooleanFilter)
-        super(NotFilter, self).__init__()
+        super().__init__()
         self._filter = {'bool': {'must_not': x.build()}}
 
 
 # LeafBooleanFilter
 class GreaterEqual(BooleanFilter):
     def __init__(self, field, value):
-        super(GreaterEqual, self).__init__()
+        super().__init__()
         self._filter = {'range': {field: {'gte': value}}}
 
 
 class Greater(BooleanFilter):
     def __init__(self, field, value):
-        super(Greater, self).__init__()
+        super().__init__()
         self._filter = {'range': {field: {'gt': value}}}
 
 
 class LessEqual(BooleanFilter):
     def __init__(self, field, value):
-        super(LessEqual, self).__init__()
+        super().__init__()
         self._filter = {'range': {field: {'lte': value}}}
 
 
 class Less(BooleanFilter):
     def __init__(self, field, value):
-        super(Less, self).__init__()
+        super().__init__()
         self._filter = {'range': {field: {'lt': value}}}
 
 
 class Equal(BooleanFilter):
     def __init__(self, field, value):
-        super(Equal, self).__init__()
+        super().__init__()
         self._filter = {'term': {field: value}}
 
 
 class IsIn(BooleanFilter):
     def __init__(self, field, value):
-        super(IsIn, self).__init__()
+        super().__init__()
         assert isinstance(value, list)
         if field == 'ids':
             self._filter = {'ids': {'values': value}}
@@ -140,37 +140,37 @@ class IsIn(BooleanFilter):
 
 class Like(BooleanFilter):
     def __init__(self, field, value):
-        super(Like, self).__init__()
+        super().__init__()
         self._filter = {'wildcard': {field: value}}
 
 
 class Rlike(BooleanFilter):
     def __init__(self, field, value):
-        super(Rlike, self).__init__()
+        super().__init__()
         self._filter = {'regexp': {field: value}}
 
 
 class Startswith(BooleanFilter):
     def __init__(self, field, value):
-        super(Startswith, self).__init__()
+        super().__init__()
         self._filter = {'prefix': {field: value}}
 
 
 class IsNull(BooleanFilter):
     def __init__(self, field):
-        super(IsNull, self).__init__()
+        super().__init__()
         self._filter = {'missing': {'field': field}}
 
 
 class NotNull(BooleanFilter):
     def __init__(self, field):
-        super(NotNull, self).__init__()
+        super().__init__()
         self._filter = {'exists': {'field': field}}
 
 
 class ScriptFilter(BooleanFilter):
     def __init__(self, inline, lang=None, params=None):
-        super(ScriptFilter, self).__init__()
+        super().__init__()
         script = {'inline': inline}
         if lang is not None:
             script['lang'] = lang

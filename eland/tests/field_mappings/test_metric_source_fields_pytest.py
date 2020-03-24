@@ -36,7 +36,7 @@ class TestMetricSourceFields(TestData):
         assert pd_metric.dtypes.to_list() == ed_dtypes
         assert pd_metric.columns.to_list() == ed_fields
         assert len(es_date_formats) == len(ed_dtypes)
-        assert set(es_date_formats) == set([None])
+        assert set(es_date_formats) == {None}
 
     def test_flights_all_metric_source_fields_and_bool(self):
         ed_field_mappings = ed.FieldMappings(
@@ -51,7 +51,7 @@ class TestMetricSourceFields(TestData):
         assert pd_metric.dtypes.to_list() == ed_dtypes
         assert pd_metric.columns.to_list() == ed_fields
         assert len(es_date_formats) == len(ed_dtypes)
-        assert set(es_date_formats) == set([None])
+        assert set(es_date_formats) == {None}
 
     def test_flights_all_metric_source_fields_bool_and_timestamp(self):
         ed_field_mappings = ed.FieldMappings(
@@ -114,7 +114,7 @@ class TestMetricSourceFields(TestData):
         ed_dtypes, ed_fields, es_date_formats = ed_field_mappings.metric_source_fields()
         pd_metric = pd_ecommerce.select_dtypes(include=np.number)
         assert len(es_date_formats) == len(ed_dtypes)
-        assert set(es_date_formats) == set([None])
+        assert set(es_date_formats) == {None}
 
         assert pd_metric.dtypes.to_list() == ed_dtypes
         assert pd_metric.columns.to_list() == ed_fields
@@ -140,4 +140,4 @@ class TestMetricSourceFields(TestData):
         assert pd_metric.dtypes.to_list() == ed_dtypes
         assert pd_metric.columns.to_list() == ed_fields
         assert len(es_date_formats) == len(ed_dtypes)
-        assert set(es_date_formats) == set([None])
+        assert set(es_date_formats) == {None}

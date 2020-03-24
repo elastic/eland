@@ -67,7 +67,7 @@ class HeadTask(SizeTask):
         self._count = count
 
     def __repr__(self):
-        return "('{}': ('sort_field': '{}', 'count': {}))".format(self._task_type, self._sort_field, self._count)
+        return f"('{self._task_type}': ('sort_field': '{self._sort_field}', 'count': {self._count}))"
 
     def resolve_task(self, query_params, post_processing, query_compiler):
         # head - sort asc, size n
@@ -113,7 +113,7 @@ class TailTask(SizeTask):
         self._count = count
 
     def __repr__(self):
-        return "('{}': ('sort_field': '{}', 'count': {}))".format(self._task_type, self._sort_field, self._count)
+        return f"('{self._task_type}': ('sort_field': '{self._sort_field}', 'count': {self._count}))"
 
     def resolve_task(self, query_params, post_processing, query_compiler):
         # tail - sort desc, size n, post-process sort asc
@@ -183,7 +183,7 @@ class QueryIdsTask(Task):
         return query_params, post_processing
 
     def __repr__(self):
-        return "('{}': ('must': {}, 'ids': {}))".format(self._task_type, self._must, self._ids)
+        return f"('{self._task_type}': ('must': {self._must}, 'ids': {self._ids}))"
 
 
 class QueryTermsTask(Task):

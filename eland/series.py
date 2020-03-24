@@ -378,10 +378,10 @@ class Series(NDFrame):
         if dtype:
             if footer:
                 footer += ", "
-            footer += "dtype: {}".format(temp_series.dtype)
+            footer += f"dtype: {temp_series.dtype}"
 
         if len(footer) > 0:
-            _buf.write("\n{}".format(footer))
+            _buf.write(f"\n{footer}")
 
         if buf is None:
             result = _buf.getvalue()
@@ -398,7 +398,7 @@ class Series(NDFrame):
     def __gt__(self, other):
         if isinstance(other, Series):
             # Need to use scripted query to compare to values
-            painless = "doc['{}'].value > doc['{}'].value".format(self.name, other.name)
+            painless = f"doc['{self.name}'].value > doc['{other.name}'].value"
             return ScriptFilter(painless)
         elif isinstance(other, (int, float)):
             return Greater(field=self.name, value=other)
@@ -408,7 +408,7 @@ class Series(NDFrame):
     def __lt__(self, other):
         if isinstance(other, Series):
             # Need to use scripted query to compare to values
-            painless = "doc['{}'].value < doc['{}'].value".format(self.name, other.name)
+            painless = f"doc['{self.name}'].value < doc['{other.name}'].value"
             return ScriptFilter(painless)
         elif isinstance(other, (int, float)):
             return Less(field=self.name, value=other)
@@ -418,7 +418,7 @@ class Series(NDFrame):
     def __ge__(self, other):
         if isinstance(other, Series):
             # Need to use scripted query to compare to values
-            painless = "doc['{}'].value >= doc['{}'].value".format(self.name, other.name)
+            painless = f"doc['{self.name}'].value >= doc['{other.name}'].value"
             return ScriptFilter(painless)
         elif isinstance(other, (int, float)):
             return GreaterEqual(field=self.name, value=other)
@@ -428,7 +428,7 @@ class Series(NDFrame):
     def __le__(self, other):
         if isinstance(other, Series):
             # Need to use scripted query to compare to values
-            painless = "doc['{}'].value <= doc['{}'].value".format(self.name, other.name)
+            painless = f"doc['{self.name}'].value <= doc['{other.name}'].value"
             return ScriptFilter(painless)
         elif isinstance(other, (int, float)):
             return LessEqual(field=self.name, value=other)
@@ -438,7 +438,7 @@ class Series(NDFrame):
     def __eq__(self, other):
         if isinstance(other, Series):
             # Need to use scripted query to compare to values
-            painless = "doc['{}'].value == doc['{}'].value".format(self.name, other.name)
+            painless = f"doc['{self.name}'].value == doc['{other.name}'].value"
             return ScriptFilter(painless)
         elif isinstance(other, (int, float)):
             return Equal(field=self.name, value=other)
@@ -450,7 +450,7 @@ class Series(NDFrame):
     def __ne__(self, other):
         if isinstance(other, Series):
             # Need to use scripted query to compare to values
-            painless = "doc['{}'].value != doc['{}'].value".format(self.name, other.name)
+            painless = f"doc['{self.name}'].value != doc['{other.name}'].value"
             return ScriptFilter(painless)
         elif isinstance(other, (int, float)):
             return NotFilter(Equal(field=self.name, value=other))
