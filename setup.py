@@ -30,7 +30,6 @@ CLASSIFIERS = [
     "Intended Audience :: Science/Research",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.5",
     "Programming Language :: Python :: 3.6",
     "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
@@ -185,9 +184,9 @@ setup(
     keywords='elastic eland pandas python',
     packages=find_packages(include=["eland", "eland.*"]),
     install_requires=[
-        'elasticsearch>=7.0.5',
+        'elasticsearch>=7.0.5, <8',
         'pandas==0.25.3',
         'matplotlib'
     ],
-    python_requires=">=3.5",
+    python_requires=">=3.6",
 )

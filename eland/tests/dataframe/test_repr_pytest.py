@@ -17,7 +17,6 @@
 import pandas as pd
 import pytest
 
-from eland.compat import PY36
 from eland.dataframe import DEFAULT_NUM_ROWS_DISPLAYED
 from eland.tests.common import TestData, assert_pandas_eland_series_equal
 
@@ -28,19 +27,6 @@ class TestDataFrameRepr(TestData):
     def setup_class(cls):
         # conftest.py changes this default - restore to original setting
         pd.set_option('display.max_rows', 60)
-
-    # Override these methods as:
-    # {'lat': '-33.94609833', 'lon': '151.177002'} order is not consistent in python 3.5 (dict's not ordered)
-    # remove from test for now
-    def ed_flights(self):
-        if not PY36:
-            return super().ed_flights().drop(columns=['OriginLocation', 'DestLocation'])
-        return super().ed_flights()
-
-    def pd_flights(self):
-        if not PY36:
-            return super().pd_flights().drop(columns=['OriginLocation', 'DestLocation'])
-        return super().pd_flights()
 
     """
     to_string
@@ -81,36 +67,28 @@ class TestDataFrameRepr(TestData):
 
         Hence we store the pandas df source json as 'lon', 'lat'
         """
-        if PY36:
-            pd_dest_location = self.pd_flights()['DestLocation'].head(1)
-            ed_dest_location = self.ed_flights()['DestLocation'].head(1)
+        pd_dest_location = self.pd_flights()['DestLocation'].head(1)
+        ed_dest_location = self.ed_flights()['DestLocation'].head(1)
 
-            assert_pandas_eland_series_equal(pd_dest_location, ed_dest_location)
-        else:
-            # NOOP
-            assert True
+        assert_pandas_eland_series_equal(pd_dest_location, ed_dest_location)
 
     def test_num_rows_to_string(self):
-        if PY36:
-            # check setup works
-            assert pd.get_option('display.max_rows') == 60
+        # check setup works
+        assert pd.get_option('display.max_rows') == 60
 
-            # Test eland.DataFrame.to_string vs pandas.DataFrame.to_string
-            # In pandas calling 'to_string' without max_rows set, will dump ALL rows
+        # Test eland.DataFrame.to_string vs pandas.DataFrame.to_string
+        # In pandas calling 'to_string' without max_rows set, will dump ALL rows
 
-            # Test n-1, n, n+1 for edge cases
-            self.num_rows_to_string(DEFAULT_NUM_ROWS_DISPLAYED - 1)
-            self.num_rows_to_string(DEFAULT_NUM_ROWS_DISPLAYED)
-            with pytest.warns(UserWarning):
-                # UserWarning displayed by eland here (compare to pandas with max_rows set)
-                self.num_rows_to_string(DEFAULT_NUM_ROWS_DISPLAYED + 1, None, DEFAULT_NUM_ROWS_DISPLAYED)
+        # Test n-1, n, n+1 for edge cases
+        self.num_rows_to_string(DEFAULT_NUM_ROWS_DISPLAYED - 1)
+        self.num_rows_to_string(DEFAULT_NUM_ROWS_DISPLAYED)
+        with pytest.warns(UserWarning):
+            # UserWarning displayed by eland here (compare to pandas with max_rows set)
+            self.num_rows_to_string(DEFAULT_NUM_ROWS_DISPLAYED + 1, None, DEFAULT_NUM_ROWS_DISPLAYED)
 
-            # Test for where max_rows lt or gt num_rows
-            self.num_rows_to_string(10, 5, 5)
-            self.num_rows_to_string(100, 200, 200)
-        else:
-            # NOOP
-            assert True
+        # Test for where max_rows lt or gt num_rows
+        self.num_rows_to_string(10, 5, 5)
+        self.num_rows_to_string(100, 200, 200)
 
     def num_rows_to_string(self, rows, max_rows_eland=None, max_rows_pandas=None):
         ed_flights = self.ed_flights()[['DestLocation', 'OriginLocation']]
@@ -257,10 +235,7 @@ class TestDataFrameRepr(TestData):
         # print(ed_head_str)
         # print(pd_head_str)
 
-        # Currently pandas display bold_rows=True with >=PY36 and bold_rows=False with 3.5
-        # TODO - fix this test for 3.5
-        if PY36:
-            assert pd_head_str == ed_head_str
+        assert pd_head_str == ed_head_str
 
     def test_empty_dataframe_repr_html(self):
         # TODO - there is a bug in 'show_dimensions' as it gets added after the last </div>
