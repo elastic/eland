@@ -180,7 +180,7 @@ setup(
     url=about['__url__'],
     maintainer=about['__maintainer__'],
     maintainer_email=about['__maintainer_email__'],
-    license='Apache 2.0',
+    license='Apache-2.0',
     classifiers=CLASSIFIERS,
     keywords='elastic eland pandas python',
     packages=find_packages(include=["eland", "eland.*"]),
@@ -188,5 +188,6 @@ setup(
         'elasticsearch>=7.0.5',
         'pandas==0.25.3',
         'matplotlib'
-    ]
+    ],
+    python_requires=">=3.5",
 )
