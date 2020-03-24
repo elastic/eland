@@ -106,6 +106,27 @@ class FieldMappings:
             }
           }
         }
+
+        or (6.x)
+
+        {
+          "my_index": {
+            "mappings": {
+              "doc": {
+                "properties": {
+                  "city": {
+                    "type": "text",
+                    "fields": {
+                      "keyword": {
+                        "type": "keyword"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
         ```
         if source_only == False:
             return {'city': 'text', 'city.keyword': 'keyword'}
@@ -162,8 +183,16 @@ class FieldMappings:
         for index in mappings:
             if 'properties' in mappings[index]['mappings']:
                 properties = mappings[index]['mappings']['properties']
+            else:
+                # Pre Elasticsearch 7.0 mappings had types. Support these
+                # in case eland is connected to 6.x index - this is not
+                # officially supported, but does help usability
+                es_types = list(mappings[index]['mappings'].keys())
+                if len(es_types) != 1:
+                    raise NotImplementedError("eland only supports 0 or 1 Elasticsearch types")
+                properties = mappings[index]['mappings'][es_types[0]]['properties']
 
-                flatten(properties)
+            flatten(properties)
 
         return fields
 
