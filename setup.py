@@ -179,6 +179,8 @@ setup(
     long_description=LONG_DESCRIPTION,
     long_description_content_type="text/markdown",
     url=about["__url__"],
+    author=about["__author__"],
+    author_email=about["__author_email__"],
     maintainer=about["__maintainer__"],
     maintainer_email=about["__maintainer_email__"],
     license="Apache-2.0",
