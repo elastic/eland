@@ -27,9 +27,8 @@ from eland.tests.common import assert_pandas_eland_series_equal
 
 
 class TestDataFrameDateTime(TestData):
-    times = ["2019-11-26T19:58:15.246+0000",
-             "1970-01-01T00:00:03.000+0000"]
-    time_index_name = 'test_time_formats'
+    times = ["2019-11-26T19:58:15.246+0000", "1970-01-01T00:00:03.000+0000"]
+    time_index_name = "test_time_formats"
 
     @classmethod
     def setup_class(cls):
@@ -39,20 +38,20 @@ class TestDataFrameDateTime(TestData):
         es = ES_TEST_CLIENT
         if es.indices.exists(cls.time_index_name):
             es.indices.delete(index=cls.time_index_name)
-        dts = [datetime.strptime(time, "%Y-%m-%dT%H:%M:%S.%f%z")
-               for time in cls.times]
+        dts = [datetime.strptime(time, "%Y-%m-%dT%H:%M:%S.%f%z") for time in cls.times]
 
-        time_formats_docs = [TestDataFrameDateTime.get_time_values_from_datetime(dt)
-                             for dt in dts]
-        mappings = {'properties': {}}
+        time_formats_docs = [
+            TestDataFrameDateTime.get_time_values_from_datetime(dt) for dt in dts
+        ]
+        mappings = {"properties": {}}
 
         for field_name, field_value in time_formats_docs[0].items():
-            mappings['properties'][field_name] = {}
-            mappings['properties'][field_name]['type'] = 'date'
-            mappings['properties'][field_name]['format'] = field_name
+            mappings["properties"][field_name] = {}
+            mappings["properties"][field_name]["type"] = "date"
+            mappings["properties"][field_name]["format"] = field_name
 
         body = {"mappings": mappings}
-        index = 'test_time_formats'
+        index = "test_time_formats"
         es.indices.delete(index=index, ignore=[400, 404])
         es.indices.create(index=index, body=body)
 
@@ -70,37 +69,48 @@ class TestDataFrameDateTime(TestData):
         es.indices.delete(index=cls.time_index_name)
 
     def test_datetime_to_ms(self):
-        df = pd.DataFrame(data={'A': np.random.rand(3),
-                                'B': 1,
-                                'C': 'foo',
-                                'D': pd.Timestamp('20190102'),
-                                'E': [1.0, 2.0, 3.0],
-                                'F': False,
-                                'G': [1, 2, 3]},
-                          index=['0', '1', '2'])
+        df = pd.DataFrame(
+            data={
+                "A": np.random.rand(3),
+                "B": 1,
+                "C": "foo",
+                "D": pd.Timestamp("20190102"),
+                "E": [1.0, 2.0, 3.0],
+                "F": False,
+                "G": [1, 2, 3],
+            },
+            index=["0", "1", "2"],
+        )
 
-        expected_mappings = {'mappings': {
-            'properties': {'A': {'type': 'double'},
-                           'B': {'type': 'long'},
-                           'C': {'type': 'keyword'},
-                           'D': {'type': 'date'},
-                           'E': {'type': 'double'},
-                           'F': {'type': 'boolean'},
-                           'G': {'type': 'long'}}}}
+        expected_mappings = {
+            "mappings": {
+                "properties": {
+                    "A": {"type": "double"},
+                    "B": {"type": "long"},
+                    "C": {"type": "keyword"},
+                    "D": {"type": "date"},
+                    "E": {"type": "double"},
+                    "F": {"type": "boolean"},
+                    "G": {"type": "long"},
+                }
+            }
+        }
 
         mappings = ed.FieldMappings._generate_es_mappings(df)
 
         assert expected_mappings == mappings
 
         # Now create index
-        index_name = 'eland_test_generate_es_mappings'
+        index_name = "eland_test_generate_es_mappings"
 
-        ed_df = ed.pandas_to_eland(df, ES_TEST_CLIENT, index_name, es_if_exists="replace", es_refresh=True)
+        ed_df = ed.pandas_to_eland(
+            df, ES_TEST_CLIENT, index_name, es_if_exists="replace", es_refresh=True
+        )
 
-        #print(df.to_string())
-        #print(ed_df.to_string())
-        #print(ed_df.dtypes)
-        #print(ed_df._to_pandas().dtypes)
+        # print(df.to_string())
+        # print(ed_df.to_string())
+        # print(ed_df.dtypes)
+        # print(ed_df._to_pandas().dtypes)
 
         assert_series_equal(df.dtypes, ed_df.dtypes)
 
@@ -111,15 +121,20 @@ class TestDataFrameDateTime(TestData):
         ed_df = ed.read_es(ES_TEST_CLIENT, index_name)
 
         for format_name in self.time_formats.keys():
-            times = [pd.to_datetime(datetime.strptime(dt, "%Y-%m-%dT%H:%M:%S.%f%z")
-                                    .strftime(self.time_formats[format_name]),
-                                    format=self.time_formats[format_name])
-                     for dt in self.times]
+            times = [
+                pd.to_datetime(
+                    datetime.strptime(dt, "%Y-%m-%dT%H:%M:%S.%f%z").strftime(
+                        self.time_formats[format_name]
+                    ),
+                    format=self.time_formats[format_name],
+                )
+                for dt in self.times
+            ]
 
             ed_series = ed_df[format_name]
-            pd_series = pd.Series(times,
-                                  index=[str(i) for i in range(len(self.times))],
-                                  name=format_name)
+            pd_series = pd.Series(
+                times, index=[str(i) for i in range(len(self.times))], name=format_name
+            )
 
             assert_pandas_eland_series_equal(pd_series, ed_series)
 
@@ -128,19 +143,22 @@ class TestDataFrameDateTime(TestData):
         time_formats = {
             "epoch_millis": int(dt.timestamp() * 1000),
             "epoch_second": int(dt.timestamp()),
-            "strict_date_optional_time": dt.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + dt.strftime("%z"),
+            "strict_date_optional_time": dt.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]
+            + dt.strftime("%z"),
             "basic_date": dt.strftime("%Y%m%d"),
             "basic_date_time": dt.strftime("%Y%m%dT%H%M%S.%f")[:-3] + dt.strftime("%z"),
             "basic_date_time_no_millis": dt.strftime("%Y%m%dT%H%M%S%z"),
             "basic_ordinal_date": dt.strftime("%Y%j"),
-            "basic_ordinal_date_time": dt.strftime("%Y%jT%H%M%S.%f")[:-3] + dt.strftime("%z"),
+            "basic_ordinal_date_time": dt.strftime("%Y%jT%H%M%S.%f")[:-3]
+            + dt.strftime("%z"),
             "basic_ordinal_date_time_no_millis": dt.strftime("%Y%jT%H%M%S%z"),
             "basic_time": dt.strftime("%H%M%S.%f")[:-3] + dt.strftime("%z"),
             "basic_time_no_millis": dt.strftime("%H%M%S%z"),
             "basic_t_time": dt.strftime("T%H%M%S.%f")[:-3] + dt.strftime("%z"),
             "basic_t_time_no_millis": dt.strftime("T%H%M%S%z"),
             "basic_week_date": dt.strftime("%GW%V%u"),
-            "basic_week_date_time": dt.strftime("%GW%V%uT%H%M%S.%f")[:-3] + dt.strftime("%z"),
+            "basic_week_date_time": dt.strftime("%GW%V%uT%H%M%S.%f")[:-3]
+            + dt.strftime("%z"),
             "basic_week_date_time_no_millis": dt.strftime("%GW%V%uT%H%M%S%z"),
             "strict_date": dt.strftime("%Y-%m-%d"),
             "date": dt.strftime("%Y-%m-%d"),
@@ -150,11 +168,18 @@ class TestDataFrameDateTime(TestData):
             "date_hour_minute": dt.strftime("%Y-%m-%dT%H:%M"),
             "strict_date_hour_minute_second": dt.strftime("%Y-%m-%dT%H:%M:%S"),
             "date_hour_minute_second": dt.strftime("%Y-%m-%dT%H:%M:%S"),
-            "strict_date_hour_minute_second_fraction": dt.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3],
-            "date_hour_minute_second_fraction": dt.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3],
-            "strict_date_hour_minute_second_millis": dt.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3],
+            "strict_date_hour_minute_second_fraction": dt.strftime(
+                "%Y-%m-%dT%H:%M:%S.%f"
+            )[:-3],
+            "date_hour_minute_second_fraction": dt.strftime("%Y-%m-%dT%H:%M:%S.%f")[
+                :-3
+            ],
+            "strict_date_hour_minute_second_millis": dt.strftime(
+                "%Y-%m-%dT%H:%M:%S.%f"
+            )[:-3],
             "date_hour_minute_second_millis": dt.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3],
-            "strict_date_time": dt.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + dt.strftime("%z"),
+            "strict_date_time": dt.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]
+            + dt.strftime("%z"),
             "date_time": dt.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + dt.strftime("%z"),
             "strict_date_time_no_millis": dt.strftime("%Y-%m-%dT%H:%M:%S%z"),
             "date_time_no_millis": dt.strftime("%Y-%m-%dT%H:%M:%S%z"),
@@ -170,8 +195,10 @@ class TestDataFrameDateTime(TestData):
             "hour_minute_second_millis": dt.strftime("%H:%M:%S.%f")[:-3],
             "strict_ordinal_date": dt.strftime("%Y-%j"),
             "ordinal_date": dt.strftime("%Y-%j"),
-            "strict_ordinal_date_time": dt.strftime("%Y-%jT%H:%M:%S.%f")[:-3] + dt.strftime("%z"),
-            "ordinal_date_time": dt.strftime("%Y-%jT%H:%M:%S.%f")[:-3] + dt.strftime("%z"),
+            "strict_ordinal_date_time": dt.strftime("%Y-%jT%H:%M:%S.%f")[:-3]
+            + dt.strftime("%z"),
+            "ordinal_date_time": dt.strftime("%Y-%jT%H:%M:%S.%f")[:-3]
+            + dt.strftime("%z"),
             "strict_ordinal_date_time_no_millis": dt.strftime("%Y-%jT%H:%M:%S%z"),
             "ordinal_date_time_no_millis": dt.strftime("%Y-%jT%H:%M:%S%z"),
             "strict_time": dt.strftime("%H:%M:%S.%f")[:-3] + dt.strftime("%z"),
@@ -184,8 +211,10 @@ class TestDataFrameDateTime(TestData):
             "t_time_no_millis": dt.strftime("T%H:%M:%S%z"),
             "strict_week_date": dt.strftime("%G-W%V-%u"),
             "week_date": dt.strftime("%G-W%V-%u"),
-            "strict_week_date_time": dt.strftime("%G-W%V-%uT%H:%M:%S.%f")[:-3] + dt.strftime("%z"),
-            "week_date_time": dt.strftime("%G-W%V-%uT%H:%M:%S.%f")[:-3] + dt.strftime("%z"),
+            "strict_week_date_time": dt.strftime("%G-W%V-%uT%H:%M:%S.%f")[:-3]
+            + dt.strftime("%z"),
+            "week_date_time": dt.strftime("%G-W%V-%uT%H:%M:%S.%f")[:-3]
+            + dt.strftime("%z"),
             "strict_week_date_time_no_millis": dt.strftime("%G-W%V-%uT%H:%M:%S%z"),
             "week_date_time_no_millis": dt.strftime("%G-W%V-%uT%H:%M:%S%z"),
             "strict_weekyear": dt.strftime("%G"),
@@ -274,7 +303,7 @@ class TestDataFrameDateTime(TestData):
         "strict_year_month": "%Y-%m",
         "year_month": "%Y-%m",
         "strict_year_month_day": "%Y-%m-%d",
-        "year_month_day": "%Y-%m-%d"
+        "year_month_day": "%Y-%m-%d",
     }
 
     # excluding these formats as pandas throws a ValueError

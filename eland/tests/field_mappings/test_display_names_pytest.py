@@ -21,11 +21,9 @@ from eland.tests.common import TestData
 
 
 class TestDisplayNames(TestData):
-
     def test_init_all_fields(self):
         field_mappings = ed.FieldMappings(
-            client=ed.Client(ES_TEST_CLIENT),
-            index_pattern=FLIGHTS_INDEX_NAME
+            client=ed.Client(ES_TEST_CLIENT), index_pattern=FLIGHTS_INDEX_NAME
         )
 
         expected = self.pd_flights().columns.to_list()
@@ -33,22 +31,27 @@ class TestDisplayNames(TestData):
         assert expected == field_mappings.display_names
 
     def test_init_selected_fields(self):
-        expected = ['timestamp', 'DestWeather', 'DistanceKilometers', 'AvgTicketPrice']
+        expected = ["timestamp", "DestWeather", "DistanceKilometers", "AvgTicketPrice"]
 
         field_mappings = ed.FieldMappings(
             client=ed.Client(ES_TEST_CLIENT),
             index_pattern=FLIGHTS_INDEX_NAME,
-            display_names=expected
+            display_names=expected,
         )
 
         assert expected == field_mappings.display_names
 
     def test_set_display_names(self):
-        expected = ['Cancelled', 'timestamp', 'DestWeather', 'DistanceKilometers', 'AvgTicketPrice']
+        expected = [
+            "Cancelled",
+            "timestamp",
+            "DestWeather",
+            "DistanceKilometers",
+            "AvgTicketPrice",
+        ]
 
         field_mappings = ed.FieldMappings(
-            client=ed.Client(ES_TEST_CLIENT),
-            index_pattern=FLIGHTS_INDEX_NAME
+            client=ed.Client(ES_TEST_CLIENT), index_pattern=FLIGHTS_INDEX_NAME
         )
 
         field_mappings.display_names = expected
@@ -56,17 +59,23 @@ class TestDisplayNames(TestData):
         assert expected == field_mappings.display_names
 
         # now set again
-        new_expected = ['AvgTicketPrice', 'timestamp']
+        new_expected = ["AvgTicketPrice", "timestamp"]
 
         field_mappings.display_names = new_expected
         assert new_expected == field_mappings.display_names
 
     def test_not_found_display_names(self):
-        not_found = ['Cancelled', 'timestamp', 'DestWeather', 'unknown', 'DistanceKilometers', 'AvgTicketPrice']
+        not_found = [
+            "Cancelled",
+            "timestamp",
+            "DestWeather",
+            "unknown",
+            "DistanceKilometers",
+            "AvgTicketPrice",
+        ]
 
         field_mappings = ed.FieldMappings(
-            client=ed.Client(ES_TEST_CLIENT),
-            index_pattern=FLIGHTS_INDEX_NAME
+            client=ed.Client(ES_TEST_CLIENT), index_pattern=FLIGHTS_INDEX_NAME
         )
 
         with pytest.raises(KeyError):
@@ -78,8 +87,7 @@ class TestDisplayNames(TestData):
 
     def test_invalid_list_type_display_names(self):
         field_mappings = ed.FieldMappings(
-            client=ed.Client(ES_TEST_CLIENT),
-            index_pattern=FLIGHTS_INDEX_NAME
+            client=ed.Client(ES_TEST_CLIENT), index_pattern=FLIGHTS_INDEX_NAME
         )
 
         # not a list like object
@@ -87,8 +95,8 @@ class TestDisplayNames(TestData):
             field_mappings.display_names = 12.0
 
         # tuple is list like
-        field_mappings.display_names = ('Cancelled', 'DestWeather')
+        field_mappings.display_names = ("Cancelled", "DestWeather")
 
-        expected = ['Cancelled', 'DestWeather']
+        expected = ["Cancelled", "DestWeather"]
 
         assert expected == field_mappings.display_names

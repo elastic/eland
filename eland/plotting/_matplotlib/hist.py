@@ -20,17 +20,17 @@ from pandas.plotting._matplotlib.tools import _flatten, _set_ticks_props, _subpl
 
 
 def hist_series(
-        self,
-        by=None,
-        ax=None,
-        grid=True,
-        xlabelsize=None,
-        xrot=None,
-        ylabelsize=None,
-        yrot=None,
-        figsize=None,
-        bins=10,
-        **kwds
+    self,
+    by=None,
+    ax=None,
+    grid=True,
+    xlabelsize=None,
+    xrot=None,
+    ylabelsize=None,
+    yrot=None,
+    figsize=None,
+    bins=10,
+    **kwds,
 ):
     import matplotlib.pyplot as plt
 
@@ -73,21 +73,21 @@ def hist_series(
 
 
 def hist_frame(
-        data,
-        column=None,
-        by=None,
-        grid=True,
-        xlabelsize=None,
-        xrot=None,
-        ylabelsize=None,
-        yrot=None,
-        ax=None,
-        sharex=False,
-        sharey=False,
-        figsize=None,
-        layout=None,
-        bins=10,
-        **kwds
+    data,
+    column=None,
+    by=None,
+    grid=True,
+    xlabelsize=None,
+    xrot=None,
+    ylabelsize=None,
+    yrot=None,
+    ax=None,
+    sharex=False,
+    sharey=False,
+    figsize=None,
+    layout=None,
+    bins=10,
+    **kwds,
 ):
     # Start with empty pandas data frame derived from
     ed_df_bins, ed_df_weights = data._hist(num_bins=bins)
@@ -119,7 +119,12 @@ def hist_frame(
 
     for i, col in enumerate(com.try_sort(data.columns)):
         ax = _axes[i]
-        ax.hist(ed_df_bins[col][:-1], bins=ed_df_bins[col], weights=ed_df_weights[col], **kwds)
+        ax.hist(
+            ed_df_bins[col][:-1],
+            bins=ed_df_bins[col],
+            weights=ed_df_weights[col],
+            **kwds,
+        )
         ax.set_title(col)
         ax.grid(grid)
 

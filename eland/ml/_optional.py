@@ -24,10 +24,7 @@ import warnings
 # The license for this library can be found NOTICE.txt and the code can be
 # https://raw.githubusercontent.com/pandas-dev/pandas/v1.0.1/pandas/compat/_optional.py
 
-VERSIONS = {
-    "xgboost": "0.90",
-    "sklearn": "0.22.1"
-}
+VERSIONS = {"xgboost": "0.90", "sklearn": "0.22.1"}
 
 # Update install.rst when updating versions!
 
@@ -54,7 +51,7 @@ def _get_version(module: types.ModuleType) -> str:
 
 
 def import_optional_dependency(
-        name: str, extra: str = "", raise_on_missing: bool = True, on_version: str = "raise"
+    name: str, extra: str = "", raise_on_missing: bool = True, on_version: str = "raise"
 ):
     """
     Import an optional dependency.

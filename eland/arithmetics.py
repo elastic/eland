@@ -84,7 +84,9 @@ class ArithmeticSeries(ArithmeticObject):
             self._tasks = task._arithmetic_series._tasks.copy()
             self._dtype = dtype
         else:
-            aggregatable_field_name = query_compiler.display_name_to_aggregatable_name(display_name)
+            aggregatable_field_name = query_compiler.display_name_to_aggregatable_name(
+                display_name
+            )
             if aggregatable_field_name is None:
                 raise ValueError(
                     "Can not perform arithmetic operations on non aggregatable fields"
@@ -115,33 +117,33 @@ class ArithmeticSeries(ArithmeticObject):
         value = self._value
 
         for task in self._tasks:
-            if task.op_name == '__add__':
+            if task.op_name == "__add__":
                 value = f"({value} + {task.object.resolve()})"
-            elif task.op_name == '__truediv__':
+            elif task.op_name == "__truediv__":
                 value = f"({value} / {task.object.resolve()})"
-            elif task.op_name == '__floordiv__':
+            elif task.op_name == "__floordiv__":
                 value = f"Math.floor({value} / {task.object.resolve()})"
-            elif task.op_name == '__mod__':
+            elif task.op_name == "__mod__":
                 value = f"({value} % {task.object.resolve()})"
-            elif task.op_name == '__mul__':
+            elif task.op_name == "__mul__":
                 value = f"({value} * {task.object.resolve()})"
-            elif task.op_name == '__pow__':
+            elif task.op_name == "__pow__":
                 value = f"Math.pow({value}, {task.object.resolve()})"
-            elif task.op_name == '__sub__':
+            elif task.op_name == "__sub__":
                 value = f"({value} - {task.object.resolve()})"
-            elif task.op_name == '__radd__':
+            elif task.op_name == "__radd__":
                 value = f"({task.object.resolve()} + {value})"
-            elif task.op_name == '__rtruediv__':
+            elif task.op_name == "__rtruediv__":
                 value = f"({task.object.resolve()} / {value})"
-            elif task.op_name == '__rfloordiv__':
+            elif task.op_name == "__rfloordiv__":
                 value = f"Math.floor({task.object.resolve()} / {value})"
-            elif task.op_name == '__rmod__':
+            elif task.op_name == "__rmod__":
                 value = f"({task.object.resolve()} % {value})"
-            elif task.op_name == '__rmul__':
+            elif task.op_name == "__rmul__":
                 value = f"({task.object.resolve()} * {value})"
-            elif task.op_name == '__rpow__':
+            elif task.op_name == "__rpow__":
                 value = f"Math.pow({task.object.resolve()}, {value})"
-            elif task.op_name == '__rsub__':
+            elif task.op_name == "__rsub__":
                 value = f"({task.object.resolve()} - {value})"
 
         return value
@@ -165,20 +167,27 @@ class ArithmeticSeries(ArithmeticObject):
 
         # see end of https://pandas.pydata.org/pandas-docs/stable/getting_started/basics.html?highlight=dtype for
         # dtype heirarchy
-        if np.issubdtype(self.dtype, np.number) and np.issubdtype(right.dtype, np.number):
+        if np.issubdtype(self.dtype, np.number) and np.issubdtype(
+            right.dtype, np.number
+        ):
             # series.number op_name number (all ops)
             return True
-        elif np.issubdtype(self.dtype, np.object_) and np.issubdtype(right.dtype, np.object_):
+        elif np.issubdtype(self.dtype, np.object_) and np.issubdtype(
+            right.dtype, np.object_
+        ):
             # series.string op_name string (only add)
-            if op_name == '__add__' or op_name == '__radd__':
+            if op_name == "__add__" or op_name == "__radd__":
                 return True
-        elif np.issubdtype(self.dtype, np.object_) and np.issubdtype(right.dtype, np.integer):
+        elif np.issubdtype(self.dtype, np.object_) and np.issubdtype(
+            right.dtype, np.integer
+        ):
             # series.string op_name int (only mul)
-            if op_name == '__mul__':
+            if op_name == "__mul__":
                 return True
 
         raise TypeError(
-            f"Arithmetic operation on incompatible types {self.dtype} {op_name} {right.dtype}")
+            f"Arithmetic operation on incompatible types {self.dtype} {op_name} {right.dtype}"
+        )
 
 
 class ArithmeticTask:
@@ -186,7 +195,9 @@ class ArithmeticTask:
         self._op_name = op_name
 
         if not isinstance(object, ArithmeticObject):
-            raise TypeError("Task requires ArithmeticObject not {}".format(type(object)))
+            raise TypeError(
+                "Task requires ArithmeticObject not {}".format(type(object))
+            )
         self._object = object
 
     def __repr__(self):

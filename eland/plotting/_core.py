@@ -15,17 +15,17 @@ from eland.plotting._matplotlib.hist import hist_series, hist_frame
 
 
 def ed_hist_series(
-        self,
-        by=None,
-        ax=None,
-        grid=True,
-        xlabelsize=None,
-        xrot=None,
-        ylabelsize=None,
-        yrot=None,
-        figsize=None,
-        bins=10,
-        **kwds
+    self,
+    by=None,
+    ax=None,
+    grid=True,
+    xlabelsize=None,
+    xrot=None,
+    ylabelsize=None,
+    yrot=None,
+    figsize=None,
+    bins=10,
+    **kwds,
 ):
     """
     Draw histogram of the input series using matplotlib.
@@ -56,26 +56,26 @@ def ed_hist_series(
         yrot=yrot,
         figsize=figsize,
         bins=bins,
-        **kwds
+        **kwds,
     )
 
 
 def ed_hist_frame(
-        data,
-        column=None,
-        by=None,
-        grid=True,
-        xlabelsize=None,
-        xrot=None,
-        ylabelsize=None,
-        yrot=None,
-        ax=None,
-        sharex=False,
-        sharey=False,
-        figsize=None,
-        layout=None,
-        bins=10,
-        **kwds
+    data,
+    column=None,
+    by=None,
+    grid=True,
+    xlabelsize=None,
+    xrot=None,
+    ylabelsize=None,
+    yrot=None,
+    ax=None,
+    sharex=False,
+    sharey=False,
+    figsize=None,
+    layout=None,
+    bins=10,
+    **kwds,
 ):
     """
     Make a histogram of the DataFrame's.
@@ -123,5 +123,5 @@ def ed_hist_frame(
         figsize=figsize,
         layout=layout,
         bins=bins,
-        **kwds
+        **kwds,
     )

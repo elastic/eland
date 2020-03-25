@@ -22,23 +22,22 @@ from eland.tests import FLIGHTS_INDEX_NAME
 
 
 class TestDataFrameInit:
-
     def test_init(self):
         # Construct empty DataFrame (throws)
         with pytest.raises(ValueError):
-            df = ed.DataFrame()
+            ed.DataFrame()
 
         # Construct invalid DataFrame (throws)
         with pytest.raises(ValueError):
-            df = ed.DataFrame(client=ES_TEST_CLIENT)
+            ed.DataFrame(client=ES_TEST_CLIENT)
 
         # Construct invalid DataFrame (throws)
         with pytest.raises(ValueError):
-            df = ed.DataFrame(index_pattern=FLIGHTS_INDEX_NAME)
+            ed.DataFrame(index_pattern=FLIGHTS_INDEX_NAME)
 
         # Good constructors
-        df0 = ed.DataFrame(ES_TEST_CLIENT, FLIGHTS_INDEX_NAME)
-        df1 = ed.DataFrame(client=ES_TEST_CLIENT, index_pattern=FLIGHTS_INDEX_NAME)
+        ed.DataFrame(ES_TEST_CLIENT, FLIGHTS_INDEX_NAME)
+        ed.DataFrame(client=ES_TEST_CLIENT, index_pattern=FLIGHTS_INDEX_NAME)
 
         qc = ed.QueryCompiler(client=ES_TEST_CLIENT, index_pattern=FLIGHTS_INDEX_NAME)
-        df2 = ed.DataFrame(query_compiler=qc)
+        ed.DataFrame(query_compiler=qc)

@@ -92,7 +92,9 @@ class SortFieldAction(PostProcessingAction):
         # Split string
         sort_params = sort_params_string.split(":")
         if len(sort_params) != 2:
-            raise ValueError(f"Expected ES sort params string (e.g. _doc:desc). Got '{sort_params_string}'")
+            raise ValueError(
+                f"Expected ES sort params string (e.g. _doc:desc). Got '{sort_params_string}'"
+            )
 
         self._sort_field = sort_params[0]
         self._sort_order = SortOrder.from_string(sort_params[1])

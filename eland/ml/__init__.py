@@ -12,5 +12,10 @@
 #      See the License for the specific language governing permissions and
 #      limitations under the License.
 
-from eland.ml.ml_model import *
-from eland.ml.imported_ml_model import *
+from eland.ml.ml_model import MLModel
+from eland.ml.imported_ml_model import ImportedMLModel
+
+__all__ = [
+    "MLModel",
+    "ImportedMLModel",
+]

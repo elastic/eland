@@ -83,20 +83,20 @@ class HeadTask(SizeTask):
             post_processing.append(HeadAction(self._count))
             return query_params, post_processing
 
-        if query_params['query_sort_field'] is None:
-            query_params['query_sort_field'] = query_sort_field
+        if query_params["query_sort_field"] is None:
+            query_params["query_sort_field"] = query_sort_field
         # if it is already sorted we use existing field
 
-        if query_params['query_sort_order'] is None:
-            query_params['query_sort_order'] = query_sort_order
+        if query_params["query_sort_order"] is None:
+            query_params["query_sort_order"] = query_sort_order
         # if it is already sorted we get head of existing order
 
-        if query_params['query_size'] is None:
-            query_params['query_size'] = query_size
+        if query_params["query_size"] is None:
+            query_params["query_size"] = query_size
         else:
             # truncate if head is smaller
-            if query_size < query_params['query_size']:
-                query_params['query_size'] = query_size
+            if query_size < query_params["query_size"]:
+                query_params["query_size"] = query_size
 
         return query_params, post_processing
 
@@ -123,11 +123,13 @@ class TailTask(SizeTask):
         query_size = self._count
 
         # If this is a tail of a tail adjust settings and return
-        if query_params['query_size'] is not None and \
-                query_params['query_sort_order'] == query_sort_order and \
-                post_processing == ['sort_index']:
-            if query_size < query_params['query_size']:
-                query_params['query_size'] = query_size
+        if (
+            query_params["query_size"] is not None
+            and query_params["query_sort_order"] == query_sort_order
+            and post_processing == ["sort_index"]
+        ):
+            if query_size < query_params["query_size"]:
+                query_params["query_size"] = query_size
             return query_params, post_processing
 
         # If we are already postprocessing the query results, just get 'tail' of these
@@ -140,18 +142,18 @@ class TailTask(SizeTask):
         # If results are already constrained, just get 'tail' of these
         # (note, currently we just append another tail, we don't optimise by
         # overwriting previous tail)
-        if query_params['query_size'] is not None:
+        if query_params["query_size"] is not None:
             post_processing.append(TailAction(self._count))
             return query_params, post_processing
         else:
-            query_params['query_size'] = query_size
-        if query_params['query_sort_field'] is None:
-            query_params['query_sort_field'] = query_sort_field
-        if query_params['query_sort_order'] is None:
-            query_params['query_sort_order'] = query_sort_order
+            query_params["query_size"] = query_size
+        if query_params["query_sort_field"] is None:
+            query_params["query_sort_field"] = query_sort_field
+        if query_params["query_sort_order"] is None:
+            query_params["query_sort_order"] = query_sort_order
         else:
             # reverse sort order
-            query_params['query_sort_order'] = SortOrder.reverse(query_sort_order)
+            query_params["query_sort_order"] = SortOrder.reverse(query_sort_order)
 
         post_processing.append(SortIndexAction())
 
@@ -178,7 +180,7 @@ class QueryIdsTask(Task):
         self._ids = ids
 
     def resolve_task(self, query_params, post_processing, query_compiler):
-        query_params['query'].ids(self._ids, must=self._must)
+        query_params["query"].ids(self._ids, must=self._must)
 
         return query_params, post_processing
 
@@ -207,11 +209,12 @@ class QueryTermsTask(Task):
         self._terms = terms
 
     def __repr__(self):
-        return "('{}': ('must': {}, 'field': '{}', 'terms': {}))".format(self._task_type, self._must, self._field,
-                                                                         self._terms)
+        return "('{}': ('must': {}, 'field': '{}', 'terms': {}))".format(
+            self._task_type, self._must, self._field, self._terms
+        )
 
     def resolve_task(self, query_params, post_processing, query_compiler):
-        query_params['query'].terms(self._field, self._terms, must=self._must)
+        query_params["query"].terms(self._field, self._terms, must=self._must)
 
         return query_params, post_processing
 
@@ -229,10 +232,12 @@ class BooleanFilterTask(Task):
         self._boolean_filter = boolean_filter
 
     def __repr__(self):
-        return "('{}': ('boolean_filter': {}))".format(self._task_type, repr(self._boolean_filter))
+        return "('{}': ('boolean_filter': {}))".format(
+            self._task_type, repr(self._boolean_filter)
+        )
 
     def resolve_task(self, query_params, post_processing, query_compiler):
-        query_params['query'].update_boolean_filter(self._boolean_filter)
+        query_params["query"].update_boolean_filter(self._boolean_filter)
 
         return query_params, post_processing
 
@@ -244,15 +249,18 @@ class ArithmeticOpFieldsTask(Task):
         self._display_name = display_name
 
         if not isinstance(arithmetic_series, ArithmeticSeries):
-            raise TypeError("Expecting ArithmeticSeries got {}".format(type(arithmetic_series)))
+            raise TypeError(
+                "Expecting ArithmeticSeries got {}".format(type(arithmetic_series))
+            )
         self._arithmetic_series = arithmetic_series
 
     def __repr__(self):
-        return "('{}': (" \
-               "'display_name': {}, " \
-               "'arithmetic_object': {}" \
-               "))" \
-            .format(self._task_type, self._display_name, self._arithmetic_series)
+        return (
+            "('{}': ("
+            "'display_name': {}, "
+            "'arithmetic_object': {}"
+            "))".format(self._task_type, self._display_name, self._arithmetic_series)
+        )
 
     def update(self, display_name, arithmetic_series):
         self._display_name = display_name
@@ -269,20 +277,21 @@ class ArithmeticOpFieldsTask(Task):
             }
         }
         """
-        if query_params['query_script_fields'] is None:
-            query_params['query_script_fields'] = dict()
+        if query_params["query_script_fields"] is None:
+            query_params["query_script_fields"] = dict()
 
-        if self._display_name in query_params['query_script_fields']:
+        if self._display_name in query_params["query_script_fields"]:
             raise NotImplementedError(
-                "TODO code path - combine multiple ops '{}'\n{}\n{}\n{}".format(self,
-                                                                                query_params['query_script_fields'],
-                                                                                self._display_name,
-                                                                                self._arithmetic_series.resolve()))
+                "TODO code path - combine multiple ops '{}'\n{}\n{}\n{}".format(
+                    self,
+                    query_params["query_script_fields"],
+                    self._display_name,
+                    self._arithmetic_series.resolve(),
+                )
+            )
 
-        query_params['query_script_fields'][self._display_name] = {
-            'script': {
-                'source': self._arithmetic_series.resolve()
-            }
+        query_params["query_script_fields"][self._display_name] = {
+            "script": {"source": self._arithmetic_series.resolve()}
         }
 
         return query_params, post_processing

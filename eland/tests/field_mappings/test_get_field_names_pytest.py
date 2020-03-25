@@ -23,11 +23,9 @@ from eland.tests.common import TestData
 
 
 class TestGetFieldNames(TestData):
-
     def test_get_field_names_all(self):
         ed_field_mappings = ed.FieldMappings(
-            client=ed.Client(ES_TEST_CLIENT),
-            index_pattern=FLIGHTS_INDEX_NAME
+            client=ed.Client(ES_TEST_CLIENT), index_pattern=FLIGHTS_INDEX_NAME
         )
         pd_flights = self.pd_flights()
 
@@ -38,11 +36,11 @@ class TestGetFieldNames(TestData):
         assert_index_equal(pd_flights.columns, pd.Index(fields1))
 
     def test_get_field_names_selected(self):
-        expected = ['Carrier', 'AvgTicketPrice']
+        expected = ["Carrier", "AvgTicketPrice"]
         ed_field_mappings = ed.FieldMappings(
             client=ed.Client(ES_TEST_CLIENT),
             index_pattern=FLIGHTS_INDEX_NAME,
-            display_names=expected
+            display_names=expected,
         )
         pd_flights = self.pd_flights()[expected]
 
@@ -53,11 +51,11 @@ class TestGetFieldNames(TestData):
         assert_index_equal(pd_flights.columns, pd.Index(fields1))
 
     def test_get_field_names_scripted(self):
-        expected = ['Carrier', 'AvgTicketPrice']
+        expected = ["Carrier", "AvgTicketPrice"]
         ed_field_mappings = ed.FieldMappings(
             client=ed.Client(ES_TEST_CLIENT),
             index_pattern=FLIGHTS_INDEX_NAME,
-            display_names=expected
+            display_names=expected,
         )
         pd_flights = self.pd_flights()[expected]
 
@@ -68,11 +66,13 @@ class TestGetFieldNames(TestData):
         assert_index_equal(pd_flights.columns, pd.Index(fields1))
 
         # now add scripted field
-        ed_field_mappings.add_scripted_field('scripted_field_None', None, np.dtype('int64'))
+        ed_field_mappings.add_scripted_field(
+            "scripted_field_None", None, np.dtype("int64")
+        )
 
         fields3 = ed_field_mappings.get_field_names(include_scripted_fields=False)
         fields4 = ed_field_mappings.get_field_names(include_scripted_fields=True)
 
         assert fields1 == fields3
-        fields1.append('scripted_field_None')
+        fields1.append("scripted_field_None")
         assert fields1 == fields4

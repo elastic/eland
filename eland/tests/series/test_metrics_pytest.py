@@ -20,12 +20,12 @@ from eland.tests.common import TestData
 
 
 class TestSeriesMetrics(TestData):
-    funcs = ['max', 'min', 'mean', 'sum']
-    timestamp_funcs = ['max', 'min', 'mean']
+    funcs = ["max", "min", "mean", "sum"]
+    timestamp_funcs = ["max", "min", "mean"]
 
     def test_flights_metrics(self):
-        pd_flights = self.pd_flights()['AvgTicketPrice']
-        ed_flights = self.ed_flights()['AvgTicketPrice']
+        pd_flights = self.pd_flights()["AvgTicketPrice"]
+        ed_flights = self.ed_flights()["AvgTicketPrice"]
 
         for func in self.funcs:
             pd_metric = getattr(pd_flights, func)()
@@ -33,18 +33,18 @@ class TestSeriesMetrics(TestData):
             assert_almost_equal(pd_metric, ed_metric, check_less_precise=True)
 
     def test_flights_timestamp(self):
-        pd_flights = self.pd_flights()['timestamp']
-        ed_flights = self.ed_flights()['timestamp']
+        pd_flights = self.pd_flights()["timestamp"]
+        ed_flights = self.ed_flights()["timestamp"]
 
         for func in self.timestamp_funcs:
             pd_metric = getattr(pd_flights, func)()
             ed_metric = getattr(ed_flights, func)()
-            pd_metric = pd_metric.floor("S") # floor or pandas mean with have ns
+            pd_metric = pd_metric.floor("S")  # floor or pandas mean with have ns
             assert_almost_equal(pd_metric, ed_metric, check_less_precise=True)
 
     def test_ecommerce_selected_non_numeric_source_fields(self):
         # None of these are numeric
-        column = 'category'
+        column = "category"
 
         ed_ecommerce = self.ed_ecommerce()[column]
 
@@ -54,12 +54,15 @@ class TestSeriesMetrics(TestData):
 
     def test_ecommerce_selected_all_numeric_source_fields(self):
         # All of these are numeric
-        columns = ['total_quantity', 'taxful_total_price', 'taxless_total_price']
+        columns = ["total_quantity", "taxful_total_price", "taxless_total_price"]
 
         for column in columns:
             pd_ecommerce = self.pd_ecommerce()[column]
             ed_ecommerce = self.ed_ecommerce()[column]
 
             for func in self.funcs:
-                assert_almost_equal(getattr(pd_ecommerce, func)(), getattr(ed_ecommerce, func)(),
-                                    check_less_precise=True)
+                assert_almost_equal(
+                    getattr(pd_ecommerce, func)(),
+                    getattr(ed_ecommerce, func)(),
+                    check_less_precise=True,
+                )

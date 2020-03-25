@@ -18,7 +18,6 @@ from eland.tests.common import TestData
 
 
 class TestDataFrameShape(TestData):
-
     def test_ecommerce_shape(self):
         pd_ecommerce = self.pd_ecommerce()
         ed_ecommerce = self.ed_ecommerce()

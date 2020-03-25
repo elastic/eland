@@ -20,7 +20,6 @@ from eland.tests.common import TestData
 
 
 class TestDataFrameCount(TestData):
-
     def test_ecommerce_count(self):
         pd_ecommerce = self.pd_ecommerce()
         ed_ecommerce = self.ed_ecommerce()
