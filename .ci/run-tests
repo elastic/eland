@@ -11,7 +11,7 @@ set -euxo pipefail
 
 
 TEST_SUITE=${TEST_SUITE-xpack}
-NODE_NAME=instance
+NODE_NAME=es1
 
 
 elasticsearch_image=elasticsearch

@@ -371,6 +371,19 @@ class Series(NDFrame):
         else:
             _buf = StringIO()
 
+        # Create repr of fake series without name, length, dtype summary
+        temp_series.to_string(
+            buf=_buf,
+            na_rep=na_rep,
+            float_format=float_format,
+            header=header,
+            index=index,
+            length=False,
+            dtype=False,
+            name=False,
+            max_rows=max_rows,
+        )
+
         # Create the summary
         footer = ""
         if name and self.name is not None:

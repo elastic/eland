@@ -27,8 +27,8 @@ CLUSTER_NAME=${CLUSTER_NAME-${moniker}${suffix}}
 HTTP_PORT=${HTTP_PORT-9200}
 
 ELASTIC_PASSWORD=${ELASTIC_PASSWORD-changeme}
-SSL_CERT=${SSL_CERT-"${SCRIPT_PATH}/certs/testnode.crt"}
-SSL_KEY=${SSL_KEY-"${SCRIPT_PATH}/certs/testnode.key"}
+SSL_CERT=${SSL_CERT-"${SCRIPT_PATH}/certs/testnode_san.crt"}
+SSL_KEY=${SSL_KEY-"${SCRIPT_PATH}/certs/testnode_san.key"}
 SSL_CA=${SSL_CA-"${SCRIPT_PATH}/certs/ca.crt"}
 SSL_CA_PEM=${SSL_CA-"${SCRIPT_PATH}/certs/ca.pem"}
 
@@ -125,18 +125,18 @@ if [[ "$ELASTICSEARCH_VERSION" != *oss* ]]; then
     --env xpack.security.enabled=true
     --env xpack.security.http.ssl.enabled=true
     --env xpack.security.http.ssl.verification_mode=certificate
-    --env xpack.security.http.ssl.key=certs/testnode.key
-    --env xpack.security.http.ssl.certificate=certs/testnode.crt
+    --env xpack.security.http.ssl.key=certs/testnode_san.key
+    --env xpack.security.http.ssl.certificate=certs/testnode_san.crt
     --env xpack.security.http.ssl.certificate_authorities=certs/ca.crt
     --env xpack.security.transport.ssl.enabled=true
-    --env xpack.security.transport.ssl.key=certs/testnode.key
-    --env xpack.security.transport.ssl.certificate=certs/testnode.crt
+    --env xpack.security.transport.ssl.key=certs/testnode_san.key
+    --env xpack.security.transport.ssl.certificate=certs/testnode_san.crt
     --env xpack.security.transport.ssl.certificate_authorities=certs/ca.crt
 END
 ))
   volumes+=($(cat <<-END
-    --volume $SSL_CERT:/usr/share/elasticsearch/config/certs/testnode.crt
-    --volume $SSL_KEY:/usr/share/elasticsearch/config/certs/testnode.key
+    --volume $SSL_CERT:/usr/share/elasticsearch/config/certs/testnode_san.crt
+    --volume $SSL_KEY:/usr/share/elasticsearch/config/certs/testnode_san.key
     --volume $SSL_CA:/usr/share/elasticsearch/config/certs/ca.crt
     --volume $SSL_CA_PEM:/usr/share/elasticsearch/config/certs/ca.pem
 END
@@ -149,7 +149,7 @@ if [[ "$ELASTICSEARCH_VERSION" != *oss* ]]; then
 fi
 
 cert_validation_flags="--insecure"
-if [[ "$NODE_NAME" == "instance" ]]; then
+if [[ "$NODE_NAME" == "es1" ]]; then
   cert_validation_flags="--cacert /usr/share/elasticsearch/config/certs/ca.pem --resolve ${NODE_NAME}:443:127.0.0.1"
 fi
 
