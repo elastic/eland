@@ -129,9 +129,9 @@ class FieldMappings:
         }
         ```
         if source_only == False:
-            return {'city': 'text', 'city.keyword': 'keyword'}
+            return {'city': ('text', None), 'city.keyword': ('keyword', None)}
         else:
-            return {'city': 'text'}
+            return {'city': ('text', None)}
 
         Note: first field name type wins. E.g.
 
@@ -149,13 +149,9 @@ class FieldMappings:
 
         Returns
         -------
-        fields, dates_format: tuple(OrderedDict, dict)
-            where:
-                fields: OrderedDict of field names and types
-                dates_format: Dict of date field names and format
-
+        fields: dict of field name: (type, date_format)
         """
-        fields = OrderedDict()
+        fields = dict()
 
         # Recurse until we get a 'type: xxx'
         def flatten(x, name=''):
@@ -189,7 +185,7 @@ class FieldMappings:
                 # officially supported, but does help usability
                 es_types = list(mappings[index]['mappings'].keys())
                 if len(es_types) != 1:
-                    raise NotImplementedError("eland only supports 0 or 1 Elasticsearch types")
+                    raise NotImplementedError("eland only supports 0 or 1 Elasticsearch types. es_types={}", es_types)
                 properties = mappings[index]['mappings'][es_types[0]]['properties']
 
             flatten(properties)
