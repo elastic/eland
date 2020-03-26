@@ -365,9 +365,7 @@ class DataFrame(NDFrame):
                 count = self._query_compiler._index_matches_count(axes["index"])
                 if count != len(axes["index"]):
                     raise ValueError(
-                        "number of labels {}!={} not contained in axis".format(
-                            count, len(axes["index"])
-                        )
+                        f"number of labels {count}!={len(axes['index'])} not contained in axis"
                     )
             else:
                 """
@@ -575,10 +573,10 @@ class DataFrame(NDFrame):
         else:
             head = self.head(1)._to_pandas().index[0]
             tail = self.tail(1)._to_pandas().index[0]
-        index_summary = ", {} to {}".format(pprint_thing(head), pprint_thing(tail))
+        index_summary = f", {pprint_thing(head)} to {pprint_thing(tail)}"
 
         name = "Index"
-        return "{}: {} entries{}".format(name, len(self), index_summary)
+        return f"{name}: {len(self)} entries{index_summary}"
 
     def info(
         self, verbose=None, buf=None, max_cols=None, memory_usage=None, null_counts=None
@@ -615,7 +613,7 @@ class DataFrame(NDFrame):
         lines = [str(type(self)), self._index_summary()]
 
         if len(self.columns) == 0:
-            lines.append("Empty {name}".format(name=type(self).__name__))
+            lines.append(f"Empty {type(self).__name__}")
             fmt.buffer_put_lines(buf, lines)
             return
 
@@ -638,7 +636,7 @@ class DataFrame(NDFrame):
             return f"{s}"[:space].ljust(space)
 
         def _verbose_repr():
-            lines.append("Data columns (total %d columns):" % len(self.columns))
+            lines.append(f"Data columns (total {len(self.columns)} columns):")
             space = max(len(pprint_thing(k)) for k in self.columns) + 4
             counts = None
 
@@ -647,10 +645,8 @@ class DataFrame(NDFrame):
                 counts = self.count()
                 if len(cols) != len(counts):  # pragma: no cover
                     raise AssertionError(
-                        "Columns must equal counts "
-                        "({cols:d} != {counts:d})".format(
-                            cols=len(cols), counts=len(counts)
-                        )
+                        f"Columns must equal counts "
+                        f"({len(cols):d} != {len(counts):d})"
                     )
                 tmpl = "{count} non-null {dtype}"
 
@@ -674,13 +670,9 @@ class DataFrame(NDFrame):
             # returns size in human readable format
             for x in ["bytes", "KB", "MB", "GB", "TB"]:
                 if num < 1024.0:
-                    return "{num:3.1f}{size_q} " "{x}".format(
-                        num=num, size_q=size_qualifier, x=x
-                    )
+                    return f"{num:3.1f}{size_qualifier} {x}"
                 num /= 1024.0
-            return "{num:3.1f}{size_q} {pb}".format(
-                num=num, size_q=size_qualifier, pb="PB"
-            )
+            return f"{num:3.1f}{size_qualifier} PB"
 
         if verbose:
             _verbose_repr()
@@ -698,8 +690,8 @@ class DataFrame(NDFrame):
         # align types with pandas method.
         counts = self.dtypes.value_counts()
         counts.index = counts.index.astype(str)
-        dtypes = ["{k}({kk:d})".format(k=k[0], kk=k[1]) for k in sorted(counts.items())]
-        lines.append("dtypes: {types}".format(types=", ".join(dtypes)))
+        dtypes = [f"{k}({v:d})" for k, v in sorted(counts.items())]
+        lines.append(f"dtypes: {', '.join(dtypes)}")
 
         if memory_usage is None:
             memory_usage = pd.get_option("display.memory_usage")
@@ -710,11 +702,7 @@ class DataFrame(NDFrame):
             # TODO - this is different from pd.DataFrame as we shouldn't
             #   really hold much in memory. For now just approximate with getsizeof + ignore deep
             mem_usage = sys.getsizeof(self)
-            lines.append(
-                "memory usage: {mem}\n".format(
-                    mem=_sizeof_fmt(mem_usage, size_qualifier)
-                )
-            )
+            lines.append(f"memory usage: {_sizeof_fmt(mem_usage, size_qualifier)}\n")
 
         fmt.buffer_put_lines(buf, lines)
 
@@ -764,12 +752,10 @@ class DataFrame(NDFrame):
                 max_rows = min(num_rows, max_rows)
         elif max_rows is None:
             warnings.warn(
-                "DataFrame.to_string called without max_rows set "
-                "- this will return entire index results. "
-                "Setting max_rows={default}"
-                " overwrite if different behaviour is required.".format(
-                    default=DEFAULT_NUM_ROWS_DISPLAYED
-                ),
+                f"DataFrame.to_string called without max_rows set "
+                f"- this will return entire index results. "
+                f"Setting max_rows={DEFAULT_NUM_ROWS_DISPLAYED}"
+                f" overwrite if different behaviour is required.",
                 UserWarning,
             )
             max_rows = DEFAULT_NUM_ROWS_DISPLAYED
@@ -817,11 +803,7 @@ class DataFrame(NDFrame):
         if show_dimensions:
             # TODO - this results in different output to pandas
             # TODO - the 'x' character is different and this gets added after the </div>
-            _buf.write(
-                "\n<p>{nrows} rows × {ncols} columns</p>".format(
-                    nrows=len(self.index), ncols=len(self.columns)
-                )
-            )
+            _buf.write(f"\n<p>{len(self.index)} rows × {len(self.columns)} columns</p>")
 
         if buf is None:
             result = _buf.getvalue()
@@ -867,12 +849,10 @@ class DataFrame(NDFrame):
                 max_rows = min(num_rows, max_rows)
         elif max_rows is None:
             warnings.warn(
-                "DataFrame.to_string called without max_rows set "
-                "- this will return entire index results. "
-                "Setting max_rows={default}"
-                " overwrite if different behaviour is required.".format(
-                    default=DEFAULT_NUM_ROWS_DISPLAYED
-                ),
+                f"DataFrame.to_string called without max_rows set "
+                f"- this will return entire index results. "
+                f"Setting max_rows={DEFAULT_NUM_ROWS_DISPLAYED}"
+                f" overwrite if different behaviour is required.",
                 UserWarning,
             )
             max_rows = DEFAULT_NUM_ROWS_DISPLAYED
@@ -912,11 +892,7 @@ class DataFrame(NDFrame):
         # Our fake dataframe has incorrect number of rows (max_rows*2+1) - write out
         # the correct number of rows
         if show_dimensions:
-            _buf.write(
-                "\n\n[{nrows} rows x {ncols} columns]".format(
-                    nrows=len(self.index), ncols=len(self.columns)
-                )
-            )
+            _buf.write(f"\n\n[{len(self.index)} rows x {len(self.columns)} columns]")
 
         if buf is None:
             result = _buf.getvalue()
@@ -984,9 +960,7 @@ class DataFrame(NDFrame):
                 )
             elif len(key) != len(self.index):
                 raise ValueError(
-                    "Item wrong length {} instead of {}.".format(
-                        len(key), len(self.index)
-                    )
+                    f"Item wrong length {len(key)} instead of {len(self.index)}."
                 )
             key = check_bool_indexer(self.index, key)
             # We convert to a RangeIndex because getitem_row_array is expecting a list
@@ -1002,9 +976,8 @@ class DataFrame(NDFrame):
         else:
             if any(k not in self.columns for k in key):
                 raise KeyError(
-                    "{} not index".format(
-                        str([k for k in key if k not in self.columns]).replace(",", "")
-                    )
+                    f"{str([k for k in key if k not in self.columns]).replace(',', '')}"
+                    f" not index"
                 )
             return DataFrame(
                 query_compiler=self._query_compiler.getitem_column_array(key)
@@ -1015,7 +988,7 @@ class DataFrame(NDFrame):
         assert (
             isinstance(new_query_compiler, type(self._query_compiler))
             or type(new_query_compiler) in self._query_compiler.__class__.__bases__
-        ), "Invalid Query Compiler object: {}".format(type(new_query_compiler))
+        ), f"Invalid Query Compiler object: {type(new_query_compiler)}"
         if not inplace:
             return DataFrame(query_compiler=new_query_compiler)
         else:
@@ -1361,7 +1334,7 @@ class DataFrame(NDFrame):
         --------
         >>> ed_df = ed.DataFrame('localhost', 'flights', columns=['AvgTicketPrice', 'Carrier']).head(5)
         >>> pd_df = ed.eland_to_pandas(ed_df)
-        >>> print("type(ed_df)={0}\\ntype(pd_df)={1}".format(type(ed_df), type(pd_df)))
+        >>> print(f"type(ed_df)={type(ed_df)}\\ntype(pd_df)={type(pd_df)}")
         type(ed_df)=<class 'eland.dataframe.DataFrame'>
         type(pd_df)=<class 'pandas.core.frame.DataFrame'>
         >>> ed_df

@@ -253,8 +253,8 @@ def elasticsearch_date_to_pandas_date(
         return pd.to_datetime(value, format="%Y-%m-%d")
     else:
         warnings.warn(
-            "The '{}' format is not explicitly supported."
-            "Using pandas.to_datetime(value) to parse value".format(date_format),
+            f"The '{date_format}' format is not explicitly supported."
+            f"Using pandas.to_datetime(value) to parse value",
             Warning,
         )
         # TODO investigate how we could generate this just once for a bulk read.

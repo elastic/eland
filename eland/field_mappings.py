@@ -169,9 +169,8 @@ class FieldMappings:
                         # If there is a conflicting type, warn - first values added wins
                         if field_name in fields and fields[field_name] != field_type:
                             warnings.warn(
-                                "Field {} has conflicting types {} != {}".format(
-                                    field_name, fields[field_name], field_type
-                                ),
+                                f"Field {field_name} has conflicting types "
+                                f"{fields[field_name]} != {field_type}",
                                 UserWarning,
                             )
                         else:
@@ -452,10 +451,8 @@ class FieldMappings:
             is None
         ):
             warnings.warn(
-                "Aggregations not supported for '{}' '{}'".format(
-                    display_name,
-                    self._mappings_capabilities.loc[display_name].es_field_name,
-                )
+                f"Aggregations not supported for '{display_name}' "
+                f"'{self._mappings_capabilities.loc[display_name].es_field_name}'"
             )
 
         return self._mappings_capabilities.loc[display_name].aggregatable_es_field_name

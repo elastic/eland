@@ -151,7 +151,7 @@ class ImportedMLModel(MLModel):
             self._model_type = MLModel.TYPE_CLASSIFICATION
         else:
             raise NotImplementedError(
-                "ML model of type {}, not currently implemented".format(type(model))
+                f"ML model of type {type(model)}, not currently implemented"
             )
 
         if overwrite:
@@ -227,9 +227,7 @@ class ImportedMLModel(MLModel):
                 doc["_source"] = dict(zip(self._feature_names, i))
                 docs.append(doc)
         else:
-            raise NotImplementedError(
-                "Prediction for type {}, not supported".format(type(X))
-            )
+            raise NotImplementedError(f"Prediction for type {type(X)}, not supported")
 
         results = self._client.perform_request(
             "POST",

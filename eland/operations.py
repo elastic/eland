@@ -100,8 +100,8 @@ class Operations:
         # Longer term we may fall back to pandas, but this may result in loading all index into memory.
         if self._size(query_params, post_processing) is not None:
             raise NotImplementedError(
-                "Requesting count with additional query and processing parameters "
-                "not supported {} {}".format(query_params, post_processing)
+                f"Requesting count with additional query and processing parameters "
+                f"not supported {query_params} {post_processing}"
             )
 
         # Only return requested field_names
@@ -355,8 +355,8 @@ class Operations:
             # in case of dataframe, throw warning that field is excluded
             if not response["aggregations"].get(field):
                 warnings.warn(
-                    "{} has no meaningful histogram interval and will be excluded. "
-                    "All values 0.".format(field),
+                    f"{field} has no meaningful histogram interval and will be excluded. "
+                    f"All values 0.",
                     UserWarning,
                 )
                 continue
@@ -723,7 +723,7 @@ class Operations:
 
     def _validate_index_operation(self, query_compiler, items):
         if not isinstance(items, list):
-            raise TypeError("list item required - not {}".format(type(items)))
+            raise TypeError(f"list item required - not {type(items)}")
 
         # field is the index field so count values
         query_params, post_processing = self._resolve_tasks(query_compiler)

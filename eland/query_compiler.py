@@ -513,26 +513,24 @@ class QueryCompiler:
             If arithmetic operations aren't possible
         """
         if not isinstance(right, QueryCompiler):
-            raise TypeError(
-                "Incompatible types " "{} != {}".format(type(self), type(right))
-            )
+            raise TypeError(f"Incompatible types {type(self)} != {type(right)}")
 
         if self._client._es != right._client._es:
             raise ValueError(
-                "Can not perform arithmetic operations across different clients"
-                "{} != {}".format(self._client._es, right._client._es)
+                f"Can not perform arithmetic operations across different clients"
+                f"{self._client._es} != {right._client._es}"
             )
 
         if self._index.index_field != right._index.index_field:
             raise ValueError(
-                "Can not perform arithmetic operations across different index fields "
-                "{} != {}".format(self._index.index_field, right._index.index_field)
+                f"Can not perform arithmetic operations across different index fields "
+                f"{self._index.index_field} != {right._index.index_field}"
             )
 
         if self._index_pattern != right._index_pattern:
             raise ValueError(
-                "Can not perform arithmetic operations across different index patterns"
-                "{} != {}".format(self._index_pattern, right._index_pattern)
+                f"Can not perform arithmetic operations across different index patterns"
+                f"{self._index_pattern} != {right._index_pattern}"
             )
 
     def arithmetic_op_fields(self, display_name, arithmetic_object):

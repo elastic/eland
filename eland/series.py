@@ -348,12 +348,10 @@ class Series(NDFrame):
                 max_rows = min(num_rows, max_rows)
         elif max_rows is None:
             warnings.warn(
-                "Series.to_string called without max_rows set "
-                "- this will return entire index results. "
-                "Setting max_rows={default}"
-                " overwrite if different behaviour is required.".format(
-                    default=DEFAULT_NUM_ROWS_DISPLAYED
-                ),
+                f"Series.to_string called without max_rows set "
+                f"- this will return entire index results. "
+                f"Setting max_rows={DEFAULT_NUM_ROWS_DISPLAYED}"
+                f" overwrite if different behaviour is required.",
                 UserWarning,
             )
             max_rows = DEFAULT_NUM_ROWS_DISPLAYED
@@ -385,20 +383,16 @@ class Series(NDFrame):
         )
 
         # Create the summary
-        footer = ""
+        footer = []
         if name and self.name is not None:
-            footer += "Name: {}".format(str(self.name))
+            footer.append(f"Name: {self.name}")
         if length and len(self) > max_rows:
-            if footer:
-                footer += ", "
-            footer += "Length: {}".format(len(self.index))
+            footer += f"Length: {len(self.index)}"
         if dtype:
-            if footer:
-                footer += ", "
-            footer += f"dtype: {temp_series.dtype}"
+            footer.append(f"dtype: {temp_series.dtype}")
 
-        if len(footer) > 0:
-            _buf.write(f"\n{footer}")
+        if footer:
+            _buf.write(f"\n{', '.join(footer)}")
 
         if buf is None:
             result = _buf.getvalue()
@@ -1086,9 +1080,9 @@ class Series(NDFrame):
             display_name = self.name
         else:
             raise TypeError(
-                "unsupported operation type(s) ['{}'] for operands ['{}' with dtype '{}', '{}']".format(
-                    method_name, type(self), self._dtype, type(right).__name__
-                )
+                f"unsupported operation type(s) [{method_name!r}] "
+                f"for operands ['{type(self)}' with dtype '{self._dtype}', "
+                f"'{type(right).__name__}']"
             )
 
         left_object = ArithmeticSeries(self._query_compiler, self.name, self._dtype)
@@ -1244,7 +1238,7 @@ class Series(NDFrame):
         --------
         >>> ed_s = ed.Series('localhost', 'flights', name='Carrier').head(5)
         >>> pd_s = ed.eland_to_pandas(ed_s)
-        >>> print("type(ed_s)={0}\\ntype(pd_s)={1}".format(type(ed_s), type(pd_s)))
+        >>> print(f"type(ed_s)={type(ed_s)}\\ntype(pd_s)={type(pd_s)}")
         type(ed_s)=<class 'eland.series.Series'>
         type(pd_s)=<class 'pandas.core.series.Series'>
         >>> ed_s

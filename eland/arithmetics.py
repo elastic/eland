@@ -89,8 +89,8 @@ class ArithmeticSeries(ArithmeticObject):
             )
             if aggregatable_field_name is None:
                 raise ValueError(
-                    "Can not perform arithmetic operations on non aggregatable fields"
-                    "{} is not aggregatable.".format(display_name)
+                    f"Can not perform arithmetic operations on non aggregatable fields"
+                    f"{display_name} is not aggregatable."
                 )
 
             self._value = f"doc['{aggregatable_field_name}'].value"
@@ -110,7 +110,7 @@ class ArithmeticSeries(ArithmeticObject):
         buf.write(f"Series: {self.value} ")
         buf.write("Tasks: ")
         for task in self._tasks:
-            buf.write("{} ".format(repr(task)))
+            buf.write(f"{task!r} ")
         return buf.getvalue()
 
     def resolve(self):
@@ -195,15 +195,12 @@ class ArithmeticTask:
         self._op_name = op_name
 
         if not isinstance(object, ArithmeticObject):
-            raise TypeError(
-                "Task requires ArithmeticObject not {}".format(type(object))
-            )
+            raise TypeError(f"Task requires ArithmeticObject not {type(object)}")
         self._object = object
 
     def __repr__(self):
         buf = StringIO()
-        buf.write(f"op_name: {self.op_name} ")
-        buf.write("object: {} ".format(repr(self.object)))
+        buf.write(f"op_name: {self.op_name} object: {self.object!r} ")
         return buf.getvalue()
 
     @property

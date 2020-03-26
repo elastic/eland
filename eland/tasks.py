@@ -209,8 +209,9 @@ class QueryTermsTask(Task):
         self._terms = terms
 
     def __repr__(self):
-        return "('{}': ('must': {}, 'field': '{}', 'terms': {}))".format(
-            self._task_type, self._must, self._field, self._terms
+        return (
+            f"('{self._task_type}': ('must': {self._must}, "
+            f"'field': '{self._field}', 'terms': {self._terms}))"
         )
 
     def resolve_task(self, query_params, post_processing, query_compiler):
@@ -232,9 +233,7 @@ class BooleanFilterTask(Task):
         self._boolean_filter = boolean_filter
 
     def __repr__(self):
-        return "('{}': ('boolean_filter': {}))".format(
-            self._task_type, repr(self._boolean_filter)
-        )
+        return f"('{self._task_type}': ('boolean_filter': {self._boolean_filter!r}))"
 
     def resolve_task(self, query_params, post_processing, query_compiler):
         query_params["query"].update_boolean_filter(self._boolean_filter)
@@ -249,17 +248,15 @@ class ArithmeticOpFieldsTask(Task):
         self._display_name = display_name
 
         if not isinstance(arithmetic_series, ArithmeticSeries):
-            raise TypeError(
-                "Expecting ArithmeticSeries got {}".format(type(arithmetic_series))
-            )
+            raise TypeError(f"Expecting ArithmeticSeries got {type(arithmetic_series)}")
         self._arithmetic_series = arithmetic_series
 
     def __repr__(self):
         return (
-            "('{}': ("
-            "'display_name': {}, "
-            "'arithmetic_object': {}"
-            "))".format(self._task_type, self._display_name, self._arithmetic_series)
+            f"('{self._task_type}': ("
+            f"'display_name': {self._display_name}, "
+            f"'arithmetic_object': {self._arithmetic_series}"
+            f"))"
         )
 
     def update(self, display_name, arithmetic_series):
@@ -282,12 +279,9 @@ class ArithmeticOpFieldsTask(Task):
 
         if self._display_name in query_params["query_script_fields"]:
             raise NotImplementedError(
-                "TODO code path - combine multiple ops '{}'\n{}\n{}\n{}".format(
-                    self,
-                    query_params["query_script_fields"],
-                    self._display_name,
-                    self._arithmetic_series.resolve(),
-                )
+                f"TODO code path - combine multiple ops "
+                f"'{self}'\n{query_params['query_script_fields']}\n"
+                f"{self._display_name}\n{self._arithmetic_series.resolve()}"
             )
 
         query_params["query_script_fields"][self._display_name] = {

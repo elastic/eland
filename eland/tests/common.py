@@ -72,18 +72,10 @@ class TestData:
 
 def assert_pandas_eland_frame_equal(left, right):
     if not isinstance(left, pd.DataFrame):
-        raise AssertionError(
-            "Expected type {exp_type}, found {act_type} instead".format(
-                exp_type="pd.DataFrame", act_type=type(left)
-            )
-        )
+        raise AssertionError(f"Expected type pd.DataFrame, found {type(left)} instead")
 
     if not isinstance(right, ed.DataFrame):
-        raise AssertionError(
-            "Expected type {exp_type}, found {act_type} instead".format(
-                exp_type="ed.DataFrame", act_type=type(right)
-            )
-        )
+        raise AssertionError(f"Expected type ed.DataFrame, found {type(right)} instead")
 
     # Use pandas tests to check similarity
     assert_frame_equal(left, right._to_pandas())
@@ -91,18 +83,10 @@ def assert_pandas_eland_frame_equal(left, right):
 
 def assert_eland_frame_equal(left, right):
     if not isinstance(left, ed.DataFrame):
-        raise AssertionError(
-            "Expected type {exp_type}, found {act_type} instead".format(
-                exp_type="ed.DataFrame", act_type=type(left)
-            )
-        )
+        raise AssertionError(f"Expected type ed.DataFrame, found {type(left)} instead")
 
     if not isinstance(right, ed.DataFrame):
-        raise AssertionError(
-            "Expected type {exp_type}, found {act_type} instead".format(
-                exp_type="ed.DataFrame", act_type=type(right)
-            )
-        )
+        raise AssertionError(f"Expected type ed.DataFrame, found {type(right)} instead")
 
     # Use pandas tests to check similarity
     assert_frame_equal(left._to_pandas(), right._to_pandas())
@@ -110,18 +94,10 @@ def assert_eland_frame_equal(left, right):
 
 def assert_pandas_eland_series_equal(left, right, check_less_precise=False):
     if not isinstance(left, pd.Series):
-        raise AssertionError(
-            "Expected type {exp_type}, found {act_type} instead".format(
-                exp_type="pd.Series", act_type=type(left)
-            )
-        )
+        raise AssertionError(f"Expected type pd.Series, found {type(left)} instead")
 
     if not isinstance(right, ed.Series):
-        raise AssertionError(
-            "Expected type {exp_type}, found {act_type} instead".format(
-                exp_type="ed.Series", act_type=type(right)
-            )
-        )
+        raise AssertionError(f"Expected type ed.Series, found {type(right)} instead")
 
     # Use pandas tests to check similarity
     assert_series_equal(left, right._to_pandas(), check_less_precise=check_less_precise)
