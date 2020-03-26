@@ -12,6 +12,8 @@
 #      See the License for the specific language governing permissions and
 #      limitations under the License.
 
+from collections import OrderedDict
+
 # File called _pytest for PyCharm compatability
 import pytest
 
@@ -27,7 +29,7 @@ class TestMappingsWithType(TestData):
         # features on 6.x indices makes eland more generally usable.
         #
         # For now, just test function:
-        mapping7x = {
+        mapping7x = OrderedDict({
             "my_index": {
                 "mappings": {
                     "properties": {
@@ -42,12 +44,12 @@ class TestMappingsWithType(TestData):
                     }
                 }
             }
-        }
+        })
 
         expected7x_source_only_false = {'city': ('text', None), 'city.keyword': ('keyword', None)}
         expected7x_source_only_true = {'city': ('text', None)}
 
-        mapping6x = {
+        mapping6x = OrderedDict({
             "my_index": {
                 "mappings": {
                     "doc": {
@@ -64,13 +66,13 @@ class TestMappingsWithType(TestData):
                     }
                 }
             }
-        }
+        })
 
         expected6x_source_only_false = {'city': ('text', None), 'city.keyword': ('keyword', None)}
         expected6x_source_only_true = {'city': ('text', None)}
 
         # add a 5x mapping to get coverage of error
-        mapping5x = {
+        mapping5x = OrderedDict({
             "my_index": {
                 "mappings": {
                     "user": {
@@ -89,7 +91,7 @@ class TestMappingsWithType(TestData):
                     }
                 }
             }
-        }
+        })
 
         result7x = FieldMappings._extract_fields_from_mapping(mapping7x)
         assert expected7x_source_only_false == result7x

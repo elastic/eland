@@ -151,7 +151,7 @@ class FieldMappings:
         -------
         fields: dict of field name: (type, date_format)
         """
-        fields = dict()
+        fields = OrderedDict()
 
         # Recurse until we get a 'type: xxx'
         def flatten(x, name=''):
