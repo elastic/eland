@@ -13,6 +13,7 @@
 #      limitations under the License.
 
 # File called _pytest for PyCharm compatability
+import pytest
 
 from eland import FieldMappings
 from eland.tests.common import TestData
@@ -68,6 +69,28 @@ class TestMappingsWithType(TestData):
         expected6x_source_only_false = {'city': ('text', None), 'city.keyword': ('keyword', None)}
         expected6x_source_only_true = {'city': ('text', None)}
 
+        # add a 5x mapping to get coverage of error
+        mapping5x = {
+            "my_index": {
+                "mappings": {
+                    "user": {
+                        "properties": {
+                            "name": {"type": "text"},
+                            "user_name": {"type": "keyword"},
+                            "email": {"type": "keyword"}
+                        }
+                    },
+                    "tweet": {
+                        "properties": {
+                            "content": {"type": "text"},
+                            "user_name": {"type": "keyword"},
+                            "tweeted_at": {"type": "date"}
+                        }
+                    }
+                }
+            }
+        }
+
         result7x = FieldMappings._extract_fields_from_mapping(mapping7x)
         assert expected7x_source_only_false == result7x
 
@@ -79,3 +102,6 @@ class TestMappingsWithType(TestData):
 
         result6x = FieldMappings._extract_fields_from_mapping(mapping6x, source_only=True)
         assert expected6x_source_only_true == result6x
+
+        with pytest.raises(NotImplementedError):
+            FieldMappings._extract_fields_from_mapping(mapping5x)

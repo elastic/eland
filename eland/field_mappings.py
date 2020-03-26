@@ -166,9 +166,9 @@ class FieldMappings:
                             date_format = x["format"]
                         # If there is a conflicting type, warn - first values added wins
                         if field_name in fields and fields[field_name] != field_type:
-                            warnings.warn("Field {} has conflicting types {} != {}".
-                                          format(field_name, fields[field_name], field_type),
-                                          UserWarning)
+                            warnings.warn(
+                                f"Field {field_name} has conflicting types {fields[field_name]} != {field_type}",
+                                UserWarning)
                         else:
                             fields[field_name] = (field_type, date_format)
                     elif a == 'properties' or (not source_only and a == 'fields'):
@@ -185,7 +185,7 @@ class FieldMappings:
                 # officially supported, but does help usability
                 es_types = list(mappings[index]['mappings'].keys())
                 if len(es_types) != 1:
-                    raise NotImplementedError("eland only supports 0 or 1 Elasticsearch types. es_types={}", es_types)
+                    raise NotImplementedError(f"eland only supports 0 or 1 Elasticsearch types. es_types={es_types}")
                 properties = mappings[index]['mappings'][es_types[0]]['properties']
 
             flatten(properties)
