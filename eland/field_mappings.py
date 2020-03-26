@@ -78,9 +78,8 @@ class FieldMappings:
         """
         if (client is None) or (index_pattern is None):
             raise ValueError(
-                "Can not initialise mapping without client or index_pattern {} {}",
-                client,
-                index_pattern,
+                f"Can not initialise mapping without client "
+                f"or index_pattern {client} {index_pattern}",
             )
 
         get_mapping = client.get_mapping(index=index_pattern)
@@ -123,11 +122,32 @@ class FieldMappings:
             }
           }
         }
+
+        or (6.x)
+
+        {
+          "my_index": {
+            "mappings": {
+              "doc": {
+                "properties": {
+                  "city": {
+                    "type": "text",
+                    "fields": {
+                      "keyword": {
+                        "type": "keyword"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
         ```
         if source_only == False:
-            return {'city': 'text', 'city.keyword': 'keyword'}
+            return {'city': ('text', None), 'city.keyword': ('keyword', None)}
         else:
-            return {'city': 'text'}
+            return {'city': ('text', None)}
 
         Note: first field name type wins. E.g.
 
@@ -149,7 +169,6 @@ class FieldMappings:
             where:
                 fields: dict of field names and types
                 dates_format: Dict of date field names and format
-
         """
         fields = {}
 
@@ -185,8 +204,18 @@ class FieldMappings:
         for index in mappings:
             if "properties" in mappings[index]["mappings"]:
                 properties = mappings[index]["mappings"]["properties"]
+            else:
+                # Pre Elasticsearch 7.0 mappings had types. Support these
+                # in case eland is connected to 6.x index - this is not
+                # officially supported, but does help usability
+                es_types = list(mappings[index]["mappings"].keys())
+                if len(es_types) != 1:
+                    raise NotImplementedError(
+                        f"eland only supports 0 or 1 Elasticsearch types. es_types={es_types}"
+                    )
+                properties = mappings[index]["mappings"][es_types[0]]["properties"]
 
-                flatten(properties)
+            flatten(properties)
 
         return fields
 

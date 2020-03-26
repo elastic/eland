@@ -387,7 +387,7 @@ class Series(NDFrame):
         if name and self.name is not None:
             footer.append(f"Name: {self.name}")
         if length and len(self) > max_rows:
-            footer += f"Length: {len(self.index)}"
+            footer.append(f"Length: {len(self.index)}")
         if dtype:
             footer.append(f"dtype: {temp_series.dtype}")
 
