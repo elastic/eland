@@ -49,14 +49,16 @@ def read_es(es_client, es_index_pattern):
     return DataFrame(client=es_client, index_pattern=es_index_pattern)
 
 
-def pandas_to_eland(pd_df,
-                    es_client,
-                    es_dest_index,
-                    es_if_exists='fail',
-                    es_refresh=False,
-                    es_dropna=False,
-                    es_geo_points=None,
-                    chunksize=None):
+def pandas_to_eland(
+    pd_df,
+    es_client,
+    es_dest_index,
+    es_if_exists="fail",
+    es_refresh=False,
+    es_dropna=False,
+    es_geo_points=None,
+    chunksize=None,
+):
     """
     Append a pandas DataFrame to an Elasticsearch index.
     Mainly used in testing.
@@ -166,10 +168,10 @@ def pandas_to_eland(pd_df,
     if client.index_exists(index=es_dest_index):
         if es_if_exists == "fail":
             raise ValueError(
-                "Could not create the index [{0}] because it "
-                "already exists. "
-                "Change the if_exists parameter to "
-                "'append' or 'replace' data.".format(es_dest_index)
+                f"Could not create the index [{es_dest_index}] because it "
+                f"already exists. "
+                f"Change the if_exists parameter to "
+                f"'append' or 'replace' data."
             )
         elif es_if_exists == "replace":
             client.index_delete(index=es_dest_index)
@@ -192,7 +194,7 @@ def pandas_to_eland(pd_df,
             values = row[1].to_dict()
 
         # Use integer as id field for repeatable results
-        action = {'_index': es_dest_index, '_source': values, '_id': str(id)}
+        action = {"_index": es_dest_index, "_source": values, "_id": str(id)}
 
         actions.append(action)
 
@@ -272,69 +274,71 @@ def eland_to_pandas(ed_df, show_progress=False):
     return ed_df._to_pandas(show_progress=show_progress)
 
 
-def read_csv(filepath_or_buffer,
-             es_client,
-             es_dest_index,
-             es_if_exists='fail',
-             es_refresh=False,
-             es_dropna=False,
-             es_geo_points=None,
-             sep=",",
-             delimiter=None,
-             # Column and Index Locations and Names
-             header="infer",
-             names=None,
-             index_col=None,
-             usecols=None,
-             squeeze=False,
-             prefix=None,
-             mangle_dupe_cols=True,
-             # General Parsing Configuration
-             dtype=None,
-             engine=None,
-             converters=None,
-             true_values=None,
-             false_values=None,
-             skipinitialspace=False,
-             skiprows=None,
-             skipfooter=0,
-             nrows=None,
-             # Iteration
-             # iterator=False,
-             chunksize=None,
-             # NA and Missing Data Handling
-             na_values=None,
-             keep_default_na=True,
-             na_filter=True,
-             verbose=False,
-             skip_blank_lines=True,
-             # Datetime Handling
-             parse_dates=False,
-             infer_datetime_format=False,
-             keep_date_col=False,
-             date_parser=None,
-             dayfirst=False,
-             cache_dates=True,
-             # Quoting, Compression, and File Format
-             compression="infer",
-             thousands=None,
-             decimal=b".",
-             lineterminator=None,
-             quotechar='"',
-             quoting=csv.QUOTE_MINIMAL,
-             doublequote=True,
-             escapechar=None,
-             comment=None,
-             encoding=None,
-             dialect=None,
-             # Error Handling
-             error_bad_lines=True,
-             warn_bad_lines=True,
-             # Internal
-             delim_whitespace=False,
-             low_memory=_c_parser_defaults["low_memory"],
-             memory_map=False,
-             float_precision=None):
+def read_csv(
+    filepath_or_buffer,
+    es_client,
+    es_dest_index,
+    es_if_exists="fail",
+    es_refresh=False,
+    es_dropna=False,
+    es_geo_points=None,
+    sep=",",
+    delimiter=None,
+    # Column and Index Locations and Names
+    header="infer",
+    names=None,
+    index_col=None,
+    usecols=None,
+    squeeze=False,
+    prefix=None,
+    mangle_dupe_cols=True,
+    # General Parsing Configuration
+    dtype=None,
+    engine=None,
+    converters=None,
+    true_values=None,
+    false_values=None,
+    skipinitialspace=False,
+    skiprows=None,
+    skipfooter=0,
+    nrows=None,
+    # Iteration
+    # iterator=False,
+    chunksize=None,
+    # NA and Missing Data Handling
+    na_values=None,
+    keep_default_na=True,
+    na_filter=True,
+    verbose=False,
+    skip_blank_lines=True,
+    # Datetime Handling
+    parse_dates=False,
+    infer_datetime_format=False,
+    keep_date_col=False,
+    date_parser=None,
+    dayfirst=False,
+    cache_dates=True,
+    # Quoting, Compression, and File Format
+    compression="infer",
+    thousands=None,
+    decimal=b".",
+    lineterminator=None,
+    quotechar='"',
+    quoting=csv.QUOTE_MINIMAL,
+    doublequote=True,
+    escapechar=None,
+    comment=None,
+    encoding=None,
+    dialect=None,
+    # Error Handling
+    error_bad_lines=True,
+    warn_bad_lines=True,
+    # Internal
+    delim_whitespace=False,
+    low_memory=_c_parser_defaults["low_memory"],
+    memory_map=False,
+    float_precision=None,
+):
     """
     Read a comma-separated values (csv) file into eland.DataFrame (i.e. an Elasticsearch index).
 
@@ -487,12 +491,28 @@ def read_csv(filepath_or_buffer,
     first_write = True
     for chunk in reader:
         if first_write:
-            pandas_to_eland(chunk, client, es_dest_index, es_if_exists=es_if_exists, chunksize=chunksize,
-                            es_refresh=es_refresh, es_dropna=es_dropna, es_geo_points=es_geo_points)
+            pandas_to_eland(
+                chunk,
+                client,
+                es_dest_index,
+                es_if_exists=es_if_exists,
+                chunksize=chunksize,
+                es_refresh=es_refresh,
+                es_dropna=es_dropna,
+                es_geo_points=es_geo_points,
+            )
             first_write = False
         else:
-            pandas_to_eland(chunk, client, es_dest_index, es_if_exists='append', chunksize=chunksize,
-                            es_refresh=es_refresh, es_dropna=es_dropna, es_geo_points=es_geo_points)
+            pandas_to_eland(
+                chunk,
+                client,
+                es_dest_index,
+                es_if_exists="append",
+                chunksize=chunksize,
+                es_refresh=es_refresh,
+                es_dropna=es_dropna,
+                es_geo_points=es_geo_points,
+            )
 
     # Now create an eland.DataFrame that references the new index
     ed_df = DataFrame(client, es_dest_index)

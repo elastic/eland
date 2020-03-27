@@ -19,9 +19,9 @@ import pytest
 import eland as ed
 
 # Fix console size for consistent test results
-pd.set_option('display.max_rows', 10)
-pd.set_option('display.max_columns', 5)
-pd.set_option('display.width', 100)
+pd.set_option("display.max_rows", 10)
+pd.set_option("display.max_columns", 5)
+pd.set_option("display.width", 100)
 
 
 @pytest.fixture(autouse=True)

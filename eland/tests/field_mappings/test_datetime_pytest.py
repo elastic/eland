@@ -21,9 +21,8 @@ from eland.tests.common import TestData
 
 
 class TestDateTime(TestData):
-    times = ["2019-11-26T19:58:15.246+0000",
-             "1970-01-01T00:00:03.000+0000"]
-    time_index_name = 'test_time_formats'
+    times = ["2019-11-26T19:58:15.246+0000", "1970-01-01T00:00:03.000+0000"]
+    time_index_name = "test_time_formats"
 
     @classmethod
     def setup_class(cls):
@@ -33,20 +32,20 @@ class TestDateTime(TestData):
         es = ES_TEST_CLIENT
         if es.indices.exists(cls.time_index_name):
             es.indices.delete(index=cls.time_index_name)
-        dts = [datetime.strptime(time, "%Y-%m-%dT%H:%M:%S.%f%z")
-               for time in cls.times]
+        dts = [datetime.strptime(time, "%Y-%m-%dT%H:%M:%S.%f%z") for time in cls.times]
 
-        time_formats_docs = [TestDateTime.get_time_values_from_datetime(dt)
-                             for dt in dts]
-        mappings = {'properties': {}}
+        time_formats_docs = [
+            TestDateTime.get_time_values_from_datetime(dt) for dt in dts
+        ]
+        mappings = {"properties": {}}
 
         for field_name, field_value in time_formats_docs[0].items():
-            mappings['properties'][field_name] = {}
-            mappings['properties'][field_name]['type'] = 'date'
-            mappings['properties'][field_name]['format'] = field_name
+            mappings["properties"][field_name] = {}
+            mappings["properties"][field_name]["type"] = "date"
+            mappings["properties"][field_name]["format"] = field_name
 
         body = {"mappings": mappings}
-        index = 'test_time_formats'
+        index = "test_time_formats"
         es.indices.delete(index=index, ignore=[400, 404])
         es.indices.create(index=index, body=body)
 
@@ -65,12 +64,11 @@ class TestDateTime(TestData):
 
     def test_all_formats(self):
         ed_field_mappings = ed.FieldMappings(
-            client=ed.Client(ES_TEST_CLIENT),
-            index_pattern=self.time_index_name
+            client=ed.Client(ES_TEST_CLIENT), index_pattern=self.time_index_name
         )
 
         # do a rename so display_name for a field is different to es_field_name
-        ed_field_mappings.rename({'strict_year_month': 'renamed_strict_year_month'})
+        ed_field_mappings.rename({"strict_year_month": "renamed_strict_year_month"})
 
         # buf = StringIO()
         # ed_field_mappings.info_es(buf)
@@ -86,19 +84,22 @@ class TestDateTime(TestData):
         time_formats = {
             "epoch_millis": int(dt.timestamp() * 1000),
             "epoch_second": int(dt.timestamp()),
-            "strict_date_optional_time": dt.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + dt.strftime("%z"),
+            "strict_date_optional_time": dt.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]
+            + dt.strftime("%z"),
             "basic_date": dt.strftime("%Y%m%d"),
             "basic_date_time": dt.strftime("%Y%m%dT%H%M%S.%f")[:-3] + dt.strftime("%z"),
             "basic_date_time_no_millis": dt.strftime("%Y%m%dT%H%M%S%z"),
             "basic_ordinal_date": dt.strftime("%Y%j"),
-            "basic_ordinal_date_time": dt.strftime("%Y%jT%H%M%S.%f")[:-3] + dt.strftime("%z"),
+            "basic_ordinal_date_time": dt.strftime("%Y%jT%H%M%S.%f")[:-3]
+            + dt.strftime("%z"),
             "basic_ordinal_date_time_no_millis": dt.strftime("%Y%jT%H%M%S%z"),
             "basic_time": dt.strftime("%H%M%S.%f")[:-3] + dt.strftime("%z"),
             "basic_time_no_millis": dt.strftime("%H%M%S%z"),
             "basic_t_time": dt.strftime("T%H%M%S.%f")[:-3] + dt.strftime("%z"),
             "basic_t_time_no_millis": dt.strftime("T%H%M%S%z"),
             "basic_week_date": dt.strftime("%GW%V%u"),
-            "basic_week_date_time": dt.strftime("%GW%V%uT%H%M%S.%f")[:-3] + dt.strftime("%z"),
+            "basic_week_date_time": dt.strftime("%GW%V%uT%H%M%S.%f")[:-3]
+            + dt.strftime("%z"),
             "basic_week_date_time_no_millis": dt.strftime("%GW%V%uT%H%M%S%z"),
             "strict_date": dt.strftime("%Y-%m-%d"),
             "date": dt.strftime("%Y-%m-%d"),
@@ -108,11 +109,18 @@ class TestDateTime(TestData):
             "date_hour_minute": dt.strftime("%Y-%m-%dT%H:%M"),
             "strict_date_hour_minute_second": dt.strftime("%Y-%m-%dT%H:%M:%S"),
             "date_hour_minute_second": dt.strftime("%Y-%m-%dT%H:%M:%S"),
-            "strict_date_hour_minute_second_fraction": dt.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3],
-            "date_hour_minute_second_fraction": dt.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3],
-            "strict_date_hour_minute_second_millis": dt.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3],
+            "strict_date_hour_minute_second_fraction": dt.strftime(
+                "%Y-%m-%dT%H:%M:%S.%f"
+            )[:-3],
+            "date_hour_minute_second_fraction": dt.strftime("%Y-%m-%dT%H:%M:%S.%f")[
+                :-3
+            ],
+            "strict_date_hour_minute_second_millis": dt.strftime(
+                "%Y-%m-%dT%H:%M:%S.%f"
+            )[:-3],
             "date_hour_minute_second_millis": dt.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3],
-            "strict_date_time": dt.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + dt.strftime("%z"),
+            "strict_date_time": dt.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]
+            + dt.strftime("%z"),
             "date_time": dt.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + dt.strftime("%z"),
             "strict_date_time_no_millis": dt.strftime("%Y-%m-%dT%H:%M:%S%z"),
             "date_time_no_millis": dt.strftime("%Y-%m-%dT%H:%M:%S%z"),
@@ -128,8 +136,10 @@ class TestDateTime(TestData):
             "hour_minute_second_millis": dt.strftime("%H:%M:%S.%f")[:-3],
             "strict_ordinal_date": dt.strftime("%Y-%j"),
             "ordinal_date": dt.strftime("%Y-%j"),
-            "strict_ordinal_date_time": dt.strftime("%Y-%jT%H:%M:%S.%f")[:-3] + dt.strftime("%z"),
-            "ordinal_date_time": dt.strftime("%Y-%jT%H:%M:%S.%f")[:-3] + dt.strftime("%z"),
+            "strict_ordinal_date_time": dt.strftime("%Y-%jT%H:%M:%S.%f")[:-3]
+            + dt.strftime("%z"),
+            "ordinal_date_time": dt.strftime("%Y-%jT%H:%M:%S.%f")[:-3]
+            + dt.strftime("%z"),
             "strict_ordinal_date_time_no_millis": dt.strftime("%Y-%jT%H:%M:%S%z"),
             "ordinal_date_time_no_millis": dt.strftime("%Y-%jT%H:%M:%S%z"),
             "strict_time": dt.strftime("%H:%M:%S.%f")[:-3] + dt.strftime("%z"),
@@ -142,8 +152,10 @@ class TestDateTime(TestData):
             "t_time_no_millis": dt.strftime("T%H:%M:%S%z"),
             "strict_week_date": dt.strftime("%G-W%V-%u"),
             "week_date": dt.strftime("%G-W%V-%u"),
-            "strict_week_date_time": dt.strftime("%G-W%V-%uT%H:%M:%S.%f")[:-3] + dt.strftime("%z"),
-            "week_date_time": dt.strftime("%G-W%V-%uT%H:%M:%S.%f")[:-3] + dt.strftime("%z"),
+            "strict_week_date_time": dt.strftime("%G-W%V-%uT%H:%M:%S.%f")[:-3]
+            + dt.strftime("%z"),
+            "week_date_time": dt.strftime("%G-W%V-%uT%H:%M:%S.%f")[:-3]
+            + dt.strftime("%z"),
             "strict_week_date_time_no_millis": dt.strftime("%G-W%V-%uT%H:%M:%S%z"),
             "week_date_time_no_millis": dt.strftime("%G-W%V-%uT%H:%M:%S%z"),
             "strict_weekyear": dt.strftime("%G"),
@@ -232,7 +244,7 @@ class TestDateTime(TestData):
         "strict_year_month": "%Y-%m",
         "year_month": "%Y-%m",
         "strict_year_month_day": "%Y-%m-%d",
-        "year_month_day": "%Y-%m-%d"
+        "year_month_day": "%Y-%m-%d",
     }
 
     # excluding these formats as pandas throws a ValueError

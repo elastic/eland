@@ -19,7 +19,6 @@ from eland.tests.common import assert_pandas_eland_frame_equal
 
 
 class TestDataFrameHeadTail(TestData):
-
     def test_head(self):
         ed_flights = self.ed_flights()
         pd_flights = self.pd_flights()
@@ -102,7 +101,7 @@ class TestDataFrameHeadTail(TestData):
 
     def test_doc_test_tail(self):
         df = self.ed_flights()
-        df = df[(df.OriginAirportID == 'AMS') & (df.FlightDelayMin > 60)]
-        df = df[['timestamp', 'OriginAirportID', 'DestAirportID', 'FlightDelayMin']]
+        df = df[(df.OriginAirportID == "AMS") & (df.FlightDelayMin > 60)]
+        df = df[["timestamp", "OriginAirportID", "DestAirportID", "FlightDelayMin"]]
         df = df.tail()
         print(df)

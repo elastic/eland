@@ -23,14 +23,14 @@ from eland.tests.common import TestData
 
 
 class TestScriptedFields(TestData):
-
     def test_add_new_scripted_field(self):
         ed_field_mappings = ed.FieldMappings(
-            client=ed.Client(ES_TEST_CLIENT),
-            index_pattern=FLIGHTS_INDEX_NAME
+            client=ed.Client(ES_TEST_CLIENT), index_pattern=FLIGHTS_INDEX_NAME
         )
 
-        ed_field_mappings.add_scripted_field('scripted_field_None', None, np.dtype('int64'))
+        ed_field_mappings.add_scripted_field(
+            "scripted_field_None", None, np.dtype("int64")
+        )
 
         # note 'None' is printed as 'NaN' in index, but .index shows it is 'None'
         # buf = StringIO()
@@ -44,11 +44,12 @@ class TestScriptedFields(TestData):
 
     def test_add_duplicate_scripted_field(self):
         ed_field_mappings = ed.FieldMappings(
-            client=ed.Client(ES_TEST_CLIENT),
-            index_pattern=FLIGHTS_INDEX_NAME
+            client=ed.Client(ES_TEST_CLIENT), index_pattern=FLIGHTS_INDEX_NAME
         )
 
-        ed_field_mappings.add_scripted_field('scripted_field_Carrier', 'Carrier', np.dtype('int64'))
+        ed_field_mappings.add_scripted_field(
+            "scripted_field_Carrier", "Carrier", np.dtype("int64")
+        )
 
         # note 'None' is printed as 'NaN' in index, but .index shows it is 'None'
         buf = StringIO()
@@ -56,7 +57,7 @@ class TestScriptedFields(TestData):
         print(buf.getvalue())
 
         expected = self.pd_flights().columns.to_list()
-        expected.remove('Carrier')
-        expected.append('Carrier')
+        expected.remove("Carrier")
+        expected.append("Carrier")
 
         assert expected == ed_field_mappings.display_names

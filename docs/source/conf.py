@@ -1,11 +1,11 @@
 #  Copyright 2019 Elasticsearch BV
-# 
+#
 #      Licensed under the Apache License, Version 2.0 (the "License");
 #      you may not use this file except in compliance with the License.
 #      You may obtain a copy of the License at
-# 
+#
 #          http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 #      Unless required by applicable law or agreed to in writing, software
 #      distributed under the License is distributed on an "AS IS" BASIS,
 #      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -37,8 +37,8 @@ sys.path.extend(
 
 # -- Project information -----------------------------------------------------
 
-project = 'eland'
-copyright = '2020, Elasticsearch B.V.'
+project = "eland"
+copyright = "2020, Elasticsearch B.V."
 
 # The full version, including alpha/beta/rc tags
 import eland
@@ -53,16 +53,16 @@ release = version
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.autodoc',
+    "sphinx.ext.autodoc",
     "sphinx.ext.doctest",
     "sphinx.ext.extlinks",
-    'numpydoc',
+    "numpydoc",
     "matplotlib.sphinxext.plot_directive",
     "sphinx.ext.todo",
     "nbsphinx",
 ]
 
-doctest_global_setup = '''
+doctest_global_setup = """
 try:
     import eland as ed
 except ImportError:
@@ -71,13 +71,21 @@ try:
     import pandas as pd
 except ImportError:
     pd = None
-'''
+"""
 
 extlinks = {
-    'pandas_api_docs': ('https://pandas.pydata.org/pandas-docs/version/0.25.3/reference/api/%s.html', ''),
-    'pandas_user_guide': (
-    'https://pandas.pydata.org/pandas-docs/version/0.25.3/user_guide/%s.html', 'Pandas User Guide/'),
-    'es_api_docs': ('https://www.elastic.co/guide/en/elasticsearch/reference/current/%s.html', '')
+    "pandas_api_docs": (
+        "https://pandas.pydata.org/pandas-docs/version/0.25.3/reference/api/%s.html",
+        "",
+    ),
+    "pandas_user_guide": (
+        "https://pandas.pydata.org/pandas-docs/version/0.25.3/user_guide/%s.html",
+        "Pandas User Guide/",
+    ),
+    "es_api_docs": (
+        "https://www.elastic.co/guide/en/elasticsearch/reference/current/%s.html",
+        "",
+    ),
 }
 
 numpydoc_attributes_as_param_list = False
@@ -92,12 +100,12 @@ plot_pre_code = """import numpy as np
 import eland as ed"""
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+templates_path = ["_templates"]
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ['**.ipynb_checkpoints']
+exclude_patterns = ["**.ipynb_checkpoints"]
 
 # -- Options for HTML output -------------------------------------------------
 
@@ -115,4 +123,4 @@ html_theme = "pandas_sphinx_theme"
 html_logo = "logo/eland.png"
 html_favicon = "logo/eland_favicon.png"
 
-master_doc = 'index'
+master_doc = "index"

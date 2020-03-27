@@ -21,21 +21,24 @@ from eland.tests.common import TestData
 
 
 class TestDataFrameAggs(TestData):
-
     def test_basic_aggs(self):
         pd_flights = self.pd_flights()
         ed_flights = self.ed_flights()
 
-        pd_sum_min = pd_flights.select_dtypes(include=[np.number]).agg(['sum', 'min'])
-        ed_sum_min = ed_flights.select_dtypes(include=[np.number]).agg(['sum', 'min'])
+        pd_sum_min = pd_flights.select_dtypes(include=[np.number]).agg(["sum", "min"])
+        ed_sum_min = ed_flights.select_dtypes(include=[np.number]).agg(["sum", "min"])
 
         # Eland returns all float values for all metric aggs, pandas can return int
         # TODO - investigate this more
-        pd_sum_min = pd_sum_min.astype('float64')
+        pd_sum_min = pd_sum_min.astype("float64")
         assert_almost_equal(pd_sum_min, ed_sum_min)
 
-        pd_sum_min_std = pd_flights.select_dtypes(include=[np.number]).agg(['sum', 'min', 'std'])
-        ed_sum_min_std = ed_flights.select_dtypes(include=[np.number]).agg(['sum', 'min', 'std'])
+        pd_sum_min_std = pd_flights.select_dtypes(include=[np.number]).agg(
+            ["sum", "min", "std"]
+        )
+        ed_sum_min_std = ed_flights.select_dtypes(include=[np.number]).agg(
+            ["sum", "min", "std"]
+        )
 
         print(pd_sum_min_std.dtypes)
         print(ed_sum_min_std.dtypes)
@@ -46,16 +49,20 @@ class TestDataFrameAggs(TestData):
         pd_flights = self.pd_flights()
         ed_flights = self.ed_flights()
 
-        pd_sum_min = pd_flights.select_dtypes(include=[np.number]).agg(['sum', 'min'])
-        ed_sum_min = ed_flights.select_dtypes(include=[np.number]).agg(['sum', 'min'])
+        pd_sum_min = pd_flights.select_dtypes(include=[np.number]).agg(["sum", "min"])
+        ed_sum_min = ed_flights.select_dtypes(include=[np.number]).agg(["sum", "min"])
 
         # Eland returns all float values for all metric aggs, pandas can return int
         # TODO - investigate this more
-        pd_sum_min = pd_sum_min.astype('float64')
+        pd_sum_min = pd_sum_min.astype("float64")
         assert_almost_equal(pd_sum_min, ed_sum_min)
 
-        pd_sum_min_std = pd_flights.select_dtypes(include=[np.number]).agg(['sum', 'min', 'std'])
-        ed_sum_min_std = ed_flights.select_dtypes(include=[np.number]).agg(['sum', 'min', 'std'])
+        pd_sum_min_std = pd_flights.select_dtypes(include=[np.number]).agg(
+            ["sum", "min", "std"]
+        )
+        ed_sum_min_std = ed_flights.select_dtypes(include=[np.number]).agg(
+            ["sum", "min", "std"]
+        )
 
         print(pd_sum_min_std.dtypes)
         print(ed_sum_min_std.dtypes)

@@ -157,6 +157,10 @@ currently using a minimum version of PyCharm 2019.2.4.
 -   Install local `eland` module (required to execute notebook tests)
     `python install setup.py`
 -   Run `pytest --nbval  --doctest-modules` to validate install
+-   To test specific versions of Python use `nox -s test-3.8`
+-   To run the automatic formatter and check for lint issues
+    run `nox -s blacken`
+
 
 ### Documentation
 

@@ -60,7 +60,10 @@ class SortOrder(Enum):
 
         return SortOrder.DESC
 
-def elasticsearch_date_to_pandas_date(value: Union[int, str], date_format: str) -> pd.Timestamp:
+
+def elasticsearch_date_to_pandas_date(
+    value: Union[int, str], date_format: str
+) -> pd.Timestamp:
     """
     Given a specific Elasticsearch format for a date datatype, returns the
     'partial' `to_datetime` function to parse a given value in that format
@@ -87,13 +90,13 @@ def elasticsearch_date_to_pandas_date(value: Union[int, str], date_format: str) 
     if date_format is None:
         try:
             value = int(value)
-            return pd.to_datetime(value, unit='ms')
+            return pd.to_datetime(value, unit="ms")
         except ValueError:
             return pd.to_datetime(value)
     elif date_format == "epoch_millis":
-        return pd.to_datetime(value, unit='ms')
+        return pd.to_datetime(value, unit="ms")
     elif date_format == "epoch_second":
-        return pd.to_datetime(value, unit='s')
+        return pd.to_datetime(value, unit="s")
     elif date_format == "strict_date_optional_time":
         return pd.to_datetime(value, format="%Y-%m-%dT%H:%M:%S.%f%z", exact=False)
     elif date_format == "basic_date":
@@ -216,14 +219,18 @@ def elasticsearch_date_to_pandas_date(value: Union[int, str], date_format: str) 
         return pd.to_datetime(value, format="%G-W%V-%uT%H:%M:%S%z")
     elif date_format == "strict_weekyear" or date_format == "weekyear":
         # TODO investigate if there is a way of converting this
-        raise NotImplementedError("strict_weekyear is not implemented due to support in pandas")
+        raise NotImplementedError(
+            "strict_weekyear is not implemented due to support in pandas"
+        )
         return pd.to_datetime(value, format="%G")
         # Not supported in pandas
         # ValueError: ISO year directive '%G' must be used with the ISO week directive '%V'
         # and a weekday directive '%A', '%a', '%w', or '%u'.
     elif date_format == "strict_weekyear_week" or date_format == "weekyear_week":
         # TODO investigate if there is a way of converting this
-        raise NotImplementedError("strict_weekyear_week is not implemented due to support in pandas")
+        raise NotImplementedError(
+            "strict_weekyear_week is not implemented due to support in pandas"
+        )
         return pd.to_datetime(value, format="%G-W%V")
         # Not supported in pandas
         # ValueError: ISO year directive '%G' must be used with the ISO week directive '%V'
@@ -245,9 +252,10 @@ def elasticsearch_date_to_pandas_date(value: Union[int, str], date_format: str) 
     elif date_format == "year_month_day":
         return pd.to_datetime(value, format="%Y-%m-%d")
     else:
-        warnings.warn("The '{}' format is not explicitly supported."
-                      "Using pandas.to_datetime(value) to parse value".format(date_format),
-                      Warning)
+        warnings.warn(
+            f"The '{date_format}' format is not explicitly supported."
+            f"Using pandas.to_datetime(value) to parse value",
+            Warning,
+        )
         # TODO investigate how we could generate this just once for a bulk read.
         return pd.to_datetime(value)
-

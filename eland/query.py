@@ -55,14 +55,14 @@ class Query:
         """
         if must:
             if self._query.empty():
-                self._query = IsIn('ids', items)
+                self._query = IsIn("ids", items)
             else:
-                self._query = self._query & IsIn('ids', items)
+                self._query = self._query & IsIn("ids", items)
         else:
             if self._query.empty():
-                self._query = ~(IsIn('ids', items))
+                self._query = ~(IsIn("ids", items))
             else:
-                self._query = self._query & ~(IsIn('ids', items))
+                self._query = self._query & ~(IsIn("ids", items))
 
     def terms(self, field, items, must=True):
         """
@@ -93,12 +93,7 @@ class Query:
             }
         }
         """
-        agg = {
-            func: {
-                "field": field,
-                "size": es_size
-            }
-        }
+        agg = {func: {"field": field, "size": es_size}}
         self._aggs[name] = agg
 
     def metric_aggs(self, name, func, field):
@@ -113,11 +108,7 @@ class Query:
             }
         }
         """
-        agg = {
-            func: {
-                "field": field
-            }
-        }
+        agg = {func: {"field": field}}
         self._aggs[name] = agg
 
     def hist_aggs(self, name, field, min_aggs, max_aggs, num_bins):
@@ -138,13 +129,7 @@ class Query:
         interval = (max - min) / num_bins
         offset = min
 
-        agg = {
-            "histogram": {
-                "field": field,
-                "interval": interval,
-                "offset": offset
-            }
-        }
+        agg = {"histogram": {"field": field, "interval": interval, "offset": offset}}
 
         if interval != 0:
             self._aggs[name] = agg
@@ -164,7 +149,7 @@ class Query:
 
     def to_count_body(self):
         if len(self._aggs) > 0:
-            warnings.warn('Requesting count for agg query {}', self)
+            warnings.warn("Requesting count for agg query {}", self)
         if self._query.empty():
             body = None
         else:

@@ -34,7 +34,7 @@ from eland.plotting._matplotlib.hist import (
     hist_series,
 )
 
-__all___ = [
+__all__ = [
     "hist_frame",
     "hist_series",
 ]

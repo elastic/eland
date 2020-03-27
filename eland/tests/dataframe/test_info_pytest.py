@@ -23,7 +23,6 @@ from eland.tests.common import TestData
 
 
 class TestDataFrameInfo(TestData):
-
     def test_flights_info(self):
         ed_flights = self.ed_flights()
         pd_flights = self.pd_flights()
@@ -35,8 +34,8 @@ class TestDataFrameInfo(TestData):
         ed_flights.info(buf=ed_buf, memory_usage=False)
         pd_flights.info(buf=pd_buf, memory_usage=False)
 
-        ed_buf_lines = ed_buf.getvalue().split('\n')
-        pd_buf_lines = pd_buf.getvalue().split('\n')
+        ed_buf_lines = ed_buf.getvalue().split("\n")
+        pd_buf_lines = pd_buf.getvalue().split("\n")
 
         assert pd_buf_lines[1:] == ed_buf_lines[1:]
 
@@ -45,16 +44,16 @@ class TestDataFrameInfo(TestData):
         print(self.ed_ecommerce().info())
 
     def test_empty_info(self):
-        mapping = {'mappings': {'properties': {}}}
+        mapping = {"mappings": {"properties": {}}}
 
         for i in range(0, 10):
             field_name = "field_name_" + str(i)
-            mapping['mappings']['properties'][field_name] = {'type': 'float'}
+            mapping["mappings"]["properties"][field_name] = {"type": "float"}
 
-        ES_TEST_CLIENT.indices.delete(index='empty_index', ignore=[400, 404])
-        ES_TEST_CLIENT.indices.create(index='empty_index', body=mapping)
+        ES_TEST_CLIENT.indices.delete(index="empty_index", ignore=[400, 404])
+        ES_TEST_CLIENT.indices.create(index="empty_index", body=mapping)
 
-        ed_df = ed.DataFrame(ES_TEST_CLIENT, 'empty_index')
+        ed_df = ed.DataFrame(ES_TEST_CLIENT, "empty_index")
         ed_df.info()
 
-        ES_TEST_CLIENT.indices.delete(index='empty_index')
+        ES_TEST_CLIENT.indices.delete(index="empty_index")

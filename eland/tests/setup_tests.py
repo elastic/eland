@@ -12,15 +12,33 @@
 #      See the License for the specific language governing permissions and
 #      limitations under the License.
 
+import pandas as pd
 from elasticsearch import helpers
 from elasticsearch.client import ClusterClient
 
-from eland.tests import *
+from eland.tests import (
+    FLIGHTS_FILE_NAME,
+    FLIGHTS_INDEX_NAME,
+    FLIGHTS_SMALL_FILE_NAME,
+    FLIGHTS_SMALL_INDEX_NAME,
+    FLIGHTS_MAPPING,
+    ECOMMERCE_FILE_NAME,
+    ECOMMERCE_INDEX_NAME,
+    ECOMMERCE_MAPPING,
+    TEST_MAPPING1,
+    TEST_MAPPING1_INDEX_NAME,
+    TEST_NESTED_USER_GROUP_DOCS,
+    TEST_NESTED_USER_GROUP_INDEX_NAME,
+    TEST_NESTED_USER_GROUP_MAPPING,
+    ES_TEST_CLIENT,
+    ELASTICSEARCH_HOST,
+)
+
 
 DATA_LIST = [
     (FLIGHTS_FILE_NAME, FLIGHTS_INDEX_NAME, FLIGHTS_MAPPING),
     (FLIGHTS_SMALL_FILE_NAME, FLIGHTS_SMALL_INDEX_NAME, FLIGHTS_MAPPING),
-    (ECOMMERCE_FILE_NAME, ECOMMERCE_INDEX_NAME, ECOMMERCE_MAPPING)
+    (ECOMMERCE_FILE_NAME, ECOMMERCE_INDEX_NAME, ECOMMERCE_MAPPING),
 ]
 
 
@@ -49,7 +67,7 @@ def _setup_data(es):
             # values['timestamp'] = datetime.strptime(values['timestamp'], '%Y-%m-%dT%H:%M:%S')
 
             # Use integer as id field for repeatable results
-            action = {'_index': index_name, '_source': values, '_id': str(n)}
+            action = {"_index": index_name, "_source": values, "_id": str(n)}
 
             actions.append(action)
 
@@ -66,13 +84,9 @@ def _setup_data(es):
 
 
 def _update_max_compilations_limit(es, limit="10000/1m"):
-    print('Updating script.max_compilations_rate to ', limit)
+    print("Updating script.max_compilations_rate to ", limit)
     cluster_client = ClusterClient(es)
-    body = {
-        "transient": {
-            "script.max_compilations_rate": limit
-        }
-    }
+    body = {"transient": {"script.max_compilations_rate": limit}}
     cluster_client.put_settings(body=body)
 
 
@@ -84,14 +98,16 @@ def _setup_test_mappings(es):
 
 def _setup_test_nested(es):
     es.indices.delete(index=TEST_NESTED_USER_GROUP_INDEX_NAME, ignore=[400, 404])
-    es.indices.create(index=TEST_NESTED_USER_GROUP_INDEX_NAME, body=TEST_NESTED_USER_GROUP_MAPPING)
+    es.indices.create(
+        index=TEST_NESTED_USER_GROUP_INDEX_NAME, body=TEST_NESTED_USER_GROUP_MAPPING
+    )
 
     helpers.bulk(es, TEST_NESTED_USER_GROUP_DOCS)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Create connection to Elasticsearch - use defaults
-    print('Connecting to ES', ELASTICSEARCH_HOST)
+    print("Connecting to ES", ELASTICSEARCH_HOST)
     es = ES_TEST_CLIENT
 
     _setup_data(es)

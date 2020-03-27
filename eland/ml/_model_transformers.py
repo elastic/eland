@@ -29,25 +29,31 @@ from xgboost import Booster, XGBRegressor, XGBClassifier
 
 
 class ModelTransformer:
-    def __init__(self,
-                 model,
-                 feature_names: List[str],
-                 classification_labels: List[str] = None,
-                 classification_weights: List[float] = None
-                 ):
+    def __init__(
+        self,
+        model,
+        feature_names: List[str],
+        classification_labels: List[str] = None,
+        classification_weights: List[float] = None,
+    ):
         self._feature_names = feature_names
         self._model = model
         self._classification_labels = classification_labels
         self._classification_weights = classification_weights
 
     def is_supported(self):
-        return isinstance(self._model, (DecisionTreeClassifier,
-                                        DecisionTreeRegressor,
-                                        RandomForestRegressor,
-                                        RandomForestClassifier,
-                                        XGBClassifier,
-                                        XGBRegressor,
-                                        Booster))
+        return isinstance(
+            self._model,
+            (
+                DecisionTreeClassifier,
+                DecisionTreeRegressor,
+                RandomForestRegressor,
+                RandomForestClassifier,
+                XGBClassifier,
+                XGBRegressor,
+                Booster,
+            ),
+        )
 
 
 class SKLearnTransformer(ModelTransformer):
@@ -56,12 +62,13 @@ class SKLearnTransformer(ModelTransformer):
     warning: Should not use this class directly. Use derived classes instead
     """
 
-    def __init__(self,
-                 model,
-                 feature_names: List[str],
-                 classification_labels: List[str] = None,
-                 classification_weights: List[float] = None
-                 ):
+    def __init__(
+        self,
+        model,
+        feature_names: List[str],
+        classification_labels: List[str] = None,
+        classification_weights: List[float] = None,
+    ):
         """
         Base class for SKLearn transformations
 
@@ -70,7 +77,9 @@ class SKLearnTransformer(ModelTransformer):
         :param classification_labels: Optional classification labels (if not encoded in the model)
         :param classification_weights: Optional classification weights
         """
-        super().__init__(model, feature_names, classification_labels, classification_weights)
+        super().__init__(
+            model, feature_names, classification_labels, classification_weights
+        )
         self._node_decision_type = "lte"
 
     def build_tree_node(self, node_index: int, node_data: dict, value) -> TreeNode:
@@ -85,21 +94,31 @@ class SKLearnTransformer(ModelTransformer):
         :return: TreeNode object
         """
         if value.shape[0] != 1:
-            raise ValueError("unexpected multiple values returned from leaf node '{0}'".format(node_index))
+            raise ValueError(
+                f"unexpected multiple values returned from leaf node '{node_index}'"
+            )
         if node_data[0] == -1:  # is leaf node
-            if value.shape[1] == 1:  # classification requires more than one value, so assume regression
+            if (
+                value.shape[1] == 1
+            ):  # classification requires more than one value, so assume regression
                 leaf_value = float(value[0][0])
             else:
                 # the classification value, which is the index of the largest value
                 leaf_value = int(np.argmax(value))
-            return TreeNode(node_index, decision_type=self._node_decision_type, leaf_value=leaf_value)
+            return TreeNode(
+                node_index,
+                decision_type=self._node_decision_type,
+                leaf_value=leaf_value,
+            )
         else:
-            return TreeNode(node_index,
-                            decision_type=self._node_decision_type,
-                            left_child=int(node_data[0]),
-                            right_child=int(node_data[1]),
-                            split_feature=int(node_data[2]),
-                            threshold=float(node_data[3]))
+            return TreeNode(
+                node_index,
+                decision_type=self._node_decision_type,
+                left_child=int(node_data[0]),
+                right_child=int(node_data[1]),
+                split_feature=int(node_data[2]),
+                threshold=float(node_data[3]),
+            )
 
 
 class SKLearnDecisionTreeTransformer(SKLearnTransformer):
@@ -107,10 +126,12 @@ class SKLearnDecisionTreeTransformer(SKLearnTransformer):
     class for transforming SKLearn decision tree models into Tree model formats supported by Elasticsearch.
     """
 
-    def __init__(self,
-                 model: Union[DecisionTreeRegressor, DecisionTreeClassifier],
-                 feature_names: List[str],
-                 classification_labels: List[str] = None):
+    def __init__(
+        self,
+        model: Union[DecisionTreeRegressor, DecisionTreeClassifier],
+        feature_names: List[str],
+        classification_labels: List[str] = None,
+    ):
         """
         Transforms a Decision Tree model (Regressor|Classifier) into a ES Supported Tree format
         :param model: fitted decision tree model
@@ -124,7 +145,11 @@ class SKLearnDecisionTreeTransformer(SKLearnTransformer):
         Transform the provided model into an ES supported Tree object
         :return: Tree object for ES storage and use
         """
-        target_type = "regression" if isinstance(self._model, DecisionTreeRegressor) else "classification"
+        target_type = (
+            "regression"
+            if isinstance(self._model, DecisionTreeRegressor)
+            else "classification"
+        )
         check_is_fitted(self._model, ["tree_"])
         tree_classes = None
         if self._classification_labels:
@@ -136,12 +161,11 @@ class SKLearnDecisionTreeTransformer(SKLearnTransformer):
         nodes = list()
         tree_state = self._model.tree_.__getstate__()
         for i in range(len(tree_state["nodes"])):
-            nodes.append(self.build_tree_node(i, tree_state["nodes"][i], tree_state["values"][i]))
+            nodes.append(
+                self.build_tree_node(i, tree_state["nodes"][i], tree_state["values"][i])
+            )
 
-        return Tree(self._feature_names,
-                    target_type,
-                    nodes,
-                    tree_classes)
+        return Tree(self._feature_names, target_type, nodes, tree_classes)
 
 
 class SKLearnForestTransformer(SKLearnTransformer):
@@ -151,14 +175,16 @@ class SKLearnForestTransformer(SKLearnTransformer):
     warning: do not use this class directly. Use a derived class instead
     """
 
-    def __init__(self,
-                 model: Union[RandomForestClassifier,
-                              RandomForestRegressor],
-                 feature_names: List[str],
-                 classification_labels: List[str] = None,
-                 classification_weights: List[float] = None
-                 ):
-        super().__init__(model, feature_names, classification_labels, classification_weights)
+    def __init__(
+        self,
+        model: Union[RandomForestClassifier, RandomForestRegressor],
+        feature_names: List[str],
+        classification_labels: List[str] = None,
+        classification_weights: List[float] = None,
+    ):
+        super().__init__(
+            model, feature_names, classification_labels, classification_weights
+        )
 
     def build_aggregator_output(self) -> dict:
         raise NotImplementedError("build_aggregator_output must be implemented")
@@ -176,14 +202,18 @@ class SKLearnForestTransformer(SKLearnTransformer):
             check_is_fitted(self._model, ["classes_"])
             if ensemble_classes is None:
                 ensemble_classes = [str(c) for c in self._model.classes_]
-        ensemble_models = [SKLearnDecisionTreeTransformer(m,
-                                                          self._feature_names).transform() for m in estimators]
-        return Ensemble(self._feature_names,
-                        ensemble_models,
-                        self.build_aggregator_output(),
-                        target_type=self.determine_target_type(),
-                        classification_labels=ensemble_classes,
-                        classification_weights=self._classification_weights)
+        ensemble_models = [
+            SKLearnDecisionTreeTransformer(m, self._feature_names).transform()
+            for m in estimators
+        ]
+        return Ensemble(
+            self._feature_names,
+            ensemble_models,
+            self.build_aggregator_output(),
+            target_type=self.determine_target_type(),
+            classification_labels=ensemble_classes,
+            classification_weights=self._classification_weights,
+        )
 
 
 class SKLearnForestRegressorTransformer(SKLearnForestTransformer):
@@ -191,15 +221,15 @@ class SKLearnForestRegressorTransformer(SKLearnForestTransformer):
     Class for transforming RandomForestRegressor models into an ensemble model supported by Elasticsearch
     """
 
-    def __init__(self,
-                 model: RandomForestRegressor,
-                 feature_names: List[str]
-                 ):
+    def __init__(self, model: RandomForestRegressor, feature_names: List[str]):
         super().__init__(model, feature_names)
 
     def build_aggregator_output(self) -> dict:
         return {
-            "weighted_sum": {"weights": [1.0 / len(self._model.estimators_)] * len(self._model.estimators_), }
+            "weighted_sum": {
+                "weights": [1.0 / len(self._model.estimators_)]
+                * len(self._model.estimators_),
+            }
         }
 
     def determine_target_type(self) -> str:
@@ -211,11 +241,12 @@ class SKLearnForestClassifierTransformer(SKLearnForestTransformer):
     Class for transforming RandomForestClassifier models into an ensemble model supported by Elasticsearch
     """
 
-    def __init__(self,
-                 model: RandomForestClassifier,
-                 feature_names: List[str],
-                 classification_labels: List[str] = None,
-                 ):
+    def __init__(
+        self,
+        model: RandomForestClassifier,
+        feature_names: List[str],
+        classification_labels: List[str] = None,
+    ):
         super().__init__(model, feature_names, classification_labels)
 
     def build_aggregator_output(self) -> dict:
@@ -232,15 +263,18 @@ class XGBoostForestTransformer(ModelTransformer):
     warning: do not use directly. Use a derived classes instead
     """
 
-    def __init__(self,
-                 model: Booster,
-                 feature_names: List[str],
-                 base_score: float = 0.5,
-                 objective: str = "reg:squarederror",
-                 classification_labels: List[str] = None,
-                 classification_weights: List[float] = None
-                 ):
-        super().__init__(model, feature_names, classification_labels, classification_weights)
+    def __init__(
+        self,
+        model: Booster,
+        feature_names: List[str],
+        base_score: float = 0.5,
+        objective: str = "reg:squarederror",
+        classification_labels: List[str] = None,
+        classification_weights: List[float] = None,
+    ):
+        super().__init__(
+            model, feature_names, classification_labels, classification_weights
+        )
         self._node_decision_type = "lt"
         self._base_score = base_score
         self._objective = objective
@@ -250,47 +284,54 @@ class XGBoostForestTransformer(ModelTransformer):
             try:
                 return int(feature_id[1:])
             except ValueError:
-                raise RuntimeError("Unable to interpret '{0}'".format(feature_id))
+                raise RuntimeError(f"Unable to interpret '{feature_id}'")
         else:
             try:
                 return int(feature_id)
             except ValueError:
-                raise RuntimeError("Unable to interpret '{0}'".format(feature_id))
+                raise RuntimeError(f"Unable to interpret '{feature_id}'")
 
     def extract_node_id(self, node_id: str, curr_tree: int) -> int:
         t_id, n_id = node_id.split("-")
         if t_id is None or n_id is None:
             raise RuntimeError(
-                "cannot determine node index or tree from '{0}' for tree {1}".format(node_id, curr_tree))
+                f"cannot determine node index or tree from '{node_id}' for tree {curr_tree}"
+            )
         try:
             t_id = int(t_id)
             n_id = int(n_id)
             if t_id != curr_tree:
-                raise RuntimeError("extracted tree id {0} does not match current tree {1}".format(t_id, curr_tree))
+                raise RuntimeError(
+                    f"extracted tree id {t_id} does not match current tree {curr_tree}"
+                )
             return n_id
         except ValueError:
             raise RuntimeError(
-                "cannot determine node index or tree from '{0}' for tree {1}".format(node_id, curr_tree))
+                f"cannot determine node index or tree from '{node_id}' for tree {curr_tree}"
+            )
 
     def build_tree_node(self, row, curr_tree: int) -> TreeNode:
         node_index = row["Node"]
         if row["Feature"] == "Leaf":
             return TreeNode(node_idx=node_index, leaf_value=float(row["Gain"]))
         else:
-            return TreeNode(node_idx=node_index,
-                            decision_type=self._node_decision_type,
-                            left_child=self.extract_node_id(row["Yes"], curr_tree),
-                            right_child=self.extract_node_id(row["No"], curr_tree),
-                            threshold=float(row["Split"]),
-                            split_feature=self.get_feature_id(row["Feature"]))
+            return TreeNode(
+                node_idx=node_index,
+                decision_type=self._node_decision_type,
+                left_child=self.extract_node_id(row["Yes"], curr_tree),
+                right_child=self.extract_node_id(row["No"], curr_tree),
+                threshold=float(row["Split"]),
+                split_feature=self.get_feature_id(row["Feature"]),
+            )
 
     def build_tree(self, nodes: List[TreeNode]) -> Tree:
-        return Tree(feature_names=self._feature_names,
-                    tree_structure=nodes)
+        return Tree(feature_names=self._feature_names, tree_structure=nodes)
 
     def build_base_score_stump(self) -> Tree:
-        return Tree(feature_names=self._feature_names,
-                    tree_structure=[TreeNode(0, leaf_value=self._base_score)])
+        return Tree(
+            feature_names=self._feature_names,
+            tree_structure=[TreeNode(0, leaf_value=self._base_score)],
+        )
 
     def build_forest(self) -> List[Tree]:
         """
@@ -299,7 +340,7 @@ class XGBoostForestTransformer(ModelTransformer):
 
         :return: A list of Tree objects
         """
-        if self._model.booster not in {'dart', 'gbtree'}:
+        if self._model.booster not in {"dart", "gbtree"}:
             raise ValueError("booster must exist and be of type dart or gbtree")
 
         tree_table = self._model.trees_to_dataframe()
@@ -331,59 +372,64 @@ class XGBoostForestTransformer(ModelTransformer):
         return False
 
     def transform(self) -> Ensemble:
-        if self._model.booster not in {'dart', 'gbtree'}:
+        if self._model.booster not in {"dart", "gbtree"}:
             raise ValueError("booster must exist and be of type dart or gbtree")
 
         if not self.is_objective_supported():
-            raise ValueError("Unsupported objective '{0}'".format(self._objective))
+            raise ValueError(f"Unsupported objective '{self._objective}'")
 
         forest = self.build_forest()
-        return Ensemble(feature_names=self._feature_names,
-                        trained_models=forest,
-                        output_aggregator=self.build_aggregator_output(),
-                        classification_labels=self._classification_labels,
-                        classification_weights=self._classification_weights,
-                        target_type=self.determine_target_type())
+        return Ensemble(
+            feature_names=self._feature_names,
+            trained_models=forest,
+            output_aggregator=self.build_aggregator_output(),
+            classification_labels=self._classification_labels,
+            classification_weights=self._classification_weights,
+            target_type=self.determine_target_type(),
+        )
 
 
 class XGBoostRegressorTransformer(XGBoostForestTransformer):
-    def __init__(self,
-                 model: XGBRegressor,
-                 feature_names: List[str]):
-        super().__init__(model.get_booster(),
-                         feature_names,
-                         model.base_score,
-                         model.objective)
+    def __init__(self, model: XGBRegressor, feature_names: List[str]):
+        super().__init__(
+            model.get_booster(), feature_names, model.base_score, model.objective
+        )
 
     def determine_target_type(self) -> str:
         return "regression"
 
     def is_objective_supported(self) -> bool:
-        return self._objective in {'reg:squarederror',
-                                   'reg:linear',
-                                   'reg:squaredlogerror',
-                                   'reg:logistic'}
+        return self._objective in {
+            "reg:squarederror",
+            "reg:linear",
+            "reg:squaredlogerror",
+            "reg:logistic",
+        }
 
     def build_aggregator_output(self) -> dict:
         return {"weighted_sum": {}}
 
 
 class XGBoostClassifierTransformer(XGBoostForestTransformer):
-    def __init__(self,
-                 model: XGBClassifier,
-                 feature_names: List[str],
-                 classification_labels: List[str] = None):
-        super().__init__(model.get_booster(),
-                         feature_names,
-                         model.base_score,
-                         model.objective,
-                         classification_labels)
+    def __init__(
+        self,
+        model: XGBClassifier,
+        feature_names: List[str],
+        classification_labels: List[str] = None,
+    ):
+        super().__init__(
+            model.get_booster(),
+            feature_names,
+            model.base_score,
+            model.objective,
+            classification_labels,
+        )
 
     def determine_target_type(self) -> str:
         return "classification"
 
     def is_objective_supported(self) -> bool:
-        return self._objective in {'binary:logistic', 'binary:hinge'}
+        return self._objective in {"binary:logistic", "binary:hinge"}
 
     def build_aggregator_output(self) -> dict:
         return {"logistic_regression": {}}

@@ -44,13 +44,14 @@ only Elasticsearch aggregatable fields can be aggregated or grouped.
 
 
 class NDFrame(ABC):
-
-    def __init__(self,
-                 client=None,
-                 index_pattern=None,
-                 columns=None,
-                 index_field=None,
-                 query_compiler=None):
+    def __init__(
+        self,
+        client=None,
+        index_pattern=None,
+        columns=None,
+        index_field=None,
+        query_compiler=None,
+    ):
         """
         pandas.DataFrame/Series like API that proxies into Elasticsearch index(es).
 
@@ -60,8 +61,12 @@ class NDFrame(ABC):
             A reference to a Elasticsearch python client
         """
         if query_compiler is None:
-            query_compiler = QueryCompiler(client=client, index_pattern=index_pattern, display_names=columns,
-                                           index_field=index_field)
+            query_compiler = QueryCompiler(
+                client=client,
+                index_pattern=index_pattern,
+                display_names=columns,
+                index_field=index_field,
+            )
         self._query_compiler = query_compiler
 
     def _get_index(self):

@@ -23,27 +23,24 @@ from eland.tests.common import TestData
 
 
 class TestFieldNamePDDType(TestData):
-
     def test_all_formats(self):
         ed_field_mappings = ed.FieldMappings(
-            client=ed.Client(ES_TEST_CLIENT),
-            index_pattern=FLIGHTS_INDEX_NAME
+            client=ed.Client(ES_TEST_CLIENT), index_pattern=FLIGHTS_INDEX_NAME
         )
 
         pd_flights = self.pd_flights()
 
         assert_series_equal(pd_flights.dtypes, ed_field_mappings.dtypes())
 
-        for es_field_name in FLIGHTS_MAPPING['mappings']['properties'].keys():
+        for es_field_name in FLIGHTS_MAPPING["mappings"]["properties"].keys():
             pd_dtype = ed_field_mappings.field_name_pd_dtype(es_field_name)
 
             assert pd_flights[es_field_name].dtype == pd_dtype
 
     def test_non_existant(self):
         ed_field_mappings = ed.FieldMappings(
-            client=ed.Client(ES_TEST_CLIENT),
-            index_pattern=FLIGHTS_INDEX_NAME
+            client=ed.Client(ES_TEST_CLIENT), index_pattern=FLIGHTS_INDEX_NAME
         )
 
         with pytest.raises(KeyError):
-            pd_dtype = ed_field_mappings.field_name_pd_dtype('unknown')
+            ed_field_mappings.field_name_pd_dtype("unknown")

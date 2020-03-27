@@ -23,7 +23,6 @@ from eland.tests import ES_TEST_CLIENT
 
 
 class TestImportedMLModel:
-
     def test_decision_tree_classifier(self):
         # Train model
         training_data = datasets.make_classification(n_features=5)
@@ -38,7 +37,9 @@ class TestImportedMLModel:
         feature_names = ["f0", "f1", "f2", "f3", "f4"]
         model_id = "test_decision_tree_classifier"
 
-        es_model = ImportedMLModel(ES_TEST_CLIENT, model_id, classifier, feature_names, overwrite=True)
+        es_model = ImportedMLModel(
+            ES_TEST_CLIENT, model_id, classifier, feature_names, overwrite=True
+        )
         es_results = es_model.predict(test_data)
 
         np.testing.assert_almost_equal(test_results, es_results, decimal=4)
@@ -60,7 +61,9 @@ class TestImportedMLModel:
         feature_names = ["f0", "f1", "f2", "f3", "f4"]
         model_id = "test_decision_tree_regressor"
 
-        es_model = ImportedMLModel(ES_TEST_CLIENT, model_id, regressor, feature_names, overwrite=True)
+        es_model = ImportedMLModel(
+            ES_TEST_CLIENT, model_id, regressor, feature_names, overwrite=True
+        )
         es_results = es_model.predict(test_data)
 
         np.testing.assert_almost_equal(test_results, es_results, decimal=4)
@@ -82,7 +85,9 @@ class TestImportedMLModel:
         feature_names = ["f0", "f1", "f2", "f3", "f4"]
         model_id = "test_random_forest_classifier"
 
-        es_model = ImportedMLModel(ES_TEST_CLIENT, model_id, classifier, feature_names, overwrite=True)
+        es_model = ImportedMLModel(
+            ES_TEST_CLIENT, model_id, classifier, feature_names, overwrite=True
+        )
         es_results = es_model.predict(test_data)
 
         np.testing.assert_almost_equal(test_results, es_results, decimal=4)
@@ -104,7 +109,9 @@ class TestImportedMLModel:
         feature_names = ["f0", "f1", "f2", "f3", "f4"]
         model_id = "test_random_forest_regressor"
 
-        es_model = ImportedMLModel(ES_TEST_CLIENT, model_id, regressor, feature_names, overwrite=True)
+        es_model = ImportedMLModel(
+            ES_TEST_CLIENT, model_id, regressor, feature_names, overwrite=True
+        )
         es_results = es_model.predict(test_data)
 
         np.testing.assert_almost_equal(test_results, es_results, decimal=4)
@@ -126,7 +133,9 @@ class TestImportedMLModel:
         feature_names = ["f0", "f1", "f2", "f3", "f4"]
         model_id = "test_xgb_classifier"
 
-        es_model = ImportedMLModel(ES_TEST_CLIENT, model_id, classifier, feature_names, overwrite=True)
+        es_model = ImportedMLModel(
+            ES_TEST_CLIENT, model_id, classifier, feature_names, overwrite=True
+        )
         es_results = es_model.predict(test_data)
 
         np.testing.assert_almost_equal(test_results, es_results, decimal=4)
@@ -148,7 +157,9 @@ class TestImportedMLModel:
         feature_names = ["f0", "f1", "f2", "f3", "f4"]
         model_id = "test_xgb_regressor"
 
-        es_model = ImportedMLModel(ES_TEST_CLIENT, model_id, regressor, feature_names, overwrite=True)
+        es_model = ImportedMLModel(
+            ES_TEST_CLIENT, model_id, regressor, feature_names, overwrite=True
+        )
         es_results = es_model.predict(test_data)
 
         np.testing.assert_almost_equal(test_results, es_results, decimal=4)
