@@ -622,7 +622,7 @@ class DataFrame(NDFrame):
         lines = [str(type(self)), self._index_summary()]
 
         if len(self.columns) == 0:
-            lines.append('Empty {name}'.format(name=type(self).__name__))
+            lines.append("Empty {name}".format(name=type(self).__name__))
             fmt.buffer_put_lines(buf, lines)
             return
 
@@ -631,14 +631,12 @@ class DataFrame(NDFrame):
 
         # hack
         if max_cols is None:
-            max_cols = pd.get_option('display.max_info_columns',
-                                     len(self.columns) + 1)
+            max_cols = pd.get_option("display.max_info_columns", len(self.columns) + 1)
 
-        max_rows = pd.get_option('display.max_info_rows', len(self) + 1)
+        max_rows = pd.get_option("display.max_info_rows", len(self) + 1)
 
         if null_counts is None:
-            show_counts = ((len(self.columns) <= max_cols) and
-                           (len(self) < max_rows))
+            show_counts = (len(self.columns) <= max_cols) and (len(self) < max_rows)
         else:
             show_counts = null_counts
         exceeds_info_cols = len(self.columns) > max_cols
@@ -668,9 +666,11 @@ class DataFrame(NDFrame):
                 counts = self.count()
                 if len(cols) != len(counts):  # pragma: no cover
                     raise AssertionError(
-                        'Columns must equal counts '
-                        '({cols:d} != {counts:d})'.format(
-                            cols=len(cols), counts=len(counts)))
+                        "Columns must equal counts "
+                        "({cols:d} != {counts:d})".format(
+                            cols=len(cols), counts=len(counts)
+                        )
+                    )
                 count_header = "Non-Null Count"
                 len_count = len(count_header)
                 non_null = " non-null"
@@ -718,18 +718,19 @@ class DataFrame(NDFrame):
                 )
 
         def _non_verbose_repr():
-            lines.append(self.columns._summary(name='Columns'))
+            lines.append(self.columns._summary(name="Columns"))
 
         def _sizeof_fmt(num, size_qualifier):
             # returns size in human readable format
-            for x in ['bytes', 'KB', 'MB', 'GB', 'TB']:
+            for x in ["bytes", "KB", "MB", "GB", "TB"]:
                 if num < 1024.0:
-                    return ("{num:3.1f}{size_q} "
-                            "{x}".format(num=num, size_q=size_qualifier, x=x))
+                    return "{num:3.1f}{size_q} " "{x}".format(
+                        num=num, size_q=size_qualifier, x=x
+                    )
                 num /= 1024.0
-            return "{num:3.1f}{size_q} {pb}".format(num=num,
-                                                    size_q=size_qualifier,
-                                                    pb='PB')
+            return "{num:3.1f}{size_q} {pb}".format(
+                num=num, size_q=size_qualifier, pb="PB"
+            )
 
         if verbose:
             _verbose_repr()
