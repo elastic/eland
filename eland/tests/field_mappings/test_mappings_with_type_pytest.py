@@ -12,8 +12,6 @@
 #      See the License for the specific language governing permissions and
 #      limitations under the License.
 
-from collections import OrderedDict
-
 # File called _pytest for PyCharm compatability
 import pytest
 
@@ -28,10 +26,29 @@ class TestMappingsWithType(TestData):
         # features on 6.x indices makes eland more generally usable.
         #
         # For now, just test function:
-        mapping7x = OrderedDict(
-            {
-                "my_index": {
-                    "mappings": {
+        mapping7x = {
+            "my_index": {
+                "mappings": {
+                    "properties": {
+                        "city": {
+                            "type": "text",
+                            "fields": {"keyword": {"type": "keyword"}},
+                        }
+                    }
+                }
+            }
+        }
+
+        expected7x_source_only_false = {
+            "city": ("text", None),
+            "city.keyword": ("keyword", None),
+        }
+        expected7x_source_only_true = {"city": ("text", None)}
+
+        mapping6x = {
+            "my_index": {
+                "mappings": {
+                    "doc": {
                         "properties": {
                             "city": {
                                 "type": "text",
@@ -41,30 +58,7 @@ class TestMappingsWithType(TestData):
                     }
                 }
             }
-        )
-
-        expected7x_source_only_false = {
-            "city": ("text", None),
-            "city.keyword": ("keyword", None),
         }
-        expected7x_source_only_true = {"city": ("text", None)}
-
-        mapping6x = OrderedDict(
-            {
-                "my_index": {
-                    "mappings": {
-                        "doc": {
-                            "properties": {
-                                "city": {
-                                    "type": "text",
-                                    "fields": {"keyword": {"type": "keyword"}},
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        )
 
         expected6x_source_only_false = {
             "city": ("text", None),
@@ -73,28 +67,26 @@ class TestMappingsWithType(TestData):
         expected6x_source_only_true = {"city": ("text", None)}
 
         # add a 5x mapping to get coverage of error
-        mapping5x = OrderedDict(
-            {
-                "my_index": {
-                    "mappings": {
-                        "user": {
-                            "properties": {
-                                "name": {"type": "text"},
-                                "user_name": {"type": "keyword"},
-                                "email": {"type": "keyword"},
-                            }
-                        },
-                        "tweet": {
-                            "properties": {
-                                "content": {"type": "text"},
-                                "user_name": {"type": "keyword"},
-                                "tweeted_at": {"type": "date"},
-                            }
-                        },
-                    }
+        mapping5x = {
+            "my_index": {
+                "mappings": {
+                    "user": {
+                        "properties": {
+                            "name": {"type": "text"},
+                            "user_name": {"type": "keyword"},
+                            "email": {"type": "keyword"},
+                        }
+                    },
+                    "tweet": {
+                        "properties": {
+                            "content": {"type": "text"},
+                            "user_name": {"type": "keyword"},
+                            "tweeted_at": {"type": "date"},
+                        }
+                    },
                 }
             }
-        )
+        }
 
         result7x = FieldMappings._extract_fields_from_mapping(mapping7x)
         assert expected7x_source_only_false == result7x
