@@ -614,7 +614,7 @@ class DataFrame(NDFrame):
          0   customer_first_name  4675 non-null   object
          1   geoip.city_name      4094 non-null   object
         dtypes: object(2)
-        memory usage: 80.0 bytes
+        memory usage: ...
         """
         if buf is None:  # pragma: no cover
             buf = sys.stdout
