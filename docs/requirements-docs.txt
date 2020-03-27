@@ -1,5 +1,5 @@
 elasticsearch>=7.0.5
-pandas==0.25.3
+pandas>=1
 matplotlib
 pytest>=5.2.1
 git+https://github.com/pandas-dev/pandas-sphinx-theme.git@master

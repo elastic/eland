@@ -238,16 +238,16 @@ class NDFrame(ABC):
         --------
         >>> df = ed.DataFrame('localhost', 'flights')
         >>> df.min()
-        AvgTicketPrice        100.020531
-        Cancelled               0.000000
-        DistanceKilometers      0.000000
-        DistanceMiles           0.000000
-        FlightDelay             0.000000
-        FlightDelayMin          0.000000
-        FlightTimeHour          0.000000
-        FlightTimeMin           0.000000
-        dayOfWeek               0.000000
-        dtype: float64
+        AvgTicketPrice        100.021
+        Cancelled               False
+        DistanceKilometers          0
+        DistanceMiles               0
+        FlightDelay             False
+        FlightDelayMin              0
+        FlightTimeHour              0
+        FlightTimeMin               0
+        dayOfWeek                   0
+        dtype: object
         """
         return self._query_compiler.min(numeric_only=numeric_only)
 
@@ -270,16 +270,16 @@ class NDFrame(ABC):
         --------
         >>> df = ed.DataFrame('localhost', 'flights')
         >>> df.max()
-        AvgTicketPrice         1199.729004
-        Cancelled                 1.000000
-        DistanceKilometers    19881.482422
-        DistanceMiles         12353.780273
-        FlightDelay               1.000000
-        FlightDelayMin          360.000000
-        FlightTimeHour           31.715034
-        FlightTimeMin          1902.901978
-        dayOfWeek                 6.000000
-        dtype: float64
+        AvgTicketPrice        1199.73
+        Cancelled                True
+        DistanceKilometers    19881.5
+        DistanceMiles         12353.8
+        FlightDelay              True
+        FlightDelayMin            360
+        FlightTimeHour         31.715
+        FlightTimeMin          1902.9
+        dayOfWeek                   6
+        dtype: object
         """
         return self._query_compiler.max(numeric_only=numeric_only)
 

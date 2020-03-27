@@ -22,7 +22,7 @@ from pandas.core.common import apply_if_callable, is_bool_indexer
 from pandas.core.computation.eval import eval
 from pandas.core.dtypes.common import is_list_like
 from pandas.core.indexing import check_bool_indexer
-from pandas.io.common import _expand_user, _stringify_path
+from pandas.io.common import _expand_user, stringify_path
 from pandas.io.formats import console
 from pandas.io.formats import format as fmt
 from pandas.io.formats.printing import pprint_thing
@@ -249,12 +249,19 @@ class DataFrame(NDFrame):
         --------
         >>> df = ed.DataFrame('localhost', 'flights', columns=['Origin', 'Dest'])
         >>> df.tail()
-                                                          Origin                                      Dest
-        13054                         Pisa International Airport      Xi'an Xianyang International Airport
-        13055  Winnipeg / James Armstrong Richardson Internat...                            Zurich Airport
-        13056     Licenciado Benito Juarez International Airport                         Ukrainka Air Base
-        13057                                      Itami Airport  Ministro Pistarini International Airport
-        13058                     Adelaide International Airport   Washington Dulles International Airport
+                                                                    Origin  \\
+        13054                                   Pisa International Airport   
+        13055  Winnipeg / James Armstrong Richardson International Airport   
+        13056               Licenciado Benito Juarez International Airport   
+        13057                                                Itami Airport   
+        13058                               Adelaide International Airport   
+        <BLANKLINE>
+                                                   Dest  
+        13054      Xi'an Xianyang International Airport  
+        13055                            Zurich Airport  
+        13056                         Ukrainka Air Base  
+        13057  Ministro Pistarini International Airport  
+        13058   Washington Dulles International Airport  
         <BLANKLINE>
         [5 rows x 2 columns]
         """
@@ -602,8 +609,10 @@ class DataFrame(NDFrame):
         <class 'eland.dataframe.DataFrame'>
         Index: 4675 entries, 0 to 4674
         Data columns (total 2 columns):
-        customer_first_name    4675 non-null object
-        geoip.city_name        4094 non-null object
+         #   Column               Non-Null Count  Dtype 
+        ---  ------               --------------  ----- 
+         0   customer_first_name  4675 non-null   object
+         1   geoip.city_name      4094 non-null   object
         dtypes: object(2)
         memory usage: ...
         """
@@ -618,6 +627,7 @@ class DataFrame(NDFrame):
             return
 
         cols = self.columns
+        col_count = len(self.columns)
 
         # hack
         if max_cols is None:
@@ -637,30 +647,74 @@ class DataFrame(NDFrame):
 
         def _verbose_repr():
             lines.append(f"Data columns (total {len(self.columns)} columns):")
-            space = max(len(pprint_thing(k)) for k in self.columns) + 4
+
+            id_head = " # "
+            column_head = "Column"
+            col_space = 2
+
+            max_col = max(len(pprint_thing(k)) for k in cols)
+            len_column = len(pprint_thing(column_head))
+            space = max(max_col, len_column) + col_space
+
+            max_id = len(pprint_thing(col_count))
+            len_id = len(pprint_thing(id_head))
+            space_num = max(max_id, len_id) + col_space
             counts = None
 
-            tmpl = "{count}{dtype}"
+            header = _put_str(id_head, space_num) + _put_str(column_head, space)
             if show_counts:
                 counts = self.count()
                 if len(cols) != len(counts):  # pragma: no cover
                     raise AssertionError(
-                        f"Columns must equal counts "
-                        f"({len(cols):d} != {len(counts):d})"
+                        "Columns must equal counts "
+                        "({cols:d} != {counts:d})".format(
+                            cols=len(cols), counts=len(counts)
+                        )
                     )
-                tmpl = "{count} non-null {dtype}"
+                count_header = "Non-Null Count"
+                len_count = len(count_header)
+                non_null = " non-null"
+                max_count = max(len(pprint_thing(k)) for k in counts) + len(non_null)
+                space_count = max(len_count, max_count) + col_space
+                count_temp = "{count}" + non_null
+            else:
+                count_header = ""
+                space_count = len(count_header)
+                len_count = space_count
+                count_temp = "{count}"
+
+            dtype_header = "Dtype"
+            len_dtype = len(dtype_header)
+            max_dtypes = max(len(pprint_thing(k)) for k in self.dtypes)
+            space_dtype = max(len_dtype, max_dtypes)
+            header += _put_str(count_header, space_count) + _put_str(
+                dtype_header, space_dtype
+            )
+
+            lines.append(header)
+            lines.append(
+                _put_str("-" * len_id, space_num)
+                + _put_str("-" * len_column, space)
+                + _put_str("-" * len_count, space_count)
+                + _put_str("-" * len_dtype, space_dtype)
+            )
 
             dtypes = self.dtypes
             for i, col in enumerate(self.columns):
                 dtype = dtypes.iloc[i]
                 col = pprint_thing(col)
 
+                line_no = _put_str(" {num}".format(num=i), space_num)
+
                 count = ""
                 if show_counts:
                     count = counts.iloc[i]
 
                 lines.append(
-                    _put_str(col, space) + tmpl.format(count=count, dtype=dtype)
+                    line_no
+                    + _put_str(col, space)
+                    + _put_str(count_temp.format(count=count), space_count)
+                    + _put_str(dtype, space_dtype)
                 )
 
         def _non_verbose_repr():
@@ -769,7 +823,7 @@ class DataFrame(NDFrame):
         df = self._build_repr(max_rows + 1)
 
         if buf is not None:
-            _buf = _expand_user(_stringify_path(buf))
+            _buf = _expand_user(stringify_path(buf))
         else:
             _buf = StringIO()
 
@@ -866,7 +920,7 @@ class DataFrame(NDFrame):
         df = self._build_repr(max_rows + 1)
 
         if buf is not None:
-            _buf = _expand_user(_stringify_path(buf))
+            _buf = _expand_user(stringify_path(buf))
         else:
             _buf = StringIO()
 

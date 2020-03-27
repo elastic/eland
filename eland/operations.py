@@ -126,10 +126,14 @@ class Operations:
         return self._metric_aggs(query_compiler, "sum", numeric_only=numeric_only)
 
     def max(self, query_compiler, numeric_only=True):
-        return self._metric_aggs(query_compiler, "max", numeric_only=numeric_only)
+        return self._metric_aggs(
+            query_compiler, "max", numeric_only=numeric_only, keep_original_dtype=True
+        )
 
     def min(self, query_compiler, numeric_only=True):
-        return self._metric_aggs(query_compiler, "min", numeric_only=numeric_only)
+        return self._metric_aggs(
+            query_compiler, "min", numeric_only=numeric_only, keep_original_dtype=True
+        )
 
     def nunique(self, query_compiler):
         return self._metric_aggs(
@@ -142,13 +146,22 @@ class Operations:
     def hist(self, query_compiler, bins):
         return self._hist_aggs(query_compiler, bins)
 
-    def _metric_aggs(self, query_compiler, func, field_types=None, numeric_only=None):
+    def _metric_aggs(
+        self,
+        query_compiler,
+        func,
+        field_types=None,
+        numeric_only=None,
+        keep_original_dtype=False,
+    ):
         """
         Parameters
         ----------
         field_types: str, default None
             if `aggregatable` use only field_names whose fields in elasticseach are aggregatable.
             If `None`, use only numeric fields.
+        keep_original_dtype : bool, default False
+            if `True` the output values should keep the same domain as the input values, i.e. booleans should be booleans
 
         Returns
         -------
@@ -234,6 +247,10 @@ class Operations:
                 if is_datetime_or_timedelta_dtype(pd_dtype):
                     results[field] = elasticsearch_date_to_pandas_date(
                         response["aggregations"][field]["value_as_string"], date_format
+                    )
+                elif keep_original_dtype:
+                    results[field] = pd_dtype.type(
+                        response["aggregations"][field]["value"]
                     )
                 else:
                     results[field] = response["aggregations"][field]["value"]

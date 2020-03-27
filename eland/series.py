@@ -35,7 +35,7 @@ from io import StringIO
 
 import numpy as np
 import pandas as pd
-from pandas.io.common import _expand_user, _stringify_path
+from pandas.io.common import _expand_user, stringify_path
 
 import eland.plotting
 from eland import NDFrame
@@ -365,7 +365,7 @@ class Series(NDFrame):
         temp_series = self._build_repr(max_rows + 1)
 
         if buf is not None:
-            _buf = _expand_user(_stringify_path(buf))
+            _buf = _expand_user(stringify_path(buf))
         else:
             _buf = StringIO()
 
