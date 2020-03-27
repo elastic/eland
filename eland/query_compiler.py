@@ -12,15 +12,16 @@
 #      See the License for the specific language governing permissions and
 #      limitations under the License.
 import copy
-import warnings
-from collections import OrderedDict
 from datetime import datetime
-from typing import Union
 
 import numpy as np
 import pandas as pd
 
-from eland import Client, DEFAULT_PROGRESS_REPORTING_NUM_ROWS, elasticsearch_date_to_pandas_date
+from eland import (
+    Client,
+    DEFAULT_PROGRESS_REPORTING_NUM_ROWS,
+    elasticsearch_date_to_pandas_date,
+)
 from eland import FieldMappings
 from eland import Index
 from eland import Operations
@@ -55,12 +56,14 @@ class QueryCompiler:
     A way to mitigate this would be to post process this drop - TODO
     """
 
-    def __init__(self,
-                 client=None,
-                 index_pattern=None,
-                 display_names=None,
-                 index_field=None,
-                 to_copy=None):
+    def __init__(
+        self,
+        client=None,
+        index_pattern=None,
+        display_names=None,
+        index_field=None,
+        to_copy=None,
+    ):
         # Implement copy as we don't deep copy the client
         if to_copy is not None:
             self._client = Client(to_copy._client)
@@ -73,8 +76,11 @@ class QueryCompiler:
             self._index_pattern = index_pattern
             # Get and persist mappings, this allows us to correctly
             # map returned types from Elasticsearch to pandas datatypes
-            self._mappings = FieldMappings(client=self._client, index_pattern=self._index_pattern,
-                                           display_names=display_names)
+            self._mappings = FieldMappings(
+                client=self._client,
+                index_pattern=self._index_pattern,
+                display_names=display_names,
+            )
             self._index = Index(self, index_field)
             self._operations = Operations()
 
@@ -212,10 +218,12 @@ class QueryCompiler:
         rows = []
         index = []
         if isinstance(results, dict):
-            iterator = results['hits']['hits']
+            iterator = results["hits"]["hits"]
 
             if batch_size is not None:
-                raise NotImplementedError("Can not specify batch_size with dict results")
+                raise NotImplementedError(
+                    "Can not specify batch_size with dict results"
+                )
         else:
             iterator = results
 
@@ -223,14 +231,14 @@ class QueryCompiler:
         for hit in iterator:
             i = i + 1
 
-            if '_source' in hit:
-                row = hit['_source']
+            if "_source" in hit:
+                row = hit["_source"]
             else:
                 row = {}
 
             # script_fields appear in 'fields'
-            if 'fields' in hit:
-                fields = hit['fields']
+            if "fields" in hit:
+                fields = hit["fields"]
                 for key, value in fields.items():
                     row[key] = value
 
@@ -251,7 +259,7 @@ class QueryCompiler:
 
             if show_progress:
                 if i % DEFAULT_PROGRESS_REPORTING_NUM_ROWS == 0:
-                    print("{}: read {} rows".format(datetime.now(), i))
+                    print(f"{datetime.now()}: read {i} rows")
 
         # Create pandas DataFrame
         df = pd.DataFrame(data=rows, index=index)
@@ -259,7 +267,9 @@ class QueryCompiler:
         # _source may not contain all field_names in the mapping
         # therefore, fill in missing field_names
         # (note this returns self.field_names NOT IN df.columns)
-        missing_field_names = list(set(self.get_field_names(include_scripted_fields=True)) - set(df.columns))
+        missing_field_names = list(
+            set(self.get_field_names(include_scripted_fields=True)) - set(df.columns)
+        )
 
         for missing in missing_field_names:
             pd_dtype = self._mappings.field_name_pd_dtype(missing)
@@ -273,30 +283,30 @@ class QueryCompiler:
             df = df[self.columns]
 
         if show_progress:
-            print("{}: read {} rows".format(datetime.now(), i))
+            print(f"{datetime.now()}: read {i} rows")
 
         return partial_result, df
 
     def _flatten_dict(self, y, field_mapping_cache):
-        out = OrderedDict()
+        out = {}
 
-        def flatten(x, name=''):
+        def flatten(x, name=""):
             # We flatten into source fields e.g. if type=geo_point
             # location: {lat=52.38, lon=4.90}
-            if name == '':
+            if name == "":
                 is_source_field = False
-                pd_dtype = 'object'
+                pd_dtype = "object"
             else:
                 try:
                     pd_dtype = field_mapping_cache.field_name_pd_dtype(name[:-1])
                     is_source_field = True
                 except KeyError:
                     is_source_field = False
-                    pd_dtype = 'object'
+                    pd_dtype = "object"
 
             if not is_source_field and type(x) is dict:
                 for a in x:
-                    flatten(x[a], name + a + '.')
+                    flatten(x[a], name + a + ".")
             elif not is_source_field and type(x) is list:
                 for a in x:
                     flatten(a, name)
@@ -305,10 +315,9 @@ class QueryCompiler:
                 field_name = name[:-1]
 
                 # Coerce types - for now just datetime
-                if pd_dtype == 'datetime64[ns]':
+                if pd_dtype == "datetime64[ns]":
                     x = elasticsearch_date_to_pandas_date(
-                        x,
-                        field_mapping_cache.date_field_format(field_name)
+                        x, field_mapping_cache.date_field_format(field_name)
                     )
 
                 # Elasticsearch can have multiple values for a field. These are represented as lists, so
@@ -328,7 +337,7 @@ class QueryCompiler:
                 # TODO - create a lookup for script fields and dtypes to only map 'Infinity'
                 #        if the field is numeric. This implementation will currently map
                 #        any script field with "Infinity" as a string to np.inf
-                if x == 'Infinity':
+                if x == "Infinity":
                     out[name[:-1]] = np.inf
                 else:
                     out[name[:-1]] = x
@@ -466,7 +475,7 @@ class QueryCompiler:
         return self._operations.value_counts(self, es_size)
 
     def info_es(self, buf):
-        buf.write("index_pattern: {index_pattern}\n".format(index_pattern=self._index_pattern))
+        buf.write(f"index_pattern: {self._index_pattern}\n")
 
         self._index.info_es(buf)
         self._mappings.info_es(buf)
@@ -504,37 +513,36 @@ class QueryCompiler:
             If arithmetic operations aren't possible
         """
         if not isinstance(right, QueryCompiler):
-            raise TypeError(
-                "Incompatible types "
-                "{0} != {1}".format(type(self), type(right))
-            )
+            raise TypeError(f"Incompatible types {type(self)} != {type(right)}")
 
         if self._client._es != right._client._es:
             raise ValueError(
-                "Can not perform arithmetic operations across different clients"
-                "{0} != {1}".format(self._client._es, right._client._es)
+                f"Can not perform arithmetic operations across different clients"
+                f"{self._client._es} != {right._client._es}"
             )
 
         if self._index.index_field != right._index.index_field:
             raise ValueError(
-                "Can not perform arithmetic operations across different index fields "
-                "{0} != {1}".format(self._index.index_field, right._index.index_field)
+                f"Can not perform arithmetic operations across different index fields "
+                f"{self._index.index_field} != {right._index.index_field}"
             )
 
         if self._index_pattern != right._index_pattern:
             raise ValueError(
-                "Can not perform arithmetic operations across different index patterns"
-                "{0} != {1}".format(self._index_pattern, right._index_pattern)
+                f"Can not perform arithmetic operations across different index patterns"
+                f"{self._index_pattern} != {right._index_pattern}"
             )
 
     def arithmetic_op_fields(self, display_name, arithmetic_object):
         result = self.copy()
 
         # create a new field name for this display name
-        scripted_field_name = "script_field_{}".format(display_name)
+        scripted_field_name = f"script_field_{display_name}"
 
         # add scripted field
-        result._mappings.add_scripted_field(scripted_field_name, display_name, arithmetic_object.dtype.name)
+        result._mappings.add_scripted_field(
+            scripted_field_name, display_name, arithmetic_object.dtype.name
+        )
 
         result._operations.arithmetic_op_fields(scripted_field_name, arithmetic_object)
 
@@ -547,6 +555,7 @@ class QueryCompiler:
         aggregatable_field_name = self._mappings.aggregatable_field_name(display_name)
 
         return aggregatable_field_name
+
 
 class FieldMappingCache:
     """

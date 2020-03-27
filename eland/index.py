@@ -12,6 +12,7 @@
 #      See the License for the specific language governing permissions and
 #      limitations under the License.
 
+
 class Index:
     """
     The index for an eland.DataFrame.
@@ -28,8 +29,9 @@ class Index:
     In case sorting or aggregating on the _id field is required, it is advised to duplicate
     the content of the _id field in another field that has doc_values enabled.)
     """
-    ID_INDEX_FIELD = '_id'
-    ID_SORT_FIELD = '_doc'  # if index field is _id, sort by _doc
+
+    ID_INDEX_FIELD = "_id"
+    ID_SORT_FIELD = "_doc"  # if index field is _id, sort by _doc
 
     def __init__(self, query_compiler, index_field=None):
         self.index_field = index_field
@@ -72,5 +74,5 @@ class Index:
 
     def info_es(self, buf):
         buf.write("Index:\n")
-        buf.write(" index_field: {0}\n".format(self.index_field))
-        buf.write(" is_source_field: {0}\n".format(self.is_source_field))
+        buf.write(f" index_field: {self.index_field}\n")
+        buf.write(f" is_source_field: {self.is_source_field}\n")

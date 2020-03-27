@@ -22,7 +22,6 @@ from eland.tests.common import assert_pandas_eland_frame_equal
 
 
 class TestDataFrameDtypes(TestData):
-
     def test_flights_dtypes(self):
         pd_flights = self.pd_flights()
         ed_flights = self.ed_flights()
@@ -41,5 +40,5 @@ class TestDataFrameDtypes(TestData):
 
         assert_pandas_eland_frame_equal(
             pd_flights.select_dtypes(include=np.number),
-            ed_flights.select_dtypes(include=np.number)
+            ed_flights.select_dtypes(include=np.number),
         )

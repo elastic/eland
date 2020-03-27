@@ -53,7 +53,7 @@ class SortIndexAction(PostProcessingAction):
         return df.sort_index()
 
     def __repr__(self):
-        return "('{}')".format(self.type)
+        return f"('{self.type}')"
 
 
 class HeadAction(PostProcessingAction):
@@ -66,7 +66,7 @@ class HeadAction(PostProcessingAction):
         return df.head(self._count)
 
     def __repr__(self):
-        return "('{}': ('count': {}))".format(self.type, self._count)
+        return f"('{self.type}': ('count': {self._count}))"
 
 
 class TailAction(PostProcessingAction):
@@ -79,7 +79,7 @@ class TailAction(PostProcessingAction):
         return df.tail(self._count)
 
     def __repr__(self):
-        return "('{}': ('count': {}))".format(self.type, self._count)
+        return f"('{self.type}': ('count': {self._count}))"
 
 
 class SortFieldAction(PostProcessingAction):
@@ -92,7 +92,9 @@ class SortFieldAction(PostProcessingAction):
         # Split string
         sort_params = sort_params_string.split(":")
         if len(sort_params) != 2:
-            raise ValueError("Expected ES sort params string (e.g. _doc:desc). Got '{}'".format(sort_params_string))
+            raise ValueError(
+                f"Expected ES sort params string (e.g. _doc:desc). Got '{sort_params_string}'"
+            )
 
         self._sort_field = sort_params[0]
         self._sort_order = SortOrder.from_string(sort_params[1])
@@ -103,4 +105,4 @@ class SortFieldAction(PostProcessingAction):
         return df.sort_values(self._sort_field, False)
 
     def __repr__(self):
-        return "('{}': ('sort_field': '{}', 'sort_order': {}))".format(self.type, self._sort_field, self._sort_order)
+        return f"('{self.type}': ('sort_field': '{self._sort_field}', 'sort_order': {self._sort_order}))"

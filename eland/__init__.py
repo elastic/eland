@@ -12,7 +12,7 @@
 #      See the License for the specific language governing permissions and
 #      limitations under the License.
 
-from __future__ import absolute_import
+# flake8: noqa
 
 from eland._version import *
 from eland.common import *
@@ -27,4 +27,3 @@ from eland.ndframe import *
 from eland.series import *
 from eland.dataframe import *
 from eland.utils import *
-

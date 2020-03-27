@@ -21,10 +21,9 @@ from eland.tests.common import assert_pandas_eland_series_equal
 
 
 class TestSeriesRename(TestData):
-
     def test_rename(self):
-        pd_carrier = self.pd_flights()['Carrier']
-        ed_carrier = ed.Series(ES_TEST_CLIENT, FLIGHTS_INDEX_NAME, 'Carrier')
+        pd_carrier = self.pd_flights()["Carrier"]
+        ed_carrier = ed.Series(ES_TEST_CLIENT, FLIGHTS_INDEX_NAME, "Carrier")
 
         assert_pandas_eland_series_equal(pd_carrier, ed_carrier)
 

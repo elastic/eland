@@ -158,6 +158,9 @@ Configuring PyCharm And Running Tests
    ``python -m eland.tests.setup_tests`` to setup test environment -
    *note this modifies Elasticsearch indices*
 -  Run ``pytest --doctest-modules`` to validate install
+-  To test specific versions of Python use ``nox -s test-3.8``
+-  To run the automatic formatter and check for lint issues
+   run ``nox -s blacken``
 
 Documentation
 ~~~~~~~~~~~~~

@@ -13,17 +13,28 @@
 #      limitations under the License.
 import copy
 import warnings
-from collections import OrderedDict
 
 import pandas as pd
 from pandas.core.dtypes.common import is_datetime_or_timedelta_dtype
 
-from eland import Index, SortOrder, DEFAULT_CSV_BATCH_OUTPUT_SIZE, DEFAULT_ES_MAX_RESULT_WINDOW, \
-    elasticsearch_date_to_pandas_date
+from eland import (
+    Index,
+    SortOrder,
+    DEFAULT_CSV_BATCH_OUTPUT_SIZE,
+    DEFAULT_ES_MAX_RESULT_WINDOW,
+    elasticsearch_date_to_pandas_date,
+)
 from eland import Query
 from eland.actions import SortFieldAction
-from eland.tasks import HeadTask, TailTask, BooleanFilterTask, ArithmeticOpFieldsTask, QueryTermsTask, \
-    QueryIdsTask, SizeTask
+from eland.tasks import (
+    HeadTask,
+    TailTask,
+    BooleanFilterTask,
+    ArithmeticOpFieldsTask,
+    QueryTermsTask,
+    QueryIdsTask,
+    SizeTask,
+)
 
 
 class Operations:
@@ -50,8 +61,10 @@ class Operations:
         return type(self)(*args, **kwargs)
 
     def copy(self):
-        return self.__constructor__(tasks=copy.deepcopy(self._tasks),
-                                    arithmetic_op_fields_task=copy.deepcopy(self._arithmetic_op_fields_task))
+        return self.__constructor__(
+            tasks=copy.deepcopy(self._tasks),
+            arithmetic_op_fields_task=copy.deepcopy(self._arithmetic_op_fields_task),
+        )
 
     def head(self, index, n):
         # Add a task that is an ascending sort with size=n
@@ -65,7 +78,9 @@ class Operations:
 
     def arithmetic_op_fields(self, display_name, arithmetic_series):
         if self._arithmetic_op_fields_task is None:
-            self._arithmetic_op_fields_task = ArithmeticOpFieldsTask(display_name, arithmetic_series)
+            self._arithmetic_op_fields_task = ArithmeticOpFieldsTask(
+                display_name, arithmetic_series
+            )
         else:
             self._arithmetic_op_fields_task.update(display_name, arithmetic_series)
 
@@ -84,41 +99,45 @@ class Operations:
         # (_count doesn't support size).
         # Longer term we may fall back to pandas, but this may result in loading all index into memory.
         if self._size(query_params, post_processing) is not None:
-            raise NotImplementedError("Requesting count with additional query and processing parameters "
-                                      "not supported {0} {1}"
-                                      .format(query_params, post_processing))
+            raise NotImplementedError(
+                f"Requesting count with additional query and processing parameters "
+                f"not supported {query_params} {post_processing}"
+            )
 
         # Only return requested field_names
         fields = query_compiler.get_field_names(include_scripted_fields=False)
 
-        counts = OrderedDict()
+        counts = {}
         for field in fields:
-            body = Query(query_params['query'])
+            body = Query(query_params["query"])
             body.exists(field, must=True)
 
-            field_exists_count = query_compiler._client.count(index=query_compiler._index_pattern,
-                                                              body=body.to_count_body())
+            field_exists_count = query_compiler._client.count(
+                index=query_compiler._index_pattern, body=body.to_count_body()
+            )
             counts[field] = field_exists_count
 
         return pd.Series(data=counts, index=fields)
 
     def mean(self, query_compiler, numeric_only=True):
-        return self._metric_aggs(query_compiler, 'avg', numeric_only=numeric_only)
+        return self._metric_aggs(query_compiler, "avg", numeric_only=numeric_only)
 
     def sum(self, query_compiler, numeric_only=True):
-        return self._metric_aggs(query_compiler, 'sum', numeric_only=numeric_only)
+        return self._metric_aggs(query_compiler, "sum", numeric_only=numeric_only)
 
     def max(self, query_compiler, numeric_only=True):
-        return self._metric_aggs(query_compiler, 'max', numeric_only=numeric_only)
+        return self._metric_aggs(query_compiler, "max", numeric_only=numeric_only)
 
     def min(self, query_compiler, numeric_only=True):
-        return self._metric_aggs(query_compiler, 'min', numeric_only=numeric_only)
+        return self._metric_aggs(query_compiler, "min", numeric_only=numeric_only)
 
     def nunique(self, query_compiler):
-        return self._metric_aggs(query_compiler, 'cardinality', field_types='aggregatable')
+        return self._metric_aggs(
+            query_compiler, "cardinality", field_types="aggregatable"
+        )
 
     def value_counts(self, query_compiler, es_size):
-        return self._terms_aggs(query_compiler, 'terms', es_size)
+        return self._terms_aggs(query_compiler, "terms", es_size)
 
     def hist(self, query_compiler, bins):
         return self._hist_aggs(query_compiler, bins)
@@ -140,25 +159,28 @@ class Operations:
 
         size = self._size(query_params, post_processing)
         if size is not None:
-            raise NotImplementedError("Can not count field matches if size is set {}".format(size))
+            raise NotImplementedError(
+                f"Can not count field matches if size is set {size}"
+            )
 
-        body = Query(query_params['query'])
+        body = Query(query_params["query"])
 
-        results = OrderedDict()
+        results = {}
 
         # some metrics aggs (including cardinality) work on all aggregatable fields
         # therefore we include an optional all parameter on operations
         # that call _metric_aggs
-        if field_types == 'aggregatable':
-            aggregatable_field_names = query_compiler._mappings.aggregatable_field_names()
+        if field_types == "aggregatable":
+            aggregatable_field_names = (
+                query_compiler._mappings.aggregatable_field_names()
+            )
 
             for field in aggregatable_field_names.keys():
                 body.metric_aggs(field, func, field)
 
             response = query_compiler._client.search(
-                index=query_compiler._index_pattern,
-                size=0,
-                body=body.to_search_body())
+                index=query_compiler._index_pattern, size=0, body=body.to_search_body()
+            )
 
             # Results are of the form
             # "aggregations" : {
@@ -169,26 +191,32 @@ class Operations:
 
             # map aggregatable (e.g. x.keyword) to field_name
             for key, value in aggregatable_field_names.items():
-                results[value] = response['aggregations'][key]['value']
+                results[value] = response["aggregations"][key]["value"]
         else:
             if numeric_only:
-                pd_dtypes, source_fields, date_formats = query_compiler._mappings.metric_source_fields(
-                    include_bool=True)
+                (
+                    pd_dtypes,
+                    source_fields,
+                    date_formats,
+                ) = query_compiler._mappings.metric_source_fields(include_bool=True)
             else:
                 # The only non-numerics we support are bool and timestamps currently
                 # strings are not supported by metric aggs in ES
                 # TODO - sum isn't supported for Timestamp in pandas - although ES does attempt to do it
-                pd_dtypes, source_fields, date_formats = query_compiler._mappings.metric_source_fields(
-                    include_bool=True,
-                    include_timestamp=True)
+                (
+                    pd_dtypes,
+                    source_fields,
+                    date_formats,
+                ) = query_compiler._mappings.metric_source_fields(
+                    include_bool=True, include_timestamp=True
+                )
 
             for field in source_fields:
                 body.metric_aggs(field, func, field)
 
             response = query_compiler._client.search(
-                index=query_compiler._index_pattern,
-                size=0,
-                body=body.to_search_body())
+                index=query_compiler._index_pattern, size=0, body=body.to_search_body()
+            )
 
             # Results are of the form
             # "aggregations" : {
@@ -200,14 +228,15 @@ class Operations:
             #     "value_as_string": "2018-01-21T19:20:45.564Z"
             #   }
             # }
-            for pd_dtype, field, date_format in zip(pd_dtypes, source_fields, date_formats):
+            for pd_dtype, field, date_format in zip(
+                pd_dtypes, source_fields, date_formats
+            ):
                 if is_datetime_or_timedelta_dtype(pd_dtype):
                     results[field] = elasticsearch_date_to_pandas_date(
-                        response['aggregations'][field]['value_as_string'],
-                        date_format
+                        response["aggregations"][field]["value_as_string"], date_format
                     )
                 else:
-                    results[field] = response['aggregations'][field]['value']
+                    results[field] = response["aggregations"][field]["value"]
 
         # Return single value if this is a series
         # if len(numeric_source_fields) == 1:
@@ -232,28 +261,29 @@ class Operations:
 
         size = self._size(query_params, post_processing)
         if size is not None:
-            raise NotImplementedError("Can not count field matches if size is set {}".format(size))
+            raise NotImplementedError(
+                f"Can not count field matches if size is set {size}"
+            )
 
         # Get just aggregatable field_names
         aggregatable_field_names = query_compiler._mappings.aggregatable_field_names()
 
-        body = Query(query_params['query'])
+        body = Query(query_params["query"])
 
         for field in aggregatable_field_names.keys():
             body.terms_aggs(field, func, field, es_size=es_size)
 
         response = query_compiler._client.search(
-            index=query_compiler._index_pattern,
-            size=0,
-            body=body.to_search_body())
+            index=query_compiler._index_pattern, size=0, body=body.to_search_body()
+        )
 
-        results = OrderedDict()
+        results = {}
 
         for key in aggregatable_field_names.keys():
             # key is aggregatable field, value is label
             # e.g. key=category.keyword, value=category
-            for bucket in response['aggregations'][key]['buckets']:
-                results[bucket['key']] = bucket['doc_count']
+            for bucket in response["aggregations"][key]["buckets"]:
+                results[bucket["key"]] = bucket["doc_count"]
 
         try:
             # get first value in dict (key is .keyword)
@@ -271,22 +301,23 @@ class Operations:
 
         size = self._size(query_params, post_processing)
         if size is not None:
-            raise NotImplementedError("Can not count field matches if size is set {}".format(size))
+            raise NotImplementedError(
+                f"Can not count field matches if size is set {size}"
+            )
 
         numeric_source_fields = query_compiler._mappings.numeric_source_fields()
 
-        body = Query(query_params['query'])
+        body = Query(query_params["query"])
 
-        min_aggs = self._metric_aggs(query_compiler, 'min', numeric_only=True)
-        max_aggs = self._metric_aggs(query_compiler, 'max', numeric_only=True)
+        min_aggs = self._metric_aggs(query_compiler, "min", numeric_only=True)
+        max_aggs = self._metric_aggs(query_compiler, "max", numeric_only=True)
 
         for field in numeric_source_fields:
             body.hist_aggs(field, field, min_aggs, max_aggs, num_bins)
 
         response = query_compiler._client.search(
-            index=query_compiler._index_pattern,
-            size=0,
-            body=body.to_search_body())
+            index=query_compiler._index_pattern, size=0, body=body.to_search_body()
+        )
         # results are like
         # "aggregations" : {
         #     "DistanceKilometers" : {
@@ -301,8 +332,8 @@ class Operations:
         #         },
         #         ...
 
-        bins = OrderedDict()
-        weights = OrderedDict()
+        bins = {}
+        weights = {}
 
         # There is one more bin that weights
         # len(bins) = len(weights) + 1
@@ -318,29 +349,30 @@ class Operations:
         for field in numeric_source_fields:
 
             # in case of series let plotting.ed_hist_series thrown an exception
-            if not response.get('aggregations'):
+            if not response.get("aggregations"):
                 continue
 
             # in case of dataframe, throw warning that field is excluded
-            if not response['aggregations'].get(field):
-                warnings.warn("{} has no meaningful histogram interval and will be excluded. "
-                              "All values 0."
-                              .format(field),
-                              UserWarning)
+            if not response["aggregations"].get(field):
+                warnings.warn(
+                    f"{field} has no meaningful histogram interval and will be excluded. "
+                    f"All values 0.",
+                    UserWarning,
+                )
                 continue
 
-            buckets = response['aggregations'][field]['buckets']
+            buckets = response["aggregations"][field]["buckets"]
 
             bins[field] = []
             weights[field] = []
 
             for bucket in buckets:
-                bins[field].append(bucket['key'])
+                bins[field].append(bucket["key"])
 
                 if bucket == buckets[-1]:
-                    weights[field][-1] += bucket['doc_count']
+                    weights[field][-1] += bucket["doc_count"]
                 else:
-                    weights[field].append(bucket['doc_count'])
+                    weights[field].append(bucket["doc_count"])
 
         df_bins = pd.DataFrame(data=bins)
         df_weights = pd.DataFrame(data=weights)
@@ -381,36 +413,36 @@ class Operations:
         """
         ed_aggs = []
         for pd_agg in pd_aggs:
-            if pd_agg == 'count':
-                ed_aggs.append('count')
-            elif pd_agg == 'mad':
-                ed_aggs.append('median_absolute_deviation')
-            elif pd_agg == 'max':
-                ed_aggs.append('max')
-            elif pd_agg == 'mean':
-                ed_aggs.append('avg')
-            elif pd_agg == 'median':
-                ed_aggs.append(('percentiles', '50.0'))
-            elif pd_agg == 'min':
-                ed_aggs.append('min')
-            elif pd_agg == 'mode':
+            if pd_agg == "count":
+                ed_aggs.append("count")
+            elif pd_agg == "mad":
+                ed_aggs.append("median_absolute_deviation")
+            elif pd_agg == "max":
+                ed_aggs.append("max")
+            elif pd_agg == "mean":
+                ed_aggs.append("avg")
+            elif pd_agg == "median":
+                ed_aggs.append(("percentiles", "50.0"))
+            elif pd_agg == "min":
+                ed_aggs.append("min")
+            elif pd_agg == "mode":
                 # We could do this via top term
                 raise NotImplementedError(pd_agg, " not currently implemented")
-            elif pd_agg == 'quantile':
+            elif pd_agg == "quantile":
                 # TODO
                 raise NotImplementedError(pd_agg, " not currently implemented")
-            elif pd_agg == 'rank':
+            elif pd_agg == "rank":
                 # TODO
                 raise NotImplementedError(pd_agg, " not currently implemented")
-            elif pd_agg == 'sem':
+            elif pd_agg == "sem":
                 # TODO
                 raise NotImplementedError(pd_agg, " not currently implemented")
-            elif pd_agg == 'sum':
-                ed_aggs.append('sum')
-            elif pd_agg == 'std':
-                ed_aggs.append(('extended_stats', 'std_deviation'))
-            elif pd_agg == 'var':
-                ed_aggs.append(('extended_stats', 'variance'))
+            elif pd_agg == "sum":
+                ed_aggs.append("sum")
+            elif pd_agg == "std":
+                ed_aggs.append(("extended_stats", "std_deviation"))
+            elif pd_agg == "var":
+                ed_aggs.append(("extended_stats", "variance"))
             else:
                 raise NotImplementedError(pd_agg, " not currently implemented")
 
@@ -424,11 +456,13 @@ class Operations:
 
         size = self._size(query_params, post_processing)
         if size is not None:
-            raise NotImplementedError("Can not count field matches if size is set {}".format(size))
+            raise NotImplementedError(
+                f"Can not count field matches if size is set {size}"
+            )
 
         field_names = query_compiler.get_field_names(include_scripted_fields=False)
 
-        body = Query(query_params['query'])
+        body = Query(query_params["query"])
 
         # convert pandas aggs to ES equivalent
         es_aggs = self._map_pd_aggs_to_es_aggs(pd_aggs)
@@ -437,14 +471,13 @@ class Operations:
             for es_agg in es_aggs:
                 # If we have multiple 'extended_stats' etc. here we simply NOOP on 2nd call
                 if isinstance(es_agg, tuple):
-                    body.metric_aggs(es_agg[0] + '_' + field, es_agg[0], field)
+                    body.metric_aggs(es_agg[0] + "_" + field, es_agg[0], field)
                 else:
-                    body.metric_aggs(es_agg + '_' + field, es_agg, field)
+                    body.metric_aggs(es_agg + "_" + field, es_agg, field)
 
         response = query_compiler._client.search(
-            index=query_compiler._index_pattern,
-            size=0,
-            body=body.to_search_body())
+            index=query_compiler._index_pattern, size=0, body=body.to_search_body()
+        )
 
         """
         Results are like (for 'sum', 'min')
@@ -453,15 +486,19 @@ class Operations:
         sum    8.204365e+06        9.261629e+07   5.754909e+07          618150
         min    1.000205e+02        0.000000e+00   0.000000e+00               0
         """
-        results = OrderedDict()
+        results = {}
 
         for field in field_names:
             values = list()
             for es_agg in es_aggs:
                 if isinstance(es_agg, tuple):
-                    values.append(response['aggregations'][es_agg[0] + '_' + field][es_agg[1]])
+                    values.append(
+                        response["aggregations"][es_agg[0] + "_" + field][es_agg[1]]
+                    )
                 else:
-                    values.append(response['aggregations'][es_agg + '_' + field]['value'])
+                    values.append(
+                        response["aggregations"][es_agg + "_" + field]["value"]
+                    )
 
             results[field] = values
 
@@ -474,41 +511,53 @@ class Operations:
 
         size = self._size(query_params, post_processing)
         if size is not None:
-            raise NotImplementedError("Can not count field matches if size is set {}".format(size))
+            raise NotImplementedError(
+                f"Can not count field matches if size is set {size}"
+            )
 
         numeric_source_fields = query_compiler._mappings.numeric_source_fields()
 
         # for each field we compute:
         # count, mean, std, min, 25%, 50%, 75%, max
-        body = Query(query_params['query'])
+        body = Query(query_params["query"])
 
         for field in numeric_source_fields:
-            body.metric_aggs('extended_stats_' + field, 'extended_stats', field)
-            body.metric_aggs('percentiles_' + field, 'percentiles', field)
+            body.metric_aggs("extended_stats_" + field, "extended_stats", field)
+            body.metric_aggs("percentiles_" + field, "percentiles", field)
 
         response = query_compiler._client.search(
-            index=query_compiler._index_pattern,
-            size=0,
-            body=body.to_search_body())
+            index=query_compiler._index_pattern, size=0, body=body.to_search_body()
+        )
 
-        results = OrderedDict()
+        results = {}
 
         for field in numeric_source_fields:
             values = list()
-            values.append(response['aggregations']['extended_stats_' + field]['count'])
-            values.append(response['aggregations']['extended_stats_' + field]['avg'])
-            values.append(response['aggregations']['extended_stats_' + field]['std_deviation'])
-            values.append(response['aggregations']['extended_stats_' + field]['min'])
-            values.append(response['aggregations']['percentiles_' + field]['values']['25.0'])
-            values.append(response['aggregations']['percentiles_' + field]['values']['50.0'])
-            values.append(response['aggregations']['percentiles_' + field]['values']['75.0'])
-            values.append(response['aggregations']['extended_stats_' + field]['max'])
+            values.append(response["aggregations"]["extended_stats_" + field]["count"])
+            values.append(response["aggregations"]["extended_stats_" + field]["avg"])
+            values.append(
+                response["aggregations"]["extended_stats_" + field]["std_deviation"]
+            )
+            values.append(response["aggregations"]["extended_stats_" + field]["min"])
+            values.append(
+                response["aggregations"]["percentiles_" + field]["values"]["25.0"]
+            )
+            values.append(
+                response["aggregations"]["percentiles_" + field]["values"]["50.0"]
+            )
+            values.append(
+                response["aggregations"]["percentiles_" + field]["values"]["75.0"]
+            )
+            values.append(response["aggregations"]["extended_stats_" + field]["max"])
 
             # if not None
             if values.count(None) < len(values):
                 results[field] = values
 
-        df = pd.DataFrame(data=results, index=['count', 'mean', 'std', 'min', '25%', '50%', '75%', 'max'])
+        df = pd.DataFrame(
+            data=results,
+            index=["count", "mean", "std", "min", "25%", "50%", "75%", "max"],
+        )
 
         return df
 
@@ -522,8 +571,10 @@ class Operations:
                 # This collector does not batch data on output. Therefore, batch_size is fixed to None and this method
                 # is only called once.
                 if self._df is not None:
-                    raise RuntimeError("Logic error in execution, this method must only be called once for this"
-                                       "collector - batch_size == None")
+                    raise RuntimeError(
+                        "Logic error in execution, this method must only be called once for this"
+                        "collector - batch_size == None"
+                    )
                 self._df = df
 
             @staticmethod
@@ -557,8 +608,8 @@ class Operations:
                     df.to_csv(**self._args)
                 else:
                     # Don't write header, and change mode to append
-                    self._args['header'] = False
-                    self._args['mode'] = 'a'
+                    self._args["header"] = False
+                    self._args["mode"] = "a"
                     df.to_csv(**self._args)
 
             @staticmethod
@@ -582,12 +633,12 @@ class Operations:
 
         size, sort_params = Operations._query_params_to_size_and_sort(query_params)
 
-        script_fields = query_params['query_script_fields']
-        query = Query(query_params['query'])
+        script_fields = query_params["query_script_fields"]
+        query = Query(query_params["query"])
 
         body = query.to_search_body()
         if script_fields is not None:
-            body['script_fields'] = script_fields
+            body["script_fields"] = script_fields
 
         # Only return requested field_names
         _source = query_compiler.get_field_names(include_scripted_fields=False)
@@ -600,7 +651,7 @@ class Operations:
             # If _source is a large number of fields (1000+) then this can result in an
             # extremely long url and a `too_long_frame_exception`. Therefore, add
             # _source to the body rather than as a _source parameter
-            body['_source'] = _source
+            body["_source"] = _source
         else:
             _source = False
 
@@ -613,35 +664,36 @@ class Operations:
             if size > 0:
                 try:
 
-
                     es_results = query_compiler._client.search(
                         index=query_compiler._index_pattern,
                         size=size,
                         sort=sort_params,
-                        body=body)
+                        body=body,
+                    )
                 except Exception:
                     # Catch all ES errors and print debug (currently to stdout)
                     error = {
-                        'index': query_compiler._index_pattern,
-                        'size': size,
-                        'sort': sort_params,
-                        'body': body
+                        "index": query_compiler._index_pattern,
+                        "size": size,
+                        "sort": sort_params,
+                        "body": body,
                     }
                     print("Elasticsearch error:", error)
                     raise
         else:
             is_scan = True
             es_results = query_compiler._client.scan(
-                index=query_compiler._index_pattern,
-                query=body)
+                index=query_compiler._index_pattern, query=body
+            )
             # create post sort
             if sort_params is not None:
                 post_processing.append(SortFieldAction(sort_params))
 
         if is_scan:
             while True:
-                partial_result, df = query_compiler._es_results_to_pandas(es_results, collector.batch_size(),
-                                                                          collector.show_progress)
+                partial_result, df = query_compiler._es_results_to_pandas(
+                    es_results, collector.batch_size(), collector.show_progress
+                )
                 df = self._apply_df_post_processing(df, post_processing)
                 collector.collect(df)
                 if not partial_result:
@@ -662,14 +714,16 @@ class Operations:
             # TODO - this is not necessarily valid as the field may not exist in ALL these docs
             return size
 
-        body = Query(query_params['query'])
+        body = Query(query_params["query"])
         body.exists(field, must=True)
 
-        return query_compiler._client.count(index=query_compiler._index_pattern, body=body.to_count_body())
+        return query_compiler._client.count(
+            index=query_compiler._index_pattern, body=body.to_count_body()
+        )
 
     def _validate_index_operation(self, query_compiler, items):
         if not isinstance(items, list):
-            raise TypeError("list item required - not {}".format(type(items)))
+            raise TypeError(f"list item required - not {type(items)}")
 
         # field is the index field so count values
         query_params, post_processing = self._resolve_tasks(query_compiler)
@@ -678,21 +732,27 @@ class Operations:
 
         # Size is dictated by operations
         if size is not None:
-            raise NotImplementedError("Can not count field matches if size is set {}".format(size))
+            raise NotImplementedError(
+                f"Can not count field matches if size is set {size}"
+            )
 
         return query_params, post_processing
 
     def index_matches_count(self, query_compiler, field, items):
-        query_params, post_processing = self._validate_index_operation(query_compiler, items)
+        query_params, post_processing = self._validate_index_operation(
+            query_compiler, items
+        )
 
-        body = Query(query_params['query'])
+        body = Query(query_params["query"])
 
         if field == Index.ID_INDEX_FIELD:
             body.ids(items, must=True)
         else:
             body.terms(field, items, must=True)
 
-        return query_compiler._client.count(index=query_compiler._index_pattern, body=body.to_count_body())
+        return query_compiler._client.count(
+            index=query_compiler._index_pattern, body=body.to_count_body()
+        )
 
     def drop_index_values(self, query_compiler, field, items):
         self._validate_index_operation(query_compiler, items)
@@ -714,11 +774,14 @@ class Operations:
     @staticmethod
     def _query_params_to_size_and_sort(query_params):
         sort_params = None
-        if query_params['query_sort_field'] and query_params['query_sort_order']:
-            sort_params = query_params['query_sort_field'] + ":" + SortOrder.to_string(
-                query_params['query_sort_order'])
+        if query_params["query_sort_field"] and query_params["query_sort_order"]:
+            sort_params = (
+                query_params["query_sort_field"]
+                + ":"
+                + SortOrder.to_string(query_params["query_sort_order"])
+            )
 
-        size = query_params['query_size']
+        size = query_params["query_size"]
 
         return size, sort_params
 
@@ -744,27 +807,35 @@ class Operations:
         # Some operations can be simply combined into a single query
         # other operations require pre-queries and then combinations
         # other operations require in-core post-processing of results
-        query_params = {"query_sort_field": None,
-                        "query_sort_order": None,
-                        "query_size": None,
-                        "query_fields": None,
-                        "query_script_fields": None,
-                        "query": Query()}
+        query_params = {
+            "query_sort_field": None,
+            "query_sort_order": None,
+            "query_size": None,
+            "query_fields": None,
+            "query_script_fields": None,
+            "query": Query(),
+        }
 
         post_processing = []
 
         for task in self._tasks:
-            query_params, post_processing = task.resolve_task(query_params, post_processing, query_compiler)
+            query_params, post_processing = task.resolve_task(
+                query_params, post_processing, query_compiler
+            )
 
         if self._arithmetic_op_fields_task is not None:
-            query_params, post_processing = self._arithmetic_op_fields_task.resolve_task(query_params, post_processing,
-                                                                                         query_compiler)
+            (
+                query_params,
+                post_processing,
+            ) = self._arithmetic_op_fields_task.resolve_task(
+                query_params, post_processing, query_compiler
+            )
 
         return query_params, post_processing
 
     def _size(self, query_params, post_processing):
         # Shrink wrap code around checking if size parameter is set
-        size = query_params['query_size']  # can be None
+        size = query_params["query_size"]  # can be None
 
         pp_size = self._count_post_processing(post_processing)
         if pp_size is not None:
@@ -778,23 +849,23 @@ class Operations:
 
     def info_es(self, query_compiler, buf):
         buf.write("Operations:\n")
-        buf.write(" tasks: {0}\n".format(self._tasks))
+        buf.write(f" tasks: {self._tasks}\n")
 
         query_params, post_processing = self._resolve_tasks(query_compiler)
         size, sort_params = Operations._query_params_to_size_and_sort(query_params)
         _source = query_compiler._mappings.get_field_names()
 
-        script_fields = query_params['query_script_fields']
-        query = Query(query_params['query'])
+        script_fields = query_params["query_script_fields"]
+        query = Query(query_params["query"])
         body = query.to_search_body()
         if script_fields is not None:
-            body['script_fields'] = script_fields
+            body["script_fields"] = script_fields
 
-        buf.write(" size: {0}\n".format(size))
-        buf.write(" sort_params: {0}\n".format(sort_params))
-        buf.write(" _source: {0}\n".format(_source))
-        buf.write(" body: {0}\n".format(body))
-        buf.write(" post_processing: {0}\n".format(post_processing))
+        buf.write(f" size: {size}\n")
+        buf.write(f" sort_params: {sort_params}\n")
+        buf.write(f" _source: {_source}\n")
+        buf.write(f" body: {body}\n")
+        buf.write(f" post_processing: {post_processing}\n")
 
     def update_query(self, boolean_filter):
         task = BooleanFilterTask(boolean_filter)

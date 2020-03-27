@@ -21,11 +21,9 @@ from eland.tests.common import TestData
 
 
 class TestDTypes(TestData):
-
     def test_all_fields(self):
         field_mappings = ed.FieldMappings(
-            client=ed.Client(ES_TEST_CLIENT),
-            index_pattern=FLIGHTS_INDEX_NAME
+            client=ed.Client(ES_TEST_CLIENT), index_pattern=FLIGHTS_INDEX_NAME
         )
 
         pd_flights = self.pd_flights()
@@ -33,12 +31,12 @@ class TestDTypes(TestData):
         assert_series_equal(pd_flights.dtypes, field_mappings.dtypes())
 
     def test_selected_fields(self):
-        expected = ['timestamp', 'DestWeather', 'DistanceKilometers', 'AvgTicketPrice']
+        expected = ["timestamp", "DestWeather", "DistanceKilometers", "AvgTicketPrice"]
 
         field_mappings = ed.FieldMappings(
             client=ed.Client(ES_TEST_CLIENT),
             index_pattern=FLIGHTS_INDEX_NAME,
-            display_names=expected
+            display_names=expected,
         )
 
         pd_flights = self.pd_flights()[expected]

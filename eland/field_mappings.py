@@ -13,12 +13,16 @@
 #      limitations under the License.
 
 import warnings
-from collections import OrderedDict
 
 import numpy as np
 import pandas as pd
-from pandas.core.dtypes.common import (is_float_dtype, is_bool_dtype, is_integer_dtype, is_datetime_or_timedelta_dtype,
-                                       is_string_dtype)
+from pandas.core.dtypes.common import (
+    is_float_dtype,
+    is_bool_dtype,
+    is_integer_dtype,
+    is_datetime_or_timedelta_dtype,
+    is_string_dtype,
+)
 from pandas.core.dtypes.inference import is_list_like
 
 
@@ -47,13 +51,19 @@ class FieldMappings:
     """
 
     # the labels for each column (display_name is index)
-    column_labels = ['es_field_name', 'is_source', 'es_dtype', 'es_date_format', 'pd_dtype', 'is_searchable',
-                     'is_aggregatable', 'is_scripted', 'aggregatable_es_field_name']
+    column_labels = [
+        "es_field_name",
+        "is_source",
+        "es_dtype",
+        "es_date_format",
+        "pd_dtype",
+        "is_searchable",
+        "is_aggregatable",
+        "is_scripted",
+        "aggregatable_es_field_name",
+    ]
 
-    def __init__(self,
-                 client=None,
-                 index_pattern=None,
-                 display_names=None):
+    def __init__(self, client=None, index_pattern=None, display_names=None):
         """
         Parameters
         ----------
@@ -67,20 +77,26 @@ class FieldMappings:
             Field names to display
         """
         if (client is None) or (index_pattern is None):
-            raise ValueError("Can not initialise mapping without client or index_pattern {} {}", client, index_pattern)
+            raise ValueError(
+                f"Can not initialise mapping without client "
+                f"or index_pattern {client} {index_pattern}",
+            )
 
         get_mapping = client.get_mapping(index=index_pattern)
 
         # Get all fields (including all nested) and then all field_caps
         all_fields = FieldMappings._extract_fields_from_mapping(get_mapping)
-        all_fields_caps = client.field_caps(index=index_pattern, fields='*')
+        all_fields_caps = client.field_caps(index=index_pattern, fields="*")
 
         # Get top level (not sub-field multifield) mappings
-        source_fields = FieldMappings._extract_fields_from_mapping(get_mapping, source_only=True)
+        source_fields = FieldMappings._extract_fields_from_mapping(
+            get_mapping, source_only=True
+        )
 
         # Populate capability matrix of fields
-        self._mappings_capabilities = FieldMappings._create_capability_matrix(all_fields, source_fields,
-                                                                              all_fields_caps)
+        self._mappings_capabilities = FieldMappings._create_capability_matrix(
+            all_fields, source_fields, all_fields_caps
+        )
 
         if display_names is not None:
             self.display_names = display_names
@@ -149,15 +165,20 @@ class FieldMappings:
 
         Returns
         -------
-        fields: dict of field name: (type, date_format)
+        fields, dates_format: tuple(dict, dict)
+            where:
+                fields: dict of field names and types
+                dates_format: Dict of date field names and format
         """
-        fields = OrderedDict()
+        fields = {}
 
         # Recurse until we get a 'type: xxx'
-        def flatten(x, name=''):
+        def flatten(x, name=""):
             if type(x) is dict:
                 for a in x:
-                    if a == 'type' and type(x[a]) is str:  # 'type' can be a name of a field
+                    if (
+                        a == "type" and type(x[a]) is str
+                    ):  # 'type' can be a name of a field
                         field_name = name[:-1]
                         field_type = x[a]
                         # if field_type is 'date' keep track of the format info when available
@@ -167,26 +188,32 @@ class FieldMappings:
                         # If there is a conflicting type, warn - first values added wins
                         if field_name in fields and fields[field_name] != field_type:
                             warnings.warn(
-                                f"Field {field_name} has conflicting types {fields[field_name]} != {field_type}",
-                                UserWarning)
+                                f"Field {field_name} has conflicting types "
+                                f"{fields[field_name]} != {field_type}",
+                                UserWarning,
+                            )
                         else:
                             fields[field_name] = (field_type, date_format)
-                    elif a == 'properties' or (not source_only and a == 'fields'):
+                    elif a == "properties" or (not source_only and a == "fields"):
                         flatten(x[a], name)
-                    elif not (source_only and a == 'fields'):  # ignore multi-field fields for source_only
-                        flatten(x[a], name + a + '.')
+                    elif not (
+                        source_only and a == "fields"
+                    ):  # ignore multi-field fields for source_only
+                        flatten(x[a], name + a + ".")
 
         for index in mappings:
-            if 'properties' in mappings[index]['mappings']:
-                properties = mappings[index]['mappings']['properties']
+            if "properties" in mappings[index]["mappings"]:
+                properties = mappings[index]["mappings"]["properties"]
             else:
                 # Pre Elasticsearch 7.0 mappings had types. Support these
                 # in case eland is connected to 6.x index - this is not
                 # officially supported, but does help usability
-                es_types = list(mappings[index]['mappings'].keys())
+                es_types = list(mappings[index]["mappings"].keys())
                 if len(es_types) != 1:
-                    raise NotImplementedError(f"eland only supports 0 or 1 Elasticsearch types. es_types={es_types}")
-                properties = mappings[index]['mappings'][es_types[0]]['properties']
+                    raise NotImplementedError(
+                        f"eland only supports 0 or 1 Elasticsearch types. es_types={es_types}"
+                    )
+                properties = mappings[index]["mappings"][es_types[0]]["properties"]
 
             flatten(properties)
 
@@ -221,63 +248,80 @@ class FieldMappings:
           }
         }
         """
-        all_fields_caps_fields = all_fields_caps['fields']
+        all_fields_caps_fields = all_fields_caps["fields"]
 
-        capability_matrix = OrderedDict()
+        capability_matrix = {}
 
         for field, field_caps in all_fields_caps_fields.items():
             if field in all_fields:
                 # v = {'long': {'type': 'long', 'searchable': True, 'aggregatable': True}}
                 for kk, vv in field_caps.items():
-                    _source = (field in source_fields)
+                    _source = field in source_fields
                     es_field_name = field
-                    es_dtype = vv['type']
+                    es_dtype = vv["type"]
                     es_date_format = all_fields[field][1]
-                    pd_dtype = FieldMappings._es_dtype_to_pd_dtype(vv['type'])
-                    is_searchable = vv['searchable']
-                    is_aggregatable = vv['aggregatable']
+                    pd_dtype = FieldMappings._es_dtype_to_pd_dtype(vv["type"])
+                    is_searchable = vv["searchable"]
+                    is_aggregatable = vv["aggregatable"]
                     scripted = False
                     aggregatable_es_field_name = None  # this is populated later
 
-                    caps = [es_field_name, _source, es_dtype, es_date_format, pd_dtype, is_searchable, is_aggregatable,
-                            scripted, aggregatable_es_field_name]
+                    caps = [
+                        es_field_name,
+                        _source,
+                        es_dtype,
+                        es_date_format,
+                        pd_dtype,
+                        is_searchable,
+                        is_aggregatable,
+                        scripted,
+                        aggregatable_es_field_name,
+                    ]
 
                     capability_matrix[field] = caps
 
-                    if 'non_aggregatable_indices' in vv:
-                        warnings.warn("Field {} has conflicting aggregatable fields across indexes {}",
-                                      format(field, vv['non_aggregatable_indices']),
-                                      UserWarning)
-                    if 'non_searchable_indices' in vv:
-                        warnings.warn("Field {} has conflicting searchable fields across indexes {}",
-                                      format(field, vv['non_searchable_indices']),
-                                      UserWarning)
+                    if "non_aggregatable_indices" in vv:
+                        warnings.warn(
+                            "Field {} has conflicting aggregatable fields across indexes {}",
+                            format(field, vv["non_aggregatable_indices"]),
+                            UserWarning,
+                        )
+                    if "non_searchable_indices" in vv:
+                        warnings.warn(
+                            "Field {} has conflicting searchable fields across indexes {}",
+                            format(field, vv["non_searchable_indices"]),
+                            UserWarning,
+                        )
 
-        capability_matrix_df = pd.DataFrame.from_dict(capability_matrix, orient='index',
-                                                      columns=FieldMappings.column_labels)
+        capability_matrix_df = pd.DataFrame.from_dict(
+            capability_matrix, orient="index", columns=FieldMappings.column_labels
+        )
 
         def find_aggregatable(row, df):
             # convert series to dict so we can add 'aggregatable_es_field_name'
             row_as_dict = row.to_dict()
-            if row_as_dict['is_aggregatable'] == False:
+            if not row_as_dict["is_aggregatable"]:
                 # if not aggregatable, then try field.keyword
-                es_field_name_keyword = row.es_field_name + '.keyword'
+                es_field_name_keyword = row.es_field_name + ".keyword"
                 try:
                     series = df.loc[df.es_field_name == es_field_name_keyword]
                     if not series.empty and series.is_aggregatable.squeeze():
-                        row_as_dict['aggregatable_es_field_name'] = es_field_name_keyword
+                        row_as_dict[
+                            "aggregatable_es_field_name"
+                        ] = es_field_name_keyword
                     else:
-                        row_as_dict['aggregatable_es_field_name'] = None
+                        row_as_dict["aggregatable_es_field_name"] = None
                 except KeyError:
-                    row_as_dict['aggregatable_es_field_name'] = None
+                    row_as_dict["aggregatable_es_field_name"] = None
             else:
-                row_as_dict['aggregatable_es_field_name'] = row_as_dict['es_field_name']
+                row_as_dict["aggregatable_es_field_name"] = row_as_dict["es_field_name"]
 
             return pd.Series(data=row_as_dict)
 
         # add aggregatable_es_field_name column by applying action to each row
-        capability_matrix_df = capability_matrix_df.apply(find_aggregatable, args=(capability_matrix_df,),
-                                                          axis='columns')
+        capability_matrix_df = capability_matrix_df.apply(
+            find_aggregatable, args=(capability_matrix_df,), axis="columns"
+        )
 
         # return just source fields (as these are the only ones we display)
         return capability_matrix_df[capability_matrix_df.is_source].sort_index()
@@ -299,31 +343,27 @@ class FieldMappings:
         TODO - add additional mapping types
         """
         es_dtype_to_pd_dtype = {
-            'text': 'object',
-            'keyword': 'object',
-
-            'long': 'int64',
-            'integer': 'int64',
-            'short': 'int64',
-            'byte': 'int64',
-            'binary': 'int64',
-
-            'double': 'float64',
-            'float': 'float64',
-            'half_float': 'float64',
-            'scaled_float': 'float64',
-
-            'date': 'datetime64[ns]',
-            'date_nanos': 'datetime64[ns]',
-
-            'boolean': 'bool'
+            "text": "object",
+            "keyword": "object",
+            "long": "int64",
+            "integer": "int64",
+            "short": "int64",
+            "byte": "int64",
+            "binary": "int64",
+            "double": "float64",
+            "float": "float64",
+            "half_float": "float64",
+            "scaled_float": "float64",
+            "date": "datetime64[ns]",
+            "date_nanos": "datetime64[ns]",
+            "boolean": "bool",
         }
 
         if es_dtype in es_dtype_to_pd_dtype:
             return es_dtype_to_pd_dtype[es_dtype]
 
         # Return 'object' for all unsupported TODO - investigate how different types could be supported
-        return 'object'
+        return "object"
 
     @staticmethod
     def _pd_dtype_to_es_dtype(pd_dtype):
@@ -346,17 +386,19 @@ class FieldMappings:
 
         # Map all to 64-bit - TODO map to specifics: int32 -> int etc.
         if is_float_dtype(pd_dtype):
-            es_dtype = 'double'
+            es_dtype = "double"
         elif is_integer_dtype(pd_dtype):
-            es_dtype = 'long'
+            es_dtype = "long"
         elif is_bool_dtype(pd_dtype):
-            es_dtype = 'boolean'
+            es_dtype = "boolean"
         elif is_string_dtype(pd_dtype):
-            es_dtype = 'keyword'
+            es_dtype = "keyword"
         elif is_datetime_or_timedelta_dtype(pd_dtype):
-            es_dtype = 'date'
+            es_dtype = "date"
         else:
-            warnings.warn('No mapping for pd_dtype: [{0}], using default mapping'.format(pd_dtype))
+            warnings.warn(
+                f"No mapping for pd_dtype: [{pd_dtype}], using default mapping"
+            )
 
         return es_dtype
 
@@ -393,15 +435,15 @@ class FieldMappings:
         }
         """
 
-        mappings = {'properties': {}}
+        mappings = {"properties": {}}
         for field_name_name, dtype in dataframe.dtypes.iteritems():
             if geo_points is not None and field_name_name in geo_points:
-                es_dtype = 'geo_point'
+                es_dtype = "geo_point"
             else:
                 es_dtype = FieldMappings._pd_dtype_to_es_dtype(dtype)
 
-            mappings['properties'][field_name_name] = OrderedDict()
-            mappings['properties'][field_name_name]['type'] = es_dtype
+            mappings["properties"][field_name_name] = {}
+            mappings["properties"][field_name_name]["type"] = es_dtype
 
         return {"mappings": mappings}
 
@@ -429,12 +471,18 @@ class FieldMappings:
         raise KeyError if the field_name doesn't exist in the mapping, or isn't aggregatable
         """
         if display_name not in self._mappings_capabilities.index:
-            raise KeyError("Can not get aggregatable field name for invalid display name {}".format(display_name))
+            raise KeyError(
+                f"Can not get aggregatable field name for invalid display name {display_name}"
+            )
 
-        if self._mappings_capabilities.loc[display_name].aggregatable_es_field_name is None:
-            warnings.warn("Aggregations not supported for '{}' '{}'".format(display_name,
-                                                                            self._mappings_capabilities.loc[
-                                                                                display_name].es_field_name))
+        if (
+            self._mappings_capabilities.loc[display_name].aggregatable_es_field_name
+            is None
+        ):
+            warnings.warn(
+                f"Aggregations not supported for '{display_name}' "
+                f"'{self._mappings_capabilities.loc[display_name].es_field_name}'"
+            )
 
         return self._mappings_capabilities.loc[display_name].aggregatable_es_field_name
 
@@ -456,16 +504,23 @@ class FieldMappings:
             key = aggregatable_field_name, value = field_name
             e.g. {'customer_full_name.keyword': 'customer_full_name', ...}
         """
-        non_aggregatables = self._mappings_capabilities[self._mappings_capabilities.aggregatable_es_field_name.isna()]
+        non_aggregatables = self._mappings_capabilities[
+            self._mappings_capabilities.aggregatable_es_field_name.isna()
+        ]
         if not non_aggregatables.empty:
-            warnings.warn("Aggregations not supported for '{}'".format(non_aggregatables))
+            warnings.warn(f"Aggregations not supported for '{non_aggregatables}'")
 
-        aggregatables = self._mappings_capabilities[self._mappings_capabilities.aggregatable_es_field_name.notna()]
+        aggregatables = self._mappings_capabilities[
+            self._mappings_capabilities.aggregatable_es_field_name.notna()
+        ]
 
         # extract relevant fields and convert to dict
         # <class 'dict'>: {'category.keyword': 'category', 'currency': 'currency', ...
-        return OrderedDict(
-            aggregatables[['aggregatable_es_field_name', 'es_field_name']].to_dict(orient='split')['data'])
+        return dict(
+            aggregatables[["aggregatable_es_field_name", "es_field_name"]].to_dict(
+                orient="split"
+            )["data"]
+        )
 
     def date_field_format(self, es_field_name):
         """
@@ -480,7 +535,8 @@ class FieldMappings:
             A string (for date fields) containing the date format for the field
         """
         return self._mappings_capabilities.loc[
-            self._mappings_capabilities.es_field_name == es_field_name].es_date_format.squeeze()
+            self._mappings_capabilities.es_field_name == es_field_name
+        ].es_date_format.squeeze()
 
     def field_name_pd_dtype(self, es_field_name):
         """
@@ -499,35 +555,44 @@ class FieldMappings:
             If es_field_name does not exist in mapping
         """
         if es_field_name not in self._mappings_capabilities.es_field_name:
-            raise KeyError("es_field_name {} does not exist".format(es_field_name))
+            raise KeyError(f"es_field_name {es_field_name} does not exist")
 
         pd_dtype = self._mappings_capabilities.loc[
             self._mappings_capabilities.es_field_name == es_field_name
-            ].pd_dtype.squeeze()
+        ].pd_dtype.squeeze()
         return pd_dtype
 
     def add_scripted_field(self, scripted_field_name, display_name, pd_dtype):
         # if this display name is used somewhere else, drop it
         if display_name in self._mappings_capabilities.index:
-            self._mappings_capabilities = self._mappings_capabilities.drop(index=[display_name])
+            self._mappings_capabilities = self._mappings_capabilities.drop(
+                index=[display_name]
+            )
 
         # ['es_field_name', 'is_source', 'es_dtype', 'es_date_format', 'pd_dtype', 'is_searchable',
         # 'is_aggregatable', 'is_scripted', 'aggregatable_es_field_name']
 
-        capabilities = {display_name: [scripted_field_name,
-                                       False,
-                                       self._pd_dtype_to_es_dtype(pd_dtype),
-                                       None,
-                                       pd_dtype,
-                                       True,
-                                       True,
-                                       True,
-                                       scripted_field_name]}
+        capabilities = {
+            display_name: [
+                scripted_field_name,
+                False,
+                self._pd_dtype_to_es_dtype(pd_dtype),
+                None,
+                pd_dtype,
+                True,
+                True,
+                True,
+                scripted_field_name,
+            ]
+        }
 
-        capability_matrix_row = pd.DataFrame.from_dict(capabilities, orient='index',
-                                                       columns=FieldMappings.column_labels)
+        capability_matrix_row = pd.DataFrame.from_dict(
+            capabilities, orient="index", columns=FieldMappings.column_labels
+        )
 
-        self._mappings_capabilities = self._mappings_capabilities.append(capability_matrix_row)
+        self._mappings_capabilities = self._mappings_capabilities.append(
+            capability_matrix_row
+        )
 
     def numeric_source_fields(self):
         pd_dtypes, es_field_names, es_date_formats = self.metric_source_fields()
@@ -550,9 +615,9 @@ class FieldMappings:
         es_field_names = []
         es_date_formats = []
         for index, row in self._mappings_capabilities.iterrows():
-            pd_dtype = row['pd_dtype']
-            es_field_name = row['es_field_name']
-            es_date_format = row['es_date_format']
+            pd_dtype = row["pd_dtype"]
+            es_field_name = row["es_field_name"]
+            es_date_format = row["es_date_format"]
 
             if is_integer_dtype(pd_dtype) or is_float_dtype(pd_dtype):
                 pd_dtypes.append(np.dtype(pd_dtype))
@@ -574,19 +639,19 @@ class FieldMappings:
         if include_scripted_fields:
             return self._mappings_capabilities.es_field_name.to_list()
 
-        return self._mappings_capabilities[
+        return self._mappings_capabilities[  # noqa: E712
             self._mappings_capabilities.is_scripted == False
-            ].es_field_name.to_list()
+        ].es_field_name.to_list()
 
     def _get_display_names(self):
         return self._mappings_capabilities.index.to_list()
 
     def _set_display_names(self, display_names):
         if not is_list_like(display_names):
-            raise ValueError("'{}' is not list like".format(display_names))
+            raise ValueError(f"'{display_names}' is not list like")
 
         if list(set(display_names) - set(self.display_names)):
-            raise KeyError("{} not in display names {}".format(display_names, self.display_names))
+            raise KeyError(f"{display_names} not in display names {self.display_names}")
 
         self._mappings_capabilities = self._mappings_capabilities.reindex(display_names)
 
@@ -600,7 +665,7 @@ class FieldMappings:
             Index: Display name
             Values: pd_dtype as np.dtype
         """
-        pd_dtypes = self._mappings_capabilities['pd_dtype']
+        pd_dtypes = self._mappings_capabilities["pd_dtype"]
 
         # Set name of the returned series as None
         pd_dtypes.name = None
@@ -610,7 +675,7 @@ class FieldMappings:
 
     def info_es(self, buf):
         buf.write("Mappings:\n")
-        buf.write(" capabilities:\n{0}\n".format(self._mappings_capabilities.to_string()))
+        buf.write(f" capabilities:\n{self._mappings_capabilities.to_string()}\n")
 
     def rename(self, old_name_new_name_dict):
         """
@@ -628,7 +693,9 @@ class FieldMappings:
         -----
         For the names that do not exist this is a no op
         """
-        self._mappings_capabilities = self._mappings_capabilities.rename(index=old_name_new_name_dict)
+        self._mappings_capabilities = self._mappings_capabilities.rename(
+            index=old_name_new_name_dict
+        )
 
     def get_renames(self):
         # return dict of renames { old_name: new_name, ... } (inefficient)

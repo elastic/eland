@@ -16,6 +16,7 @@ import elasticsearch
 
 from eland import Client
 
+
 class MLModel:
     """
     A machine learning model managed by Elasticsearch.
@@ -26,12 +27,11 @@ class MLModel:
 
     The methods for this class attempt to mirror standard python classes.
     """
+
     TYPE_CLASSIFICATION = "classification"
     TYPE_REGRESSION = "regression"
 
-    def __init__(self,
-                 es_client,
-                 model_id: str):
+    def __init__(self, es_client, model_id: str):
         """
         Parameters
         ----------

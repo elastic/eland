@@ -22,7 +22,7 @@ from eland.plotting._core import (
     ed_hist_series,
 )
 
-__all___ = [
+__all__ = [
     "ed_hist_frame",
     "ed_hist_series",
 ]

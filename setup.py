@@ -12,6 +12,8 @@
 #      See the License for the specific language governing permissions and
 #      limitations under the License.
 
+# flake8: noqa
+
 from codecs import open
 from os import path
 
@@ -19,7 +21,7 @@ from setuptools import setup, find_packages
 
 here = path.abspath(path.dirname(__file__))
 about = {}
-with open(path.join(here, 'eland', '_version.py'), 'r', 'utf-8') as f:
+with open(path.join(here, "eland", "_version.py"), "r", "utf-8") as f:
     exec(f.read(), about)
 
 CLASSIFIERS = [
@@ -30,23 +32,22 @@ CLASSIFIERS = [
     "Intended Audience :: Science/Research",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.5",
     "Programming Language :: Python :: 3.6",
     "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Topic :: Scientific/Engineering",
 ]
 
-LONG_DESCRIPTION="""
+LONG_DESCRIPTION = """
 # What is it?
 
-eland is a Elasticsearch client Python package to analyse, explore and manipulate data that resides in Elasticsearch. 
-Where possible the package uses existing Python APIs and data structures to make it easy to switch between numpy, 
-pandas, scikit-learn to their Elasticsearch powered equivalents. In general, the data resides in Elasticsearch and 
+eland is a Elasticsearch client Python package to analyse, explore and manipulate data that resides in Elasticsearch.
+Where possible the package uses existing Python APIs and data structures to make it easy to switch between numpy,
+pandas, scikit-learn to their Elasticsearch powered equivalents. In general, the data resides in Elasticsearch and
 not in memory, which allows eland to access large datasets stored in Elasticsearch.
 
-For example, to explore data in a large Elasticsearch index, simply create an eland DataFrame from an Elasticsearch 
-index pattern, and explore using an API that mirrors a subset of the pandas.DataFrame API: 
+For example, to explore data in a large Elasticsearch index, simply create an eland DataFrame from an Elasticsearch
+index pattern, and explore using an API that mirrors a subset of the pandas.DataFrame API:
 
 ```
 >>> import eland as ed
@@ -172,22 +173,20 @@ pip install eland
 """
 
 setup(
-    name=about['__title__'],
-    version=about['__version__'],
-    description=about['__description__'],
+    name=about["__title__"],
+    version=about["__version__"],
+    description=about["__description__"],
     long_description=LONG_DESCRIPTION,
-    long_description_content_type='text/markdown',
-    url=about['__url__'],
-    maintainer=about['__maintainer__'],
-    maintainer_email=about['__maintainer_email__'],
-    license='Apache-2.0',
+    long_description_content_type="text/markdown",
+    url=about["__url__"],
+    author=about["__author__"],
+    author_email=about["__author_email__"],
+    maintainer=about["__maintainer__"],
+    maintainer_email=about["__maintainer_email__"],
+    license="Apache-2.0",
     classifiers=CLASSIFIERS,
-    keywords='elastic eland pandas python',
+    keywords="elastic eland pandas python",
     packages=find_packages(include=["eland", "eland.*"]),
-    install_requires=[
-        'elasticsearch>=7.0.5',
-        'pandas==0.25.3',
-        'matplotlib'
-    ],
-    python_requires=">=3.5",
+    install_requires=["elasticsearch>=7.0.5, <8", "pandas==0.25.3", "matplotlib"],
+    python_requires=">=3.6",
 )

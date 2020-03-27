@@ -15,8 +15,13 @@ from typing import Union, List
 
 import numpy as np
 
-from eland.ml._model_transformers import SKLearnDecisionTreeTransformer, SKLearnForestRegressorTransformer, \
-    SKLearnForestClassifierTransformer, XGBoostRegressorTransformer, XGBoostClassifierTransformer
+from eland.ml._model_transformers import (
+    SKLearnDecisionTreeTransformer,
+    SKLearnForestRegressorTransformer,
+    SKLearnForestClassifierTransformer,
+    XGBoostRegressorTransformer,
+    XGBoostClassifierTransformer,
+)
 from eland.ml._optional import import_optional_dependency
 from eland.ml.ml_model import MLModel
 
@@ -93,61 +98,75 @@ class ImportedMLModel(MLModel):
 
     """
 
-    def __init__(self,
-                 es_client,
-                 model_id: str,
-                 model: Union[DecisionTreeClassifier,
-                              DecisionTreeRegressor,
-                              RandomForestRegressor,
-                              RandomForestClassifier,
-                              XGBClassifier,
-                              XGBRegressor],
-                 feature_names: List[str],
-                 classification_labels: List[str] = None,
-                 classification_weights: List[float] = None,
-                 overwrite=False):
-        super().__init__(
-            es_client,
-            model_id
-        )
+    def __init__(
+        self,
+        es_client,
+        model_id: str,
+        model: Union[
+            DecisionTreeClassifier,
+            DecisionTreeRegressor,
+            RandomForestRegressor,
+            RandomForestClassifier,
+            XGBClassifier,
+            XGBRegressor,
+        ],
+        feature_names: List[str],
+        classification_labels: List[str] = None,
+        classification_weights: List[float] = None,
+        overwrite=False,
+    ):
+        super().__init__(es_client, model_id)
 
         self._feature_names = feature_names
         self._model_type = None
 
         # Transform model
         if isinstance(model, DecisionTreeRegressor):
-            serializer = SKLearnDecisionTreeTransformer(model, feature_names).transform()
+            serializer = SKLearnDecisionTreeTransformer(
+                model, feature_names
+            ).transform()
             self._model_type = MLModel.TYPE_REGRESSION
         elif isinstance(model, DecisionTreeClassifier):
-            serializer = SKLearnDecisionTreeTransformer(model, feature_names, classification_labels).transform()
+            serializer = SKLearnDecisionTreeTransformer(
+                model, feature_names, classification_labels
+            ).transform()
             self._model_type = MLModel.TYPE_CLASSIFICATION
         elif isinstance(model, RandomForestRegressor):
-            serializer = SKLearnForestRegressorTransformer(model, feature_names).transform()
+            serializer = SKLearnForestRegressorTransformer(
+                model, feature_names
+            ).transform()
             self._model_type = MLModel.TYPE_REGRESSION
         elif isinstance(model, RandomForestClassifier):
-            serializer = SKLearnForestClassifierTransformer(model, feature_names, classification_labels).transform()
+            serializer = SKLearnForestClassifierTransformer(
+                model, feature_names, classification_labels
+            ).transform()
             self._model_type = MLModel.TYPE_CLASSIFICATION
         elif isinstance(model, XGBRegressor):
             serializer = XGBoostRegressorTransformer(model, feature_names).transform()
             self._model_type = MLModel.TYPE_REGRESSION
         elif isinstance(model, XGBClassifier):
-            serializer = XGBoostClassifierTransformer(model, feature_names, classification_labels).transform()
+            serializer = XGBoostClassifierTransformer(
+                model, feature_names, classification_labels
+            ).transform()
             self._model_type = MLModel.TYPE_CLASSIFICATION
         else:
-            raise NotImplementedError("ML model of type {}, not currently implemented".format(type(model)))
+            raise NotImplementedError(
+                f"ML model of type {type(model)}, not currently implemented"
+            )
 
         if overwrite:
             self.delete_model()
 
-        serialized_model = str(serializer.serialize_and_compress_model())[2:-1]  # remove `b` and str quotes
+        serialized_model = str(serializer.serialize_and_compress_model())[
+            2:-1
+        ]  # remove `b` and str quotes
         self._client.perform_request(
-            "PUT", "/_ml/inference/" + self._model_id,
+            "PUT",
+            "/_ml/inference/" + self._model_id,
             body={
-                "input": {
-                    "field_names": feature_names
-                },
-                "compressed_definition": serialized_model
-            }
+                "input": {"field_names": feature_names},
+                "compressed_definition": serialized_model,
+            },
         )
 
     def predict(self, X):
@@ -200,15 +219,15 @@ class ImportedMLModel(MLModel):
             if all(isinstance(i, list) for i in X):
                 for i in X:
                     doc = dict()
-                    doc['_source'] = dict(zip(self._feature_names, i))
+                    doc["_source"] = dict(zip(self._feature_names, i))
                     docs.append(doc)
 
             else:  # single feature vector1
                 doc = dict()
-                doc['_source'] = dict(zip(self._feature_names, i))
+                doc["_source"] = dict(zip(self._feature_names, i))
                 docs.append(doc)
         else:
-            raise NotImplementedError("Prediction for type {}, not supported".format(type(X)))
+            raise NotImplementedError(f"Prediction for type {type(X)}, not supported")
 
         results = self._client.perform_request(
             "POST",
@@ -216,18 +235,22 @@ class ImportedMLModel(MLModel):
             body={
                 "pipeline": {
                     "processors": [
-                        {"inference": {
-                            "model_id": self._model_id,
-                            "inference_config": {self._model_type: {}},
-                            "field_mappings": {}
-                        }}
+                        {
+                            "inference": {
+                                "model_id": self._model_id,
+                                "inference_config": {self._model_type: {}},
+                                "field_mappings": {},
+                            }
+                        }
                     ]
                 },
-                "docs": docs
-            })
+                "docs": docs,
+            },
+        )
 
         y = [
-            doc['doc']['_source']['ml']['inference']['predicted_value'] for doc in results['docs']
+            doc["doc"]["_source"]["ml"]["inference"]["predicted_value"]
+            for doc in results["docs"]
         ]
 
         # Return results as np.ndarray of float32 or int (consistent with sklearn/xgboost)

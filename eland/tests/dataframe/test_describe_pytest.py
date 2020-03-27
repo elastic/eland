@@ -20,7 +20,6 @@ from eland.tests.common import TestData
 
 
 class TestDataFrameDescribe(TestData):
-
     def test_flights_describe(self):
         pd_flights = self.pd_flights()
         ed_flights = self.ed_flights()
@@ -28,9 +27,11 @@ class TestDataFrameDescribe(TestData):
         pd_describe = pd_flights.describe()
         ed_describe = ed_flights.describe()
 
-        assert_almost_equal(pd_describe.drop(['25%', '50%', '75%'], axis='index'),
-                            ed_describe.drop(['25%', '50%', '75%'], axis='index'),
-                            check_less_precise=True)
+        assert_almost_equal(
+            pd_describe.drop(["25%", "50%", "75%"], axis="index"),
+            ed_describe.drop(["25%", "50%", "75%"], axis="index"),
+            check_less_precise=True,
+        )
 
         # TODO - this fails for percentile fields as ES aggregations are approximate
         #        if ES percentile agg uses
