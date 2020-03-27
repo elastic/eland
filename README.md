@@ -53,29 +53,30 @@ index pattern, and explore using an API that mirrors a subset of the pandas.Data
 >>> import eland as ed
 
 >>> # Connect to 'flights' index via localhost Elasticsearch node
->>> df = ed.DataFrame('localhost:9200', 'flights') 
+>>> df = ed.DataFrame('localhost:9200', 'flights')
 
 >>> df.head()
-   AvgTicketPrice  Cancelled           Carrier  ...        OriginWeather dayOfWeek           timestamp
-0      841.265642      False   Kibana Airlines  ...                Sunny         0 2018-01-01 00:00:00
-1      882.982662      False  Logstash Airways  ...                Clear         0 2018-01-01 18:27:00
-2      190.636904      False  Logstash Airways  ...                 Rain         0 2018-01-01 17:11:14
-3      181.694216       True   Kibana Airlines  ...  Thunder & Lightning         0 2018-01-01 10:33:28
-4      730.041778      False   Kibana Airlines  ...        Damaging Wind         0 2018-01-01 05:13:00
+   AvgTicketPrice  Cancelled  ... dayOfWeek           timestamp
+0      841.265642      False  ...         0 2018-01-01 00:00:00
+1      882.982662      False  ...         0 2018-01-01 18:27:00
+2      190.636904      False  ...         0 2018-01-01 17:11:14
+3      181.694216       True  ...         0 2018-01-01 10:33:28
+4      730.041778      False  ...         0 2018-01-01 05:13:00
 
 [5 rows x 27 columns]
 
 >>> df.describe()
-       AvgTicketPrice  DistanceKilometers  DistanceMiles  FlightDelayMin  FlightTimeHour  FlightTimeMin     dayOfWeek
-count    13059.000000        13059.000000   13059.000000    13059.000000    13059.000000   13059.000000  13059.000000
-mean       628.253689         7092.142457    4406.853010       47.335171        8.518797     511.127842      2.835975
-std        266.386661         4578.263193    2844.800855       96.743006        5.579019     334.741135      1.939365
-min        100.020531            0.000000       0.000000        0.000000        0.000000       0.000000      0.000000
-25%        410.008918         2470.545974    1535.126118        0.000000        4.194976     251.738513      1.000000
-50%        640.362667         7612.072403    4729.922470        0.000000        8.385816     503.148975      3.000000
-75%        842.254990         9735.082407    6049.459005       15.000000       12.009396     720.534532      4.141221
-max       1199.729004        19881.482422   12353.780273      360.000000       31.715034    1902.901978      6.000000
+       AvgTicketPrice  DistanceKilometers  ...  FlightTimeMin     dayOfWeek
+count    13059.000000        13059.000000  ...   13059.000000  13059.000000
+mean       628.253689         7092.142457  ...     511.127842      2.835975
+std        266.386661         4578.263193  ...     334.741135      1.939365
+min        100.020531            0.000000  ...       0.000000      0.000000
+25%        410.008918         2470.545974  ...     251.739008      1.000000
+50%        640.387285         7612.072403  ...     503.148975      3.000000
+75%        842.262193         9735.660463  ...     720.505705      4.239865
+max       1199.729004        19881.482422  ...    1902.901978      6.000000
 
+[8 rows x 7 columns]
 >>> df[['Carrier', 'AvgTicketPrice', 'Cancelled']]
                 Carrier  AvgTicketPrice  Cancelled
 0       Kibana Airlines      841.265642      False
@@ -93,12 +94,12 @@ max       1199.729004        19881.482422   12353.780273      360.000000       3
 [13059 rows x 3 columns]
 
 >>> df[(df.Carrier=="Kibana Airlines") & (df.AvgTicketPrice > 900.0) & (df.Cancelled == True)].head()
-     AvgTicketPrice  Cancelled          Carrier  ...        OriginWeather dayOfWeek           timestamp
-8        960.869736       True  Kibana Airlines  ...            Heavy Fog         0 2018-01-01 12:09:35
-26       975.812632       True  Kibana Airlines  ...                 Rain         0 2018-01-01 15:38:32
-311      946.358410       True  Kibana Airlines  ...            Heavy Fog         0 2018-01-01 11:51:12
-651      975.383864       True  Kibana Airlines  ...                 Rain         2 2018-01-03 21:13:17
-950      907.836523       True  Kibana Airlines  ...  Thunder & Lightning         2 2018-01-03 05:14:51
+     AvgTicketPrice  Cancelled  ... dayOfWeek           timestamp
+8        960.869736       True  ...         0 2018-01-01 12:09:35
+26       975.812632       True  ...         0 2018-01-01 15:38:32
+311      946.358410       True  ...         0 2018-01-01 11:51:12
+651      975.383864       True  ...         2 2018-01-03 21:13:17
+950      907.836523       True  ...         2 2018-01-03 05:14:51
 
 [5 rows x 27 columns]
 
@@ -128,7 +129,6 @@ dtype: int64
 13057    20819.488281
 13058    18315.431274
 Length: 13059, dtype: float64
-
 >>> print(s.info_es())
 index_pattern: flights
 Index:
@@ -148,12 +148,12 @@ Operations:
 
 >>> pd_df = ed.eland_to_pandas(df)
 >>> pd_df.head()
-   AvgTicketPrice  Cancelled           Carrier  ...        OriginWeather dayOfWeek           timestamp
-0      841.265642      False   Kibana Airlines  ...                Sunny         0 2018-01-01 00:00:00
-1      882.982662      False  Logstash Airways  ...                Clear         0 2018-01-01 18:27:00
-2      190.636904      False  Logstash Airways  ...                 Rain         0 2018-01-01 17:11:14
-3      181.694216       True   Kibana Airlines  ...  Thunder & Lightning         0 2018-01-01 10:33:28
-4      730.041778      False   Kibana Airlines  ...        Damaging Wind         0 2018-01-01 05:13:00
+   AvgTicketPrice  Cancelled  ... dayOfWeek           timestamp
+0      841.265642      False  ...         0 2018-01-01 00:00:00
+1      882.982662      False  ...         0 2018-01-01 18:27:00
+2      190.636904      False  ...         0 2018-01-01 17:11:14
+3      181.694216       True  ...         0 2018-01-01 10:33:28
+4      730.041778      False  ...         0 2018-01-01 05:13:00
 
 [5 rows x 27 columns]
 ```
@@ -168,16 +168,16 @@ Binary installers for the latest released version are available at the [Python
 package index](https://pypi.org/project/eland).
 
 ```sh
-pip install eland
+python -m pip install eland
 ```
 
 ## Versions and Compatibility
 
 ### Python Version Support
 
-Officially Python 3.5.3 and above, 3.6, 3.7, and 3.8.
+Officially Python 3.6 and above.
 
-eland depends on pandas version 0.25.3. 
+eland depends on pandas version 1.0.0+. 
 
 ### Elasticsearch Versions
 
