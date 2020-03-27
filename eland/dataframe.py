@@ -622,7 +622,7 @@ class DataFrame(NDFrame):
         lines = [str(type(self)), self._index_summary()]
 
         if len(self.columns) == 0:
-            lines.append("Empty {name}".format(name=type(self).__name__))
+            lines.append(f"Empty {type(self).__name__}")
             fmt.buffer_put_lines(buf, lines)
             return
 
@@ -724,13 +724,9 @@ class DataFrame(NDFrame):
             # returns size in human readable format
             for x in ["bytes", "KB", "MB", "GB", "TB"]:
                 if num < 1024.0:
-                    return "{num:3.1f}{size_q} " "{x}".format(
-                        num=num, size_q=size_qualifier, x=x
-                    )
+                    return f"{num:3.1f}{size_qualifier} {x}"
                 num /= 1024.0
-            return "{num:3.1f}{size_q} {pb}".format(
-                num=num, size_q=size_qualifier, pb="PB"
-            )
+            return f"{num:3.1f}{size_qualifier} PB"
 
         if verbose:
             _verbose_repr()
