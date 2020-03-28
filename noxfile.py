@@ -20,7 +20,7 @@ def blacken(session):
 def lint(session):
     session.install("black", "flake8")
     session.run("black", "--check", "--target-version=py36", *SOURCE_FILES)
-    session.run("flake8", "--ignore=W291,E501,W503,E402,E712", *SOURCE_FILES)
+    session.run("flake8", "--ignore=E501,W503,E402,E712", *SOURCE_FILES)
 
 
 @nox.session(python=["3.6", "3.7", "3.8"])
