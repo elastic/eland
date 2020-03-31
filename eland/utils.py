@@ -58,6 +58,7 @@ def pandas_to_eland(
     es_dropna=False,
     es_geo_points=None,
     chunksize=None,
+    use_pandas_index_for_es_ids=True,
 ):
     """
     Append a pandas DataFrame to an Elasticsearch index.
@@ -86,7 +87,10 @@ def pandas_to_eland(
     es_geo_points: list, default None
         List of columns to map to geo_point data type
     chunksize: int, default None
-        number of pandas.DataFrame rows to read before bulk index into Elasticsearch
+        Number of pandas.DataFrame rows to read before bulk index into Elasticsearch
+    use_pandas_index_for_es_ids: bool, default 'True'
+        * True: pandas.DataFrame.index fields will be used to populate Elasticsearch '_id' fields.
+        * False: Ignore pandas.DataFrame.index when indexing into Elasticsearch
 
     Returns
     -------
@@ -185,16 +189,19 @@ def pandas_to_eland(
     actions = []
     n = 0
     for row in pd_df.iterrows():
-        # Use index as _id
-        id = row[0]
-
         if es_dropna:
             values = row[1].dropna().to_dict()
         else:
             values = row[1].to_dict()
 
-        # Use integer as id field for repeatable results
-        action = {"_index": es_dest_index, "_source": values, "_id": str(id)}
+        if use_pandas_index_for_es_ids:
+            # Use index as _id
+            id = row[0]
+
+            # Use integer as id field for repeatable results
+            action = {"_index": es_dest_index, "_source": values, "_id": str(id)}
+        else:
+            action = {"_index": es_dest_index, "_source": values}
 
         actions.append(action)
 

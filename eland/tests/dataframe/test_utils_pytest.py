@@ -65,6 +65,43 @@ class TestDataFrameUtils(TestData):
 
         assert_pandas_eland_frame_equal(df, ed_df_head)
 
+        ES_TEST_CLIENT.indices.delete(index=index_name)
+
+    def test_pandas_to_eland_ignore_index(self):
+        df = pd.DataFrame(
+            data={
+                "A": np.random.rand(3),
+                "B": 1,
+                "C": "foo",
+                "D": pd.Timestamp("20190102"),
+                "E": [1.0, 2.0, 3.0],
+                "F": False,
+                "G": [1, 2, 3],
+            },
+            index=["0", "1", "2"],
+        )
+
+        # Now create index
+        index_name = "test_pandas_to_eland_ignore_index"
+
+        ed_df = ed.pandas_to_eland(
+            df,
+            ES_TEST_CLIENT,
+            index_name,
+            es_if_exists="replace",
+            es_refresh=True,
+            use_pandas_index_for_es_ids=False,
+        )
+        pd_df = ed.eland_to_pandas(ed_df)
+
+        # Compare values excluding index
+        assert df.values.all() == pd_df.values.all()
+
+        # Ensure that index is populated by ES.
+        assert not (df.index == pd_df.index).any()
+
+        ES_TEST_CLIENT.indices.delete(index=index_name)
+
     def test_eland_to_pandas_performance(self):
         # TODO quantify this
         ed.eland_to_pandas(self.ed_flights(), show_progress=True)
