@@ -90,12 +90,15 @@ class TestDataFrameUtils(TestData):
             index_name,
             es_if_exists="replace",
             es_refresh=True,
-            ignore_index=True,
+            use_pandas_index_for_es_ids=False,
         )
         pd_df = ed.eland_to_pandas(ed_df)
 
         # Compare values excluding index
         assert df.values.all() == pd_df.values.all()
+
+        # Ensure that index is populated by ES.
+        assert not (df.index == pd_df.index).any()
 
         ES_TEST_CLIENT.indices.delete(index=index_name)
 
