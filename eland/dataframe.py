@@ -569,6 +569,62 @@ class DataFrame(NDFrame):
 
         return buf.getvalue()
 
+    def es_query(self, query):
+        """Applies an Elasticsearch DSL query to the current DataFrame.
+
+        Parameters
+        ----------
+        query:
+            Dictionary of the Elasticsearch DSL query to apply
+
+        Returns
+        -------
+        eland.DataFrame:
+            eland DataFrame with the query applied
+
+        Examples
+        --------
+
+        Apply a `geo-distance query`_ to a dataset with a geo-point column ``geoip.location``.
+
+         .. _geo-distance query: https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-geo-distance-query.html
+
+        >>> df = ed.DataFrame('localhost', 'ecommerce', columns=['customer_first_name', 'geoip.city_name'])
+        >>> df.es_query({"bool": {"filter": {"geo_distance": {"distance": "1km", "geoip.location": [55.3, 25.3]}}}}).head()
+           customer_first_name geoip.city_name
+        1                 Mary           Dubai
+        9            Rabbia Al           Dubai
+        10           Rabbia Al           Dubai
+        22                Mary           Dubai
+        30              Robbie           Dubai
+        <BLANKLINE>
+        [5 rows x 2 columns]
+
+        If using an occurrence like ``must`` or ``filter`` you must
+        nest it within ``bool``:
+
+         .. code-block:: python
+
+            # Correct:
+            df.es_query({
+                "bool": {
+                    "filter": {...}
+                }
+            })
+
+            # Incorrect, needs to be nested under 'bool':
+            df.es_query({
+                "filter": {...}
+            })
+        """
+        # Unpack the {'query': ...} which some
+        # users may use due to documentation.
+        if not isinstance(query, dict):
+            raise TypeError("'query' must be of type 'dict'")
+        if tuple(query) == ("query",):
+            query = query["query"]
+        return DataFrame(query_compiler=self._query_compiler.es_query(query))
+
     def _index_summary(self):
         # Print index summary e.g.
         # Index: 103 entries, 0 to 102

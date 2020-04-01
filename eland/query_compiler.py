@@ -25,6 +25,7 @@ from eland import (
 from eland import FieldMappings
 from eland import Index
 from eland import Operations
+from eland.filter import QueryFilter
 
 
 class QueryCompiler:
@@ -396,6 +397,9 @@ class QueryCompiler:
         result._operations.tail(self._index, n)
 
         return result
+
+    def es_query(self, query):
+        return self._update_query(QueryFilter(query))
 
     # To/From Pandas
     def to_pandas(self, show_progress=False):

@@ -178,3 +178,9 @@ class ScriptFilter(BooleanFilter):
         if params is not None:
             script["params"] = params
         self._filter = {"script": {"script": script}}
+
+
+class QueryFilter(BooleanFilter):
+    def __init__(self, query):
+        super().__init__()
+        self._filter = query
