@@ -135,27 +135,20 @@ class Query:
             self._aggs[name] = agg
 
     def to_search_body(self):
-        if self._query.empty():
-            if self._aggs:
-                body = {"aggs": self._aggs}
-            else:
-                body = {}
-        else:
-            if self._aggs:
-                body = {"query": self._query.build(), "aggs": self._aggs}
-            else:
-                body = {"query": self._query.build()}
+        body = {}
+        if self._aggs:
+            body["aggs"] = self._aggs
+        if not self._query.empty():
+            body["query"] = self._query.build()
         return body
 
     def to_count_body(self):
         if len(self._aggs) > 0:
             warnings.warn("Requesting count for agg query {}", self)
         if self._query.empty():
-            body = None
+            return None
         else:
-            body = {"query": self._query.build()}
-
-        return body
+            return {"query": self._query.build()}
 
     def update_boolean_filter(self, boolean_filter):
         if self._query.empty():

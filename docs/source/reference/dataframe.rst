@@ -76,6 +76,14 @@ Plotting
 
    DataFrame.hist
 
+Elasticsearch Functions
+~~~~~~~~~~~~~~~~~~~~~~~
+.. autosummary::
+   :toctree: api/
+
+   DataFrame.info_es
+   DataFrame.es_query
+
 Serialization / IO / conversion
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. autosummary::
@@ -86,10 +94,3 @@ Serialization / IO / conversion
    DataFrame.to_csv
    DataFrame.to_html
    DataFrame.to_string
-
-Elasticsearch utilities
-~~~~~~~~~~~~~~~~~~~~~~~
-.. autosummary::
-   :toctree: api/
-
-   DataFrame.info_es
