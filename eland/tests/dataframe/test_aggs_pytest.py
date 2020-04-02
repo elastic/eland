@@ -68,3 +68,22 @@ class TestDataFrameAggs(TestData):
         print(ed_sum_min_std.dtypes)
 
         assert_almost_equal(pd_sum_min_std, ed_sum_min_std, check_less_precise=True)
+
+    def test_aggs_median_var(self):
+        pd_ecommerce = self.pd_ecommerce()
+        ed_ecommerce = self.ed_ecommerce()
+
+        pd_aggs = pd_ecommerce[
+            ["taxful_total_price", "taxless_total_price", "total_quantity"]
+        ].agg(["median", "var"])
+        ed_aggs = ed_ecommerce[
+            ["taxful_total_price", "taxless_total_price", "total_quantity"]
+        ].agg(["median", "var"])
+
+        print(pd_aggs, pd_aggs.dtypes)
+        print(ed_aggs, ed_aggs.dtypes)
+
+        # Eland returns all float values for all metric aggs, pandas can return int
+        # TODO - investigate this more
+        pd_aggs = pd_aggs.astype("float64")
+        assert_almost_equal(pd_aggs, ed_aggs, check_less_precise=2)

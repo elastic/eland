@@ -480,7 +480,6 @@ class Operations:
         field_names = query_compiler.get_field_names(include_scripted_fields=False)
 
         body = Query(query_params["query"])
-
         # convert pandas aggs to ES equivalent
         es_aggs = self._map_pd_aggs_to_es_aggs(pd_aggs)
 
@@ -509,9 +508,13 @@ class Operations:
             values = list()
             for es_agg in es_aggs:
                 if isinstance(es_agg, tuple):
-                    values.append(
-                        response["aggregations"][es_agg[0] + "_" + field][es_agg[1]]
-                    )
+                    agg_value = response["aggregations"][es_agg[0] + "_" + field]
+
+                    # Pull multiple values from 'percentiles' result.
+                    if es_agg[0] == "percentiles":
+                        agg_value = agg_value["values"]
+
+                    values.append(agg_value[es_agg[1]])
                 else:
                     values.append(
                         response["aggregations"][es_agg + "_" + field]["value"]
