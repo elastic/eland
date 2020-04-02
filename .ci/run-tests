@@ -11,11 +11,11 @@ set -euxo pipefail
 
 
 TEST_SUITE=${TEST_SUITE-xpack}
-NODE_NAME=es1
+NODE_NAME=localhost
 
 
 elasticsearch_image=elasticsearch
-elasticsearch_url=https://elastic:changeme@${NODE_NAME}:9200
+elasticsearch_url=http://elastic:changeme@${NODE_NAME}:9200
 if [[ $TEST_SUITE != "xpack" ]]; then
   elasticsearch_image=elasticsearch-${TEST_SUITE}
   elasticsearch_url=http://${NODE_NAME}:9200
@@ -44,14 +44,14 @@ echo -e "\033[1m>>>>> Start [$ELASTICSEARCH_VERSION container] >>>>>>>>>>>>>>>>>
 
 ELASTICSEARCH_VERSION=${elasticsearch_image}:${ELASTICSEARCH_VERSION} \
   NODE_NAME=${NODE_NAME} \
-  NETWORK_NAME=elasticsearch \
+  NETWORK_NAME=host \
   DETACH=true \
   bash .ci/run-elasticsearch.sh
 
 echo -e "\033[1m>>>>> Repository specific tests >>>>>>>>>>>>>>>>>>>>>>>>>>>>>\033[0m"
 
 ELASTICSEARCH_CONTAINER=${elasticsearch_image}:${ELASTICSEARCH_VERSION} \
-  NETWORK_NAME=elasticsearch \
+  NETWORK_NAME=host \
   NODE_NAME=${NODE_NAME} \
   ELASTICSEARCH_URL=${elasticsearch_url} \
   TEST_SUITE=${TEST_SUITE} \
