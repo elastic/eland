@@ -155,7 +155,7 @@ currently using a minimum version of PyCharm 2019.2.4.
     `python -m eland.tests.setup_tests` to setup test environment -*note
     this modifies Elasticsearch indices*
 -   Install local `eland` module (required to execute notebook tests)
-    `python install setup.py`
+    `python setup.py install`
 -   Run `pytest --nbval  --doctest-modules` to validate install
 -   To test specific versions of Python use `nox -s test-3.8`
 -   To run the automatic formatter and check for lint issues
@@ -163,6 +163,6 @@ currently using a minimum version of PyCharm 2019.2.4.
 
 
 ### Documentation
-
+-   Install pandoc `sudo apt-get install -y pandoc`
 -   Install documentation requirements. Open terminal in virtual
     environment and run `pip install -r docs/requirements-docs.txt`
