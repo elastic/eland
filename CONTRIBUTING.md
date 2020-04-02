@@ -164,6 +164,6 @@ currently using a minimum version of PyCharm 2019.2.4.
 
 ### Documentation
 -   [Install pandoc on your system](https://pandoc.org/installing.html)  
-    For Ubuntu or Debian `sudo apt-get install -y pandoc`
+    For Ubuntu or Debian you can do `sudo apt-get install -y pandoc`
 -   Install documentation requirements. Open terminal in virtual
     environment and run `pip install -r docs/requirements-docs.txt`
