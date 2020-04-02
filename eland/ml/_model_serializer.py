@@ -34,7 +34,9 @@ class ModelSerializer(ABC):
         return self._feature_names
 
     def serialize_and_compress_model(self) -> str:
-        json_string = json.dumps({"trained_model": self.to_dict()})
+        json_string = json.dumps(
+            {"trained_model": self.to_dict()}, separators=(",", ":")
+        )
         return base64.b64encode(gzip.compress(bytes(json_string, "utf-8")))
 
 
