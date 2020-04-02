@@ -27,10 +27,6 @@ CLUSTER_NAME=${CLUSTER_NAME-${moniker}${suffix}}
 HTTP_PORT=${HTTP_PORT-9200}
 
 ELASTIC_PASSWORD=${ELASTIC_PASSWORD-changeme}
-SSL_CERT=${SSL_CERT-"${SCRIPT_PATH}/certs/testnode_san.crt"}
-SSL_KEY=${SSL_KEY-"${SCRIPT_PATH}/certs/testnode_san.key"}
-SSL_CA=${SSL_CA-"${SCRIPT_PATH}/certs/ca.crt"}
-SSL_CA_PEM=${SSL_CA-"${SCRIPT_PATH}/certs/ca.pem"}
 
 DETACH=${DETACH-false}
 CLEANUP=${CLEANUP-false}
@@ -122,35 +118,16 @@ if [[ "$ELASTICSEARCH_VERSION" != *oss* ]]; then
   environment+=($(cat <<-END
     --env ELASTIC_PASSWORD=$ELASTIC_PASSWORD
     --env xpack.license.self_generated.type=trial
-    --env xpack.security.enabled=true
-    --env xpack.security.http.ssl.enabled=true
-    --env xpack.security.http.ssl.verification_mode=certificate
-    --env xpack.security.http.ssl.key=certs/testnode_san.key
-    --env xpack.security.http.ssl.certificate=certs/testnode_san.crt
-    --env xpack.security.http.ssl.certificate_authorities=certs/ca.crt
-    --env xpack.security.transport.ssl.enabled=true
-    --env xpack.security.transport.ssl.key=certs/testnode_san.key
-    --env xpack.security.transport.ssl.certificate=certs/testnode_san.crt
-    --env xpack.security.transport.ssl.certificate_authorities=certs/ca.crt
-END
-))
-  volumes+=($(cat <<-END
-    --volume $SSL_CERT:/usr/share/elasticsearch/config/certs/testnode_san.crt
-    --volume $SSL_KEY:/usr/share/elasticsearch/config/certs/testnode_san.key
-    --volume $SSL_CA:/usr/share/elasticsearch/config/certs/ca.crt
-    --volume $SSL_CA_PEM:/usr/share/elasticsearch/config/certs/ca.pem
+    --env xpack.security.enabled=false
+    --env xpack.security.http.ssl.enabled=false
+    --env xpack.security.transport.ssl.enabled=false
 END
 ))
 fi
 
 url="http://$NODE_NAME"
 if [[ "$ELASTICSEARCH_VERSION" != *oss* ]]; then
-  url="https://elastic:$ELASTIC_PASSWORD@$NODE_NAME"
-fi
-
-cert_validation_flags="--insecure"
-if [[ "$NODE_NAME" == "es1" ]]; then
-  cert_validation_flags="--cacert /usr/share/elasticsearch/config/certs/ca.pem --resolve ${NODE_NAME}:443:127.0.0.1"
+  url="http://elastic:$ELASTIC_PASSWORD@$NODE_NAME"
 fi
 
 echo -e "\033[34;1mINFO:\033[0m Starting container $NODE_NAME \033[0m"
@@ -165,7 +142,7 @@ docker run \
   --ulimit nofile=65536:65536 \
   --ulimit memlock=-1:-1 \
   --detach="$DETACH" \
-  --health-cmd="curl $cert_validation_flags --fail $url:9200/_cluster/health || exit 1" \
+  --health-cmd="curl --insecure --fail $url:9200/_cluster/health || exit 1" \
   --health-interval=2s \
   --health-retries=20 \
   --health-timeout=2s \

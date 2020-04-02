@@ -25,17 +25,8 @@ ELASTICSEARCH_HOST = os.environ.get("ELASTICSEARCH_HOST") or "localhost"
 # Define client to use in tests
 TEST_SUITE = os.environ.get("TEST_SUITE", "xpack")
 if TEST_SUITE == "xpack":
-    print("Running xpack tests requires SSL. Setting up SSL enabled client")
-    certpath = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), "../../.ci/certs/ca.crt")
-    )
-    print(certpath)
     ES_TEST_CLIENT = Elasticsearch(
-        ELASTICSEARCH_HOST,
-        http_auth=("elastic", "changeme"),
-        use_ssl=True,
-        verify_certs=True,
-        ca_certs=certpath,
+        ELASTICSEARCH_HOST, http_auth=("elastic", "changeme"),
     )
 else:
     ES_TEST_CLIENT = Elasticsearch(ELASTICSEARCH_HOST)

@@ -27,4 +27,4 @@ def lint(session):
 def test(session):
     session.install("-r", "requirements-dev.txt")
     session.run("python", "-m", "eland.tests.setup_tests")
-    session.run("pytest", *(session.posargs or ("eland/tests/",)))
+    session.run("pytest", "--doctest-modules", *(session.posargs or ("eland/",)))
