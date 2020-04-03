@@ -25,7 +25,6 @@ from eland._version import (
     __maintainer_email__,
 )
 from eland.common import *
-from eland.client import *
 from eland.filter import *
 from eland.index import *
 from eland.field_mappings import *

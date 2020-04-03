@@ -42,8 +42,7 @@ class ImportedMLModel(MLModel):
     ----------
     es_client: Elasticsearch client argument(s)
         - elasticsearch-py parameters or
-        - elasticsearch-py instance or
-        - eland.Client instance
+        - elasticsearch-py instance
 
     model_id: str
         The unique identifier of the trained inference model in Elasticsearch.
@@ -160,9 +159,8 @@ class ImportedMLModel(MLModel):
         serialized_model = str(serializer.serialize_and_compress_model())[
             2:-1
         ]  # remove `b` and str quotes
-        self._client.perform_request(
-            "PUT",
-            "/_ml/inference/" + self._model_id,
+        self._client.ml.put_trained_model(
+            model_id=self._model_id,
             body={
                 "input": {"field_names": feature_names},
                 "compressed_definition": serialized_model,
@@ -229,9 +227,7 @@ class ImportedMLModel(MLModel):
         else:
             raise NotImplementedError(f"Prediction for type {type(X)}, not supported")
 
-        results = self._client.perform_request(
-            "POST",
-            "/_ingest/pipeline/_simulate",
+        results = self._client.ingest.simulate(
             body={
                 "pipeline": {
                     "processors": [
@@ -245,7 +241,7 @@ class ImportedMLModel(MLModel):
                     ]
                 },
                 "docs": docs,
-            },
+            }
         )
 
         y = [

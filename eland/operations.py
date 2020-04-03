@@ -16,6 +16,7 @@ import warnings
 
 import pandas as pd
 from pandas.core.dtypes.common import is_datetime_or_timedelta_dtype
+from elasticsearch.helpers import scan
 
 from eland import (
     Index,
@@ -114,7 +115,7 @@ class Operations:
 
             field_exists_count = query_compiler._client.count(
                 index=query_compiler._index_pattern, body=body.to_count_body()
-            )
+            )["count"]
             counts[field] = field_exists_count
 
         return pd.Series(data=counts, index=fields)
@@ -702,8 +703,10 @@ class Operations:
                     raise
         else:
             is_scan = True
-            es_results = query_compiler._client.scan(
-                index=query_compiler._index_pattern, query=body
+            es_results = scan(
+                client=query_compiler._client,
+                index=query_compiler._index_pattern,
+                query=body,
             )
             # create post sort
             if sort_params is not None:
@@ -739,7 +742,7 @@ class Operations:
 
         return query_compiler._client.count(
             index=query_compiler._index_pattern, body=body.to_count_body()
-        )
+        )["count"]
 
     def _validate_index_operation(self, query_compiler, items):
         if not isinstance(items, list):
@@ -772,7 +775,7 @@ class Operations:
 
         return query_compiler._client.count(
             index=query_compiler._index_pattern, body=body.to_count_body()
-        )
+        )["count"]
 
     def drop_index_values(self, query_compiler, field, items):
         self._validate_index_operation(query_compiler, items)

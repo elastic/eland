@@ -25,7 +25,7 @@ from eland.tests.common import TestData
 class TestScriptedFields(TestData):
     def test_add_new_scripted_field(self):
         ed_field_mappings = ed.FieldMappings(
-            client=ed.Client(ES_TEST_CLIENT), index_pattern=FLIGHTS_INDEX_NAME
+            client=ES_TEST_CLIENT, index_pattern=FLIGHTS_INDEX_NAME
         )
 
         ed_field_mappings.add_scripted_field(
@@ -44,7 +44,7 @@ class TestScriptedFields(TestData):
 
     def test_add_duplicate_scripted_field(self):
         ed_field_mappings = ed.FieldMappings(
-            client=ed.Client(ES_TEST_CLIENT), index_pattern=FLIGHTS_INDEX_NAME
+            client=ES_TEST_CLIENT, index_pattern=FLIGHTS_INDEX_NAME
         )
 
         ed_field_mappings.add_scripted_field(

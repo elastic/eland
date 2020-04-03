@@ -14,7 +14,6 @@
 
 import pandas as pd
 from elasticsearch import helpers
-from elasticsearch.client import ClusterClient
 
 from eland.tests import (
     FLIGHTS_FILE_NAME,
@@ -85,9 +84,8 @@ def _setup_data(es):
 
 def _update_max_compilations_limit(es, limit="10000/1m"):
     print("Updating script.max_compilations_rate to ", limit)
-    cluster_client = ClusterClient(es)
     body = {"transient": {"script.max_compilations_rate": limit}}
-    cluster_client.put_settings(body=body)
+    es.cluster.put_settings(body=body)
 
 
 def _setup_test_mappings(es):

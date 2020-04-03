@@ -25,7 +25,7 @@ from eland.tests.common import TestData
 class TestFieldNamePDDType(TestData):
     def test_all_formats(self):
         ed_field_mappings = ed.FieldMappings(
-            client=ed.Client(ES_TEST_CLIENT), index_pattern=FLIGHTS_INDEX_NAME
+            client=ES_TEST_CLIENT, index_pattern=FLIGHTS_INDEX_NAME
         )
 
         pd_flights = self.pd_flights()
@@ -39,7 +39,7 @@ class TestFieldNamePDDType(TestData):
 
     def test_non_existant(self):
         ed_field_mappings = ed.FieldMappings(
-            client=ed.Client(ES_TEST_CLIENT), index_pattern=FLIGHTS_INDEX_NAME
+            client=ES_TEST_CLIENT, index_pattern=FLIGHTS_INDEX_NAME
         )
 
         with pytest.raises(KeyError):

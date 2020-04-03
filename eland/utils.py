@@ -17,9 +17,11 @@ import csv
 import pandas as pd
 from pandas.io.parsers import _c_parser_defaults
 
-from eland import Client, DEFAULT_CHUNK_SIZE
+from eland import DEFAULT_CHUNK_SIZE
 from eland import DataFrame
 from eland import FieldMappings
+from eland.common import ensure_es_client
+from elasticsearch.helpers import bulk
 
 
 def read_es(es_client, es_index_pattern):
@@ -32,8 +34,7 @@ def read_es(es_client, es_index_pattern):
     ----------
     es_client: Elasticsearch client argument(s)
         - elasticsearch-py parameters or
-        - elasticsearch-py instance or
-        - eland.Client instance
+        - elasticsearch-py instance
     es_index_pattern: str
         Elasticsearch index pattern
 
@@ -69,8 +70,7 @@ def pandas_to_eland(
     ----------
     es_client: Elasticsearch client argument(s)
         - elasticsearch-py parameters or
-        - elasticsearch-py instance or
-        - eland.Client instance
+        - elasticsearch-py instance
     es_dest_index: str
         Name of Elasticsearch index to be appended to
     es_if_exists : {'fail', 'replace', 'append'}, default 'fail'
@@ -164,12 +164,11 @@ def pandas_to_eland(
     if chunksize is None:
         chunksize = DEFAULT_CHUNK_SIZE
 
-    client = Client(es_client)
-
     mapping = FieldMappings._generate_es_mappings(pd_df, es_geo_points)
+    es_client = ensure_es_client(es_client)
 
     # If table exists, check if_exists parameter
-    if client.index_exists(index=es_dest_index):
+    if es_client.indices.exists(index=es_dest_index):
         if es_if_exists == "fail":
             raise ValueError(
                 f"Could not create the index [{es_dest_index}] because it "
@@ -178,12 +177,12 @@ def pandas_to_eland(
                 f"'append' or 'replace' data."
             )
         elif es_if_exists == "replace":
-            client.index_delete(index=es_dest_index)
-            client.index_create(index=es_dest_index, body=mapping)
+            es_client.indices.delete(index=es_dest_index)
+            es_client.indices.create(index=es_dest_index, body=mapping)
         # elif if_exists == "append":
         # TODO validate mapping are compatible
     else:
-        client.index_create(index=es_dest_index, body=mapping)
+        es_client.indices.create(index=es_dest_index, body=mapping)
 
     # Now add data
     actions = []
@@ -208,14 +207,11 @@ def pandas_to_eland(
         n = n + 1
 
         if n % chunksize == 0:
-            client.bulk(actions, refresh=es_refresh)
+            bulk(client=es_client, actions=actions, refresh=es_refresh)
             actions = []
 
-    client.bulk(actions, refresh=es_refresh)
-
-    ed_df = DataFrame(client, es_dest_index)
-
-    return ed_df
+    bulk(client=es_client, actions=actions, refresh=es_refresh)
+    return DataFrame(es_client, es_dest_index)
 
 
 def eland_to_pandas(ed_df, show_progress=False):
@@ -357,8 +353,7 @@ def read_csv(
     ----------
     es_client: Elasticsearch client argument(s)
         - elasticsearch-py parameters or
-        - elasticsearch-py instance or
-        - eland.Client instance
+        - elasticsearch-py instance
     es_dest_index: str
         Name of Elasticsearch index to be appended to
     es_if_exists : {'fail', 'replace', 'append'}, default 'fail'
@@ -490,8 +485,6 @@ def read_csv(
     if chunksize is None:
         kwds.update(chunksize=DEFAULT_CHUNK_SIZE)
 
-    client = Client(es_client)
-
     # read csv in chunks to pandas DataFrame and dump to eland DataFrame (and Elasticsearch)
     reader = pd.read_csv(filepath_or_buffer, **kwds)
 
@@ -500,7 +493,7 @@ def read_csv(
         if first_write:
             pandas_to_eland(
                 chunk,
-                client,
+                es_client,
                 es_dest_index,
                 es_if_exists=es_if_exists,
                 chunksize=chunksize,
@@ -512,7 +505,7 @@ def read_csv(
         else:
             pandas_to_eland(
                 chunk,
-                client,
+                es_client,
                 es_dest_index,
                 es_if_exists="append",
                 chunksize=chunksize,
@@ -522,6 +515,4 @@ def read_csv(
             )
 
     # Now create an eland.DataFrame that references the new index
-    ed_df = DataFrame(client, es_dest_index)
-
-    return ed_df
+    return DataFrame(es_client, es_dest_index)

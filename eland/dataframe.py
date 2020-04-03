@@ -46,8 +46,7 @@ class DataFrame(NDFrame):
     ----------
     client: Elasticsearch client argument(s) (e.g. 'localhost:9200')
         - elasticsearch-py parameters or
-        - elasticsearch-py instance or
-        - eland.Client instance
+        - elasticsearch-py instance
     index_pattern: str
         Elasticsearch index pattern. This can contain wildcards. (e.g. 'flights')
     columns: list of str, optional

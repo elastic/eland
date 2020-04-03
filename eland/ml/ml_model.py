@@ -13,8 +13,7 @@
 #      limitations under the License.
 
 import elasticsearch
-
-from eland import Client
+from eland.common import ensure_es_client
 
 
 class MLModel:
@@ -37,13 +36,12 @@ class MLModel:
         ----------
         es_client: Elasticsearch client argument(s)
             - elasticsearch-py parameters or
-            - elasticsearch-py instance or
-            - eland.Client instance
+            - elasticsearch-py instance
 
         model_id: str
             The unique identifier of the trained inference model in Elasticsearch.
         """
-        self._client = Client(es_client)
+        self._client = ensure_es_client(es_client)
         self._model_id = model_id
 
     def delete_model(self):
@@ -53,6 +51,6 @@ class MLModel:
         If model doesn't exist, ignore failure.
         """
         try:
-            self._client.perform_request("DELETE", "/_ml/inference/" + self._model_id)
-        except elasticsearch.exceptions.NotFoundError:
+            self._client.ml.delete_trained_model(model_id=self._model_id)
+        except elasticsearch.NotFoundError:
             pass

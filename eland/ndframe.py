@@ -57,7 +57,7 @@ class NDFrame(ABC):
 
         Parameters
         ----------
-        client : eland.Client
+        client : elasticsearch.Elasticsearch
             A reference to a Elasticsearch python client
         """
         if query_compiler is None:
