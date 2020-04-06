@@ -18,7 +18,6 @@ import numpy as np
 import pandas as pd
 
 from eland import (
-    Client,
     DEFAULT_PROGRESS_REPORTING_NUM_ROWS,
     elasticsearch_date_to_pandas_date,
 )
@@ -26,6 +25,7 @@ from eland import FieldMappings
 from eland import Index
 from eland import Operations
 from eland.filter import QueryFilter
+from eland.common import ensure_es_client
 
 
 class QueryCompiler:
@@ -67,13 +67,13 @@ class QueryCompiler:
     ):
         # Implement copy as we don't deep copy the client
         if to_copy is not None:
-            self._client = Client(to_copy._client)
+            self._client = to_copy._client
             self._index_pattern = to_copy._index_pattern
             self._index = Index(self, to_copy._index.index_field)
             self._operations = copy.deepcopy(to_copy._operations)
             self._mappings = copy.deepcopy(to_copy._mappings)
         else:
-            self._client = Client(client)
+            self._client = ensure_es_client(client)
             self._index_pattern = index_pattern
             # Get and persist mappings, this allows us to correctly
             # map returned types from Elasticsearch to pandas datatypes
@@ -519,10 +519,10 @@ class QueryCompiler:
         if not isinstance(right, QueryCompiler):
             raise TypeError(f"Incompatible types {type(self)} != {type(right)}")
 
-        if self._client._es != right._client._es:
+        if self._client != right._client:
             raise ValueError(
                 f"Can not perform arithmetic operations across different clients"
-                f"{self._client._es} != {right._client._es}"
+                f"{self._client} != {right._client}"
             )
 
         if self._index.index_field != right._index.index_field:

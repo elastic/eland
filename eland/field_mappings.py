@@ -67,7 +67,7 @@ class FieldMappings:
         """
         Parameters
         ----------
-        client: eland.Client
+        client: elasticsearch.Elasticsearch
             Elasticsearch client
 
         index_pattern: str
@@ -82,7 +82,7 @@ class FieldMappings:
                 f"or index_pattern {client} {index_pattern}",
             )
 
-        get_mapping = client.get_mapping(index=index_pattern)
+        get_mapping = client.indices.get_mapping(index=index_pattern)
 
         # Get all fields (including all nested) and then all field_caps
         all_fields = FieldMappings._extract_fields_from_mapping(get_mapping)

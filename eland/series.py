@@ -63,7 +63,7 @@ class Series(NDFrame):
 
     Parameters
     ----------
-    client : eland.Client
+    client : elasticsearch.Elasticsearch
         A reference to a Elasticsearch python client
 
     index_pattern : str
@@ -1046,7 +1046,7 @@ class Series(NDFrame):
         return a op b
 
         a & b == Series
-            a & b must share same eland.Client, index_pattern and index_field
+            a & b must share same Elasticsearch client, index_pattern and index_field
         a == Series, b == numeric or string
 
         Naming of the resulting Series

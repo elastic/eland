@@ -15,9 +15,10 @@
 # Default number of rows displayed (different to pandas where ALL could be displayed)
 import warnings
 from enum import Enum
-from typing import Union
+from typing import Union, List, Tuple
 
 import pandas as pd
+from elasticsearch import Elasticsearch
 
 DEFAULT_NUM_ROWS_DISPLAYED = 60
 
@@ -259,3 +260,11 @@ def elasticsearch_date_to_pandas_date(
         )
         # TODO investigate how we could generate this just once for a bulk read.
         return pd.to_datetime(value)
+
+
+def ensure_es_client(
+    es_client: Union[str, List[str], Tuple[str, ...], Elasticsearch]
+) -> Elasticsearch:
+    if not isinstance(es_client, Elasticsearch):
+        return Elasticsearch(es_client)
+    return es_client

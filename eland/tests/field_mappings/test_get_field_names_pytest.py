@@ -25,7 +25,7 @@ from eland.tests.common import TestData
 class TestGetFieldNames(TestData):
     def test_get_field_names_all(self):
         ed_field_mappings = ed.FieldMappings(
-            client=ed.Client(ES_TEST_CLIENT), index_pattern=FLIGHTS_INDEX_NAME
+            client=ES_TEST_CLIENT, index_pattern=FLIGHTS_INDEX_NAME
         )
         pd_flights = self.pd_flights()
 
@@ -38,7 +38,7 @@ class TestGetFieldNames(TestData):
     def test_get_field_names_selected(self):
         expected = ["Carrier", "AvgTicketPrice"]
         ed_field_mappings = ed.FieldMappings(
-            client=ed.Client(ES_TEST_CLIENT),
+            client=ES_TEST_CLIENT,
             index_pattern=FLIGHTS_INDEX_NAME,
             display_names=expected,
         )
@@ -53,7 +53,7 @@ class TestGetFieldNames(TestData):
     def test_get_field_names_scripted(self):
         expected = ["Carrier", "AvgTicketPrice"]
         ed_field_mappings = ed.FieldMappings(
-            client=ed.Client(ES_TEST_CLIENT),
+            client=ES_TEST_CLIENT,
             index_pattern=FLIGHTS_INDEX_NAME,
             display_names=expected,
         )

@@ -23,7 +23,7 @@ from eland.tests.common import TestData
 class TestDTypes(TestData):
     def test_all_fields(self):
         field_mappings = ed.FieldMappings(
-            client=ed.Client(ES_TEST_CLIENT), index_pattern=FLIGHTS_INDEX_NAME
+            client=ES_TEST_CLIENT, index_pattern=FLIGHTS_INDEX_NAME
         )
 
         pd_flights = self.pd_flights()
@@ -34,7 +34,7 @@ class TestDTypes(TestData):
         expected = ["timestamp", "DestWeather", "DistanceKilometers", "AvgTicketPrice"]
 
         field_mappings = ed.FieldMappings(
-            client=ed.Client(ES_TEST_CLIENT),
+            client=ES_TEST_CLIENT,
             index_pattern=FLIGHTS_INDEX_NAME,
             display_names=expected,
         )

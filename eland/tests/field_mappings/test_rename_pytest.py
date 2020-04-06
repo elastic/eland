@@ -22,7 +22,7 @@ from eland.tests.common import TestData
 class TestRename(TestData):
     def test_single_rename(self):
         ed_field_mappings = ed.FieldMappings(
-            client=ed.Client(ES_TEST_CLIENT), index_pattern=FLIGHTS_INDEX_NAME
+            client=ES_TEST_CLIENT, index_pattern=FLIGHTS_INDEX_NAME
         )
 
         pd_flights_column_series = self.pd_flights().columns.to_series()
@@ -47,7 +47,7 @@ class TestRename(TestData):
 
     def test_non_exists_rename(self):
         ed_field_mappings = ed.FieldMappings(
-            client=ed.Client(ES_TEST_CLIENT), index_pattern=FLIGHTS_INDEX_NAME
+            client=ES_TEST_CLIENT, index_pattern=FLIGHTS_INDEX_NAME
         )
 
         pd_flights_column_series = self.pd_flights().columns.to_series()
@@ -71,7 +71,7 @@ class TestRename(TestData):
 
     def test_exists_and_non_exists_rename(self):
         ed_field_mappings = ed.FieldMappings(
-            client=ed.Client(ES_TEST_CLIENT), index_pattern=FLIGHTS_INDEX_NAME
+            client=ES_TEST_CLIENT, index_pattern=FLIGHTS_INDEX_NAME
         )
 
         pd_flights_column_series = self.pd_flights().columns.to_series()
@@ -104,7 +104,7 @@ class TestRename(TestData):
 
     def test_multi_rename(self):
         ed_field_mappings = ed.FieldMappings(
-            client=ed.Client(ES_TEST_CLIENT), index_pattern=FLIGHTS_INDEX_NAME
+            client=ES_TEST_CLIENT, index_pattern=FLIGHTS_INDEX_NAME
         )
 
         pd_flights_column_series = self.pd_flights().columns.to_series()

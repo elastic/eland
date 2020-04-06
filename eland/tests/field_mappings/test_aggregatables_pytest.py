@@ -24,7 +24,7 @@ class TestAggregatables(TestData):
     @pytest.mark.filterwarnings("ignore:Aggregations not supported")
     def test_ecommerce_all_aggregatables(self):
         ed_field_mappings = ed.FieldMappings(
-            client=ed.Client(ES_TEST_CLIENT), index_pattern=ECOMMERCE_INDEX_NAME
+            client=ES_TEST_CLIENT, index_pattern=ECOMMERCE_INDEX_NAME
         )
 
         aggregatables = ed_field_mappings.aggregatable_field_names()
@@ -89,7 +89,7 @@ class TestAggregatables(TestData):
         }
 
         ed_field_mappings = ed.FieldMappings(
-            client=ed.Client(ES_TEST_CLIENT),
+            client=ES_TEST_CLIENT,
             index_pattern=ECOMMERCE_INDEX_NAME,
             display_names=expected.values(),
         )
@@ -100,14 +100,14 @@ class TestAggregatables(TestData):
 
     def test_ecommerce_single_aggregatable_field(self):
         ed_field_mappings = ed.FieldMappings(
-            client=ed.Client(ES_TEST_CLIENT), index_pattern=ECOMMERCE_INDEX_NAME
+            client=ES_TEST_CLIENT, index_pattern=ECOMMERCE_INDEX_NAME
         )
 
         assert "user" == ed_field_mappings.aggregatable_field_name("user")
 
     def test_ecommerce_single_keyword_aggregatable_field(self):
         ed_field_mappings = ed.FieldMappings(
-            client=ed.Client(ES_TEST_CLIENT), index_pattern=ECOMMERCE_INDEX_NAME
+            client=ES_TEST_CLIENT, index_pattern=ECOMMERCE_INDEX_NAME
         )
 
         assert (
@@ -117,7 +117,7 @@ class TestAggregatables(TestData):
 
     def test_ecommerce_single_non_existant_field(self):
         ed_field_mappings = ed.FieldMappings(
-            client=ed.Client(ES_TEST_CLIENT), index_pattern=ECOMMERCE_INDEX_NAME
+            client=ES_TEST_CLIENT, index_pattern=ECOMMERCE_INDEX_NAME
         )
 
         with pytest.raises(KeyError):
@@ -126,7 +126,7 @@ class TestAggregatables(TestData):
     @pytest.mark.filterwarnings("ignore:Aggregations not supported")
     def test_ecommerce_single_non_aggregatable_field(self):
         ed_field_mappings = ed.FieldMappings(
-            client=ed.Client(ES_TEST_CLIENT), index_pattern=ECOMMERCE_INDEX_NAME
+            client=ES_TEST_CLIENT, index_pattern=ECOMMERCE_INDEX_NAME
         )
 
         assert None is ed_field_mappings.aggregatable_field_name("customer_gender")

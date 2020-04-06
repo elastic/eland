@@ -24,7 +24,7 @@ from eland.tests.common import TestData
 class TestMetricSourceFields(TestData):
     def test_flights_all_metric_source_fields(self):
         ed_field_mappings = ed.FieldMappings(
-            client=ed.Client(ES_TEST_CLIENT), index_pattern=FLIGHTS_INDEX_NAME
+            client=ES_TEST_CLIENT, index_pattern=FLIGHTS_INDEX_NAME
         )
         pd_flights = self.pd_flights()
 
@@ -38,7 +38,7 @@ class TestMetricSourceFields(TestData):
 
     def test_flights_all_metric_source_fields_and_bool(self):
         ed_field_mappings = ed.FieldMappings(
-            client=ed.Client(ES_TEST_CLIENT), index_pattern=FLIGHTS_INDEX_NAME
+            client=ES_TEST_CLIENT, index_pattern=FLIGHTS_INDEX_NAME
         )
         pd_flights = self.pd_flights()
 
@@ -54,7 +54,7 @@ class TestMetricSourceFields(TestData):
 
     def test_flights_all_metric_source_fields_bool_and_timestamp(self):
         ed_field_mappings = ed.FieldMappings(
-            client=ed.Client(ES_TEST_CLIENT), index_pattern=FLIGHTS_INDEX_NAME
+            client=ES_TEST_CLIENT, index_pattern=FLIGHTS_INDEX_NAME
         )
         pd_flights = self.pd_flights()
 
@@ -87,7 +87,7 @@ class TestMetricSourceFields(TestData):
         user                           object
         """
         ed_field_mappings = ed.FieldMappings(
-            client=ed.Client(ES_TEST_CLIENT),
+            client=ES_TEST_CLIENT,
             index_pattern=ECOMMERCE_INDEX_NAME,
             display_names=field_names,
         )
@@ -120,7 +120,7 @@ class TestMetricSourceFields(TestData):
         user                           object
         """
         ed_field_mappings = ed.FieldMappings(
-            client=ed.Client(ES_TEST_CLIENT),
+            client=ES_TEST_CLIENT,
             index_pattern=ECOMMERCE_INDEX_NAME,
             display_names=field_names,
         )
@@ -143,7 +143,7 @@ class TestMetricSourceFields(TestData):
         taxless_total_price    float64
         """
         ed_field_mappings = ed.FieldMappings(
-            client=ed.Client(ES_TEST_CLIENT),
+            client=ES_TEST_CLIENT,
             index_pattern=ECOMMERCE_INDEX_NAME,
             display_names=field_names,
         )

@@ -64,7 +64,7 @@ class TestDateTime(TestData):
 
     def test_all_formats(self):
         ed_field_mappings = ed.FieldMappings(
-            client=ed.Client(ES_TEST_CLIENT), index_pattern=self.time_index_name
+            client=ES_TEST_CLIENT, index_pattern=self.time_index_name
         )
 
         # do a rename so display_name for a field is different to es_field_name

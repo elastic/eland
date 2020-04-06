@@ -23,7 +23,7 @@ from eland.tests.common import TestData
 class TestDisplayNames(TestData):
     def test_init_all_fields(self):
         field_mappings = ed.FieldMappings(
-            client=ed.Client(ES_TEST_CLIENT), index_pattern=FLIGHTS_INDEX_NAME
+            client=ES_TEST_CLIENT, index_pattern=FLIGHTS_INDEX_NAME
         )
 
         expected = self.pd_flights().columns.to_list()
@@ -34,7 +34,7 @@ class TestDisplayNames(TestData):
         expected = ["timestamp", "DestWeather", "DistanceKilometers", "AvgTicketPrice"]
 
         field_mappings = ed.FieldMappings(
-            client=ed.Client(ES_TEST_CLIENT),
+            client=ES_TEST_CLIENT,
             index_pattern=FLIGHTS_INDEX_NAME,
             display_names=expected,
         )
@@ -51,7 +51,7 @@ class TestDisplayNames(TestData):
         ]
 
         field_mappings = ed.FieldMappings(
-            client=ed.Client(ES_TEST_CLIENT), index_pattern=FLIGHTS_INDEX_NAME
+            client=ES_TEST_CLIENT, index_pattern=FLIGHTS_INDEX_NAME
         )
 
         field_mappings.display_names = expected
@@ -75,7 +75,7 @@ class TestDisplayNames(TestData):
         ]
 
         field_mappings = ed.FieldMappings(
-            client=ed.Client(ES_TEST_CLIENT), index_pattern=FLIGHTS_INDEX_NAME
+            client=ES_TEST_CLIENT, index_pattern=FLIGHTS_INDEX_NAME
         )
 
         with pytest.raises(KeyError):
@@ -87,7 +87,7 @@ class TestDisplayNames(TestData):
 
     def test_invalid_list_type_display_names(self):
         field_mappings = ed.FieldMappings(
-            client=ed.Client(ES_TEST_CLIENT), index_pattern=FLIGHTS_INDEX_NAME
+            client=ES_TEST_CLIENT, index_pattern=FLIGHTS_INDEX_NAME
         )
 
         # not a list like object
