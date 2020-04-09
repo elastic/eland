@@ -1,27 +1,27 @@
-#  Copyright 2019 Elasticsearch BV
+# Copyright 2020 Elasticsearch BV
 #
-#      Licensed under the Apache License, Version 2.0 (the "License");
-#      you may not use this file except in compliance with the License.
-#      You may obtain a copy of the License at
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#          http://www.apache.org/licenses/LICENSE-2.0
+#   http://www.apache.org/licenses/LICENSE-2.0
 #
-#      Unless required by applicable law or agreed to in writing, software
-#      distributed under the License is distributed on an "AS IS" BASIS,
-#      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#      See the License for the specific language governing permissions and
-#      limitations under the License.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 # File called _pytest for PyCharm compatability
 
-import eland as ed
+from eland.field_mappings import FieldMappings
 from eland.tests import ES_TEST_CLIENT, FLIGHTS_INDEX_NAME
 from eland.tests.common import TestData
 
 
 class TestRename(TestData):
     def test_single_rename(self):
-        ed_field_mappings = ed.FieldMappings(
+        ed_field_mappings = FieldMappings(
             client=ES_TEST_CLIENT, index_pattern=FLIGHTS_INDEX_NAME
         )
 
@@ -46,7 +46,7 @@ class TestRename(TestData):
         assert renames == get_renames
 
     def test_non_exists_rename(self):
-        ed_field_mappings = ed.FieldMappings(
+        ed_field_mappings = FieldMappings(
             client=ES_TEST_CLIENT, index_pattern=FLIGHTS_INDEX_NAME
         )
 
@@ -70,7 +70,7 @@ class TestRename(TestData):
         assert not get_renames
 
     def test_exists_and_non_exists_rename(self):
-        ed_field_mappings = ed.FieldMappings(
+        ed_field_mappings = FieldMappings(
             client=ES_TEST_CLIENT, index_pattern=FLIGHTS_INDEX_NAME
         )
 
@@ -103,7 +103,7 @@ class TestRename(TestData):
         } == get_renames
 
     def test_multi_rename(self):
-        ed_field_mappings = ed.FieldMappings(
+        ed_field_mappings = FieldMappings(
             client=ES_TEST_CLIENT, index_pattern=FLIGHTS_INDEX_NAME
         )
 

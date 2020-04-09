@@ -1,16 +1,16 @@
-#  Copyright 2019 Elasticsearch BV
+# Copyright 2020 Elasticsearch BV
 #
-#      Licensed under the Apache License, Version 2.0 (the "License");
-#      you may not use this file except in compliance with the License.
-#      You may obtain a copy of the License at
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#          http://www.apache.org/licenses/LICENSE-2.0
+#   http://www.apache.org/licenses/LICENSE-2.0
 #
-#      Unless required by applicable law or agreed to in writing, software
-#      distributed under the License is distributed on an "AS IS" BASIS,
-#      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#      See the License for the specific language governing permissions and
-#      limitations under the License.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 
 class Index:
@@ -34,9 +34,12 @@ class Index:
     ID_SORT_FIELD = "_doc"  # if index field is _id, sort by _doc
 
     def __init__(self, query_compiler, index_field=None):
-        self.index_field = index_field
-
         self._query_compiler = query_compiler
+
+        # _is_source_field is set immediately within
+        # index_field.setter
+        self._is_source_field = False
+        self.index_field = index_field
 
     @property
     def sort_field(self):
