@@ -123,6 +123,18 @@ class Operations:
     def mean(self, query_compiler, numeric_only=True):
         return self._metric_aggs(query_compiler, "avg", numeric_only=numeric_only)
 
+    def var(self, query_compiler, numeric_only=True):
+        return self._metric_aggs(
+            query_compiler, ("extended_stats", "variance"), numeric_only=numeric_only
+        )
+
+    def std(self, query_compiler, numeric_only=True):
+        return self._metric_aggs(
+            query_compiler,
+            ("extended_stats", "std_deviation"),
+            numeric_only=numeric_only,
+        )
+
     def sum(self, query_compiler, numeric_only=True):
         return self._metric_aggs(query_compiler, "sum", numeric_only=numeric_only)
 
@@ -226,7 +238,10 @@ class Operations:
                 )
 
             for field in source_fields:
-                body.metric_aggs(field, func, field)
+                if isinstance(func, tuple):
+                    body.metric_aggs(func[0] + "_" + field, func[0], field)
+                else:
+                    body.metric_aggs(field, func, field)
 
             response = query_compiler._client.search(
                 index=query_compiler._index_pattern, size=0, body=body.to_search_body()
@@ -250,11 +265,21 @@ class Operations:
                         response["aggregations"][field]["value_as_string"], date_format
                     )
                 elif keep_original_dtype:
-                    results[field] = pd_dtype.type(
-                        response["aggregations"][field]["value"]
-                    )
+                    if isinstance(func, tuple):
+                        results = pd_dtype.type(
+                            response["aggregations"][func[0] + "_" + field][func[1]]
+                        )
+                    else:
+                        results[field] = pd_dtype.type(
+                            response["aggregations"][field]["value"]
+                        )
                 else:
-                    results[field] = response["aggregations"][field]["value"]
+                    if isinstance(func, tuple):
+                        results[field] = response["aggregations"][
+                            func[0] + "_" + field
+                        ][func[1]]
+                    else:
+                        results[field] = response["aggregations"][field]["value"]
 
         # Return single value if this is a series
         # if len(numeric_source_fields) == 1:

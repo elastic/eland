@@ -463,6 +463,12 @@ class QueryCompiler:
     def mean(self, numeric_only=None):
         return self._operations.mean(self, numeric_only=numeric_only)
 
+    def var(self, numeric_only=None):
+        return self._operations.var(self, numeric_only=numeric_only)
+
+    def std(self, numeric_only=None):
+        return self._operations.std(self, numeric_only=numeric_only)
+
     def sum(self, numeric_only=None):
         return self._operations.sum(self, numeric_only=numeric_only)
 

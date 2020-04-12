@@ -251,6 +251,12 @@ class NDFrame(ABC):
         """
         return self._query_compiler.min(numeric_only=numeric_only)
 
+    def var(self, numeric_only=True):
+        return self._query_compiler.var(numeric_only=numeric_only)
+
+    def std(self, numeric_only=True):
+        return self._query_compiler.std(numeric_only=numeric_only)
+
     def max(self, numeric_only=True):
         """
         Return the maximum value for each numeric column
