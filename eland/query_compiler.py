@@ -469,6 +469,9 @@ class QueryCompiler:
     def std(self, numeric_only=None):
         return self._operations.std(self, numeric_only=numeric_only)
 
+    def median(self, numeric_only=None):
+        return self._operations.median(self, numeric_only=numeric_only)
+
     def sum(self, numeric_only=None):
         return self._operations.sum(self, numeric_only=numeric_only)
 

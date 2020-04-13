@@ -135,6 +135,11 @@ class Operations:
             numeric_only=numeric_only,
         )
 
+    def median(self, query_compiler, numeric_only=True):
+        return self._metric_aggs(
+            query_compiler, ("percentiles", "50.0"), numeric_only=numeric_only
+        )
+
     def sum(self, query_compiler, numeric_only=True):
         return self._metric_aggs(query_compiler, "sum", numeric_only=numeric_only)
 
@@ -275,9 +280,14 @@ class Operations:
                         )
                 else:
                     if isinstance(func, tuple):
-                        results[field] = response["aggregations"][
-                            func[0] + "_" + field
-                        ][func[1]]
+                        if func[0] == "percentiles":
+                            results[field] = response["aggregations"][
+                                "percentiles_" + field
+                            ]["values"]["50.0"]
+                        else:
+                            results[field] = response["aggregations"][
+                                func[0] + "_" + field
+                            ][func[1]]
                     else:
                         results[field] = response["aggregations"][field]["value"]
 

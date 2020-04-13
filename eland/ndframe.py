@@ -252,10 +252,94 @@ class NDFrame(ABC):
         return self._query_compiler.min(numeric_only=numeric_only)
 
     def var(self, numeric_only=True):
+        """
+        Return variance for each numeric column
+
+        Returns
+        -------
+        pandas.Series
+            The value of the variance for each numeric column
+
+        See Also
+        --------
+        :pandas_api_docs:`pandas.DataFrame.var`
+
+        Examples
+        --------
+        >>> df = ed.DataFrame('localhost', 'flights')
+        >>> df.var() # doctest: +SKIP
+        AvgTicketPrice        7.096185e+04
+        Cancelled             1.119831e-01
+        DistanceKilometers    2.096049e+07
+        DistanceMiles         8.092892e+06
+        FlightDelay           1.880825e-01
+        FlightDelayMin        9.359209e+03
+        FlightTimeHour        3.112545e+01
+        FlightTimeMin         1.120516e+05
+        dayOfWeek             3.761135e+00
+        dtype: float64
+        """
         return self._query_compiler.var(numeric_only=numeric_only)
 
     def std(self, numeric_only=True):
+        """
+        Return standard deviation for each numeric column
+
+        Returns
+        -------
+        pandas.Series
+            The value of the standard deviation for each numeric column
+
+        See Also
+        --------
+        :pandas_api_docs:`pandas.DataFrame.std`
+
+        Examples
+        --------
+        >>> df = ed.DataFrame('localhost', 'flights')
+        >>> df.std() # doctest: +SKIP
+        AvgTicketPrice         266.386661
+        Cancelled                0.334639
+        DistanceKilometers    4578.263193
+        DistanceMiles         2844.800855
+        FlightDelay              0.433685
+        FlightDelayMin          96.743006
+        FlightTimeHour           5.579019
+        FlightTimeMin          334.741135
+        dayOfWeek                1.939365
+        dtype: float64
+        """
         return self._query_compiler.std(numeric_only=numeric_only)
+
+    def median(self, numeric_only=True):
+        """
+        Return the median value for each numeric column
+
+        Returns
+        -------
+        pandas.Series
+            median value for each numeric column
+
+        See Also
+        --------
+        :pandas_api_docs:`pandas.DataFrame.median`
+
+        Examples
+        --------
+        >>> df = ed.DataFrame('localhost', 'flights')
+        >>> df.median() # doctest: +SKIP
+        AvgTicketPrice         640.387285
+        Cancelled                0.000000
+        DistanceKilometers    7612.072403
+        DistanceMiles         4729.922470
+        FlightDelay              0.000000
+        FlightDelayMin           0.000000
+        FlightTimeHour           8.383113
+        FlightTimeMin          503.148975
+        dayOfWeek                3.000000
+        dtype: float64
+        """
+        return self._query_compiler.median(numeric_only=numeric_only)
 
     def max(self, numeric_only=True):
         """
