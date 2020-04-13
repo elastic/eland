@@ -267,7 +267,7 @@ class NDFrame(ABC):
         Examples
         --------
         >>> df = ed.DataFrame('localhost', 'flights')
-        >>> df.std() # doctest: +SKIP
+        >>> df.var() # doctest: +SKIP
         AvgTicketPrice        7.096185e+04
         Cancelled             1.119831e-01
         DistanceKilometers    2.096049e+07
