@@ -12,16 +12,16 @@
 #      See the License for the specific language governing permissions and
 #      limitations under the License.
 
-# File called _pytest for PyCharm compatability
+# File called _pytest for PyCharm compatibility
 
-from pandas.util.testing import assert_series_equal, assert_almost_equal
+from pandas.testing import assert_series_equal
 
 from eland.tests.common import TestData
 
 
 class TestDataFrameMetrics(TestData):
     funcs = ["max", "min", "mean", "sum"]
-    extended_funcs = ["var", "std"]
+    extended_funcs = ["var", "std", "median"]
 
     def test_flights_metrics(self):
         pd_flights = self.pd_flights()
@@ -41,7 +41,7 @@ class TestDataFrameMetrics(TestData):
             pd_metric = getattr(pd_flights, func)(numeric_only=True)
             ed_metric = getattr(ed_flights, func)(numeric_only=True)
 
-            assert_almost_equal(pd_metric, ed_metric, check_less_precise=True)
+            assert_series_equal(pd_metric, ed_metric, check_less_precise=True)
 
     def test_ecommerce_selected_non_numeric_source_fields(self):
         # None of these are numeric
