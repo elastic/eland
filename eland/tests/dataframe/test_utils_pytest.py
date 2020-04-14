@@ -78,7 +78,7 @@ class TestDataFrameUtils(TestData):
                 "F": False,
                 "G": [1, 2, 3],
                 "H": "Long text",  # text
-                "I": "52.36,4.83"  # geo point
+                "I": "52.36,4.83",  # geo point
             },
             index=["0", "1", "2"],
         )
@@ -97,10 +97,23 @@ class TestDataFrameUtils(TestData):
         )
 
         # Check types
-        expected_mapping = {'test_pandas_to_eland_ignore_index': {'mappings': {
-            'properties': {'A': {'type': 'double'}, 'B': {'type': 'long'}, 'C': {'type': 'keyword'},
-                           'D': {'type': 'date'}, 'E': {'type': 'double'}, 'F': {'type': 'boolean'},
-                           'G': {'type': 'long'}, 'H': {'type': 'text'}, 'I': {'type': 'geo_point'}}}}}
+        expected_mapping = {
+            "test_pandas_to_eland_ignore_index": {
+                "mappings": {
+                    "properties": {
+                        "A": {"type": "double"},
+                        "B": {"type": "long"},
+                        "C": {"type": "keyword"},
+                        "D": {"type": "date"},
+                        "E": {"type": "double"},
+                        "F": {"type": "boolean"},
+                        "G": {"type": "long"},
+                        "H": {"type": "text"},
+                        "I": {"type": "geo_point"},
+                    }
+                }
+            }
+        }
 
         mapping = ES_TEST_CLIENT.indices.get_mapping(index_name)
 
