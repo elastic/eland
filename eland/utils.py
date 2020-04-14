@@ -56,7 +56,7 @@ def pandas_to_eland(
     es_if_exists="fail",
     es_refresh=False,
     es_dropna=False,
-    es_geo_points=None,
+    es_type_overrides=None,
     chunksize=None,
     use_pandas_index_for_es_ids=True,
 ):
@@ -83,8 +83,8 @@ def pandas_to_eland(
     es_dropna: bool, default 'False'
         * True: Remove missing values (see pandas.Series.dropna)
         * False: Include missing values - may cause bulk to fail
-    es_geo_points: list, default None
-        List of columns to map to geo_point data type
+    es_type_overrides: dict, default None
+        Dict of field_name: es_data_type that overrides default es data types
     chunksize: int, default None
         Number of pandas.DataFrame rows to read before bulk index into Elasticsearch
     use_pandas_index_for_es_ids: bool, default 'True'
@@ -105,17 +105,18 @@ def pandas_to_eland(
     ...                            'D': pd.Timestamp('20190102'),
     ...                            'E': [1.0, 2.0, 3.0],
     ...                            'F': False,
-    ...                            'G': [1, 2, 3]},
+    ...                            'G': [1, 2, 3],
+    ...                            'H': 'Long text - to be indexed as es type text'},
     ...                      index=['0', '1', '2'])
     >>> type(pd_df)
     <class 'pandas.core.frame.DataFrame'>
     >>> pd_df
-           A  B  ...      F  G
-    0  3.141  1  ...  False  1
-    1  3.141  1  ...  False  2
-    2  3.141  1  ...  False  3
+           A  B  ...  G                                          H
+    0  3.141  1  ...  1  Long text - to be indexed as es type text
+    1  3.141  1  ...  2  Long text - to be indexed as es type text
+    2  3.141  1  ...  3  Long text - to be indexed as es type text
     <BLANKLINE>
-    [3 rows x 7 columns]
+    [3 rows x 8 columns]
     >>> pd_df.dtypes
     A           float64
     B             int64
@@ -124,6 +125,7 @@ def pandas_to_eland(
     E           float64
     F              bool
     G             int64
+    H            object
     dtype: object
 
     Convert `pandas.DataFrame` to `eland.DataFrame` - this creates an Elasticsearch index called `pandas_to_eland`.
@@ -135,16 +137,17 @@ def pandas_to_eland(
     ...                            'localhost',
     ...                            'pandas_to_eland',
     ...                            es_if_exists="replace",
-    ...                            es_refresh=True)
+    ...                            es_refresh=True,
+    ...                            es_type_overrides={'H':'text'}) # index field 'H' as text not keyword
     >>> type(ed_df)
     <class 'eland.dataframe.DataFrame'>
     >>> ed_df
-           A  B  ...      F  G
-    0  3.141  1  ...  False  1
-    1  3.141  1  ...  False  2
-    2  3.141  1  ...  False  3
+           A  B  ...  G                                          H
+    0  3.141  1  ...  1  Long text - to be indexed as es type text
+    1  3.141  1  ...  2  Long text - to be indexed as es type text
+    2  3.141  1  ...  3  Long text - to be indexed as es type text
     <BLANKLINE>
-    [3 rows x 7 columns]
+    [3 rows x 8 columns]
     >>> ed_df.dtypes
     A           float64
     B             int64
@@ -153,6 +156,7 @@ def pandas_to_eland(
     E           float64
     F              bool
     G             int64
+    H            object
     dtype: object
 
     See Also
@@ -163,7 +167,7 @@ def pandas_to_eland(
     if chunksize is None:
         chunksize = DEFAULT_CHUNK_SIZE
 
-    mapping = FieldMappings._generate_es_mappings(pd_df, es_geo_points)
+    mapping = FieldMappings._generate_es_mappings(pd_df, es_type_overrides)
     es_client = ensure_es_client(es_client)
 
     # If table exists, check if_exists parameter
@@ -283,7 +287,7 @@ def read_csv(
     es_if_exists="fail",
     es_refresh=False,
     es_dropna=False,
-    es_geo_points=None,
+    es_type_overrides=None,
     sep=",",
     delimiter=None,
     # Column and Index Locations and Names
@@ -364,8 +368,8 @@ def read_csv(
     es_dropna: bool, default 'False'
         * True: Remove missing values (see pandas.Series.dropna)
         * False: Include missing values - may cause bulk to fail
-    es_geo_points: list, default None
-        List of columns to map to geo_point data type
+    es_type_overrides: dict, default None
+        Dict of columns: es_type to override default es datatype mappings
     chunksize
         number of csv rows to read before bulk index into Elasticsearch
 
@@ -498,7 +502,7 @@ def read_csv(
                 chunksize=chunksize,
                 es_refresh=es_refresh,
                 es_dropna=es_dropna,
-                es_geo_points=es_geo_points,
+                es_type_overrides=es_type_overrides,
             )
             first_write = False
         else:
@@ -510,7 +514,7 @@ def read_csv(
                 chunksize=chunksize,
                 es_refresh=es_refresh,
                 es_dropna=es_dropna,
-                es_geo_points=es_geo_points,
+                es_type_overrides=es_type_overrides,
             )
 
     # Now create an eland.DataFrame that references the new index

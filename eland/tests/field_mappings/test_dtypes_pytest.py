@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # File called _pytest for PyCharm compatability
-from pandas.util.testing import assert_series_equal
+from pandas.testing import assert_series_equal
 
 from eland.field_mappings import FieldMappings
 from eland.tests import ES_TEST_CLIENT, FLIGHTS_INDEX_NAME

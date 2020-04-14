@@ -78,6 +78,8 @@ class TestDataFrameUtils(TestData):
                 "E": [1.0, 2.0, 3.0],
                 "F": False,
                 "G": [1, 2, 3],
+                "H": "Long text",  # text
+                "I": "52.36,4.83",  # geo point
             },
             index=["0", "1", "2"],
         )
@@ -92,7 +94,33 @@ class TestDataFrameUtils(TestData):
             es_if_exists="replace",
             es_refresh=True,
             use_pandas_index_for_es_ids=False,
+            es_type_overrides={"H": "text", "I": "geo_point"},
         )
+
+        # Check types
+        expected_mapping = {
+            "test_pandas_to_eland_ignore_index": {
+                "mappings": {
+                    "properties": {
+                        "A": {"type": "double"},
+                        "B": {"type": "long"},
+                        "C": {"type": "keyword"},
+                        "D": {"type": "date"},
+                        "E": {"type": "double"},
+                        "F": {"type": "boolean"},
+                        "G": {"type": "long"},
+                        "H": {"type": "text"},
+                        "I": {"type": "geo_point"},
+                    }
+                }
+            }
+        }
+
+        mapping = ES_TEST_CLIENT.indices.get_mapping(index_name)
+
+        assert expected_mapping == mapping
+
+        # Convert back to pandas and compare with original
         pd_df = ed.eland_to_pandas(ed_df)
 
         # Compare values excluding index
