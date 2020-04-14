@@ -39,8 +39,6 @@ CLASSIFIERS = [
 ]
 
 LONG_DESCRIPTION = """
-# What is it?
-
 eland is a Elasticsearch client Python package to analyse, explore and manipulate data that resides in Elasticsearch.
 Where possible the package uses existing Python APIs and data structures to make it easy to switch between numpy,
 pandas, scikit-learn to their Elasticsearch powered equivalents. In general, the data resides in Elasticsearch and
