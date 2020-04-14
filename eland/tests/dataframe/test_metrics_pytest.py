@@ -1,26 +1,27 @@
-#  Copyright 2019 Elasticsearch BV
+# Copyright 2020 Elasticsearch BV
 #
-#      Licensed under the Apache License, Version 2.0 (the "License");
-#      you may not use this file except in compliance with the License.
-#      You may obtain a copy of the License at
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#          http://www.apache.org/licenses/LICENSE-2.0
+#   http://www.apache.org/licenses/LICENSE-2.0
 #
-#      Unless required by applicable law or agreed to in writing, software
-#      distributed under the License is distributed on an "AS IS" BASIS,
-#      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#      See the License for the specific language governing permissions and
-#      limitations under the License.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
-# File called _pytest for PyCharm compatability
+# File called _pytest for PyCharm compatibility
 
-from pandas.util.testing import assert_series_equal
+from pandas.testing import assert_series_equal
 
 from eland.tests.common import TestData
 
 
 class TestDataFrameMetrics(TestData):
     funcs = ["max", "min", "mean", "sum"]
+    extended_funcs = ["var", "std", "median"]
 
     def test_flights_metrics(self):
         pd_flights = self.pd_flights()
@@ -31,6 +32,16 @@ class TestDataFrameMetrics(TestData):
             ed_metric = getattr(ed_flights, func)(numeric_only=True)
 
             assert_series_equal(pd_metric, ed_metric)
+
+    def test_flights_extended_metrics(self):
+        pd_flights = self.pd_flights()
+        ed_flights = self.ed_flights()
+
+        for func in self.extended_funcs:
+            pd_metric = getattr(pd_flights, func)(numeric_only=True)
+            ed_metric = getattr(ed_flights, func)(numeric_only=True)
+
+            assert_series_equal(pd_metric, ed_metric, check_less_precise=True)
 
     def test_ecommerce_selected_non_numeric_source_fields(self):
         # None of these are numeric
