@@ -1,29 +1,29 @@
-#  Copyright 2019 Elasticsearch BV
+# Copyright 2020 Elasticsearch BV
 #
-#      Licensed under the Apache License, Version 2.0 (the "License");
-#      you may not use this file except in compliance with the License.
-#      You may obtain a copy of the License at
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#          http://www.apache.org/licenses/LICENSE-2.0
+#   http://www.apache.org/licenses/LICENSE-2.0
 #
-#      Unless required by applicable law or agreed to in writing, software
-#      distributed under the License is distributed on an "AS IS" BASIS,
-#      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#      See the License for the specific language governing permissions and
-#      limitations under the License.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 # File called _pytest for PyCharm compatability
 
 import numpy as np
 
-import eland as ed
+from eland.field_mappings import FieldMappings
 from eland.tests import ES_TEST_CLIENT, ECOMMERCE_INDEX_NAME, FLIGHTS_INDEX_NAME
 from eland.tests.common import TestData
 
 
 class TestMetricSourceFields(TestData):
     def test_flights_all_metric_source_fields(self):
-        ed_field_mappings = ed.FieldMappings(
+        ed_field_mappings = FieldMappings(
             client=ES_TEST_CLIENT, index_pattern=FLIGHTS_INDEX_NAME
         )
         pd_flights = self.pd_flights()
@@ -37,7 +37,7 @@ class TestMetricSourceFields(TestData):
         assert set(es_date_formats) == {None}
 
     def test_flights_all_metric_source_fields_and_bool(self):
-        ed_field_mappings = ed.FieldMappings(
+        ed_field_mappings = FieldMappings(
             client=ES_TEST_CLIENT, index_pattern=FLIGHTS_INDEX_NAME
         )
         pd_flights = self.pd_flights()
@@ -53,7 +53,7 @@ class TestMetricSourceFields(TestData):
         assert set(es_date_formats) == {None}
 
     def test_flights_all_metric_source_fields_bool_and_timestamp(self):
-        ed_field_mappings = ed.FieldMappings(
+        ed_field_mappings = FieldMappings(
             client=ES_TEST_CLIENT, index_pattern=FLIGHTS_INDEX_NAME
         )
         pd_flights = self.pd_flights()
@@ -86,7 +86,7 @@ class TestMetricSourceFields(TestData):
         customer_first_name            object
         user                           object
         """
-        ed_field_mappings = ed.FieldMappings(
+        ed_field_mappings = FieldMappings(
             client=ES_TEST_CLIENT,
             index_pattern=ECOMMERCE_INDEX_NAME,
             display_names=field_names,
@@ -119,7 +119,7 @@ class TestMetricSourceFields(TestData):
         total_quantity                 int64
         user                           object
         """
-        ed_field_mappings = ed.FieldMappings(
+        ed_field_mappings = FieldMappings(
             client=ES_TEST_CLIENT,
             index_pattern=ECOMMERCE_INDEX_NAME,
             display_names=field_names,
@@ -142,7 +142,7 @@ class TestMetricSourceFields(TestData):
         taxful_total_price     float64
         taxless_total_price    float64
         """
-        ed_field_mappings = ed.FieldMappings(
+        ed_field_mappings = FieldMappings(
             client=ES_TEST_CLIENT,
             index_pattern=ECOMMERCE_INDEX_NAME,
             display_names=field_names,
