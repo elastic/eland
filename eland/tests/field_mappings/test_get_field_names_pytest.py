@@ -14,7 +14,7 @@
 
 import numpy as np
 import pandas as pd
-from pandas.util.testing import assert_index_equal
+from pandas.testing import assert_index_equal
 
 # File called _pytest for PyCharm compatability
 from eland.field_mappings import FieldMappings

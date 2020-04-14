@@ -14,7 +14,7 @@
 
 # File called _pytest for PyCharm compatability
 
-from pandas.util.testing import assert_almost_equal
+from pandas.testing import assert_frame_equal
 
 from eland.tests.common import TestData
 
@@ -27,9 +27,10 @@ class TestDataFrameDescribe(TestData):
         pd_describe = pd_flights.describe()
         ed_describe = ed_flights.describe()
 
-        assert_almost_equal(
+        assert_frame_equal(
             pd_describe.drop(["25%", "50%", "75%"], axis="index"),
             ed_describe.drop(["25%", "50%", "75%"], axis="index"),
+            check_exact=False,
             check_less_precise=True,
         )
 

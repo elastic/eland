@@ -15,7 +15,7 @@
 # File called _pytest for PyCharm compatability
 
 import numpy as np
-from pandas.util.testing import assert_almost_equal
+from pandas.testing import assert_frame_equal
 
 from eland.tests.common import TestData
 
@@ -31,7 +31,7 @@ class TestDataFrameAggs(TestData):
         # Eland returns all float values for all metric aggs, pandas can return int
         # TODO - investigate this more
         pd_sum_min = pd_sum_min.astype("float64")
-        assert_almost_equal(pd_sum_min, ed_sum_min)
+        assert_frame_equal(pd_sum_min, ed_sum_min, check_exact=False)
 
         pd_sum_min_std = pd_flights.select_dtypes(include=[np.number]).agg(
             ["sum", "min", "std"]
@@ -43,7 +43,9 @@ class TestDataFrameAggs(TestData):
         print(pd_sum_min_std.dtypes)
         print(ed_sum_min_std.dtypes)
 
-        assert_almost_equal(pd_sum_min_std, ed_sum_min_std, check_less_precise=True)
+        assert_frame_equal(
+            pd_sum_min_std, ed_sum_min_std, check_exact=False, check_less_precise=True
+        )
 
     def test_terms_aggs(self):
         pd_flights = self.pd_flights()
@@ -55,7 +57,7 @@ class TestDataFrameAggs(TestData):
         # Eland returns all float values for all metric aggs, pandas can return int
         # TODO - investigate this more
         pd_sum_min = pd_sum_min.astype("float64")
-        assert_almost_equal(pd_sum_min, ed_sum_min)
+        assert_frame_equal(pd_sum_min, ed_sum_min, check_exact=False)
 
         pd_sum_min_std = pd_flights.select_dtypes(include=[np.number]).agg(
             ["sum", "min", "std"]
@@ -67,7 +69,9 @@ class TestDataFrameAggs(TestData):
         print(pd_sum_min_std.dtypes)
         print(ed_sum_min_std.dtypes)
 
-        assert_almost_equal(pd_sum_min_std, ed_sum_min_std, check_less_precise=True)
+        assert_frame_equal(
+            pd_sum_min_std, ed_sum_min_std, check_exact=False, check_less_precise=True
+        )
 
     def test_aggs_median_var(self):
         pd_ecommerce = self.pd_ecommerce()
@@ -86,4 +90,4 @@ class TestDataFrameAggs(TestData):
         # Eland returns all float values for all metric aggs, pandas can return int
         # TODO - investigate this more
         pd_aggs = pd_aggs.astype("float64")
-        assert_almost_equal(pd_aggs, ed_aggs, check_less_precise=2)
+        assert_frame_equal(pd_aggs, ed_aggs, check_exact=False, check_less_precise=2)

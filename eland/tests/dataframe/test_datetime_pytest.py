@@ -17,7 +17,7 @@ from datetime import datetime
 
 import numpy as np
 import pandas as pd
-from pandas.util.testing import assert_series_equal
+from pandas.testing import assert_series_equal
 
 import eland as ed
 from eland.field_mappings import FieldMappings
