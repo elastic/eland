@@ -403,13 +403,16 @@ class FieldMappings:
         return es_dtype
 
     @staticmethod
-    def _generate_es_mappings(dataframe, geo_points=None):
+    def _generate_es_mappings(dataframe, es_type_overrides=None):
         """Given a pandas dataframe, generate the associated Elasticsearch mapping
 
         Parameters
         ----------
             dataframe : pandas.DataFrame
                 pandas.DataFrame to create schema from
+            es_type_overrides : dict
+                Dictionary of Elasticsearch types to override defaults  for certain fields
+                (e.g. { 'location': 'geo_point' })
 
         Returns
         -------
@@ -437,8 +440,8 @@ class FieldMappings:
 
         mappings = {"properties": {}}
         for field_name_name, dtype in dataframe.dtypes.iteritems():
-            if geo_points is not None and field_name_name in geo_points:
-                es_dtype = "geo_point"
+            if es_type_overrides is not None and field_name_name in es_type_overrides:
+                es_dtype = es_type_overrides[field_name_name]
             else:
                 es_dtype = FieldMappings._pd_dtype_to_es_dtype(dtype)
 

@@ -17,7 +17,7 @@
 import numpy as np
 import pandas as pd
 import pytest
-from pandas.util.testing import assert_almost_equal
+from pandas.testing import assert_frame_equal
 
 from eland.tests.common import TestData
 
@@ -39,8 +39,8 @@ class TestSeriesFrameHist(TestData):
 
         # Numbers are slightly different
         print(pd_bins, ed_bins)
-        assert_almost_equal(pd_bins, ed_bins)
-        assert_almost_equal(pd_weights, ed_weights)
+        assert_frame_equal(pd_bins, ed_bins, check_exact=False)
+        assert_frame_equal(pd_weights, ed_weights, check_exact=False)
 
     def test_filtered_hist(self):
         pd_flights = self.pd_flights()
@@ -64,8 +64,8 @@ class TestSeriesFrameHist(TestData):
         ].FlightDelayMin._hist(num_bins=num_bins)
 
         # Numbers are slightly different
-        assert_almost_equal(pd_bins, ed_bins)
-        assert_almost_equal(pd_weights, ed_weights)
+        assert_frame_equal(pd_bins, ed_bins, check_exact=False)
+        assert_frame_equal(pd_weights, ed_weights, check_exact=False)
 
     def test_invalid_hist(self):
         with pytest.raises(ValueError):

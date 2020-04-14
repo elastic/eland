@@ -14,7 +14,7 @@
 
 # File called _pytest for PyCharm compatability
 
-from pandas.util.testing import assert_almost_equal
+import numpy as np
 
 from eland.tests.common import TestData
 
@@ -30,7 +30,7 @@ class TestSeriesMetrics(TestData):
         for func in self.funcs:
             pd_metric = getattr(pd_flights, func)()
             ed_metric = getattr(ed_flights, func)()
-            assert_almost_equal(pd_metric, ed_metric, check_less_precise=True)
+            np.testing.assert_almost_equal(pd_metric, ed_metric, decimal=2)
 
     def test_flights_timestamp(self):
         pd_flights = self.pd_flights()["timestamp"]
@@ -40,7 +40,7 @@ class TestSeriesMetrics(TestData):
             pd_metric = getattr(pd_flights, func)()
             ed_metric = getattr(ed_flights, func)()
             pd_metric = pd_metric.floor("S")  # floor or pandas mean with have ns
-            assert_almost_equal(pd_metric, ed_metric, check_less_precise=True)
+            assert pd_metric == ed_metric
 
     def test_ecommerce_selected_non_numeric_source_fields(self):
         # None of these are numeric
@@ -61,8 +61,8 @@ class TestSeriesMetrics(TestData):
             ed_ecommerce = self.ed_ecommerce()[column]
 
             for func in self.funcs:
-                assert_almost_equal(
+                np.testing.assert_almost_equal(
                     getattr(pd_ecommerce, func)(),
                     getattr(ed_ecommerce, func)(),
-                    check_less_precise=True,
+                    decimal=2,
                 )

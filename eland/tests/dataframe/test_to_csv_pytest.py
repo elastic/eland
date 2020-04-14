@@ -18,7 +18,7 @@ import ast
 import time
 
 import pandas as pd
-from pandas.util.testing import assert_frame_equal
+from pandas.testing import assert_frame_equal
 
 import eland as ed
 from eland.tests import ES_TEST_CLIENT
@@ -81,7 +81,10 @@ class TestDataFrameToCSV(TestData):
             test_index,
             index_col=0,
             es_refresh=True,
-            es_geo_points=["OriginLocation", "DestLocation"],
+            es_type_overrides={
+                "OriginLocation": "geo_point",
+                "DestLocation": "geo_point",
+            },
             converters={
                 "DestLocation": lambda x: ast.literal_eval(x),
                 "OriginLocation": lambda x: ast.literal_eval(x),

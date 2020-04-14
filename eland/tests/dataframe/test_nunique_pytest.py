@@ -14,7 +14,7 @@
 
 # File called _pytest for PyCharm compatability
 
-from pandas.util.testing import assert_series_equal
+from pandas.testing import assert_series_equal
 
 from eland.tests.common import TestData
 
