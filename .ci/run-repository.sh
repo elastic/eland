@@ -35,4 +35,4 @@ docker run \
   --name eland-test-runner \
   --rm \
   elastic/eland \
-  ./run_build.sh
+  nox -s test

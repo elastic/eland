@@ -1,18 +1,18 @@
-#  Copyright 2019 Elasticsearch BV
+# Copyright 2020 Elasticsearch BV
 #
-#      Licensed under the Apache License, Version 2.0 (the "License");
-#      you may not use this file except in compliance with the License.
-#      You may obtain a copy of the License at
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#          http://www.apache.org/licenses/LICENSE-2.0
+#   http://www.apache.org/licenses/LICENSE-2.0
 #
-#      Unless required by applicable law or agreed to in writing, software
-#      distributed under the License is distributed on an "AS IS" BASIS,
-#      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#      See the License for the specific language governing permissions and
-#      limitations under the License.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
-# Default number of rows displayed (different to pandas where ALL could be displayed)
+import re
 import warnings
 from enum import Enum
 from typing import Union, List, Tuple
@@ -20,6 +20,7 @@ from typing import Union, List, Tuple
 import pandas as pd
 from elasticsearch import Elasticsearch
 
+# Default number of rows displayed (different to pandas where ALL could be displayed)
 DEFAULT_NUM_ROWS_DISPLAYED = 60
 
 DEFAULT_CHUNK_SIZE = 10000
@@ -266,5 +267,20 @@ def ensure_es_client(
     es_client: Union[str, List[str], Tuple[str, ...], Elasticsearch]
 ) -> Elasticsearch:
     if not isinstance(es_client, Elasticsearch):
-        return Elasticsearch(es_client)
+        es_client = Elasticsearch(es_client)
     return es_client
+
+
+def es_version(es_client: Elasticsearch) -> Tuple[int, int, int]:
+    """Tags the current ES client with a cached '_eland_es_version'
+    property if one doesn't exist yet for the current Elasticsearch version.
+    """
+    if not hasattr(es_client, "_eland_es_version"):
+        major, minor, patch = [
+            int(x)
+            for x in re.match(
+                r"^(\d+)\.(\d+)\.(\d+)", es_client.info()["version"]["number"]
+            ).groups()
+        ]
+        es_client._eland_es_version = (major, minor, patch)
+    return es_client._eland_es_version

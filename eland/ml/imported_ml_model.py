@@ -1,20 +1,22 @@
-#  Copyright 2020 Elasticsearch BV
+# Copyright 2020 Elasticsearch BV
 #
-#      Licensed under the Apache License, Version 2.0 (the "License");
-#      you may not use this file except in compliance with the License.
-#      You may obtain a copy of the License at
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#          http://www.apache.org/licenses/LICENSE-2.0
+#   http://www.apache.org/licenses/LICENSE-2.0
 #
-#      Unless required by applicable law or agreed to in writing, software
-#      distributed under the License is distributed on an "AS IS" BASIS,
-#      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#      See the License for the specific language governing permissions and
-#      limitations under the License.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from typing import Union, List
 
 import numpy as np
 
+from eland.common import es_version
 from eland.ml._model_transformers import (
     SKLearnDecisionTreeTransformer,
     SKLearnForestRegressorTransformer,
@@ -156,15 +158,17 @@ class ImportedMLModel(MLModel):
         if overwrite:
             self.delete_model()
 
-        serialized_model = str(serializer.serialize_and_compress_model())[
-            2:-1
-        ]  # remove `b` and str quotes
+        serialized_model = serializer.serialize_and_compress_model()
+        body = {
+            "compressed_definition": serialized_model,
+            "input": {"field_names": feature_names},
+        }
+        # 'inference_config' is required in 7.8+ but isn't available in <=7.7
+        if es_version(self._client) >= (7, 8):
+            body["inference_config"] = {self._model_type: {}}
+
         self._client.ml.put_trained_model(
-            model_id=self._model_id,
-            body={
-                "input": {"field_names": feature_names},
-                "compressed_definition": serialized_model,
-            },
+            model_id=self._model_id, body=body,
         )
 
     def predict(self, X):
