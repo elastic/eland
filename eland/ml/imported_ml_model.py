@@ -16,6 +16,7 @@ from typing import Union, List
 
 import numpy as np
 
+from eland.common import es_version
 from eland.ml._model_transformers import (
     SKLearnDecisionTreeTransformer,
     SKLearnForestRegressorTransformer,
@@ -157,15 +158,17 @@ class ImportedMLModel(MLModel):
         if overwrite:
             self.delete_model()
 
-        serialized_model = str(serializer.serialize_and_compress_model())[
-            2:-1
-        ]  # remove `b` and str quotes
+        serialized_model = serializer.serialize_and_compress_model()
+        body = {
+            "compressed_definition": serialized_model,
+            "input": {"field_names": feature_names},
+        }
+        # 'inference_config' is required in 7.8+ but isn't available in <=7.7
+        if es_version(self._client) >= (7, 8):
+            body["inference_config"] = {self._model_type: {}}
+
         self._client.ml.put_trained_model(
-            model_id=self._model_id,
-            body={
-                "input": {"field_names": feature_names},
-                "compressed_definition": serialized_model,
-            },
+            model_id=self._model_id, body=body,
         )
 
     def predict(self, X):

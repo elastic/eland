@@ -51,6 +51,6 @@ class MLModel:
         If model doesn't exist, ignore failure.
         """
         try:
-            self._client.ml.delete_trained_model(model_id=self._model_id)
+            self._client.ml.delete_trained_model(model_id=self._model_id, ignore=(404,))
         except elasticsearch.NotFoundError:
             pass

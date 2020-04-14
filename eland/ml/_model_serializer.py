@@ -51,7 +51,9 @@ class ModelSerializer(ABC):
         json_string = json.dumps(
             {"trained_model": self.to_dict()}, separators=(",", ":")
         )
-        return base64.b64encode(gzip.compress(bytes(json_string, "utf-8")))
+        return base64.b64encode(gzip.compress(json_string.encode("utf-8"))).decode(
+            "ascii"
+        )
 
 
 class TreeNode:

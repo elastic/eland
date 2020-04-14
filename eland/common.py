@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import re
 import warnings
 from enum import Enum
 from typing import Union, List, Tuple
@@ -266,5 +267,20 @@ def ensure_es_client(
     es_client: Union[str, List[str], Tuple[str, ...], Elasticsearch]
 ) -> Elasticsearch:
     if not isinstance(es_client, Elasticsearch):
-        return Elasticsearch(es_client)
+        es_client = Elasticsearch(es_client)
     return es_client
+
+
+def es_version(es_client: Elasticsearch) -> Tuple[int, int, int]:
+    """Tags the current ES client with a cached '_eland_es_version'
+    property if one doesn't exist yet for the current Elasticsearch version.
+    """
+    if not hasattr(es_client, "_eland_es_version"):
+        major, minor, patch = [
+            int(x)
+            for x in re.match(
+                r"^(\d+)\.(\d+)\.(\d+)", es_client.info()["version"]["number"]
+            ).groups()
+        ]
+        es_client._eland_es_version = (major, minor, patch)
+    return es_client._eland_es_version
