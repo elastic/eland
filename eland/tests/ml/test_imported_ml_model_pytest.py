@@ -42,7 +42,7 @@ class TestImportedMLModel:
         )
         es_results = es_model.predict(test_data)
 
-        np.testing.assert_almost_equal(test_results, es_results, decimal=4)
+        np.testing.assert_almost_equal(test_results, es_results, decimal=2)
 
         # Clean up
         es_model.delete_model()
@@ -66,7 +66,7 @@ class TestImportedMLModel:
         )
         es_results = es_model.predict(test_data)
 
-        np.testing.assert_almost_equal(test_results, es_results, decimal=4)
+        np.testing.assert_almost_equal(test_results, es_results, decimal=2)
 
         # Clean up
         es_model.delete_model()
@@ -90,7 +90,7 @@ class TestImportedMLModel:
         )
         es_results = es_model.predict(test_data)
 
-        np.testing.assert_almost_equal(test_results, es_results, decimal=4)
+        np.testing.assert_almost_equal(test_results, es_results, decimal=2)
 
         # Clean up
         es_model.delete_model()
@@ -114,7 +114,7 @@ class TestImportedMLModel:
         )
         es_results = es_model.predict(test_data)
 
-        np.testing.assert_almost_equal(test_results, es_results, decimal=4)
+        np.testing.assert_almost_equal(test_results, es_results, decimal=2)
 
         # Clean up
         es_model.delete_model()
@@ -138,7 +138,7 @@ class TestImportedMLModel:
         )
         es_results = es_model.predict(test_data)
 
-        np.testing.assert_almost_equal(test_results, es_results, decimal=4)
+        np.testing.assert_almost_equal(test_results, es_results, decimal=2)
 
         # Clean up
         es_model.delete_model()
@@ -162,7 +162,7 @@ class TestImportedMLModel:
         )
         es_results = es_model.predict(test_data)
 
-        np.testing.assert_almost_equal(test_results, es_results, decimal=4)
+        np.testing.assert_almost_equal(test_results, es_results, decimal=2)
 
         # Clean up
         es_model.delete_model()
