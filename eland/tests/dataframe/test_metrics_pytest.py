@@ -40,17 +40,19 @@ class TestDataFrameMetrics(TestData):
         pd_flights = self.pd_flights()
         ed_flights = self.ed_flights()
 
-        pd_flights = pd_flights[pd_flights.DestAirportID == 'AMS']
-        ed_flights = ed_flights[ed_flights.DestAirportID == 'AMS']
+        pd_flights = pd_flights[pd_flights.DestAirportID == "AMS"]
+        ed_flights = ed_flights[ed_flights.DestAirportID == "AMS"]
 
         for func in self.extended_funcs:
             pd_metric = getattr(pd_flights, func)(numeric_only=True)
             ed_metric = getattr(ed_flights, func)(numeric_only=True)
 
-            assert_series_equal(pd_metric, ed_metric, check_exact=False, check_less_precise=True)
+            assert_series_equal(
+                pd_metric, ed_metric, check_exact=False, check_less_precise=True
+            )
 
     def test_ecommerce_selected_non_numeric_source_fields(self):
-            # None of these are numeric
+        # None of these are numeric
         columns = [
             "category",
             "currency",
