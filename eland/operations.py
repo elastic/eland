@@ -15,6 +15,8 @@
 import copy
 import warnings
 
+import numpy as np
+
 import pandas as pd
 from pandas.core.dtypes.common import is_datetime_or_timedelta_dtype
 from elasticsearch.helpers import scan
@@ -285,6 +287,49 @@ class Operations:
                             results[field] = response["aggregations"][
                                 "percentiles_" + field
                             ]["values"]["50.0"]
+
+                            # If 0-length dataframe we get None here
+                            if results[field] is None:
+                                results[field] = np.float64(np.NaN)
+                        elif func[1] == "variance":
+                            # pandas computes the sample variance
+                            # Elasticsearch computes the population variance
+                            count = response["aggregations"][func[0] + "_" + field][
+                                "count"
+                            ]
+
+                            results[field] = response["aggregations"][
+                                func[0] + "_" + field
+                            ][func[1]]
+
+                            # transform population variance into sample variance
+                            if count <= 1:
+                                results[field] = np.float64(np.NaN)
+                            else:
+                                results[field] = count / (count - 1.0) * results[field]
+                        elif func[1] == "std_deviation":
+                            # pandas computes the sample std
+                            # Elasticsearch computes the population std
+                            count = response["aggregations"][func[0] + "_" + field][
+                                "count"
+                            ]
+
+                            results[field] = response["aggregations"][
+                                func[0] + "_" + field
+                            ][func[1]]
+
+                            # transform population std into sample std
+                            # sample_std=\sqrt{\frac{1}{N-1}\sum_{i=1}^N(x_i-\bar{x})^2}
+                            # population_std=\sqrt{\frac{1}{N}\sum_{i=1}^N(x_i-\bar{x})^2}
+                            # sample_std=\sqrt{\frac{N}{N-1}population_std}
+                            if count <= 1:
+                                results[field] = np.float64(np.NaN)
+                            else:
+                                results[field] = np.sqrt(
+                                    (count / (count - 1.0))
+                                    * results[field]
+                                    * results[field]
+                                )
                         else:
                             results[field] = response["aggregations"][
                                 func[0] + "_" + field
