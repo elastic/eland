@@ -31,15 +31,14 @@ class TestDataFrameMetrics(TestData):
             pd_metric = getattr(pd_flights, func)(numeric_only=True)
             ed_metric = getattr(ed_flights, func)(numeric_only=True)
 
-            print(pd_metric)
-            print(ed_metric)
-
             assert_series_equal(pd_metric, ed_metric)
 
     def test_flights_extended_metrics(self):
         pd_flights = self.pd_flights()
         ed_flights = self.ed_flights()
 
+        # Test on reduced set of data for more consistent
+        # median behaviour + better var, std test for sample vs population
         pd_flights = pd_flights[pd_flights.DestAirportID == "AMS"]
         ed_flights = ed_flights[ed_flights.DestAirportID == "AMS"]
 
