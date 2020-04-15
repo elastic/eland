@@ -289,7 +289,6 @@ class Operations:
                             ]["values"]["50.0"]
 
                             # If 0-length dataframe we get None here
-                            # TODO investigate if we should resolve in elasticsearch-py issue?
                             if results[field] is None:
                                 results[field] = np.float64(np.NaN)
                         elif func[1] == "variance":
