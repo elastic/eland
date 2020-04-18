@@ -167,6 +167,25 @@ class Operations:
     def hist(self, query_compiler, bins):
         return self._hist_aggs(query_compiler, bins)
 
+    def _extract_agg_response(self, response, funcs, field_names):
+        result = {}
+        for func in funcs:
+            for field_name in field_names:
+
+                if isinstance(func, tuple):
+                    func_name, argument_name = func
+                    if func_name == "percentiles":
+                        result[field_name] = response["aggregations"][
+                            f"{func_name}_{field_name}"
+                        ]["values"][argument_name]
+                    else:
+                        result[field_name] = response["aggregations"][
+                            f"{func_name}_{field_name}"
+                        ][argument_name]
+                else:
+                    result[field_name] = response["aggregations"][field_name]["value"]
+        return result
+
     def _metric_aggs(
         self,
         query_compiler,
@@ -227,29 +246,19 @@ class Operations:
             for key, value in aggregatable_field_names.items():
                 results[value] = response["aggregations"][key]["value"]
         else:
-            if numeric_only:
-                (
-                    pd_dtypes,
-                    source_fields,
-                    date_formats,
-                ) = query_compiler._mappings.metric_source_fields(include_bool=True)
-            else:
-                # The only non-numerics we support are bool and timestamps currently
-                # strings are not supported by metric aggs in ES
-                # TODO - sum isn't supported for Timestamp in pandas - although ES does attempt to do it
-                (
-                    pd_dtypes,
-                    source_fields,
-                    date_formats,
-                ) = query_compiler._mappings.metric_source_fields(
-                    include_bool=True, include_timestamp=True
-                )
+            # The only non-numerics we support are bool and timestamps currently
+            # strings are not supported by metric aggs in ES
+            # TODO - sum isn't supported for Timestamp in pandas - although ES does attempt to do it
+            (
+                pd_dtypes,
+                source_fields,
+                date_formats,
+            ) = query_compiler._mappings.metric_source_fields(
+                include_bool=True, include_timestamp=(not numeric_only)
+            )
 
-            for field in source_fields:
-                if isinstance(func, tuple):
-                    body.metric_aggs(func[0] + "_" + field, func[0], field)
-                else:
-                    body.metric_aggs(field, func, field)
+            # body = Query(query_params["query"])
+            body = self.build_agg_query(query_params, [func], source_fields)
 
             response = query_compiler._client.search(
                 index=query_compiler._index_pattern, size=0, body=body.to_search_body()
@@ -265,6 +274,8 @@ class Operations:
             #     "value_as_string": "2018-01-21T19:20:45.564Z"
             #   }
             # }
+            extracted = self._extract_agg_response(response, [func], source_fields)
+
             for pd_dtype, field, date_format in zip(
                 pd_dtypes, source_fields, date_formats
             ):
@@ -273,69 +284,31 @@ class Operations:
                         response["aggregations"][field]["value_as_string"], date_format
                     )
                 elif keep_original_dtype:
-                    if isinstance(func, tuple):
-                        results = pd_dtype.type(
-                            response["aggregations"][func[0] + "_" + field][func[1]]
+                    results[field] = pd_dtype.type(extracted[field])
+                elif isinstance(func, tuple):
+                    func_name, argument_name = func
+                    if func_name == "percentiles":
+                        results[field] = (
+                            np.float64(np.NaN)
+                            if extracted[field] is None
+                            else extracted[field]
                         )
                     else:
-                        results[field] = pd_dtype.type(
-                            response["aggregations"][field]["value"]
-                        )
+                        count = response["aggregations"][func_name + "_" + field][
+                            "count"
+                        ]
+                        value = extracted[field]
+                        # pandas computes the sample variance (std)
+                        # Elasticsearch computes the population variance (std)
+                        if argument_name == "variance":
+                            value = self._compute_sample_variance(
+                                count, extracted[field]
+                            )
+                        elif argument_name == "std_deviation":
+                            value = self._compute_sample_std(count, extracted[field])
+                        results[field] = value
                 else:
-                    if isinstance(func, tuple):
-                        if func[0] == "percentiles":
-                            results[field] = response["aggregations"][
-                                "percentiles_" + field
-                            ]["values"]["50.0"]
-
-                            # If 0-length dataframe we get None here
-                            if results[field] is None:
-                                results[field] = np.float64(np.NaN)
-                        elif func[1] == "variance":
-                            # pandas computes the sample variance
-                            # Elasticsearch computes the population variance
-                            count = response["aggregations"][func[0] + "_" + field][
-                                "count"
-                            ]
-
-                            results[field] = response["aggregations"][
-                                func[0] + "_" + field
-                            ][func[1]]
-
-                            # transform population variance into sample variance
-                            if count <= 1:
-                                results[field] = np.float64(np.NaN)
-                            else:
-                                results[field] = count / (count - 1.0) * results[field]
-                        elif func[1] == "std_deviation":
-                            # pandas computes the sample std
-                            # Elasticsearch computes the population std
-                            count = response["aggregations"][func[0] + "_" + field][
-                                "count"
-                            ]
-
-                            results[field] = response["aggregations"][
-                                func[0] + "_" + field
-                            ][func[1]]
-
-                            # transform population std into sample std
-                            # sample_std=\sqrt{\frac{1}{N-1}\sum_{i=1}^N(x_i-\bar{x})^2}
-                            # population_std=\sqrt{\frac{1}{N}\sum_{i=1}^N(x_i-\bar{x})^2}
-                            # sample_std=\sqrt{\frac{N}{N-1}population_std}
-                            if count <= 1:
-                                results[field] = np.float64(np.NaN)
-                            else:
-                                results[field] = np.sqrt(
-                                    (count / (count - 1.0))
-                                    * results[field]
-                                    * results[field]
-                                )
-                        else:
-                            results[field] = response["aggregations"][
-                                func[0] + "_" + field
-                            ][func[1]]
-                    else:
-                        results[field] = response["aggregations"][field]["value"]
+                    results[field] = response["aggregations"][field]["value"]
 
         # Return single value if this is a series
         # if len(numeric_source_fields) == 1:
@@ -343,6 +316,34 @@ class Operations:
         s = pd.Series(data=results, index=results.keys())
 
         return s
+
+    def build_agg_query(self, query_params, funcs, source_fields):
+        body = Query(query_params["query"])
+        for field_name in source_fields:
+            for func in funcs:
+                if isinstance(func, tuple):
+                    func_name, _ = func
+                    body.metric_aggs(func_name + "_" + field_name, func_name, field_name)
+                else:
+                    body.metric_aggs(field_name, func, field_name)
+        return body
+
+    def _compute_sample_variance(self, count, population_var):
+        # transform population variance into sample variance
+        if count <= 1:
+            return np.float64(np.NaN)
+        else:
+            return count / (count - 1.0) * population_var
+
+    def _compute_sample_std(self, count, population_std):
+        # transform population std into sample std
+        # sample_std=\sqrt{\frac{1}{N-1}\sum_{i=1}^N(x_i-\bar{x})^2}
+        # population_std=\sqrt{\frac{1}{N}\sum_{i=1}^N(x_i-\bar{x})^2}
+        # sample_std=\sqrt{\frac{N}{N-1}population_std}
+        if count <= 1:
+            return np.float64(np.NaN)
+        else:
+            return np.sqrt((count / (count - 1.0)) * population_std * population_std)
 
     def _terms_aggs(self, query_compiler, func, es_size=None):
         """
