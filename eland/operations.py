@@ -40,6 +40,10 @@ from eland.tasks import (
     SizeTask,
 )
 
+with warnings.catch_warnings() as w:
+    warnings.simplefilter("ignore")
+    EMPTY_SERIES_DTYPE = pd.Series().dtype
+
 
 class Operations:
     """
@@ -340,7 +344,8 @@ class Operations:
         # Return single value if this is a series
         # if len(numeric_source_fields) == 1:
         #    return np.float64(results[numeric_source_fields[0]])
-        s = pd.Series(data=results, index=results.keys())
+        out_dtype = EMPTY_SERIES_DTYPE if not results else None
+        s = pd.Series(data=results, index=results.keys(), dtype=out_dtype)
 
         return s
 
@@ -390,7 +395,8 @@ class Operations:
         except IndexError:
             name = None
 
-        s = pd.Series(data=results, index=results.keys(), name=name)
+        out_dtype = EMPTY_SERIES_DTYPE if not results else None
+        s = pd.Series(data=results, index=results.keys(), name=name, dtype=out_dtype)
 
         return s
 
