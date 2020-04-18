@@ -20,8 +20,8 @@ from eland.tests.common import TestData
 
 
 class TestSeriesMetrics(TestData):
-    funcs = ["max", "min", "mean", "sum"]
-    timestamp_funcs = ["max", "min", "mean"]
+    all_funcs = ["max", "min", "mean", "sum", "nunique", "var", "std", "mad"]
+    timestamp_funcs = ["max", "min", "mean", "nunique"]
 
     def test_flights_metrics(self):
         pd_flights = self.pd_flights()["AvgTicketPrice"]
@@ -43,14 +43,14 @@ class TestSeriesMetrics(TestData):
             assert pd_metric == ed_metric
 
     def test_ecommerce_selected_non_numeric_source_fields(self):
-        # None of these are numeric
+        # None of these are numeric, will result in NaNs
         column = "category"
 
         ed_ecommerce = self.ed_ecommerce()[column]
 
-        for func in self.funcs:
+        for func in ("min", "max", "sum", "mean"):
             ed_metric = getattr(ed_ecommerce, func)()
-            assert ed_metric.empty
+            assert np.isnan(ed_metric)
 
     def test_ecommerce_selected_all_numeric_source_fields(self):
         # All of these are numeric

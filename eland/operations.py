@@ -14,9 +14,10 @@
 
 import copy
 import warnings
+import typing
 
+import numpy as np
 import pandas as pd
-from pandas.core.dtypes.common import is_datetime_or_timedelta_dtype
 from elasticsearch.helpers import scan
 
 from eland import Index
@@ -37,6 +38,9 @@ from eland.tasks import (
     QueryIdsTask,
     SizeTask,
 )
+
+if typing.TYPE_CHECKING:
+    from eland.query_compiler import QueryCompiler
 
 
 class Operations:
@@ -122,42 +126,38 @@ class Operations:
         return pd.Series(data=counts, index=fields)
 
     def mean(self, query_compiler, numeric_only=True):
-        return self._metric_aggs(query_compiler, "avg", numeric_only=numeric_only)
+        results = self._metric_aggs(query_compiler, ["mean"], numeric_only=numeric_only)
+        return pd.Series(results, index=results.keys())
 
     def var(self, query_compiler, numeric_only=True):
-        return self._metric_aggs(
-            query_compiler, ("extended_stats", "variance"), numeric_only=numeric_only
-        )
+        results = self._metric_aggs(query_compiler, ["var"], numeric_only=numeric_only)
+        return pd.Series(results, index=results.keys())
 
     def std(self, query_compiler, numeric_only=True):
-        return self._metric_aggs(
-            query_compiler,
-            ("extended_stats", "std_deviation"),
-            numeric_only=numeric_only,
-        )
+        results = self._metric_aggs(query_compiler, ["std"], numeric_only=numeric_only)
+        return pd.Series(results, index=results.keys())
 
     def median(self, query_compiler, numeric_only=True):
-        return self._metric_aggs(
-            query_compiler, ("percentiles", "50.0"), numeric_only=numeric_only
+        results = self._metric_aggs(
+            query_compiler, ["median"], numeric_only=numeric_only
         )
+        return pd.Series(results, index=results.keys())
 
     def sum(self, query_compiler, numeric_only=True):
-        return self._metric_aggs(query_compiler, "sum", numeric_only=numeric_only)
+        results = self._metric_aggs(query_compiler, ["sum"], numeric_only=numeric_only)
+        return pd.Series(results, index=results.keys())
 
     def max(self, query_compiler, numeric_only=True):
-        return self._metric_aggs(
-            query_compiler, "max", numeric_only=numeric_only, keep_original_dtype=True
-        )
+        results = self._metric_aggs(query_compiler, ["max"], numeric_only=numeric_only)
+        return pd.Series(results, index=results.keys())
 
     def min(self, query_compiler, numeric_only=True):
-        return self._metric_aggs(
-            query_compiler, "min", numeric_only=numeric_only, keep_original_dtype=True
-        )
+        results = self._metric_aggs(query_compiler, ["min"], numeric_only=numeric_only)
+        return pd.Series(results, index=results.keys())
 
     def nunique(self, query_compiler):
-        return self._metric_aggs(
-            query_compiler, "cardinality", field_types="aggregatable"
-        )
+        results = self._metric_aggs(query_compiler, ["nunique"], numeric_only=False)
+        return pd.Series(results, index=results.keys())
 
     def value_counts(self, query_compiler, es_size):
         return self._terms_aggs(query_compiler, "terms", es_size)
@@ -165,28 +165,7 @@ class Operations:
     def hist(self, query_compiler, bins):
         return self._hist_aggs(query_compiler, bins)
 
-    def _metric_aggs(
-        self,
-        query_compiler,
-        func,
-        field_types=None,
-        numeric_only=None,
-        keep_original_dtype=False,
-    ):
-        """
-        Parameters
-        ----------
-        field_types: str, default None
-            if `aggregatable` use only field_names whose fields in elasticseach are aggregatable.
-            If `None`, use only numeric fields.
-        keep_original_dtype : bool, default False
-            if `True` the output values should keep the same domain as the input values, i.e. booleans should be booleans
-
-        Returns
-        -------
-        pandas.Series
-            Series containing results of `func` applied to the field_name(s)
-        """
+    def _metric_aggs(self, query_compiler: "QueryCompiler", pd_aggs, numeric_only=True):
         query_params, post_processing = self._resolve_tasks(query_compiler)
 
         size = self._size(query_params, post_processing)
@@ -195,109 +174,87 @@ class Operations:
                 f"Can not count field matches if size is set {size}"
             )
 
+        results = {}
+        fields = query_compiler._mappings.all_source_fields()
+        if numeric_only:
+            fields = [field for field in fields if (field.is_numeric or field.is_bool)]
+
         body = Query(query_params["query"])
 
-        results = {}
+        # Convert pandas aggs to ES equivalent
+        es_aggs = self._map_pd_aggs_to_es_aggs(pd_aggs)
 
-        # some metrics aggs (including cardinality) work on all aggregatable fields
-        # therefore we include an optional all parameter on operations
-        # that call _metric_aggs
-        if field_types == "aggregatable":
-            aggregatable_field_names = (
-                query_compiler._mappings.aggregatable_field_names()
-            )
+        for field in fields:
+            for es_agg in es_aggs:
+                if not field.is_es_agg_compatible(es_agg):
+                    continue
 
-            for field in aggregatable_field_names.keys():
-                body.metric_aggs(field, func, field)
-
-            response = query_compiler._client.search(
-                index=query_compiler._index_pattern, size=0, body=body.to_search_body()
-            )
-
-            # Results are of the form
-            # "aggregations" : {
-            #   "customer_full_name.keyword" : {
-            #     "value" : 10
-            #   }
-            # }
-
-            # map aggregatable (e.g. x.keyword) to field_name
-            for key, value in aggregatable_field_names.items():
-                results[value] = response["aggregations"][key]["value"]
-        else:
-            if numeric_only:
-                (
-                    pd_dtypes,
-                    source_fields,
-                    date_formats,
-                ) = query_compiler._mappings.metric_source_fields(include_bool=True)
-            else:
-                # The only non-numerics we support are bool and timestamps currently
-                # strings are not supported by metric aggs in ES
-                # TODO - sum isn't supported for Timestamp in pandas - although ES does attempt to do it
-                (
-                    pd_dtypes,
-                    source_fields,
-                    date_formats,
-                ) = query_compiler._mappings.metric_source_fields(
-                    include_bool=True, include_timestamp=True
-                )
-
-            for field in source_fields:
-                if isinstance(func, tuple):
-                    body.metric_aggs(func[0] + "_" + field, func[0], field)
-                else:
-                    body.metric_aggs(field, func, field)
-
-            response = query_compiler._client.search(
-                index=query_compiler._index_pattern, size=0, body=body.to_search_body()
-            )
-
-            # Results are of the form
-            # "aggregations" : {
-            #   "AvgTicketPrice" : {
-            #     "value" : 628.2536888148849
-            #   },
-            #   "timestamp": {
-            #     "value": 1.5165624455644382E12,
-            #     "value_as_string": "2018-01-21T19:20:45.564Z"
-            #   }
-            # }
-            for pd_dtype, field, date_format in zip(
-                pd_dtypes, source_fields, date_formats
-            ):
-                if is_datetime_or_timedelta_dtype(pd_dtype):
-                    results[field] = elasticsearch_date_to_pandas_date(
-                        response["aggregations"][field]["value_as_string"], date_format
+                # If we have multiple 'extended_stats' etc. here we simply NOOP on 2nd call
+                if isinstance(es_agg, tuple):
+                    body.metric_aggs(
+                        f"{es_agg[0]}_{field.es_field_name}",
+                        es_agg[0],
+                        field.aggregatable_es_field_name,
                     )
-                elif keep_original_dtype:
-                    if isinstance(func, tuple):
-                        results = pd_dtype.type(
-                            response["aggregations"][func[0] + "_" + field][func[1]]
-                        )
-                    else:
-                        results[field] = pd_dtype.type(
-                            response["aggregations"][field]["value"]
-                        )
                 else:
-                    if isinstance(func, tuple):
-                        if func[0] == "percentiles":
-                            results[field] = response["aggregations"][
-                                "percentiles_" + field
-                            ]["values"]["50.0"]
-                        else:
-                            results[field] = response["aggregations"][
-                                func[0] + "_" + field
-                            ][func[1]]
+                    body.metric_aggs(
+                        f"{es_agg}_{field.es_field_name}",
+                        es_agg,
+                        field.aggregatable_es_field_name,
+                    )
+
+        print(body.to_search_body())
+        response = query_compiler._client.search(
+            index=query_compiler._index_pattern, size=0, body=body.to_search_body()
+        )
+        print(response)
+
+        """
+        Results are like (for 'sum', 'min')
+
+             AvgTicketPrice  DistanceKilometers  DistanceMiles  FlightDelayMin
+        sum    8.204365e+06        9.261629e+07   5.754909e+07          618150
+        min    1.000205e+02        0.000000e+00   0.000000e+00               0
+        """
+        for field in fields:
+            values = []
+            for es_agg, pd_agg in zip(es_aggs, pd_aggs):
+
+                # If the field and agg aren't compatible we add a NaN
+                if not field.is_es_agg_compatible(es_agg):
+                    values.append(np.float64(np.NaN))
+                    continue
+
+                if isinstance(es_agg, tuple):
+                    agg_value = response["aggregations"][
+                        f"{es_agg[0]}_{field.es_field_name}"
+                    ]
+
+                    # Pull multiple values from 'percentiles' result.
+                    if es_agg[0] == "percentiles":
+                        agg_value = agg_value["values"]
+
+                    agg_value = agg_value[es_agg[1]]
+                else:
+                    agg_value = response["aggregations"][
+                        f"{es_agg}_{field.es_field_name}"
+                    ]
+                    if "value_as_string" in agg_value and field.is_timestamp:
+                        agg_value = elasticsearch_date_to_pandas_date(
+                            agg_value["value_as_string"], field.es_date_format
+                        )
                     else:
-                        results[field] = response["aggregations"][field]["value"]
+                        agg_value = agg_value["value"]
 
-        # Return single value if this is a series
-        # if len(numeric_source_fields) == 1:
-        #    return np.float64(results[numeric_source_fields[0]])
-        s = pd.Series(data=results, index=results.keys())
+                # These aggregations maintain the column datatype
+                if pd_agg in ("max", "min"):
+                    agg_value = field.np_dtype.type(agg_value)
 
-        return s
+                values.append(agg_value)
+
+            results[field.index] = values if len(values) > 1 else values[0]
+
+        return results
 
     def _terms_aggs(self, query_compiler, func, es_size=None):
         """
@@ -363,8 +320,12 @@ class Operations:
 
         body = Query(query_params["query"])
 
-        min_aggs = self._metric_aggs(query_compiler, "min", numeric_only=True)
-        max_aggs = self._metric_aggs(query_compiler, "max", numeric_only=True)
+        results = self._metric_aggs(query_compiler, ["min", "max"], numeric_only=True)
+        min_aggs = {}
+        max_aggs = {}
+        for field, (min_agg, max_agg) in results.items():
+            min_aggs[field] = min_agg
+            max_aggs[field] = max_agg
 
         for field in numeric_source_fields:
             body.hist_aggs(field, field, min_aggs, max_aggs, num_bins)
@@ -465,20 +426,25 @@ class Operations:
         var
         nunique
         """
-        ed_aggs = []
+        count_called = False
+        extended_stats_called = False
+        es_aggs = []
         for pd_agg in pd_aggs:
             if pd_agg == "count":
-                ed_aggs.append("count")
+                es_aggs.append("count")
+                count_called = True
+            elif pd_agg == "nunique":
+                es_aggs.append("cardinality")
             elif pd_agg == "mad":
-                ed_aggs.append("median_absolute_deviation")
+                es_aggs.append("median_absolute_deviation")
             elif pd_agg == "max":
-                ed_aggs.append("max")
+                es_aggs.append("max")
             elif pd_agg == "mean":
-                ed_aggs.append("avg")
+                es_aggs.append("avg")
             elif pd_agg == "median":
-                ed_aggs.append(("percentiles", "50.0"))
+                es_aggs.append(("percentiles", "50.0"))
             elif pd_agg == "min":
-                ed_aggs.append("min")
+                es_aggs.append("min")
             elif pd_agg == "mode":
                 # We could do this via top term
                 raise NotImplementedError(pd_agg, " not currently implemented")
@@ -492,76 +458,28 @@ class Operations:
                 # TODO
                 raise NotImplementedError(pd_agg, " not currently implemented")
             elif pd_agg == "sum":
-                ed_aggs.append("sum")
+                es_aggs.append("sum")
             elif pd_agg == "std":
-                ed_aggs.append(("extended_stats", "std_deviation"))
+                es_aggs.append(("extended_stats", "std_deviation"))
+                extended_stats_called = True
             elif pd_agg == "var":
-                ed_aggs.append(("extended_stats", "variance"))
+                es_aggs.append(("extended_stats", "variance"))
+                extended_stats_called = True
             else:
                 raise NotImplementedError(pd_agg, " not currently implemented")
 
-        # TODO - we can optimise extended_stats here as if we have 'count' and 'std' extended_stats would
-        #   return both in one call
+        # If 'count' and any agg using 'extended_stats' are called
+        # together we can replace all 'count' with ('extended_stats', 'count').
+        if extended_stats_called and count_called:
+            es_aggs = [
+                ("extended_stats", "count") if x == "count" else x for x in es_aggs
+            ]
 
-        return ed_aggs
+        return es_aggs
 
     def aggs(self, query_compiler, pd_aggs):
-        query_params, post_processing = self._resolve_tasks(query_compiler)
-
-        size = self._size(query_params, post_processing)
-        if size is not None:
-            raise NotImplementedError(
-                f"Can not count field matches if size is set {size}"
-            )
-
-        field_names = query_compiler.get_field_names(include_scripted_fields=False)
-
-        body = Query(query_params["query"])
-        # convert pandas aggs to ES equivalent
-        es_aggs = self._map_pd_aggs_to_es_aggs(pd_aggs)
-
-        for field in field_names:
-            for es_agg in es_aggs:
-                # If we have multiple 'extended_stats' etc. here we simply NOOP on 2nd call
-                if isinstance(es_agg, tuple):
-                    body.metric_aggs(es_agg[0] + "_" + field, es_agg[0], field)
-                else:
-                    body.metric_aggs(es_agg + "_" + field, es_agg, field)
-
-        response = query_compiler._client.search(
-            index=query_compiler._index_pattern, size=0, body=body.to_search_body()
-        )
-
-        """
-        Results are like (for 'sum', 'min')
-
-             AvgTicketPrice  DistanceKilometers  DistanceMiles  FlightDelayMin
-        sum    8.204365e+06        9.261629e+07   5.754909e+07          618150
-        min    1.000205e+02        0.000000e+00   0.000000e+00               0
-        """
-        results = {}
-
-        for field in field_names:
-            values = list()
-            for es_agg in es_aggs:
-                if isinstance(es_agg, tuple):
-                    agg_value = response["aggregations"][es_agg[0] + "_" + field]
-
-                    # Pull multiple values from 'percentiles' result.
-                    if es_agg[0] == "percentiles":
-                        agg_value = agg_value["values"]
-
-                    values.append(agg_value[es_agg[1]])
-                else:
-                    values.append(
-                        response["aggregations"][es_agg + "_" + field]["value"]
-                    )
-
-            results[field] = values
-
-        df = pd.DataFrame(data=results, index=pd_aggs)
-
-        return df
+        results = self._metric_aggs(query_compiler, pd_aggs, numeric_only=False)
+        return pd.DataFrame(results, index=pd_aggs)
 
     def describe(self, query_compiler):
         query_params, post_processing = self._resolve_tasks(query_compiler)

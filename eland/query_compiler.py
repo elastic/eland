@@ -72,13 +72,13 @@ class QueryCompiler:
             self._index_pattern = to_copy._index_pattern
             self._index = Index(self, to_copy._index.index_field)
             self._operations = copy.deepcopy(to_copy._operations)
-            self._mappings = copy.deepcopy(to_copy._mappings)
+            self._mappings: FieldMappings = copy.deepcopy(to_copy._mappings)
         else:
             self._client = ensure_es_client(client)
             self._index_pattern = index_pattern
             # Get and persist mappings, this allows us to correctly
             # map returned types from Elasticsearch to pandas datatypes
-            self._mappings = FieldMappings(
+            self._mappings: FieldMappings = FieldMappings(
                 client=self._client,
                 index_pattern=self._index_pattern,
                 display_names=display_names,
