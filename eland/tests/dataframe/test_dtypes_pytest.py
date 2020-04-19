@@ -14,6 +14,7 @@
 
 # File called _pytest for PyCharm compatability
 
+import warnings
 import numpy as np
 from pandas.testing import assert_series_equal
 
@@ -45,5 +46,7 @@ class TestDataFrameDtypes(TestData):
         )
 
     def test_emtpy_series_dtypes(self):
-        s = build_series({})
+        with warnings.catch_warnings(record=True) as w:
+            s = build_series({})
         assert s.dtype == EMPTY_SERIES_DTYPE
+        assert w == []
