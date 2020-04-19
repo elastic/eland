@@ -40,6 +40,16 @@ from eland.tasks import (
     SizeTask,
 )
 
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore")
+    EMPTY_SERIES_DTYPE = pd.Series().dtype
+
+
+def build_series(data, dtype=None, **kwargs):
+    out_dtype = EMPTY_SERIES_DTYPE if not data else dtype
+    s = pd.Series(data=data, index=data.keys(), dtype=out_dtype, **kwargs)
+    return s
+
 
 class Operations:
     """
@@ -340,7 +350,7 @@ class Operations:
         # Return single value if this is a series
         # if len(numeric_source_fields) == 1:
         #    return np.float64(results[numeric_source_fields[0]])
-        s = pd.Series(data=results, index=results.keys())
+        s = build_series(results)
 
         return s
 
@@ -390,7 +400,7 @@ class Operations:
         except IndexError:
             name = None
 
-        s = pd.Series(data=results, index=results.keys(), name=name)
+        s = build_series(results, name=name)
 
         return s
 
