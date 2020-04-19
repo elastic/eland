@@ -40,7 +40,7 @@ from eland.tasks import (
     SizeTask,
 )
 
-with warnings.catch_warnings() as w:
+with warnings.catch_warnings(record=True):
     warnings.simplefilter("ignore")
     EMPTY_SERIES_DTYPE = pd.Series().dtype
 
