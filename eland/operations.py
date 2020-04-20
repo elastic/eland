@@ -42,6 +42,16 @@ from eland.tasks import (
 if typing.TYPE_CHECKING:
     from eland.query_compiler import QueryCompiler
 
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore")
+    EMPTY_SERIES_DTYPE = pd.Series().dtype
+
+
+def build_series(data, dtype=None, **kwargs):
+    out_dtype = EMPTY_SERIES_DTYPE if not data else dtype
+    s = pd.Series(data=data, index=data.keys(), dtype=out_dtype, **kwargs)
+    return s
+
 
 class Operations:
     """
@@ -225,6 +235,18 @@ class Operations:
                     values.append(np.float64(np.NaN))
                     continue
 
+                """
+
+                            # transform population std into sample std
+                            # sample_std=\sqrt{\frac{1}{N-1}\sum_{i=1}^N(x_i-\bar{x})^2}
+                            # population_std=\sqrt{\frac{1}{N}\sum_{i=1}^N(x_i-\bar{x})^2}
+                            # sample_std=\sqrt{\frac{N}{N-1}population_std}
+                            if count <= 1:
+                                results[field] = np.float64(np.NaN)
+                            else:
+                                
+                """
+
                 if isinstance(es_agg, tuple):
                     agg_value = response["aggregations"][
                         f"{es_agg[0]}_{field.es_field_name}"
@@ -235,6 +257,27 @@ class Operations:
                         agg_value = agg_value["values"]
 
                     agg_value = agg_value[es_agg[1]]
+
+                    # Need to convert 'Population' stddev and variance into
+                    # 'Sample stddev and variance.
+                    if es_agg[1] in ("std_deviation", "variance"):
+                        count = response["aggregations"][f"{es_agg[0]}_{field.es_field_name}"]["count"]
+                        # Neither transformation works with count <1
+                        if count <= 1:
+                            agg_value = np.float64(np.NaN)
+
+                        elif es_agg[1] == "std_deviation":
+                            agg_value = count / (count - 1.0) * agg_value
+
+                        else:  # es_agg[1] == "variance"
+                            # sample_std=\sqrt{\frac{1}{N-1}\sum_{i=1}^N(x_i-\bar{x})^2}
+                            # population_std=\sqrt{\frac{1}{N}\sum_{i=1}^N(x_i-\bar{x})^2}
+                            # sample_std=\sqrt{\frac{N}{N-1}population_std}
+                            agg_value = np.sqrt(
+                                (count / (count - 1.0))
+                                * results[field]
+                                * results[field]
+                            )
                 else:
                     agg_value = response["aggregations"][
                         f"{es_agg}_{field.es_field_name}"
@@ -249,7 +292,6 @@ class Operations:
                 # These aggregations maintain the column datatype
                 if pd_agg in ("max", "min"):
                     agg_value = field.np_dtype.type(agg_value)
-
                 values.append(agg_value)
 
             results[field.index] = values if len(values) > 1 else values[0]
@@ -302,7 +344,7 @@ class Operations:
         except IndexError:
             name = None
 
-        s = pd.Series(data=results, index=results.keys(), name=name)
+        s = build_series(results, name=name)
 
         return s
 

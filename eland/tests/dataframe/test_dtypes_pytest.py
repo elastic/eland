@@ -14,9 +14,11 @@
 
 # File called _pytest for PyCharm compatability
 
+import warnings
 import numpy as np
 from pandas.testing import assert_series_equal
 
+from eland.operations import build_series, EMPTY_SERIES_DTYPE
 from eland.tests.common import TestData
 from eland.tests.common import assert_pandas_eland_frame_equal
 
@@ -42,3 +44,9 @@ class TestDataFrameDtypes(TestData):
             pd_flights.select_dtypes(include=np.number),
             ed_flights.select_dtypes(include=np.number),
         )
+
+    def test_emtpy_series_dtypes(self):
+        with warnings.catch_warnings(record=True) as w:
+            s = build_series({})
+        assert s.dtype == EMPTY_SERIES_DTYPE
+        assert w == []
