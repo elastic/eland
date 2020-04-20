@@ -44,11 +44,12 @@ class TestOperators:
         assert IsNull("a").build() == {"missing": {"field": "a"}}
         assert NotNull("a").build() == {"exists": {"field": "a"}}
         assert ScriptFilter(
-            'doc["num1"].value > params.param1', params={"param1": 5}
+            'doc["num1"].value > params.param1', lang="painless", params={"param1": 5}
         ).build() == {
             "script": {
                 "script": {
-                    "inline": 'doc["num1"].value > params.param1',
+                    "lang": "painless",
+                    "source": 'doc["num1"].value > params.param1',
                     "params": {"param1": 5},
                 }
             }
