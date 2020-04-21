@@ -1115,7 +1115,7 @@ class Series(NDFrame):
 
         Examples
         --------
-        >>> s = ed.Series('localhost', 'flights', name='AvgTicketPrice')
+        >>> s = ed.DataFrame('localhost', 'flights')['AvgTicketPrice']
         >>> int(s.max())
         1199
         """
@@ -1139,7 +1139,7 @@ class Series(NDFrame):
 
         Examples
         --------
-        >>> s = ed.Series('localhost', 'flights', name='AvgTicketPrice')
+        >>> s = ed.DataFrame('localhost', 'flights')['AvgTicketPrice']
         >>> int(s.mean())
         628
         """
@@ -1163,7 +1163,7 @@ class Series(NDFrame):
 
         Examples
         --------
-        >>> s = ed.Series('localhost', 'flights', name='AvgTicketPrice')
+        >>> s = ed.DataFrame('localhost', 'flights')['AvgTicketPrice']
         >>> int(s.min())
         100
         """
@@ -1187,7 +1187,7 @@ class Series(NDFrame):
 
         Examples
         --------
-        >>> s = ed.Series('localhost', 'flights', name='AvgTicketPrice')
+        >>> s = ed.DataFrame('localhost', 'flights')['AvgTicketPrice']
         >>> int(s.sum())
         8204364
         """
@@ -1196,24 +1196,90 @@ class Series(NDFrame):
 
     def nunique(self):
         """
-        Return the sum of the Series values
+        Return the number of unique values in a Series
 
         Returns
         -------
-        float
-            max value
+        int
+            Number of unique values
 
         See Also
         --------
-        :pandas_api_docs:`pandas.Series.sum`
+        :pandas_api_docs:`pandas.Series.nunique`
 
         Examples
         --------
-        >>> s = ed.Series('localhost', 'flights', name='Carrier')
+        >>> s = ed.DataFrame('localhost', 'flights')['Carrier']
         >>> s.nunique()
         4
         """
         results = super().nunique()
+        return results.squeeze()
+
+    def var(self, numeric_only=None):
+        """
+        Return variance for a Series
+
+        Returns
+        -------
+        float
+            var value
+
+        See Also
+        --------
+        :pandas_api_docs:`pandas.Series.var`
+
+        Examples
+        --------
+        >>> s = ed.DataFrame('localhost', 'flights')['AvgTicketPrice']
+        >>> s.var()
+        70964.57023354847
+        """
+        results = super().var(numeric_only=numeric_only)
+        return results.squeeze()
+
+    def std(self, numeric_only=None):
+        """
+        Return standard deviation for a Series
+
+        Returns
+        -------
+        float
+            std value
+
+        See Also
+        --------
+        :pandas_api_docs:`pandas.Series.var`
+
+        Examples
+        --------
+        >>> s = ed.DataFrame('localhost', 'flights')['AvgTicketPrice']
+        >>> s.std()
+        266.4070611666801
+        """
+        results = super().std(numeric_only=numeric_only)
+        return results.squeeze()
+
+    def mad(self, numeric_only=None):
+        """
+        Return median absolute deviation for a Series
+
+        Returns
+        -------
+        float
+            mad value
+
+        See Also
+        --------
+        :pandas_api_docs:`pandas.Series.mad`
+
+        Examples
+        --------
+        >>> s = ed.DataFrame('localhost', 'flights')['AvgTicketPrice']
+        >>> s.mad()
+        213.40706409272698
+        """
+        results = super().mad(numeric_only=numeric_only)
         return results.squeeze()
 
     # def values TODO - not implemented as causes current implementation of query to fail

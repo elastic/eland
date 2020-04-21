@@ -21,7 +21,7 @@ from eland.tests.common import TestData
 
 class TestDataFrameMetrics(TestData):
     funcs = ["max", "min", "mean", "sum"]
-    extended_funcs = ["var", "std", "median"]
+    extended_funcs = ["var", "std", "median", "mad"]
 
     def test_flights_metrics(self):
         pd_flights = self.pd_flights()
@@ -55,24 +55,24 @@ class TestDataFrameMetrics(TestData):
         ed_flights = self.ed_flights()
 
         # Test on single row to test NaN behaviour of sample std/variance
-        pd_flights_1 = pd_flights[pd_flights.FlightNum == "9HY9SWR"]
-        ed_flights_1 = ed_flights[ed_flights.FlightNum == "9HY9SWR"]
+        pd_flights_1 = pd_flights[pd_flights.FlightNum == "9HY9SWR"][["AvgTicketPrice"]]
+        ed_flights_1 = ed_flights[ed_flights.FlightNum == "9HY9SWR"][["AvgTicketPrice"]]
 
         for func in self.extended_funcs:
-            pd_metric = getattr(pd_flights_1, func)(numeric_only=True)
-            ed_metric = getattr(ed_flights_1, func)(numeric_only=True)
+            pd_metric = getattr(pd_flights_1, func)()
+            ed_metric = getattr(ed_flights_1, func)()
 
             assert_series_equal(
                 pd_metric, ed_metric, check_exact=False, check_less_precise=True
             )
 
         # Test on zero rows to test NaN behaviour of sample std/variance
-        pd_flights_0 = pd_flights[pd_flights.FlightNum == "XXX"]
-        ed_flights_0 = ed_flights[ed_flights.FlightNum == "XXX"]
+        pd_flights_0 = pd_flights[pd_flights.FlightNum == "XXX"][["AvgTicketPrice"]]
+        ed_flights_0 = ed_flights[ed_flights.FlightNum == "XXX"][["AvgTicketPrice"]]
 
         for func in self.extended_funcs:
-            pd_metric = getattr(pd_flights_0, func)(numeric_only=True)
-            ed_metric = getattr(ed_flights_0, func)(numeric_only=True)
+            pd_metric = getattr(pd_flights_0, func)()
+            ed_metric = getattr(ed_flights_0, func)()
 
             assert_series_equal(
                 pd_metric, ed_metric, check_exact=False, check_less_precise=True

@@ -7,9 +7,9 @@ def test_all_aggs():
     )
 
     assert es_aggs == [
-        "min",
-        "max",
-        "avg",
+        ("extended_stats", "min"),
+        ("extended_stats", "max"),
+        ("extended_stats", "avg"),
         ("extended_stats", "std_deviation"),
         ("extended_stats", "variance"),
         "median_absolute_deviation",
@@ -19,17 +19,17 @@ def test_all_aggs():
     ]
 
 
-def test_extended_stats_count_optimization():
-    # Tests that when 'count' and an 'extended_stats' agg are used together
-    # that ('extended_stats', 'count') is used instead of 'count'.
-    es_aggs = Operations._map_pd_aggs_to_es_aggs(["count", "mean"])
-    assert es_aggs == ["count", "avg"]
+def test_extended_stats_optimization():
+    # Tests that when '<agg>' and an 'extended_stats' agg are used together
+    # that ('extended_stats', '<agg>') is used instead of '<agg>'.
+    es_aggs = Operations._map_pd_aggs_to_es_aggs(["count", "nunique"])
+    assert es_aggs == ["count", "cardinality"]
 
     for pd_agg in ["var", "std"]:
         extended_es_agg = Operations._map_pd_aggs_to_es_aggs([pd_agg])[0]
 
-        es_aggs = Operations._map_pd_aggs_to_es_aggs([pd_agg, "mean"])
-        assert es_aggs == [extended_es_agg, "avg"]
+        es_aggs = Operations._map_pd_aggs_to_es_aggs([pd_agg, "nunique"])
+        assert es_aggs == [extended_es_agg, "cardinality"]
 
-        es_aggs = Operations._map_pd_aggs_to_es_aggs(["count", pd_agg, "mean"])
-        assert es_aggs == [("extended_stats", "count"), extended_es_agg, "avg"]
+        es_aggs = Operations._map_pd_aggs_to_es_aggs(["count", pd_agg, "nunique"])
+        assert es_aggs == [("extended_stats", "count"), extended_es_agg, "cardinality"]

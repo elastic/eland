@@ -29,6 +29,21 @@ DEFAULT_PROGRESS_REPORTING_NUM_ROWS = 10000
 DEFAULT_ES_MAX_RESULT_WINDOW = 10000  # index.max_result_window
 
 
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore")
+    EMPTY_SERIES_DTYPE = pd.Series().dtype
+
+
+def build_pd_series(data: dict, dtype=None, **kwargs) -> pd.Series:
+    """Builds a pd.Series while squelching the warning
+    for unspecified dtype on empty series
+    """
+    dtype = dtype or (EMPTY_SERIES_DTYPE if not data else dtype)
+    if dtype is not None:
+        kwargs["dtype"] = dtype
+    return pd.Series(data, **kwargs)
+
+
 def docstring_parameter(*sub):
     def dec(obj):
         obj.__doc__ = obj.__doc__.format(*sub)

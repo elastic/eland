@@ -13,8 +13,8 @@
 # limitations under the License.
 
 import copy
-import warnings
 import typing
+import warnings
 
 import numpy as np
 import pandas as pd
@@ -26,6 +26,7 @@ from eland.common import (
     DEFAULT_CSV_BATCH_OUTPUT_SIZE,
     DEFAULT_ES_MAX_RESULT_WINDOW,
     elasticsearch_date_to_pandas_date,
+    build_pd_series,
 )
 from eland.query import Query
 from eland.actions import SortFieldAction
@@ -41,16 +42,6 @@ from eland.tasks import (
 
 if typing.TYPE_CHECKING:
     from eland.query_compiler import QueryCompiler
-
-with warnings.catch_warnings():
-    warnings.simplefilter("ignore")
-    EMPTY_SERIES_DTYPE = pd.Series().dtype
-
-
-def build_series(data, dtype=None, **kwargs):
-    out_dtype = EMPTY_SERIES_DTYPE if not data else dtype
-    s = pd.Series(data=data, index=data.keys(), dtype=out_dtype, **kwargs)
-    return s
 
 
 class Operations:
@@ -133,41 +124,45 @@ class Operations:
             )["count"]
             counts[field] = field_exists_count
 
-        return pd.Series(data=counts, index=fields)
+        return build_pd_series(data=counts, index=fields)
 
     def mean(self, query_compiler, numeric_only=True):
         results = self._metric_aggs(query_compiler, ["mean"], numeric_only=numeric_only)
-        return pd.Series(results, index=results.keys())
+        return build_pd_series(results, index=results.keys())
 
     def var(self, query_compiler, numeric_only=True):
         results = self._metric_aggs(query_compiler, ["var"], numeric_only=numeric_only)
-        return pd.Series(results, index=results.keys())
+        return build_pd_series(results, index=results.keys())
 
     def std(self, query_compiler, numeric_only=True):
         results = self._metric_aggs(query_compiler, ["std"], numeric_only=numeric_only)
-        return pd.Series(results, index=results.keys())
+        return build_pd_series(results, index=results.keys())
 
     def median(self, query_compiler, numeric_only=True):
         results = self._metric_aggs(
             query_compiler, ["median"], numeric_only=numeric_only
         )
-        return pd.Series(results, index=results.keys())
+        return build_pd_series(results, index=results.keys())
 
     def sum(self, query_compiler, numeric_only=True):
         results = self._metric_aggs(query_compiler, ["sum"], numeric_only=numeric_only)
-        return pd.Series(results, index=results.keys())
+        return build_pd_series(results, index=results.keys())
 
     def max(self, query_compiler, numeric_only=True):
         results = self._metric_aggs(query_compiler, ["max"], numeric_only=numeric_only)
-        return pd.Series(results, index=results.keys())
+        return build_pd_series(results, index=results.keys())
 
     def min(self, query_compiler, numeric_only=True):
         results = self._metric_aggs(query_compiler, ["min"], numeric_only=numeric_only)
-        return pd.Series(results, index=results.keys())
+        return build_pd_series(results, index=results.keys())
 
     def nunique(self, query_compiler):
         results = self._metric_aggs(query_compiler, ["nunique"], numeric_only=False)
-        return pd.Series(results, index=results.keys())
+        return build_pd_series(results, index=results.keys())
+
+    def mad(self, query_compiler, numeric_only=True):
+        results = self._metric_aggs(query_compiler, ["mad"], numeric_only=numeric_only)
+        return build_pd_series(results, index=results.keys())
 
     def value_counts(self, query_compiler, es_size):
         return self._terms_aggs(query_compiler, "terms", es_size)
@@ -217,7 +212,9 @@ class Operations:
         response = query_compiler._client.search(
             index=query_compiler._index_pattern, size=0, body=body.to_search_body()
         )
-        print(response)
+        import json
+
+        print(json.dumps(response, indent=2))
 
         """
         Results are like (for 'sum', 'min')
@@ -235,18 +232,6 @@ class Operations:
                     values.append(np.float64(np.NaN))
                     continue
 
-                """
-
-                            # transform population std into sample std
-                            # sample_std=\sqrt{\frac{1}{N-1}\sum_{i=1}^N(x_i-\bar{x})^2}
-                            # population_std=\sqrt{\frac{1}{N}\sum_{i=1}^N(x_i-\bar{x})^2}
-                            # sample_std=\sqrt{\frac{N}{N-1}population_std}
-                            if count <= 1:
-                                results[field] = np.float64(np.NaN)
-                            else:
-                                
-                """
-
                 if isinstance(es_agg, tuple):
                     agg_value = response["aggregations"][
                         f"{es_agg[0]}_{field.es_field_name}"
@@ -258,25 +243,28 @@ class Operations:
 
                     agg_value = agg_value[es_agg[1]]
 
-                    # Need to convert 'Population' stddev and variance into
-                    # 'Sample stddev and variance.
+                    # Need to convert 'Population' stddev and variance
+                    # from Elasticsearch into 'Sample' stddev and variance
+                    # which is what pandas uses.
                     if es_agg[1] in ("std_deviation", "variance"):
-                        count = response["aggregations"][f"{es_agg[0]}_{field.es_field_name}"]["count"]
-                        # Neither transformation works with count <1
+                        # Neither transformation works with count <=1
+                        count = response["aggregations"][
+                            f"{es_agg[0]}_{field.es_field_name}"
+                        ]["count"]
+
+                        # All of the below calculations result in NaN if count<=1
                         if count <= 1:
                             agg_value = np.float64(np.NaN)
 
                         elif es_agg[1] == "std_deviation":
-                            agg_value = count / (count - 1.0) * agg_value
+                            agg_value *= count / (count - 1.0)
 
                         else:  # es_agg[1] == "variance"
                             # sample_std=\sqrt{\frac{1}{N-1}\sum_{i=1}^N(x_i-\bar{x})^2}
                             # population_std=\sqrt{\frac{1}{N}\sum_{i=1}^N(x_i-\bar{x})^2}
                             # sample_std=\sqrt{\frac{N}{N-1}population_std}
                             agg_value = np.sqrt(
-                                (count / (count - 1.0))
-                                * results[field]
-                                * results[field]
+                                (count / (count - 1.0)) * agg_value * agg_value
                             )
                 else:
                     agg_value = response["aggregations"][
@@ -292,6 +280,11 @@ class Operations:
                 # These aggregations maintain the column datatype
                 if pd_agg in ("max", "min"):
                     agg_value = field.np_dtype.type(agg_value)
+
+                # Null usually means there were no results.
+                if agg_value is None:
+                    agg_value = np.float64(np.NaN)
+
                 values.append(agg_value)
 
             results[field.index] = values if len(values) > 1 else values[0]
@@ -344,9 +337,7 @@ class Operations:
         except IndexError:
             name = None
 
-        s = build_series(results, name=name)
-
-        return s
+        return build_pd_series(results, name=name)
 
     def _hist_aggs(self, query_compiler, num_bins):
         # Get histogram bins and weights for numeric field_names
@@ -433,7 +424,6 @@ class Operations:
 
         df_bins = pd.DataFrame(data=bins)
         df_weights = pd.DataFrame(data=weights)
-
         return df_bins, df_weights
 
     @staticmethod
@@ -468,25 +458,42 @@ class Operations:
         var
         nunique
         """
-        count_called = False
-        extended_stats_called = False
+        # pd aggs that will be mapped to es aggs
+        # that can use 'extended_stats'.
+        extended_stats_pd_aggs = {"mean", "min", "max", "count", "sum", "var", "std"}
+        extended_stats_es_aggs = {"avg", "min", "max", "count", "sum"}
+        extended_stats_calls = 0
+
         es_aggs = []
         for pd_agg in pd_aggs:
+            if pd_agg in extended_stats_pd_aggs:
+                extended_stats_calls += 1
+
+            # Aggs that are 'extended_stats' compatible
             if pd_agg == "count":
                 es_aggs.append("count")
-                count_called = True
+            elif pd_agg == "max":
+                es_aggs.append("max")
+            elif pd_agg == "min":
+                es_aggs.append("min")
+            elif pd_agg == "mean":
+                es_aggs.append("avg")
+            elif pd_agg == "sum":
+                es_aggs.append("sum")
+            elif pd_agg == "std":
+                es_aggs.append(("extended_stats", "std_deviation"))
+            elif pd_agg == "var":
+                es_aggs.append(("extended_stats", "variance"))
+
+            # Aggs that aren't 'extended_stats' compatible
             elif pd_agg == "nunique":
                 es_aggs.append("cardinality")
             elif pd_agg == "mad":
                 es_aggs.append("median_absolute_deviation")
-            elif pd_agg == "max":
-                es_aggs.append("max")
-            elif pd_agg == "mean":
-                es_aggs.append("avg")
             elif pd_agg == "median":
                 es_aggs.append(("percentiles", "50.0"))
-            elif pd_agg == "min":
-                es_aggs.append("min")
+
+            # Not implemented
             elif pd_agg == "mode":
                 # We could do this via top term
                 raise NotImplementedError(pd_agg, " not currently implemented")
@@ -499,22 +506,17 @@ class Operations:
             elif pd_agg == "sem":
                 # TODO
                 raise NotImplementedError(pd_agg, " not currently implemented")
-            elif pd_agg == "sum":
-                es_aggs.append("sum")
-            elif pd_agg == "std":
-                es_aggs.append(("extended_stats", "std_deviation"))
-                extended_stats_called = True
-            elif pd_agg == "var":
-                es_aggs.append(("extended_stats", "variance"))
-                extended_stats_called = True
             else:
                 raise NotImplementedError(pd_agg, " not currently implemented")
 
-        # If 'count' and any agg using 'extended_stats' are called
-        # together we can replace all 'count' with ('extended_stats', 'count').
-        if extended_stats_called and count_called:
+        # If two aggs compatible with 'extended_stats' is called we can
+        # piggy-back on that single aggregation.
+        if extended_stats_calls >= 2:
             es_aggs = [
-                ("extended_stats", "count") if x == "count" else x for x in es_aggs
+                ("extended_stats", es_agg)
+                if es_agg in extended_stats_es_aggs
+                else es_agg
+                for es_agg in es_aggs
             ]
 
         return es_aggs

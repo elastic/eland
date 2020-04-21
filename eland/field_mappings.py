@@ -63,7 +63,7 @@ class Field(NamedTuple):
         if es_agg == "cardinality" or self.is_numeric or self.is_bool:
             return True
         # Timestamps also work for 'min', 'max' and 'avg'
-        if self.is_timestamp and es_agg in {"min", "max", "avg"}:
+        if es_agg in {"min", "max", "avg"} and self.is_timestamp:
             return True
         return False
 
