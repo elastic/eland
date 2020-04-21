@@ -171,7 +171,7 @@ class NotNull(BooleanFilter):
 class ScriptFilter(BooleanFilter):
     def __init__(self, inline, lang=None, params=None):
         super().__init__()
-        script = {"inline": inline}
+        script = {"source": inline}
         if lang is not None:
             script["lang"] = lang
         if params is not None:

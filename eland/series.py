@@ -409,7 +409,7 @@ class Series(NDFrame):
         if isinstance(other, Series):
             # Need to use scripted query to compare to values
             painless = f"doc['{self.name}'].value > doc['{other.name}'].value"
-            return ScriptFilter(painless)
+            return ScriptFilter(painless, lang="painless")
         elif isinstance(other, (int, float)):
             return Greater(field=self.name, value=other)
         else:
@@ -419,7 +419,7 @@ class Series(NDFrame):
         if isinstance(other, Series):
             # Need to use scripted query to compare to values
             painless = f"doc['{self.name}'].value < doc['{other.name}'].value"
-            return ScriptFilter(painless)
+            return ScriptFilter(painless, lang="painless")
         elif isinstance(other, (int, float)):
             return Less(field=self.name, value=other)
         else:
@@ -429,7 +429,7 @@ class Series(NDFrame):
         if isinstance(other, Series):
             # Need to use scripted query to compare to values
             painless = f"doc['{self.name}'].value >= doc['{other.name}'].value"
-            return ScriptFilter(painless)
+            return ScriptFilter(painless, lang="painless")
         elif isinstance(other, (int, float)):
             return GreaterEqual(field=self.name, value=other)
         else:
@@ -439,7 +439,7 @@ class Series(NDFrame):
         if isinstance(other, Series):
             # Need to use scripted query to compare to values
             painless = f"doc['{self.name}'].value <= doc['{other.name}'].value"
-            return ScriptFilter(painless)
+            return ScriptFilter(painless, lang="painless")
         elif isinstance(other, (int, float)):
             return LessEqual(field=self.name, value=other)
         else:
@@ -449,7 +449,7 @@ class Series(NDFrame):
         if isinstance(other, Series):
             # Need to use scripted query to compare to values
             painless = f"doc['{self.name}'].value == doc['{other.name}'].value"
-            return ScriptFilter(painless)
+            return ScriptFilter(painless, lang="painless")
         elif isinstance(other, (int, float)):
             return Equal(field=self.name, value=other)
         elif isinstance(other, str):
@@ -461,7 +461,7 @@ class Series(NDFrame):
         if isinstance(other, Series):
             # Need to use scripted query to compare to values
             painless = f"doc['{self.name}'].value != doc['{other.name}'].value"
-            return ScriptFilter(painless)
+            return ScriptFilter(painless, lang="painless")
         elif isinstance(other, (int, float)):
             return NotFilter(Equal(field=self.name, value=other))
         elif isinstance(other, str):
