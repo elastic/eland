@@ -208,13 +208,9 @@ class Operations:
                         field.aggregatable_es_field_name,
                     )
 
-        print(body.to_search_body())
         response = query_compiler._client.search(
             index=query_compiler._index_pattern, size=0, body=body.to_search_body()
         )
-        import json
-
-        print(json.dumps(response, indent=2))
 
         """
         Results are like (for 'sum', 'min')

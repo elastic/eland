@@ -1276,8 +1276,8 @@ class Series(NDFrame):
         Examples
         --------
         >>> s = ed.DataFrame('localhost', 'flights')['AvgTicketPrice']
-        >>> s.mad()
-        213.40706409272698
+        >>> int(s.mad())
+        213
         """
         results = super().mad(numeric_only=numeric_only)
         return results.squeeze()
