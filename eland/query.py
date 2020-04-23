@@ -17,6 +17,7 @@ from copy import deepcopy
 from typing import Optional, Dict, List, Any
 
 from eland.filter import BooleanFilter, NotNull, IsNull, IsIn
+from eland.score import RandomScore
 
 
 class Query:
@@ -168,6 +169,9 @@ class Query:
             self._query = boolean_filter
         else:
             self._query = self._query & boolean_filter
+
+    def random_score(self) -> None:
+        self._query = RandomScore(self._query)
 
     def __repr__(self) -> str:
         return repr(self.to_search_body())

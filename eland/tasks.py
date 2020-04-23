@@ -19,7 +19,6 @@ from eland import SortOrder
 from eland.actions import HeadAction, TailAction, SortIndexAction
 from eland.arithmetics import ArithmeticSeries
 
-
 if TYPE_CHECKING:
     from .actions import PostProcessingAction  # noqa: F401
     from .filter import BooleanFilter  # noqa: F401
@@ -183,6 +182,33 @@ class TailTask(SizeTask):
 
     def __repr__(self) -> str:
         return f"('{self._task_type}': ('sort_field': '{self._sort_field}', 'count': {self._count}))"
+
+
+class SampleTask(SizeTask):
+    def __init__(self, count):
+        super().__init__("sample")
+        self._count = count
+
+    def resolve_task(
+        self,
+        query_params: QUERY_PARAMS_TYPE,
+        post_processing: List["PostProcessingAction"],
+        query_compiler: "QueryCompiler",
+    ) -> RESOLVED_TASK_TYPE:
+        query_params["query"].random_score()
+
+        if query_params.get("query_size") is not None:
+            query_params["query_size"] = min(self._count, query_params["query_size"])
+        else:
+            query_params["query_size"] = self._count
+
+        return query_params, post_processing
+
+    def size(self) -> int:
+        return self._count
+
+    def __repr__(self) -> str:
+        return f"('{self._task_type}': ('count': {self._count}))"
 
 
 class QueryIdsTask(Task):

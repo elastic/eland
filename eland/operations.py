@@ -34,6 +34,7 @@ from eland.actions import SortFieldAction
 from eland.tasks import (
     HeadTask,
     TailTask,
+    SampleTask,
     BooleanFilterTask,
     ArithmeticOpFieldsTask,
     QueryTermsTask,
@@ -89,6 +90,10 @@ class Operations:
     def tail(self, index, n):
         # Add a task that is descending sort with size=n
         task = TailTask(index.sort_field, n)
+        self._tasks.append(task)
+
+    def sample(self, n):
+        task = SampleTask(n)
         self._tasks.append(task)
 
     def arithmetic_op_fields(self, display_name, arithmetic_series):
