@@ -1,3 +1,7 @@
+# Licensed to Elasticsearch B.V under one or more agreements.
+# Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+# See the LICENSE file in the project root for more information
+
 import os
 from pathlib import Path
 import nox
@@ -10,12 +14,14 @@ SOURCE_FILES = (
     "noxfile.py",
     "eland/",
     "docs/",
+    "utils/",
 )
 
 
 @nox.session(reuse_venv=True)
 def blacken(session):
     session.install("black")
+    session.run("python", "utils/license-headers.py", "fix", *SOURCE_FILES)
     session.run("black", "--target-version=py36", *SOURCE_FILES)
     lint(session)
 
@@ -23,6 +29,7 @@ def blacken(session):
 @nox.session(reuse_venv=True)
 def lint(session):
     session.install("black", "flake8")
+    session.run("python", "utils/license-headers.py", "check", *SOURCE_FILES)
     session.run("black", "--check", "--target-version=py36", *SOURCE_FILES)
     session.run("flake8", "--ignore=E501,W503,E402,E712", *SOURCE_FILES)
 
