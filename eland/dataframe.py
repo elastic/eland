@@ -187,7 +187,7 @@ class DataFrame(NDFrame):
         """
         return len(self.columns) == 0 or len(self.index) == 0
 
-    def head(self, n=5):
+    def head(self, n: int = 5) -> "DataFrame":
         """
         Return the first n rows.
 
@@ -222,7 +222,7 @@ class DataFrame(NDFrame):
         """
         return DataFrame(query_compiler=self._query_compiler.head(n))
 
-    def tail(self, n=5):
+    def tail(self, n: int = 5) -> "DataFrame":
         """
         Return the last n rows.
 

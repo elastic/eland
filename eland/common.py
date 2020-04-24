@@ -15,10 +15,10 @@
 import re
 import warnings
 from enum import Enum
-from typing import Union, List, Tuple
+from typing import Union, List, Tuple, cast, Callable, Any
 
-import pandas as pd
-from elasticsearch import Elasticsearch
+import pandas as pd  # type: ignore
+from elasticsearch import Elasticsearch  # type: ignore
 
 # Default number of rows displayed (different to pandas where ALL could be displayed)
 DEFAULT_NUM_ROWS_DISPLAYED = 60
@@ -29,8 +29,8 @@ DEFAULT_PROGRESS_REPORTING_NUM_ROWS = 10000
 DEFAULT_ES_MAX_RESULT_WINDOW = 10000  # index.max_result_window
 
 
-def docstring_parameter(*sub):
-    def dec(obj):
+def docstring_parameter(*sub: Any) -> Callable[[Any], Any]:
+    def dec(obj: Any) -> Any:
         obj.__doc__ = obj.__doc__.format(*sub)
         return obj
 
@@ -42,21 +42,21 @@ class SortOrder(Enum):
     DESC = 1
 
     @staticmethod
-    def reverse(order):
+    def reverse(order: "SortOrder") -> "SortOrder":
         if order == SortOrder.ASC:
             return SortOrder.DESC
 
         return SortOrder.ASC
 
     @staticmethod
-    def to_string(order):
+    def to_string(order: "SortOrder") -> str:
         if order == SortOrder.ASC:
             return "asc"
 
         return "desc"
 
     @staticmethod
-    def from_string(order):
+    def from_string(order: str) -> "SortOrder":
         if order == "asc":
             return SortOrder.ASC
 
@@ -276,11 +276,13 @@ def es_version(es_client: Elasticsearch) -> Tuple[int, int, int]:
     property if one doesn't exist yet for the current Elasticsearch version.
     """
     if not hasattr(es_client, "_eland_es_version"):
-        major, minor, patch = [
-            int(x)
-            for x in re.match(
-                r"^(\d+)\.(\d+)\.(\d+)", es_client.info()["version"]["number"]
-            ).groups()
-        ]
+        version_info = es_client.info()["version"]["number"]
+        match = re.match(r"^(\d+)\.(\d+)\.(\d+)", version_info)
+        if match is None:
+            raise ValueError(
+                f"Unable to determine Elasticsearch version. "
+                f"Received: {version_info}"
+            )
+        major, minor, patch = [int(x) for x in match.groups()]
         es_client._eland_es_version = (major, minor, patch)
-    return es_client._eland_es_version
+    return cast(Tuple[int, int, int], es_client._eland_es_version)

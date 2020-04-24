@@ -14,72 +14,88 @@
 
 from abc import ABC, abstractmethod
 from io import StringIO
+from typing import Union, List, TYPE_CHECKING, Any
 
-import numpy as np
+import numpy as np  # type: ignore
+
+if TYPE_CHECKING:
+    from .query_compiler import QueryCompiler
 
 
 class ArithmeticObject(ABC):
     @property
     @abstractmethod
-    def value(self):
+    def value(self) -> str:
         pass
 
     @abstractmethod
-    def dtype(self):
+    def dtype(self) -> np.dtype:
         pass
 
     @abstractmethod
-    def resolve(self):
+    def resolve(self) -> str:
         pass
 
     @abstractmethod
-    def __repr__(self):
+    def __repr__(self) -> str:
         pass
 
 
 class ArithmeticString(ArithmeticObject):
-    def __init__(self, value):
+    def __init__(self, value: str):
         self._value = value
 
-    def resolve(self):
+    def resolve(self) -> str:
         return self.value
 
     @property
-    def dtype(self):
+    def dtype(self) -> np.dtype:
         return np.dtype(object)
 
     @property
-    def value(self):
+    def value(self) -> str:
         return f"'{self._value}'"
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.value
 
 
 class ArithmeticNumber(ArithmeticObject):
-    def __init__(self, value, dtype):
+    def __init__(self, value: Union[int, float], dtype: np.dtype):
         self._value = value
         self._dtype = dtype
 
-    def resolve(self):
+    def resolve(self) -> str:
         return self.value
 
     @property
-    def value(self):
+    def value(self) -> str:
         return f"{self._value}"
 
     @property
-    def dtype(self):
+    def dtype(self) -> np.dtype:
         return self._dtype
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.value
 
 
 class ArithmeticSeries(ArithmeticObject):
-    def __init__(self, query_compiler, display_name, dtype):
+    """Represents each item in a 'Series' by using painless scripts
+    to evaluate each document in an index as a part of a query.
+    """
+
+    def __init__(
+        self, query_compiler: "QueryCompiler", display_name: str, dtype: np.dtype
+    ):
+        # type defs
+        self._value: str
+        self._tasks: List["ArithmeticTask"]
+
         task = query_compiler.get_arithmetic_op_fields()
+
         if task is not None:
+            assert isinstance(task._arithmetic_series, ArithmeticSeries)
             self._value = task._arithmetic_series.value
             self._tasks = task._arithmetic_series._tasks.copy()
             self._dtype = dtype
@@ -98,14 +114,14 @@ class ArithmeticSeries(ArithmeticObject):
             self._dtype = dtype
 
     @property
-    def value(self):
+    def value(self) -> str:
         return self._value
 
     @property
-    def dtype(self):
+    def dtype(self) -> np.dtype:
         return self._dtype
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         buf = StringIO()
         buf.write(f"Series: {self.value} ")
         buf.write("Tasks: ")
@@ -113,7 +129,7 @@ class ArithmeticSeries(ArithmeticObject):
             buf.write(f"{task!r} ")
         return buf.getvalue()
 
-    def resolve(self):
+    def resolve(self) -> str:
         value = self._value
 
         for task in self._tasks:
@@ -148,7 +164,7 @@ class ArithmeticSeries(ArithmeticObject):
 
         return value
 
-    def arithmetic_operation(self, op_name, right):
+    def arithmetic_operation(self, op_name: str, right: Any) -> "ArithmeticSeries":
         # check if operation is supported (raises on unsupported)
         self.check_is_supported(op_name, right)
 
@@ -156,7 +172,7 @@ class ArithmeticSeries(ArithmeticObject):
         self._tasks.append(task)
         return self
 
-    def check_is_supported(self, op_name, right):
+    def check_is_supported(self, op_name: str, right: Any) -> bool:
         # supported set is
         # series.number op_name number (all ops)
         # series.string op_name string (only add)
@@ -165,22 +181,20 @@ class ArithmeticSeries(ArithmeticObject):
         # series.int op_name string (none)
         # series.float op_name string (none)
 
-        # see end of https://pandas.pydata.org/pandas-docs/stable/getting_started/basics.html?highlight=dtype for
-        # dtype heirarchy
-        if np.issubdtype(self.dtype, np.number) and np.issubdtype(
-            right.dtype, np.number
-        ):
+        # see end of https://pandas.pydata.org/pandas-docs/stable/getting_started/basics.html?highlight=dtype
+        # for dtype hierarchy
+        right_is_integer = np.issubdtype(right.dtype, np.number)
+        if np.issubdtype(self.dtype, np.number) and right_is_integer:
             # series.number op_name number (all ops)
             return True
-        elif np.issubdtype(self.dtype, np.object_) and np.issubdtype(
-            right.dtype, np.object_
-        ):
+
+        self_is_object = np.issubdtype(self.dtype, np.object_)
+        if self_is_object and np.issubdtype(right.dtype, np.object_):
             # series.string op_name string (only add)
             if op_name == "__add__" or op_name == "__radd__":
                 return True
-        elif np.issubdtype(self.dtype, np.object_) and np.issubdtype(
-            right.dtype, np.integer
-        ):
+
+        if self_is_object and right_is_integer:
             # series.string op_name int (only mul)
             if op_name == "__mul__":
                 return True
@@ -191,22 +205,22 @@ class ArithmeticSeries(ArithmeticObject):
 
 
 class ArithmeticTask:
-    def __init__(self, op_name, object):
+    def __init__(self, op_name: str, object: ArithmeticObject):
         self._op_name = op_name
 
         if not isinstance(object, ArithmeticObject):
             raise TypeError(f"Task requires ArithmeticObject not {type(object)}")
         self._object = object
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         buf = StringIO()
         buf.write(f"op_name: {self.op_name} object: {self.object!r} ")
         return buf.getvalue()
 
     @property
-    def op_name(self):
+    def op_name(self) -> str:
         return self._op_name
 
     @property
-    def object(self):
+    def object(self) -> ArithmeticObject:
         return self._object

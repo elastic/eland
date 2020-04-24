@@ -13,15 +13,16 @@
 # limitations under the License.
 
 from abc import ABC, abstractmethod
-
-# -------------------------------------------------------------------------------------------------------------------- #
-# PostProcessingActions                                                                                                #
-# -------------------------------------------------------------------------------------------------------------------- #
+from typing import TYPE_CHECKING
 from eland import SortOrder
 
 
+if TYPE_CHECKING:
+    import pandas as pd  # type: ignore
+
+
 class PostProcessingAction(ABC):
-    def __init__(self, action_type):
+    def __init__(self, action_type: str) -> None:
         """
         Abstract class for postprocessing actions
 
@@ -33,76 +34,74 @@ class PostProcessingAction(ABC):
         self._action_type = action_type
 
     @property
-    def type(self):
+    def type(self) -> str:
         return self._action_type
 
     @abstractmethod
-    def resolve_action(self, df):
+    def resolve_action(self, df: "pd.DataFrame") -> "pd.DataFrame":
         pass
 
     @abstractmethod
-    def __repr__(self):
+    def __repr__(self) -> str:
         pass
 
 
 class SortIndexAction(PostProcessingAction):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__("sort_index")
 
-    def resolve_action(self, df):
+    def resolve_action(self, df: "pd.DataFrame") -> "pd.DataFrame":
         return df.sort_index()
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"('{self.type}')"
 
 
 class HeadAction(PostProcessingAction):
-    def __init__(self, count):
+    def __init__(self, count: int) -> None:
         super().__init__("head")
 
         self._count = count
 
-    def resolve_action(self, df):
+    def resolve_action(self, df: "pd.DataFrame") -> "pd.DataFrame":
         return df.head(self._count)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"('{self.type}': ('count': {self._count}))"
 
 
 class TailAction(PostProcessingAction):
-    def __init__(self, count):
+    def __init__(self, count: int) -> None:
         super().__init__("tail")
 
         self._count = count
 
-    def resolve_action(self, df):
+    def resolve_action(self, df: "pd.DataFrame") -> "pd.DataFrame":
         return df.tail(self._count)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"('{self.type}': ('count': {self._count}))"
 
 
 class SortFieldAction(PostProcessingAction):
-    def __init__(self, sort_params_string):
+    def __init__(self, sort_params_string: str) -> None:
         super().__init__("sort_field")
 
         if sort_params_string is None:
             raise ValueError("Expected valid string")
 
         # Split string
-        sort_params = sort_params_string.split(":")
-        if len(sort_params) != 2:
+        sort_field, _, sort_order = sort_params_string.partition(":")
+        if not sort_field or sort_order not in ("asc", "desc"):
             raise ValueError(
                 f"Expected ES sort params string (e.g. _doc:desc). Got '{sort_params_string}'"
             )
 
-        self._sort_field = sort_params[0]
-        self._sort_order = SortOrder.from_string(sort_params[1])
+        self._sort_field = sort_field
+        self._sort_order = SortOrder.from_string(sort_order)
 
-    def resolve_action(self, df):
-        if self._sort_order == SortOrder.ASC:
-            return df.sort_values(self._sort_field, True)
-        return df.sort_values(self._sort_field, False)
+    def resolve_action(self, df: "pd.DataFrame") -> "pd.DataFrame":
+        return df.sort_values(self._sort_field, self._sort_order == SortOrder.ASC)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"('{self.type}': ('sort_field': '{self._sort_field}', 'sort_order': {self._sort_order}))"
