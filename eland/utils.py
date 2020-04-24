@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import csv
+from typing import Union, List, Tuple, Optional, Mapping
 
 import pandas as pd
 from pandas.io.parsers import _c_parser_defaults
@@ -20,10 +21,14 @@ from pandas.io.parsers import _c_parser_defaults
 from eland import DataFrame
 from eland.field_mappings import FieldMappings
 from eland.common import ensure_es_client, DEFAULT_CHUNK_SIZE
+from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
 
 
-def read_es(es_client, es_index_pattern):
+def read_es(
+    es_client: Union[str, List[str], Tuple[str, ...], Elasticsearch],
+    es_index_pattern: str,
+) -> DataFrame:
     """
     Utility method to create an eland.Dataframe from an Elasticsearch index_pattern.
     (Similar to pandas.read_csv, but source data is an Elasticsearch index rather than
@@ -50,16 +55,16 @@ def read_es(es_client, es_index_pattern):
 
 
 def pandas_to_eland(
-    pd_df,
-    es_client,
-    es_dest_index,
-    es_if_exists="fail",
-    es_refresh=False,
-    es_dropna=False,
-    es_type_overrides=None,
-    chunksize=None,
-    use_pandas_index_for_es_ids=True,
-):
+    pd_df: pd.DataFrame,
+    es_client: Union[str, List[str], Tuple[str, ...], Elasticsearch],
+    es_dest_index: str,
+    es_if_exists: str = "fail",
+    es_refresh: bool = False,
+    es_dropna: bool = False,
+    es_type_overrides: Optional[Mapping[str, str]] = None,
+    chunksize: Optional[int] = None,
+    use_pandas_index_for_es_ids: bool = True,
+) -> DataFrame:
     """
     Append a pandas DataFrame to an Elasticsearch index.
     Mainly used in testing.
@@ -217,7 +222,7 @@ def pandas_to_eland(
     return DataFrame(es_client, es_dest_index)
 
 
-def eland_to_pandas(ed_df, show_progress=False):
+def eland_to_pandas(ed_df: DataFrame, show_progress: bool = False) -> pd.DataFrame:
     """
     Convert an eland.Dataframe to a pandas.DataFrame
 

@@ -14,12 +14,14 @@
 
 # Originally based on code in MIT-licensed pandasticsearch filters
 
+from typing import Dict, Any, List, Optional, Union, cast
+
 
 class BooleanFilter:
-    def __init__(self, *args):
-        self._filter = None
+    def __init__(self) -> None:
+        self._filter: Dict[str, Any] = {}
 
-    def __and__(self, x):
+    def __and__(self, x: "BooleanFilter") -> "BooleanFilter":
         # Combine results
         if isinstance(self, AndFilter):
             if "must_not" in x.subtree:
@@ -37,7 +39,7 @@ class BooleanFilter:
             return x
         return AndFilter(self, x)
 
-    def __or__(self, x):
+    def __or__(self, x: "BooleanFilter") -> "BooleanFilter":
         # Combine results
         if isinstance(self, OrFilter):
             if "must_not" in x.subtree:
@@ -53,85 +55,79 @@ class BooleanFilter:
             return x
         return OrFilter(self, x)
 
-    def __invert__(self):
+    def __invert__(self) -> "BooleanFilter":
         return NotFilter(self)
 
-    def empty(self):
-        if self._filter is None:
-            return True
-        return False
+    def empty(self) -> bool:
+        return not bool(self._filter)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return str(self._filter)
 
     @property
-    def subtree(self):
+    def subtree(self) -> Dict[str, Any]:
         if "bool" in self._filter:
-            return self._filter["bool"]
+            return cast(Dict[str, Any], self._filter["bool"])
         else:
             return self._filter
 
-    def build(self):
+    def build(self) -> Dict[str, Any]:
         return self._filter
 
 
 # Binary operator
 class AndFilter(BooleanFilter):
-    def __init__(self, *args):
-        [isinstance(x, BooleanFilter) for x in args]
+    def __init__(self, *args: BooleanFilter) -> None:
         super().__init__()
         self._filter = {"bool": {"must": [x.build() for x in args]}}
 
 
 class OrFilter(BooleanFilter):
-    def __init__(self, *args):
-        [isinstance(x, BooleanFilter) for x in args]
+    def __init__(self, *args: BooleanFilter) -> None:
         super().__init__()
         self._filter = {"bool": {"should": [x.build() for x in args]}}
 
 
 class NotFilter(BooleanFilter):
-    def __init__(self, x):
-        assert isinstance(x, BooleanFilter)
+    def __init__(self, x: BooleanFilter) -> None:
         super().__init__()
         self._filter = {"bool": {"must_not": x.build()}}
 
 
 # LeafBooleanFilter
 class GreaterEqual(BooleanFilter):
-    def __init__(self, field, value):
+    def __init__(self, field: str, value: Any) -> None:
         super().__init__()
         self._filter = {"range": {field: {"gte": value}}}
 
 
 class Greater(BooleanFilter):
-    def __init__(self, field, value):
+    def __init__(self, field: str, value: Any) -> None:
         super().__init__()
         self._filter = {"range": {field: {"gt": value}}}
 
 
 class LessEqual(BooleanFilter):
-    def __init__(self, field, value):
+    def __init__(self, field: str, value: Any) -> None:
         super().__init__()
         self._filter = {"range": {field: {"lte": value}}}
 
 
 class Less(BooleanFilter):
-    def __init__(self, field, value):
+    def __init__(self, field: str, value: Any) -> None:
         super().__init__()
         self._filter = {"range": {field: {"lt": value}}}
 
 
 class Equal(BooleanFilter):
-    def __init__(self, field, value):
+    def __init__(self, field: str, value: Any) -> None:
         super().__init__()
         self._filter = {"term": {field: value}}
 
 
 class IsIn(BooleanFilter):
-    def __init__(self, field, value):
+    def __init__(self, field: str, value: List[Any]) -> None:
         super().__init__()
-        assert isinstance(value, list)
         if field == "ids":
             self._filter = {"ids": {"values": value}}
         else:
@@ -139,39 +135,44 @@ class IsIn(BooleanFilter):
 
 
 class Like(BooleanFilter):
-    def __init__(self, field, value):
+    def __init__(self, field: str, value: str) -> None:
         super().__init__()
         self._filter = {"wildcard": {field: value}}
 
 
 class Rlike(BooleanFilter):
-    def __init__(self, field, value):
+    def __init__(self, field: str, value: str) -> None:
         super().__init__()
         self._filter = {"regexp": {field: value}}
 
 
 class Startswith(BooleanFilter):
-    def __init__(self, field, value):
+    def __init__(self, field: str, value: str) -> None:
         super().__init__()
         self._filter = {"prefix": {field: value}}
 
 
 class IsNull(BooleanFilter):
-    def __init__(self, field):
+    def __init__(self, field: str) -> None:
         super().__init__()
         self._filter = {"missing": {"field": field}}
 
 
 class NotNull(BooleanFilter):
-    def __init__(self, field):
+    def __init__(self, field: str) -> None:
         super().__init__()
         self._filter = {"exists": {"field": field}}
 
 
 class ScriptFilter(BooleanFilter):
-    def __init__(self, inline, lang=None, params=None):
+    def __init__(
+        self,
+        inline: str,
+        lang: Optional[str] = None,
+        params: Optional[Dict[str, Any]] = None,
+    ) -> None:
         super().__init__()
-        script = {"source": inline}
+        script: Dict[str, Union[str, Dict[str, Any]]] = {"source": inline}
         if lang is not None:
             script["lang"] = lang
         if params is not None:
@@ -180,6 +181,6 @@ class ScriptFilter(BooleanFilter):
 
 
 class QueryFilter(BooleanFilter):
-    def __init__(self, query):
+    def __init__(self, query: Dict[str, Any]) -> None:
         super().__init__()
         self._filter = query
