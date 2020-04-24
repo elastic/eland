@@ -4,6 +4,7 @@
 
 import copy
 from datetime import datetime
+from typing import Optional, TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
@@ -17,6 +18,9 @@ from eland.common import (
     DEFAULT_PROGRESS_REPORTING_NUM_ROWS,
     elasticsearch_date_to_pandas_date,
 )
+
+if TYPE_CHECKING:
+    from .tasks import ArithmeticOpFieldsTask  # noqa: F401
 
 
 class QueryCompiler:
@@ -338,7 +342,7 @@ class QueryCompiler:
 
         return out
 
-    def _index_count(self):
+    def _index_count(self) -> int:
         """
         Returns
         -------
@@ -552,10 +556,10 @@ class QueryCompiler:
 
         return result
 
-    def get_arithmetic_op_fields(self):
+    def get_arithmetic_op_fields(self) -> Optional["ArithmeticOpFieldsTask"]:
         return self._operations.get_arithmetic_op_fields()
 
-    def display_name_to_aggregatable_name(self, display_name):
+    def display_name_to_aggregatable_name(self, display_name: str) -> str:
         aggregatable_field_name = self._mappings.aggregatable_field_name(display_name)
 
         return aggregatable_field_name

@@ -3,10 +3,20 @@
 # See the LICENSE file in the project root for more information
 
 from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING, List, Dict, Any, Tuple
 
 from eland import SortOrder
 from eland.actions import HeadAction, TailAction, SortIndexAction
 from eland.arithmetics import ArithmeticSeries
+
+
+if TYPE_CHECKING:
+    from .actions import PostProcessingAction  # noqa: F401
+    from .filter import BooleanFilter  # noqa: F401
+    from .query_compiler import QueryCompiler  # noqa: F401
+
+QUERY_PARAMS_TYPE = Dict[str, Any]
+RESOLVED_TASK_TYPE = Tuple[QUERY_PARAMS_TYPE, List["PostProcessingAction"]]
 
 
 class Task(ABC):
@@ -19,44 +29,51 @@ class Task(ABC):
             The task type (e.g. head, tail etc.)
     """
 
-    def __init__(self, task_type):
+    def __init__(self, task_type: str):
         self._task_type = task_type
 
     @property
-    def type(self):
+    def type(self) -> str:
         return self._task_type
 
     @abstractmethod
-    def resolve_task(self, query_params, post_processing, query_compiler):
+    def resolve_task(
+        self,
+        query_params: QUERY_PARAMS_TYPE,
+        post_processing: List["PostProcessingAction"],
+        query_compiler: "QueryCompiler",
+    ) -> RESOLVED_TASK_TYPE:
         pass
 
     @abstractmethod
-    def __repr__(self):
+    def __repr__(self) -> str:
         pass
 
 
 class SizeTask(Task):
-    def __init__(self, task_type):
-        super().__init__(task_type)
-
     @abstractmethod
-    def size(self):
+    def size(self) -> int:
         # must override
         pass
 
 
 class HeadTask(SizeTask):
-    def __init__(self, sort_field, count):
+    def __init__(self, sort_field: str, count: int):
         super().__init__("head")
 
         # Add a task that is an ascending sort with size=count
         self._sort_field = sort_field
         self._count = count
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"('{self._task_type}': ('sort_field': '{self._sort_field}', 'count': {self._count}))"
 
-    def resolve_task(self, query_params, post_processing, query_compiler):
+    def resolve_task(
+        self,
+        query_params: QUERY_PARAMS_TYPE,
+        post_processing: List["PostProcessingAction"],
+        query_compiler: "QueryCompiler",
+    ) -> RESOLVED_TASK_TYPE:
         # head - sort asc, size n
         # |12345-------------|
         query_sort_field = self._sort_field
@@ -87,22 +104,24 @@ class HeadTask(SizeTask):
 
         return query_params, post_processing
 
-    def size(self):
+    def size(self) -> int:
         return self._count
 
 
 class TailTask(SizeTask):
-    def __init__(self, sort_field, count):
+    def __init__(self, sort_field: str, count: int):
         super().__init__("tail")
 
         # Add a task that is descending sort with size=count
         self._sort_field = sort_field
         self._count = count
 
-    def __repr__(self):
-        return f"('{self._task_type}': ('sort_field': '{self._sort_field}', 'count': {self._count}))"
-
-    def resolve_task(self, query_params, post_processing, query_compiler):
+    def resolve_task(
+        self,
+        query_params: QUERY_PARAMS_TYPE,
+        post_processing: List["PostProcessingAction"],
+        query_compiler: "QueryCompiler",
+    ) -> RESOLVED_TASK_TYPE:
         # tail - sort desc, size n, post-process sort asc
         # |-------------12345|
         query_sort_field = self._sort_field
@@ -113,7 +132,10 @@ class TailTask(SizeTask):
         if (
             query_params["query_size"] is not None
             and query_params["query_sort_order"] == query_sort_order
-            and post_processing == ["sort_index"]
+            and (
+                len(post_processing) == 1
+                and isinstance(post_processing[0], SortIndexAction)
+            )
         ):
             if query_size < query_params["query_size"]:
                 query_params["query_size"] = query_size
@@ -146,12 +168,15 @@ class TailTask(SizeTask):
 
         return query_params, post_processing
 
-    def size(self):
+    def size(self) -> int:
         return self._count
+
+    def __repr__(self) -> str:
+        return f"('{self._task_type}': ('sort_field': '{self._sort_field}', 'count': {self._count}))"
 
 
 class QueryIdsTask(Task):
-    def __init__(self, must, ids):
+    def __init__(self, must: bool, ids: List[str]):
         """
         Parameters
         ----------
@@ -166,17 +191,21 @@ class QueryIdsTask(Task):
         self._must = must
         self._ids = ids
 
-    def resolve_task(self, query_params, post_processing, query_compiler):
+    def resolve_task(
+        self,
+        query_params: QUERY_PARAMS_TYPE,
+        post_processing: List["PostProcessingAction"],
+        query_compiler: "QueryCompiler",
+    ) -> RESOLVED_TASK_TYPE:
         query_params["query"].ids(self._ids, must=self._must)
-
         return query_params, post_processing
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"('{self._task_type}': ('must': {self._must}, 'ids': {self._ids}))"
 
 
 class QueryTermsTask(Task):
-    def __init__(self, must, field, terms):
+    def __init__(self, must: bool, field: str, terms: List[Any]):
         """
         Parameters
         ----------
@@ -195,20 +224,24 @@ class QueryTermsTask(Task):
         self._field = field
         self._terms = terms
 
-    def __repr__(self):
+    def resolve_task(
+        self,
+        query_params: QUERY_PARAMS_TYPE,
+        post_processing: List["PostProcessingAction"],
+        query_compiler: "QueryCompiler",
+    ) -> RESOLVED_TASK_TYPE:
+        query_params["query"].terms(self._field, self._terms, must=self._must)
+        return query_params, post_processing
+
+    def __repr__(self) -> str:
         return (
             f"('{self._task_type}': ('must': {self._must}, "
             f"'field': '{self._field}', 'terms': {self._terms}))"
         )
 
-    def resolve_task(self, query_params, post_processing, query_compiler):
-        query_params["query"].terms(self._field, self._terms, must=self._must)
-
-        return query_params, post_processing
-
 
 class BooleanFilterTask(Task):
-    def __init__(self, boolean_filter):
+    def __init__(self, boolean_filter: "BooleanFilter"):
         """
         Parameters
         ----------
@@ -219,17 +252,21 @@ class BooleanFilterTask(Task):
 
         self._boolean_filter = boolean_filter
 
-    def __repr__(self):
-        return f"('{self._task_type}': ('boolean_filter': {self._boolean_filter!r}))"
-
-    def resolve_task(self, query_params, post_processing, query_compiler):
+    def resolve_task(
+        self,
+        query_params: QUERY_PARAMS_TYPE,
+        post_processing: List["PostProcessingAction"],
+        query_compiler: "QueryCompiler",
+    ) -> RESOLVED_TASK_TYPE:
         query_params["query"].update_boolean_filter(self._boolean_filter)
-
         return query_params, post_processing
+
+    def __repr__(self) -> str:
+        return f"('{self._task_type}': ('boolean_filter': {self._boolean_filter!r}))"
 
 
 class ArithmeticOpFieldsTask(Task):
-    def __init__(self, display_name, arithmetic_series):
+    def __init__(self, display_name: str, arithmetic_series: ArithmeticSeries):
         super().__init__("arithmetic_op_fields")
 
         self._display_name = display_name
@@ -238,19 +275,16 @@ class ArithmeticOpFieldsTask(Task):
             raise TypeError(f"Expecting ArithmeticSeries got {type(arithmetic_series)}")
         self._arithmetic_series = arithmetic_series
 
-    def __repr__(self):
-        return (
-            f"('{self._task_type}': ("
-            f"'display_name': {self._display_name}, "
-            f"'arithmetic_object': {self._arithmetic_series}"
-            f"))"
-        )
-
-    def update(self, display_name, arithmetic_series):
+    def update(self, display_name: str, arithmetic_series: ArithmeticSeries) -> None:
         self._display_name = display_name
         self._arithmetic_series = arithmetic_series
 
-    def resolve_task(self, query_params, post_processing, query_compiler):
+    def resolve_task(
+        self,
+        query_params: QUERY_PARAMS_TYPE,
+        post_processing: List["PostProcessingAction"],
+        query_compiler: "QueryCompiler",
+    ) -> RESOLVED_TASK_TYPE:
         # https://www.elastic.co/guide/en/elasticsearch/painless/current/painless-api-reference-shared-java-lang.html#painless-api-reference-shared-Math
         """
         "script_fields": {
@@ -262,7 +296,10 @@ class ArithmeticOpFieldsTask(Task):
         }
         """
         if query_params["query_script_fields"] is None:
-            query_params["query_script_fields"] = dict()
+            query_params["query_script_fields"] = {}
+
+        # TODO: Remove this once 'query_params' becomes a dataclass.
+        assert isinstance(query_params["query_script_fields"], dict)
 
         if self._display_name in query_params["query_script_fields"]:
             raise NotImplementedError(
@@ -276,3 +313,11 @@ class ArithmeticOpFieldsTask(Task):
         }
 
         return query_params, post_processing
+
+    def __repr__(self) -> str:
+        return (
+            f"('{self._task_type}': ("
+            f"'display_name': {self._display_name}, "
+            f"'arithmetic_object': {self._arithmetic_series}"
+            f"))"
+        )

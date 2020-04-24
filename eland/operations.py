@@ -4,6 +4,7 @@
 
 import copy
 import warnings
+from typing import Optional
 
 import numpy as np
 
@@ -88,7 +89,7 @@ class Operations:
         else:
             self._arithmetic_op_fields_task.update(display_name, arithmetic_series)
 
-    def get_arithmetic_op_fields(self):
+    def get_arithmetic_op_fields(self) -> Optional[ArithmeticOpFieldsTask]:
         # get an ArithmeticOpFieldsTask if it exists
         return self._arithmetic_op_fields_task
 

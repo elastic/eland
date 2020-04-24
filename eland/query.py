@@ -4,6 +4,7 @@
 
 import warnings
 from copy import deepcopy
+from typing import Optional, Dict, List, Any
 
 from eland.filter import BooleanFilter, NotNull, IsNull, IsIn
 
@@ -13,7 +14,11 @@ class Query:
     Simple class to manage building Elasticsearch queries.
     """
 
-    def __init__(self, query=None):
+    def __init__(self, query: Optional["Query"] = None):
+        # type defs
+        self._query: BooleanFilter
+        self._aggs: Dict[str, Any]
+
         if query is None:
             self._query = BooleanFilter()
             self._aggs = {}
@@ -22,7 +27,7 @@ class Query:
             self._query = deepcopy(query._query)
             self._aggs = deepcopy(query._aggs)
 
-    def exists(self, field, must=True):
+    def exists(self, field: str, must: bool = True) -> None:
         """
         Add exists query
         https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-exists-query.html
@@ -38,7 +43,7 @@ class Query:
             else:
                 self._query = self._query & IsNull(field)
 
-    def ids(self, items, must=True):
+    def ids(self, items: List[Any], must: bool = True) -> None:
         """
         Add ids query
         https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-ids-query.html
@@ -54,7 +59,7 @@ class Query:
             else:
                 self._query = self._query & ~(IsIn("ids", items))
 
-    def terms(self, field, items, must=True):
+    def terms(self, field: str, items: List[str], must: bool = True) -> None:
         """
         Add ids query
         https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-terms-query.html
@@ -70,7 +75,7 @@ class Query:
             else:
                 self._query = self._query & ~(IsIn(field, items))
 
-    def terms_aggs(self, name, func, field, es_size):
+    def terms_aggs(self, name: str, func: str, field: str, es_size: int) -> None:
         """
         Add terms agg e.g
 
@@ -86,7 +91,7 @@ class Query:
         agg = {func: {"field": field, "size": es_size}}
         self._aggs[name] = agg
 
-    def metric_aggs(self, name, func, field):
+    def metric_aggs(self, name: str, func: str, field: str) -> None:
         """
         Add metric agg e.g
 
@@ -101,7 +106,14 @@ class Query:
         agg = {func: {"field": field}}
         self._aggs[name] = agg
 
-    def hist_aggs(self, name, field, min_aggs, max_aggs, num_bins):
+    def hist_aggs(
+        self,
+        name: str,
+        field: str,
+        min_aggs: Dict[str, Any],
+        max_aggs: Dict[str, Any],
+        num_bins: int,
+    ) -> None:
         """
         Add histogram agg e.g.
         "aggs": {
@@ -117,14 +129,15 @@ class Query:
         max = max_aggs[field]
 
         interval = (max - min) / num_bins
-        offset = min
-
-        agg = {"histogram": {"field": field, "interval": interval, "offset": offset}}
 
         if interval != 0:
+            offset = min
+            agg = {
+                "histogram": {"field": field, "interval": interval, "offset": offset}
+            }
             self._aggs[name] = agg
 
-    def to_search_body(self):
+    def to_search_body(self) -> Dict[str, Any]:
         body = {}
         if self._aggs:
             body["aggs"] = self._aggs
@@ -132,19 +145,19 @@ class Query:
             body["query"] = self._query.build()
         return body
 
-    def to_count_body(self):
+    def to_count_body(self) -> Optional[Dict[str, Any]]:
         if len(self._aggs) > 0:
-            warnings.warn("Requesting count for agg query {}", self)
+            warnings.warn(f"Requesting count for agg query {self}")
         if self._query.empty():
             return None
         else:
             return {"query": self._query.build()}
 
-    def update_boolean_filter(self, boolean_filter):
+    def update_boolean_filter(self, boolean_filter: BooleanFilter) -> None:
         if self._query.empty():
             self._query = boolean_filter
         else:
             self._query = self._query & boolean_filter
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return repr(self.to_search_body())
