@@ -59,7 +59,7 @@ class BooleanFilter:
         return NotFilter(self)
 
     def empty(self) -> bool:
-        return bool(self._filter)
+        return not bool(self._filter)
 
     def __repr__(self) -> str:
         return str(self._filter)

@@ -42,10 +42,16 @@ class Query:
         Add exists query
         https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-exists-query.html
         """
-        filter = NotNull(field) if must else IsNull(field)
-        if not self._query.empty():
-            filter = self._query & filter
-        self._query = filter
+        if must:
+            if self._query.empty():
+                self._query = NotNull(field)
+            else:
+                self._query = self._query & NotNull(field)
+        else:
+            if self._query.empty():
+                self._query = IsNull(field)
+            else:
+                self._query = self._query & IsNull(field)
 
     def ids(self, items: List[Any], must: bool = True) -> None:
         """

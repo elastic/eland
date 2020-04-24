@@ -22,8 +22,8 @@ from eland.arithmetics import ArithmeticSeries
 
 if TYPE_CHECKING:
     from .actions import PostProcessingAction  # noqa: F401
-    from .filter import BooleanFilter
-    from .query_compiler import QueryCompiler
+    from .filter import BooleanFilter  # noqa: F401
+    from .query_compiler import QueryCompiler  # noqa: F401
 
 QUERY_PARAMS_TYPE = Dict[str, Any]
 RESOLVED_TASK_TYPE = Tuple[QUERY_PARAMS_TYPE, List["PostProcessingAction"]]
@@ -51,7 +51,7 @@ class Task(ABC):
         self,
         query_params: QUERY_PARAMS_TYPE,
         post_processing: List["PostProcessingAction"],
-        query_compiler: QueryCompiler,
+        query_compiler: "QueryCompiler",
     ) -> RESOLVED_TASK_TYPE:
         pass
 
@@ -82,7 +82,7 @@ class HeadTask(SizeTask):
         self,
         query_params: QUERY_PARAMS_TYPE,
         post_processing: List["PostProcessingAction"],
-        query_compiler: QueryCompiler,
+        query_compiler: "QueryCompiler",
     ) -> RESOLVED_TASK_TYPE:
         # head - sort asc, size n
         # |12345-------------|
@@ -130,7 +130,7 @@ class TailTask(SizeTask):
         self,
         query_params: QUERY_PARAMS_TYPE,
         post_processing: List["PostProcessingAction"],
-        query_compiler: QueryCompiler,
+        query_compiler: "QueryCompiler",
     ) -> RESOLVED_TASK_TYPE:
         # tail - sort desc, size n, post-process sort asc
         # |-------------12345|
@@ -251,7 +251,7 @@ class QueryTermsTask(Task):
 
 
 class BooleanFilterTask(Task):
-    def __init__(self, boolean_filter: BooleanFilter):
+    def __init__(self, boolean_filter: "BooleanFilter"):
         """
         Parameters
         ----------
