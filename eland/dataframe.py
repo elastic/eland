@@ -288,14 +288,13 @@ class DataFrame(NDFrame):
         :pandas_api_docs:`pandas.DataFrame.sample`
         """
 
-        if frac is not None and frac > 1:
+        if frac is not None and not (0.0 < frac <= 1.0):
             raise ValueError(
-                "Replace has to be set to `True` when "
-                "upsampling the population `frac` > 1."
+                "`frac` must be between 0. and 1."
             )
         elif n is not None and frac is None and n % 1 != 0:
             raise ValueError("Only integers accepted as `n` values")
-        elif n is not None and frac is not None:
+        elif (n is not None) == (frac is not None):
             raise ValueError("Please enter a value for `frac` OR `n`, not both")
 
         return DataFrame(query_compiler=self._query_compiler.sample(n=n, frac=frac))

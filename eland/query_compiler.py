@@ -409,11 +409,7 @@ class QueryCompiler:
         if n is None and frac is None:
             n = 1
         elif n is None and frac is not None:
-            # fetch index size
-            stats = self._client.indices.stats(
-                index=self._index_pattern, metric="indexing"
-            )
-            index_length = stats["_all"]["primaries"]["indexing"]["index_total"]
+            index_length = self._index_count()
             n = int(round(frac * index_length))
 
         if n < 0:

@@ -46,10 +46,10 @@ class TestDataFrameSample(TestData):
         ed_head_5 = ed_flights.head(5).sample(frac=1)
         assert_pandas_eland_frame_equal(pd_head_5, ed_head_5)
 
-    def test_sample_frac_is(self):
+    def test_sample_frac(self):
         frac = 0.1
         ed_flights = self.ed_flights()
 
         ed_flights_sample = ed_flights.sample(frac=frac)._to_pandas()
         size = len(ed_flights._to_pandas())
-        assert len(ed_flights_sample) <= int(round(frac * size))
+        assert len(ed_flights_sample) == int(round(frac * size))
