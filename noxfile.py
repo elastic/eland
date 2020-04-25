@@ -1,4 +1,9 @@
+# Licensed to Elasticsearch B.V under one or more agreements.
+# Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+# See the LICENSE file in the project root for more information
+
 import os
+import subprocess
 from pathlib import Path
 import nox
 import elasticsearch
@@ -10,21 +15,55 @@ SOURCE_FILES = (
     "noxfile.py",
     "eland/",
     "docs/",
+    "utils/",
 )
+
+# Whenever type-hints are completed on a file it should
+# be added here so that this file will continue to be checked
+# by mypy. Errors from other files are ignored.
+TYPED_FILES = {
+    "eland/actions.py",
+    "eland/arithmetics.py",
+    "eland/common.py",
+    "eland/filter.py",
+    "eland/index.py",
+    "eland/query.py",
+    "eland/tasks.py",
+}
 
 
 @nox.session(reuse_venv=True)
 def blacken(session):
     session.install("black")
+    session.run("python", "utils/license-headers.py", "fix", *SOURCE_FILES)
     session.run("black", "--target-version=py36", *SOURCE_FILES)
     lint(session)
 
 
 @nox.session(reuse_venv=True)
 def lint(session):
-    session.install("black", "flake8")
+    session.install("black", "flake8", "mypy")
+    session.run("python", "utils/license-headers.py", "check", *SOURCE_FILES)
     session.run("black", "--check", "--target-version=py36", *SOURCE_FILES)
     session.run("flake8", "--ignore=E501,W503,E402,E712", *SOURCE_FILES)
+
+    # TODO: When all files are typed we can change this to .run("mypy", "--strict", "eland/")
+    session.log("mypy --strict eland/")
+    for typed_file in TYPED_FILES:
+        popen = subprocess.Popen(
+            f"mypy --strict {typed_file}",
+            shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
+        popen.wait()
+        errors = []
+        for line in popen.stdout.read().decode().split("\n"):
+            filepath = line.partition(":")[0]
+            if filepath in TYPED_FILES:
+                errors.append(line)
+        if errors:
+            session.error("\n" + "\n".join(sorted(set(errors))))
 
 
 @nox.session(python=["3.6", "3.7", "3.8"])

@@ -1,24 +1,14 @@
-# Copyright 2020 Elasticsearch BV
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#   http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# Licensed to Elasticsearch B.V under one or more agreements.
+# Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+# See the LICENSE file in the project root for more information
 
 import re
 import warnings
 from enum import Enum
-from typing import Union, List, Tuple
+from typing import Union, List, Tuple, cast, Callable, Any
 
-import pandas as pd
-from elasticsearch import Elasticsearch
+import pandas as pd  # type: ignore
+from elasticsearch import Elasticsearch  # type: ignore
 
 # Default number of rows displayed (different to pandas where ALL could be displayed)
 DEFAULT_NUM_ROWS_DISPLAYED = 60
@@ -43,9 +33,9 @@ def build_pd_series(data: dict, dtype=None, **kwargs) -> pd.Series:
         kwargs["dtype"] = dtype
     return pd.Series(data, **kwargs)
 
-
-def docstring_parameter(*sub):
-    def dec(obj):
+  
+def docstring_parameter(*sub: Any) -> Callable[[Any], Any]:
+    def dec(obj: Any) -> Any:
         obj.__doc__ = obj.__doc__.format(*sub)
         return obj
 
@@ -57,21 +47,21 @@ class SortOrder(Enum):
     DESC = 1
 
     @staticmethod
-    def reverse(order):
+    def reverse(order: "SortOrder") -> "SortOrder":
         if order == SortOrder.ASC:
             return SortOrder.DESC
 
         return SortOrder.ASC
 
     @staticmethod
-    def to_string(order):
+    def to_string(order: "SortOrder") -> str:
         if order == SortOrder.ASC:
             return "asc"
 
         return "desc"
 
     @staticmethod
-    def from_string(order):
+    def from_string(order: str) -> "SortOrder":
         if order == "asc":
             return SortOrder.ASC
 
@@ -291,11 +281,13 @@ def es_version(es_client: Elasticsearch) -> Tuple[int, int, int]:
     property if one doesn't exist yet for the current Elasticsearch version.
     """
     if not hasattr(es_client, "_eland_es_version"):
-        major, minor, patch = [
-            int(x)
-            for x in re.match(
-                r"^(\d+)\.(\d+)\.(\d+)", es_client.info()["version"]["number"]
-            ).groups()
-        ]
+        version_info = es_client.info()["version"]["number"]
+        match = re.match(r"^(\d+)\.(\d+)\.(\d+)", version_info)
+        if match is None:
+            raise ValueError(
+                f"Unable to determine Elasticsearch version. "
+                f"Received: {version_info}"
+            )
+        major, minor, patch = [int(x) for x in match.groups()]
         es_client._eland_es_version = (major, minor, patch)
-    return es_client._eland_es_version
+    return cast(Tuple[int, int, int], es_client._eland_es_version)
