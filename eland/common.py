@@ -5,8 +5,9 @@
 import re
 import warnings
 from enum import Enum
-from typing import Union, List, Tuple, cast, Callable, Any
+from typing import Union, List, Tuple, cast, Callable, Any, Optional, Dict
 
+import numpy as np  # type: ignore
 import pandas as pd  # type: ignore
 from elasticsearch import Elasticsearch  # type: ignore
 
@@ -17,6 +18,23 @@ DEFAULT_CHUNK_SIZE = 10000
 DEFAULT_CSV_BATCH_OUTPUT_SIZE = 10000
 DEFAULT_PROGRESS_REPORTING_NUM_ROWS = 10000
 DEFAULT_ES_MAX_RESULT_WINDOW = 10000  # index.max_result_window
+
+
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore")
+    EMPTY_SERIES_DTYPE = pd.Series().dtype
+
+
+def build_pd_series(
+    data: Dict[str, Any], dtype: Optional[np.dtype] = None, **kwargs: Any
+) -> pd.Series:
+    """Builds a pd.Series while squelching the warning
+    for unspecified dtype on empty series
+    """
+    dtype = dtype or (EMPTY_SERIES_DTYPE if not data else dtype)
+    if dtype is not None:
+        kwargs["dtype"] = dtype
+    return pd.Series(data, **kwargs)
 
 
 def docstring_parameter(*sub: Any) -> Callable[[Any], Any]:

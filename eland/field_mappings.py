@@ -14,6 +14,48 @@ from pandas.core.dtypes.common import (
     is_string_dtype,
 )
 from pandas.core.dtypes.inference import is_list_like
+from typing import NamedTuple, Optional
+
+
+class Field(NamedTuple):
+    """Holds all information on a particular field in the mapping"""
+
+    index: str
+    es_field_name: str
+    is_source: bool
+    es_dtype: str
+    es_date_format: Optional[str]
+    pd_dtype: type
+    is_searchable: bool
+    is_aggregatable: bool
+    is_scripted: bool
+    aggregatable_es_field_name: str
+
+    @property
+    def is_numeric(self) -> bool:
+        return is_integer_dtype(self.pd_dtype) or is_float_dtype(self.pd_dtype)
+
+    @property
+    def is_timestamp(self) -> bool:
+        return is_datetime_or_timedelta_dtype(self.pd_dtype)
+
+    @property
+    def is_bool(self) -> bool:
+        return is_bool_dtype(self.pd_dtype)
+
+    @property
+    def np_dtype(self):
+        return np.dtype(self.pd_dtype)
+
+    def is_es_agg_compatible(self, es_agg):
+        # Cardinality works for all types
+        # Numerics and bools work for all aggs
+        if es_agg == "cardinality" or self.is_numeric or self.is_bool:
+            return True
+        # Timestamps also work for 'min', 'max' and 'avg'
+        if es_agg in {"min", "max", "avg"} and self.is_timestamp:
+            return True
+        return False
 
 
 class FieldMappings:
@@ -39,6 +81,23 @@ class FieldMappings:
         aggregatable_es_field_name  - either es_field_name (if aggregatable),
                                       or es_field_name.keyword (if exists) or None
     """
+
+    ES_DTYPE_TO_PD_DTYPE = {
+        "text": "object",
+        "keyword": "object",
+        "long": "int64",
+        "integer": "int64",
+        "short": "int64",
+        "byte": "int64",
+        "binary": "int64",
+        "double": "float64",
+        "float": "float64",
+        "half_float": "float64",
+        "scaled_float": "float64",
+        "date": "datetime64[ns]",
+        "date_nanos": "datetime64[ns]",
+        "boolean": "bool",
+    }
 
     # the labels for each column (display_name is index)
     column_labels = [
@@ -316,8 +375,8 @@ class FieldMappings:
         # return just source fields (as these are the only ones we display)
         return capability_matrix_df[capability_matrix_df.is_source].sort_index()
 
-    @staticmethod
-    def _es_dtype_to_pd_dtype(es_dtype):
+    @classmethod
+    def _es_dtype_to_pd_dtype(cls, es_dtype):
         """
         Mapping Elasticsearch types to pandas dtypes
         --------------------------------------------
@@ -332,28 +391,7 @@ class FieldMappings:
         boolean                                   | bool
         TODO - add additional mapping types
         """
-        es_dtype_to_pd_dtype = {
-            "text": "object",
-            "keyword": "object",
-            "long": "int64",
-            "integer": "int64",
-            "short": "int64",
-            "byte": "int64",
-            "binary": "int64",
-            "double": "float64",
-            "float": "float64",
-            "half_float": "float64",
-            "scaled_float": "float64",
-            "date": "datetime64[ns]",
-            "date_nanos": "datetime64[ns]",
-            "boolean": "bool",
-        }
-
-        if es_dtype in es_dtype_to_pd_dtype:
-            return es_dtype_to_pd_dtype[es_dtype]
-
-        # Return 'object' for all unsupported TODO - investigate how different types could be supported
-        return "object"
+        return cls.ES_DTYPE_TO_PD_DTYPE.get(es_dtype, "object")
 
     @staticmethod
     def _pd_dtype_to_es_dtype(pd_dtype):
@@ -590,6 +628,14 @@ class FieldMappings:
     def numeric_source_fields(self):
         pd_dtypes, es_field_names, es_date_formats = self.metric_source_fields()
         return es_field_names
+
+    def all_source_fields(self):
+        source_fields = []
+        for index, row in self._mappings_capabilities.iterrows():
+            row = row.to_dict()
+            row["index"] = index
+            source_fields.append(Field(**row))
+        return source_fields
 
     def metric_source_fields(self, include_bool=False, include_timestamp=False):
         """
