@@ -409,6 +409,36 @@ class NDFrame(ABC):
         """
         return self._query_compiler.nunique()
 
+    def mad(self, numeric_only=True):
+        """
+        Return standard deviation for each numeric column
+
+        Returns
+        -------
+        pandas.Series
+            The value of the standard deviation for each numeric column
+
+        See Also
+        --------
+        :pandas_api_docs:`pandas.DataFrame.std`
+
+        Examples
+        --------
+        >>> df = ed.DataFrame('localhost', 'flights')
+        >>> df.mad() # doctest: +SKIP
+        AvgTicketPrice         213.368709
+        Cancelled                0.000000
+        DistanceKilometers    2946.168236
+        DistanceMiles         1830.987236
+        FlightDelay              0.000000
+        FlightDelayMin           0.000000
+        FlightTimeHour           3.819435
+        FlightTimeMin          229.142297
+        dayOfWeek                2.000000
+        dtype: float64
+        """
+        return self._query_compiler.mad(numeric_only=numeric_only)
+
     def _hist(self, num_bins):
         return self._query_compiler._hist(num_bins)
 
