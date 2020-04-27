@@ -1222,7 +1222,7 @@ class Series(NDFrame):
         Examples
         --------
         >>> s = ed.DataFrame('localhost', 'flights')['AvgTicketPrice']
-        >>> s.var().astype(int)
+        >>> int(s.var())
         70964
         """
         results = super().var(numeric_only=numeric_only)
@@ -1244,7 +1244,7 @@ class Series(NDFrame):
         Examples
         --------
         >>> s = ed.DataFrame('localhost', 'flights')['AvgTicketPrice']
-        >>> s.std().astype(int)
+        >>> int(s.std())
         266
         """
         results = super().std(numeric_only=numeric_only)
@@ -1266,7 +1266,7 @@ class Series(NDFrame):
         Examples
         --------
         >>> s = ed.DataFrame('localhost', 'flights')['AvgTicketPrice']
-        >>> s.mad().astype(int)
+        >>> int(s.mad())
         213
         """
         results = super().mad(numeric_only=numeric_only)
