@@ -5,8 +5,9 @@
 import re
 import warnings
 from enum import Enum
-from typing import Union, List, Tuple, cast, Callable, Any
+from typing import Union, List, Tuple, cast, Callable, Any, Optional, Dict
 
+import numpy as np  # type: ignore
 import pandas as pd  # type: ignore
 from elasticsearch import Elasticsearch  # type: ignore
 
@@ -24,7 +25,9 @@ with warnings.catch_warnings():
     EMPTY_SERIES_DTYPE = pd.Series().dtype
 
 
-def build_pd_series(data: dict, dtype=None, **kwargs) -> pd.Series:
+def build_pd_series(
+    data: Dict[str, Any], dtype: Optional[np.dtype] = None, **kwargs: Any
+) -> pd.Series:
     """Builds a pd.Series while squelching the warning
     for unspecified dtype on empty series
     """
@@ -33,7 +36,7 @@ def build_pd_series(data: dict, dtype=None, **kwargs) -> pd.Series:
         kwargs["dtype"] = dtype
     return pd.Series(data, **kwargs)
 
-  
+
 def docstring_parameter(*sub: Any) -> Callable[[Any], Any]:
     def dec(obj: Any) -> Any:
         obj.__doc__ = obj.__doc__.format(*sub)

@@ -250,9 +250,11 @@ class Operations:
                             # sample_std=\sqrt{\frac{1}{N-1}\sum_{i=1}^N(x_i-\bar{x})^2}
                             # population_std=\sqrt{\frac{1}{N}\sum_{i=1}^N(x_i-\bar{x})^2}
                             # sample_std=\sqrt{\frac{N}{N-1}population_std}
+                            print(agg_value)
                             agg_value = np.sqrt(
                                 (count / (count - 1.0)) * agg_value * agg_value
                             )
+                            print(agg_value)
                 else:
                     agg_value = response["aggregations"][
                         f"{es_agg}_{field.es_field_name}"

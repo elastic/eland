@@ -1,3 +1,7 @@
+# Licensed to Elasticsearch B.V under one or more agreements.
+# Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+# See the LICENSE file in the project root for more information
+
 import numpy as np
 import warnings
 from eland.common import build_pd_series, EMPTY_SERIES_DTYPE
