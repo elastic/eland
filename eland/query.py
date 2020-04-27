@@ -107,12 +107,7 @@ class Query:
         self._aggs[name] = agg
 
     def hist_aggs(
-        self,
-        name: str,
-        field: str,
-        min_aggs: Dict[str, Any],
-        max_aggs: Dict[str, Any],
-        num_bins: int,
+        self, name: str, field: str, min_value: Any, max_value: Any, num_bins: int,
     ) -> None:
         """
         Add histogram agg e.g.
@@ -120,20 +115,18 @@ class Query:
             "name": {
                 "histogram": {
                     "field": "AvgTicketPrice"
-                    "interval": (max_aggs[field] - min_aggs[field])/bins
+                    "interval": (max_value - min_value)/bins
+                    "offset": min_value
                 }
             }
         }
         """
-        min = min_aggs[field]
-        max = max_aggs[field]
 
-        interval = (max - min) / num_bins
+        interval = (max_value - min_value) / num_bins
 
         if interval != 0:
-            offset = min
             agg = {
-                "histogram": {"field": field, "interval": interval, "offset": offset}
+                "histogram": {"field": field, "interval": interval, "offset": min_value}
             }
             self._aggs[name] = agg
 

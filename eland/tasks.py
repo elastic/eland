@@ -3,7 +3,7 @@
 # See the LICENSE file in the project root for more information
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, List, Dict, Any, Tuple
+from typing import TYPE_CHECKING, List, Any, Tuple
 
 from eland import SortOrder
 from eland.actions import HeadAction, TailAction, SortIndexAction
@@ -14,9 +14,9 @@ if TYPE_CHECKING:
     from .actions import PostProcessingAction  # noqa: F401
     from .filter import BooleanFilter  # noqa: F401
     from .query_compiler import QueryCompiler  # noqa: F401
+    from .operations import QueryParams  # noqa: F401
 
-QUERY_PARAMS_TYPE = Dict[str, Any]
-RESOLVED_TASK_TYPE = Tuple[QUERY_PARAMS_TYPE, List["PostProcessingAction"]]
+RESOLVED_TASK_TYPE = Tuple["QueryParams", List["PostProcessingAction"]]
 
 
 class Task(ABC):
@@ -39,7 +39,7 @@ class Task(ABC):
     @abstractmethod
     def resolve_task(
         self,
-        query_params: QUERY_PARAMS_TYPE,
+        query_params: "QueryParams",
         post_processing: List["PostProcessingAction"],
         query_compiler: "QueryCompiler",
     ) -> RESOLVED_TASK_TYPE:
@@ -70,7 +70,7 @@ class HeadTask(SizeTask):
 
     def resolve_task(
         self,
-        query_params: QUERY_PARAMS_TYPE,
+        query_params: "QueryParams",
         post_processing: List["PostProcessingAction"],
         query_compiler: "QueryCompiler",
     ) -> RESOLVED_TASK_TYPE:
@@ -87,20 +87,20 @@ class HeadTask(SizeTask):
             post_processing.append(HeadAction(self._count))
             return query_params, post_processing
 
-        if query_params["query_sort_field"] is None:
-            query_params["query_sort_field"] = query_sort_field
+        if query_params.sort_field is None:
+            query_params.sort_field = query_sort_field
         # if it is already sorted we use existing field
 
-        if query_params["query_sort_order"] is None:
-            query_params["query_sort_order"] = query_sort_order
+        if query_params.sort_order is None:
+            query_params.sort_order = query_sort_order
         # if it is already sorted we get head of existing order
 
-        if query_params["query_size"] is None:
-            query_params["query_size"] = query_size
+        if query_params.size is None:
+            query_params.size = query_size
         else:
             # truncate if head is smaller
-            if query_size < query_params["query_size"]:
-                query_params["query_size"] = query_size
+            if query_size < query_params.size:
+                query_params.size = query_size
 
         return query_params, post_processing
 
@@ -118,7 +118,7 @@ class TailTask(SizeTask):
 
     def resolve_task(
         self,
-        query_params: QUERY_PARAMS_TYPE,
+        query_params: "QueryParams",
         post_processing: List["PostProcessingAction"],
         query_compiler: "QueryCompiler",
     ) -> RESOLVED_TASK_TYPE:
@@ -130,15 +130,15 @@ class TailTask(SizeTask):
 
         # If this is a tail of a tail adjust settings and return
         if (
-            query_params["query_size"] is not None
-            and query_params["query_sort_order"] == query_sort_order
+            query_params.size is not None
+            and query_params.sort_order == query_sort_order
             and (
                 len(post_processing) == 1
                 and isinstance(post_processing[0], SortIndexAction)
             )
         ):
-            if query_size < query_params["query_size"]:
-                query_params["query_size"] = query_size
+            if query_size < query_params.size:
+                query_params.size = query_size
             return query_params, post_processing
 
         # If we are already postprocessing the query results, just get 'tail' of these
@@ -151,18 +151,18 @@ class TailTask(SizeTask):
         # If results are already constrained, just get 'tail' of these
         # (note, currently we just append another tail, we don't optimise by
         # overwriting previous tail)
-        if query_params["query_size"] is not None:
+        if query_params.size is not None:
             post_processing.append(TailAction(self._count))
             return query_params, post_processing
         else:
-            query_params["query_size"] = query_size
-        if query_params["query_sort_field"] is None:
-            query_params["query_sort_field"] = query_sort_field
-        if query_params["query_sort_order"] is None:
-            query_params["query_sort_order"] = query_sort_order
+            query_params.size = query_size
+        if query_params.sort_field is None:
+            query_params.sort_field = query_sort_field
+        if query_params.sort_order is None:
+            query_params.sort_order = query_sort_order
         else:
             # reverse sort order
-            query_params["query_sort_order"] = SortOrder.reverse(query_sort_order)
+            query_params.sort_order = SortOrder.reverse(query_sort_order)
 
         post_processing.append(SortIndexAction())
 
@@ -193,11 +193,11 @@ class QueryIdsTask(Task):
 
     def resolve_task(
         self,
-        query_params: QUERY_PARAMS_TYPE,
+        query_params: "QueryParams",
         post_processing: List["PostProcessingAction"],
         query_compiler: "QueryCompiler",
     ) -> RESOLVED_TASK_TYPE:
-        query_params["query"].ids(self._ids, must=self._must)
+        query_params.query.ids(self._ids, must=self._must)
         return query_params, post_processing
 
     def __repr__(self) -> str:
@@ -226,11 +226,11 @@ class QueryTermsTask(Task):
 
     def resolve_task(
         self,
-        query_params: QUERY_PARAMS_TYPE,
+        query_params: "QueryParams",
         post_processing: List["PostProcessingAction"],
         query_compiler: "QueryCompiler",
     ) -> RESOLVED_TASK_TYPE:
-        query_params["query"].terms(self._field, self._terms, must=self._must)
+        query_params.query.terms(self._field, self._terms, must=self._must)
         return query_params, post_processing
 
     def __repr__(self) -> str:
@@ -254,11 +254,11 @@ class BooleanFilterTask(Task):
 
     def resolve_task(
         self,
-        query_params: QUERY_PARAMS_TYPE,
+        query_params: "QueryParams",
         post_processing: List["PostProcessingAction"],
         query_compiler: "QueryCompiler",
     ) -> RESOLVED_TASK_TYPE:
-        query_params["query"].update_boolean_filter(self._boolean_filter)
+        query_params.query.update_boolean_filter(self._boolean_filter)
         return query_params, post_processing
 
     def __repr__(self) -> str:
@@ -281,7 +281,7 @@ class ArithmeticOpFieldsTask(Task):
 
     def resolve_task(
         self,
-        query_params: QUERY_PARAMS_TYPE,
+        query_params: "QueryParams",
         post_processing: List["PostProcessingAction"],
         query_compiler: "QueryCompiler",
     ) -> RESOLVED_TASK_TYPE:
@@ -295,20 +295,20 @@ class ArithmeticOpFieldsTask(Task):
             }
         }
         """
-        if query_params["query_script_fields"] is None:
-            query_params["query_script_fields"] = {}
+        if query_params.script_fields is None:
+            query_params.script_fields = {}
 
         # TODO: Remove this once 'query_params' becomes a dataclass.
-        assert isinstance(query_params["query_script_fields"], dict)
+        assert isinstance(query_params.script_fields, dict)
 
-        if self._display_name in query_params["query_script_fields"]:
+        if self._display_name in query_params.script_fields:
             raise NotImplementedError(
                 f"TODO code path - combine multiple ops "
-                f"'{self}'\n{query_params['query_script_fields']}\n"
+                f"'{self}'\n{query_params.script_fields}\n"
                 f"{self._display_name}\n{self._arithmetic_series.resolve()}"
             )
 
-        query_params["query_script_fields"][self._display_name] = {
+        query_params.script_fields[self._display_name] = {
             "script": {"source": self._arithmetic_series.resolve()}
         }
 
