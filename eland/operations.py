@@ -5,7 +5,7 @@
 import copy
 import typing
 import warnings
-from typing import Optional
+from typing import Optional, Tuple, List, Dict, Any
 
 import numpy as np
 import pandas as pd
@@ -33,6 +33,16 @@ from eland.tasks import (
 
 if typing.TYPE_CHECKING:
     from eland.query_compiler import QueryCompiler
+
+
+class QueryParams:
+    def __init__(self):
+        self.query = Query()
+        self.sort_field: Optional[str] = None
+        self.sort_order: Optional[SortOrder] = None
+        self.size: Optional[int] = None
+        self.fields: Optional[List[str]] = None
+        self.script_fields: Optional[Dict[str, Dict[str, Any]]] = None
 
 
 class Operations:
@@ -107,7 +117,7 @@ class Operations:
 
         counts = {}
         for field in fields:
-            body = Query(query_params["query"])
+            body = Query(query_params.query)
             body.exists(field, must=True)
 
             field_exists_count = query_compiler._client.count(
@@ -175,7 +185,7 @@ class Operations:
         if numeric_only:
             fields = [field for field in fields if (field.is_numeric or field.is_bool)]
 
-        body = Query(query_params["query"])
+        body = Query(query_params.query)
 
         # Convert pandas aggs to ES equivalent
         es_aggs = self._map_pd_aggs_to_es_aggs(pd_aggs)
@@ -301,7 +311,7 @@ class Operations:
         # Get just aggregatable field_names
         aggregatable_field_names = query_compiler._mappings.aggregatable_field_names()
 
-        body = Query(query_params["query"])
+        body = Query(query_params.query)
 
         for field in aggregatable_field_names.keys():
             body.terms_aggs(field, func, field, es_size=es_size)
@@ -338,7 +348,7 @@ class Operations:
 
         numeric_source_fields = query_compiler._mappings.numeric_source_fields()
 
-        body = Query(query_params["query"])
+        body = Query(query_params.query)
 
         results = self._metric_aggs(query_compiler, ["min", "max"], numeric_only=True)
         min_aggs = {}
@@ -348,7 +358,7 @@ class Operations:
             max_aggs[field] = max_agg
 
         for field in numeric_source_fields:
-            body.hist_aggs(field, field, min_aggs, max_aggs, num_bins)
+            body.hist_aggs(field, field, min_aggs[field], max_aggs[field], num_bins)
 
         response = query_compiler._client.search(
             index=query_compiler._index_pattern, size=0, body=body.to_search_body()
@@ -525,7 +535,7 @@ class Operations:
 
         # for each field we compute:
         # count, mean, std, min, 25%, 50%, 75%, max
-        body = Query(query_params["query"])
+        body = Query(query_params.query)
 
         for field in numeric_source_fields:
             body.metric_aggs("extended_stats_" + field, "extended_stats", field)
@@ -639,8 +649,8 @@ class Operations:
 
         size, sort_params = Operations._query_params_to_size_and_sort(query_params)
 
-        script_fields = query_params["query_script_fields"]
-        query = Query(query_params["query"])
+        script_fields = query_params.script_fields
+        query = Query(query_params.query)
 
         body = query.to_search_body()
         if script_fields is not None:
@@ -722,7 +732,7 @@ class Operations:
             # TODO - this is not necessarily valid as the field may not exist in ALL these docs
             return size
 
-        body = Query(query_params["query"])
+        body = Query(query_params.query)
         body.exists(field, must=True)
 
         return query_compiler._client.count(
@@ -751,7 +761,7 @@ class Operations:
             query_compiler, items
         )
 
-        body = Query(query_params["query"])
+        body = Query(query_params.query)
 
         if field == Index.ID_INDEX_FIELD:
             body.ids(items, must=True)
@@ -780,17 +790,16 @@ class Operations:
         self._tasks.append(task)
 
     @staticmethod
-    def _query_params_to_size_and_sort(query_params):
+    def _query_params_to_size_and_sort(
+        query_params: QueryParams,
+    ) -> Tuple[Optional[int], Optional[str]]:
         sort_params = None
-        if query_params["query_sort_field"] and query_params["query_sort_order"]:
+        if query_params.sort_field and query_params.sort_order:
             sort_params = (
-                query_params["query_sort_field"]
-                + ":"
-                + SortOrder.to_string(query_params["query_sort_order"])
+                f"{query_params.sort_field}:"
+                f"{SortOrder.to_string(query_params.sort_order)}"
             )
-
-        size = query_params["query_size"]
-
+        size = query_params.size
         return size, sort_params
 
     @staticmethod
@@ -800,7 +809,6 @@ class Operations:
             if isinstance(action, SizeTask):
                 if size is None or action.size() < size:
                     size = action.size()
-
         return size
 
     @staticmethod
@@ -815,15 +823,7 @@ class Operations:
         # Some operations can be simply combined into a single query
         # other operations require pre-queries and then combinations
         # other operations require in-core post-processing of results
-        query_params = {
-            "query_sort_field": None,
-            "query_sort_order": None,
-            "query_size": None,
-            "query_fields": None,
-            "query_script_fields": None,
-            "query": Query(),
-        }
-
+        query_params = QueryParams()
         post_processing = []
 
         for task in self._tasks:
@@ -843,7 +843,7 @@ class Operations:
 
     def _size(self, query_params, post_processing):
         # Shrink wrap code around checking if size parameter is set
-        size = query_params["query_size"]  # can be None
+        size = query_params.size
 
         pp_size = self._count_post_processing(post_processing)
         if pp_size is not None:
@@ -863,8 +863,8 @@ class Operations:
         size, sort_params = Operations._query_params_to_size_and_sort(query_params)
         _source = query_compiler._mappings.get_field_names()
 
-        script_fields = query_params["query_script_fields"]
-        query = Query(query_params["query"])
+        script_fields = query_params.script_fields
+        query = Query(query_params.query)
         body = query.to_search_body()
         if script_fields is not None:
             body["script_fields"] = script_fields
