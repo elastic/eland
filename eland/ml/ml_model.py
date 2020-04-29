@@ -34,7 +34,7 @@ class MLModel:
         self._client = ensure_es_client(es_client)
         self._model_id = model_id
 
-    def delete_model(self):
+    def delete_model(self) -> None:
         """
         Delete an inference model saved in Elasticsearch
 

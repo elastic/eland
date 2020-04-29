@@ -2,7 +2,7 @@
 # Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 # See the LICENSE file in the project root for more information
 
-from typing import List, Union
+from typing import List, Union, Optional
 
 import numpy as np
 
@@ -23,8 +23,8 @@ class ModelTransformer:
         self,
         model,
         feature_names: List[str],
-        classification_labels: List[str] = None,
-        classification_weights: List[float] = None,
+        classification_labels: Optional[List[str]] = None,
+        classification_weights: Optional[List[float]] = None,
     ):
         self._feature_names = feature_names
         self._model = model
@@ -56,8 +56,8 @@ class SKLearnTransformer(ModelTransformer):
         self,
         model,
         feature_names: List[str],
-        classification_labels: List[str] = None,
-        classification_weights: List[float] = None,
+        classification_labels: Optional[List[str]] = None,
+        classification_weights: Optional[List[float]] = None,
     ):
         """
         Base class for SKLearn transformations
@@ -120,7 +120,7 @@ class SKLearnDecisionTreeTransformer(SKLearnTransformer):
         self,
         model: Union[DecisionTreeRegressor, DecisionTreeClassifier],
         feature_names: List[str],
-        classification_labels: List[str] = None,
+        classification_labels: Optional[List[str]] = None,
     ):
         """
         Transforms a Decision Tree model (Regressor|Classifier) into a ES Supported Tree format
@@ -148,7 +148,7 @@ class SKLearnDecisionTreeTransformer(SKLearnTransformer):
             check_is_fitted(self._model, ["classes_"])
             if tree_classes is None:
                 tree_classes = [str(c) for c in self._model.classes_]
-        nodes = list()
+        nodes = []
         tree_state = self._model.tree_.__getstate__()
         for i in range(len(tree_state["nodes"])):
             nodes.append(
@@ -169,8 +169,8 @@ class SKLearnForestTransformer(SKLearnTransformer):
         self,
         model: Union[RandomForestClassifier, RandomForestRegressor],
         feature_names: List[str],
-        classification_labels: List[str] = None,
-        classification_weights: List[float] = None,
+        classification_labels: Optional[List[str]] = None,
+        classification_weights: Optional[List[float]] = None,
     ):
         super().__init__(
             model, feature_names, classification_labels, classification_weights
@@ -235,7 +235,7 @@ class SKLearnForestClassifierTransformer(SKLearnForestTransformer):
         self,
         model: RandomForestClassifier,
         feature_names: List[str],
-        classification_labels: List[str] = None,
+        classification_labels: Optional[List[str]] = None,
     ):
         super().__init__(model, feature_names, classification_labels)
 
@@ -259,8 +259,8 @@ class XGBoostForestTransformer(ModelTransformer):
         feature_names: List[str],
         base_score: float = 0.5,
         objective: str = "reg:squarederror",
-        classification_labels: List[str] = None,
-        classification_weights: List[float] = None,
+        classification_labels: Optional[List[str]] = None,
+        classification_weights: Optional[List[float]] = None,
     ):
         super().__init__(
             model, feature_names, classification_labels, classification_weights
@@ -330,25 +330,24 @@ class XGBoostForestTransformer(ModelTransformer):
 
         :return: A list of Tree objects
         """
-        if self._model.booster not in {"dart", "gbtree"}:
-            raise ValueError("booster must exist and be of type dart or gbtree")
+        self.check_model_booster()
 
         tree_table = self._model.trees_to_dataframe()
-        transformed_trees = list()
+        transformed_trees = []
         curr_tree = None
-        tree_nodes = list()
+        tree_nodes = []
         for _, row in tree_table.iterrows():
             if row["Tree"] != curr_tree:
                 if len(tree_nodes) > 0:
                     transformed_trees.append(self.build_tree(tree_nodes))
                 curr_tree = row["Tree"]
-                tree_nodes = list()
+                tree_nodes = []
             tree_nodes.append(self.build_tree_node(row, curr_tree))
             # add last tree
         if len(tree_nodes) > 0:
             transformed_trees.append(self.build_tree(tree_nodes))
         # We add this stump as XGBoost adds the base_score to the regression outputs
-        if self._objective.startswith("reg"):
+        if self._objective.partition(":")[0] == "reg":
             transformed_trees.append(self.build_base_score_stump())
         return transformed_trees
 
@@ -361,9 +360,16 @@ class XGBoostForestTransformer(ModelTransformer):
     def is_objective_supported(self) -> bool:
         return False
 
+    def check_model_booster(self):
+        # xgboost v1 made booster default to 'None' meaning 'gbtree'
+        if self._model.booster not in {"dart", "gbtree", None}:
+            raise ValueError(
+                f"booster must exist and be of type 'dart' or "
+                f"'gbtree', was {self._model.booster!r}"
+            )
+
     def transform(self) -> Ensemble:
-        if self._model.booster not in {"dart", "gbtree"}:
-            raise ValueError("booster must exist and be of type dart or gbtree")
+        self.check_model_booster()
 
         if not self.is_objective_supported():
             raise ValueError(f"Unsupported objective '{self._objective}'")
@@ -381,8 +387,12 @@ class XGBoostForestTransformer(ModelTransformer):
 
 class XGBoostRegressorTransformer(XGBoostForestTransformer):
     def __init__(self, model: XGBRegressor, feature_names: List[str]):
+        # XGBRegressor.base_score defaults to 0.5.
+        base_score = model.base_score
+        if base_score is None:
+            base_score = 0.5
         super().__init__(
-            model.get_booster(), feature_names, model.base_score, model.objective
+            model.get_booster(), feature_names, base_score, model.objective
         )
 
     def determine_target_type(self) -> str:
@@ -405,7 +415,7 @@ class XGBoostClassifierTransformer(XGBoostForestTransformer):
         self,
         model: XGBClassifier,
         feature_names: List[str],
-        classification_labels: List[str] = None,
+        classification_labels: Optional[List[str]] = None,
     ):
         super().__init__(
             model.get_booster(),

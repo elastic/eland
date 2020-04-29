@@ -6,41 +6,41 @@ import base64
 import gzip
 import json
 from abc import ABC
-from typing import List
+from typing import List, Dict, Any, Optional
 
 
-def add_if_exists(d: dict, k: str, v) -> dict:
+def add_if_exists(d: Dict[str, Any], k: str, v: Any) -> None:
     if v is not None:
         d[k] = v
-    return d
 
 
 class ModelSerializer(ABC):
     def __init__(
         self,
         feature_names: List[str],
-        target_type: str = None,
-        classification_labels: List[str] = None,
+        target_type: Optional[str] = None,
+        classification_labels: Optional[List[str]] = None,
     ):
         self._target_type = target_type
         self._feature_names = feature_names
         self._classification_labels = classification_labels
 
-    def to_dict(self):
-        d = dict()
+    def to_dict(self) -> Dict[str, Any]:
+        d: Dict[str, Any] = {}
         add_if_exists(d, "target_type", self._target_type)
         add_if_exists(d, "feature_names", self._feature_names)
         add_if_exists(d, "classification_labels", self._classification_labels)
         return d
 
     @property
-    def feature_names(self):
+    def feature_names(self) -> List[str]:
         return self._feature_names
 
+    def serialize_model(self) -> Dict[str, Any]:
+        return {"trained_model": self.to_dict()}
+
     def serialize_and_compress_model(self) -> str:
-        json_string = json.dumps(
-            {"trained_model": self.to_dict()}, separators=(",", ":")
-        )
+        json_string = json.dumps(self.serialize_model(), separators=(",", ":"))
         return base64.b64encode(gzip.compress(json_string.encode("utf-8"))).decode(
             "ascii"
         )
@@ -50,13 +50,13 @@ class TreeNode:
     def __init__(
         self,
         node_idx: int,
-        default_left: bool = None,
-        decision_type: str = None,
-        left_child: int = None,
-        right_child: int = None,
-        split_feature: int = None,
-        threshold: float = None,
-        leaf_value: float = None,
+        default_left: Optional[bool] = None,
+        decision_type: Optional[str] = None,
+        left_child: Optional[int] = None,
+        right_child: Optional[int] = None,
+        split_feature: Optional[int] = None,
+        threshold: Optional[float] = None,
+        leaf_value: Optional[float] = None,
     ):
         self._node_idx = node_idx
         self._decision_type = decision_type
@@ -67,8 +67,8 @@ class TreeNode:
         self._leaf_value = leaf_value
         self._default_left = default_left
 
-    def to_dict(self):
-        d = dict()
+    def to_dict(self) -> Dict[str, Any]:
+        d: Dict[str, Any] = {}
         add_if_exists(d, "node_index", self._node_idx)
         add_if_exists(d, "decision_type", self._decision_type)
         if self._leaf_value is None:
@@ -85,9 +85,9 @@ class Tree(ModelSerializer):
     def __init__(
         self,
         feature_names: List[str],
-        target_type: str = None,
-        tree_structure: List[TreeNode] = [],
-        classification_labels: List[str] = None,
+        target_type: Optional[str] = None,
+        tree_structure: Optional[List[TreeNode]] = None,
+        classification_labels: Optional[List[str]] = None,
     ):
         super().__init__(
             feature_names=feature_names,
@@ -96,9 +96,9 @@ class Tree(ModelSerializer):
         )
         if target_type == "regression" and classification_labels:
             raise ValueError("regression does not support classification_labels")
-        self._tree_structure = tree_structure
+        self._tree_structure = tree_structure or []
 
-    def to_dict(self):
+    def to_dict(self) -> Dict[str, Any]:
         d = super().to_dict()
         add_if_exists(d, "tree_structure", [t.to_dict() for t in self._tree_structure])
         return {"tree": d}
@@ -109,10 +109,10 @@ class Ensemble(ModelSerializer):
         self,
         feature_names: List[str],
         trained_models: List[ModelSerializer],
-        output_aggregator: dict,
-        target_type: str = None,
-        classification_labels: List[str] = None,
-        classification_weights: List[float] = None,
+        output_aggregator: Dict[str, Any],
+        target_type: Optional[str] = None,
+        classification_labels: Optional[List[str]] = None,
+        classification_weights: Optional[List[float]] = None,
     ):
         super().__init__(
             feature_names=feature_names,
@@ -123,7 +123,7 @@ class Ensemble(ModelSerializer):
         self._classification_weights = classification_weights
         self._output_aggregator = output_aggregator
 
-    def to_dict(self):
+    def to_dict(self) -> Dict[str, Any]:
         d = super().to_dict()
         trained_models = None
         if self._trained_models:

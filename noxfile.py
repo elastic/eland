@@ -29,6 +29,8 @@ TYPED_FILES = {
     "eland/index.py",
     "eland/query.py",
     "eland/tasks.py",
+    "eland/ml/_model_serializer.py",
+    "eland/ml/imported_ml_model.py",
 }
 
 
@@ -50,6 +52,8 @@ def lint(session):
     # TODO: When all files are typed we can change this to .run("mypy", "--strict", "eland/")
     session.log("mypy --strict eland/")
     for typed_file in TYPED_FILES:
+        if not os.path.isfile(typed_file):
+            session.error(f"The file {typed_file!r} couldn't be found")
         popen = subprocess.Popen(
             f"mypy --strict {typed_file}",
             shell=True,

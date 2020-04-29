@@ -177,4 +177,8 @@ setup(
     packages=find_packages(include=["eland", "eland.*"]),
     install_requires=["elasticsearch==7.7.0a2", "pandas>=1", "matplotlib", "numpy"],
     python_requires=">=3.6",
+    extras_require={
+        "xgboost": ["xgboost>=0.90,<2"],
+        "scikit-learn": ["scikit-learn>=0.22.1,<1"],
+    },
 )
