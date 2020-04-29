@@ -2,9 +2,9 @@
 # Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 # See the LICENSE file in the project root for more information
 
-from typing import Union, List
+from typing import Union, List, Optional, Tuple, TYPE_CHECKING, cast
 
-import numpy as np
+import numpy as np  # type: ignore
 
 from eland.common import es_version
 from eland.ml._model_transformers import (
@@ -14,15 +14,20 @@ from eland.ml._model_transformers import (
     XGBoostRegressorTransformer,
     XGBoostClassifierTransformer,
 )
+from eland.ml._model_serializer import ModelSerializer
 from eland.ml._optional import import_optional_dependency
 from eland.ml.ml_model import MLModel
 
 sklearn = import_optional_dependency("sklearn")
 xgboost = import_optional_dependency("xgboost")
 
-from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
-from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
-from xgboost import XGBRegressor, XGBClassifier
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor  # type: ignore
+from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor  # type: ignore
+from xgboost import XGBRegressor, XGBClassifier  # type: ignore
+
+
+if TYPE_CHECKING:
+    from elasticsearch import Elasticsearch  # type: ignore # noqa: F401
 
 
 class ImportedMLModel(MLModel):
@@ -91,7 +96,7 @@ class ImportedMLModel(MLModel):
 
     def __init__(
         self,
-        es_client,
+        es_client: Union[str, List[str], Tuple[str, ...], "Elasticsearch"],
         model_id: str,
         model: Union[
             DecisionTreeClassifier,
@@ -102,15 +107,16 @@ class ImportedMLModel(MLModel):
             XGBRegressor,
         ],
         feature_names: List[str],
-        classification_labels: List[str] = None,
-        classification_weights: List[float] = None,
-        overwrite=False,
+        classification_labels: Optional[List[str]] = None,
+        classification_weights: Optional[List[float]] = None,
+        overwrite: bool = False,
     ):
         super().__init__(es_client, model_id)
 
         self._feature_names = feature_names
         self._model_type = None
 
+        serializer: ModelSerializer  # type def
         # Transform model
         if isinstance(model, DecisionTreeRegressor):
             serializer = SKLearnDecisionTreeTransformer(
@@ -161,7 +167,7 @@ class ImportedMLModel(MLModel):
             model_id=self._model_id, body=body,
         )
 
-    def predict(self, X):
+    def predict(self, X: Union[List[float], List[List[float]]]) -> np.ndarray:
         """
         Make a prediction using a trained model stored in Elasticsearch.
 
@@ -190,7 +196,7 @@ class ImportedMLModel(MLModel):
 
         >>> # Get some test results
         >>> regressor.predict(np.array(test_data))
-        array([0.23733574, 1.1897984 ], dtype=float32)
+        array([0.06062475, 0.9990102 ], dtype=float32)
 
         >>> # Serialise the model to Elasticsearch
         >>> feature_names = ["f0", "f1", "f2", "f3", "f4", "f5"]
@@ -199,7 +205,7 @@ class ImportedMLModel(MLModel):
 
         >>> # Get some test results from Elasticsearch model
         >>> es_model.predict(test_data)
-        array([0.2373357, 1.1897984], dtype=float32)
+        array([0.0606248 , 0.99901026], dtype=float32)
 
         >>> # Delete model from Elasticsearch
         >>> es_model.delete_model()
@@ -207,19 +213,21 @@ class ImportedMLModel(MLModel):
         """
         docs = []
         if isinstance(X, list):
-            # Is it a list of lists?
-            if all(isinstance(i, list) for i in X):
-                for i in X:
-                    doc = dict()
-                    doc["_source"] = dict(zip(self._feature_names, i))
-                    docs.append(doc)
-
-            else:  # single feature vector1
-                doc = dict()
-                doc["_source"] = dict(zip(self._feature_names, i))
+            # Is it a list of floats?
+            if all(isinstance(i, float) for i in X):
+                features = cast(List[List[float]], [X])
+            else:
+                features = cast(List[List[float]], X)
+            for i in features:
+                doc = {"_source": dict(zip(self._feature_names, i))}
                 docs.append(doc)
         else:
             raise NotImplementedError(f"Prediction for type {type(X)}, not supported")
+
+        # field_mappings -> field_map in ES 7.7
+        field_map_name = (
+            "field_map" if es_version(self._client) >= (7, 7) else "field_mappings"
+        )
 
         results = self._client.ingest.simulate(
             body={
@@ -229,7 +237,7 @@ class ImportedMLModel(MLModel):
                             "inference": {
                                 "model_id": self._model_id,
                                 "inference_config": {self._model_type: {}},
-                                "field_mappings": {},
+                                field_map_name: {},
                             }
                         }
                     ]

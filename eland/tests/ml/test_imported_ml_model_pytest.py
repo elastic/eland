@@ -112,7 +112,7 @@ class TestImportedMLModel:
     def test_xgb_classifier(self):
         # Train model
         training_data = datasets.make_classification(n_features=5)
-        classifier = XGBClassifier()
+        classifier = XGBClassifier(booster="gbtree")
         classifier.fit(training_data[0], training_data[1])
 
         # Get some test results
@@ -150,7 +150,34 @@ class TestImportedMLModel:
         es_model = ImportedMLModel(
             ES_TEST_CLIENT, model_id, regressor, feature_names, overwrite=True
         )
+
         es_results = es_model.predict(test_data)
+
+        np.testing.assert_almost_equal(test_results, es_results, decimal=2)
+
+        # Clean up
+        es_model.delete_model()
+
+    def test_predict_single_feature_vector(self):
+        # Train model
+        training_data = datasets.make_regression(n_features=1)
+        regressor = XGBRegressor()
+        regressor.fit(training_data[0], training_data[1])
+
+        # Get some test results
+        test_data = [[0.1]]
+        test_results = regressor.predict(np.asarray(test_data))
+
+        # Serialise the models to Elasticsearch
+        feature_names = ["f0"]
+        model_id = "test_xgb_regressor"
+
+        es_model = ImportedMLModel(
+            ES_TEST_CLIENT, model_id, regressor, feature_names, overwrite=True
+        )
+
+        # Single feature
+        es_results = es_model.predict(test_data[0])
 
         np.testing.assert_almost_equal(test_results, es_results, decimal=2)
 
