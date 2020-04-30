@@ -12,17 +12,14 @@ class BooleanFilter:
         self._filter: Dict[str, Any] = {}
 
     def __and__(self, x: "BooleanFilter") -> "BooleanFilter":
-        # Combine results
-        if isinstance(self, AndFilter):
-            if "must_not" in x.subtree:
-                # nest a must_not under a must
-                self.subtree["must"].append(x.build())  # 'build includes bool'
+        if tuple(self.subtree.keys()) == ("must",):
+            if "bool" in self._filter:
+                self.subtree["must"].append(x.build())
             else:
-                # append a must to a must
-                self.subtree["must"].append(x.subtree)  # 'subtree strips bool'
+                self.subtree["must"].append(x.subtree)
             return self
-        elif isinstance(x, AndFilter):
-            if "must_not" in self.subtree:
+        elif tuple(x.subtree.keys()) == ("must",):
+            if "bool" in x._filter:
                 x.subtree["must"].append(self.build())
             else:
                 x.subtree["must"].append(self.subtree)
@@ -30,15 +27,14 @@ class BooleanFilter:
         return AndFilter(self, x)
 
     def __or__(self, x: "BooleanFilter") -> "BooleanFilter":
-        # Combine results
-        if isinstance(self, OrFilter):
-            if "must_not" in x.subtree:
+        if tuple(self.subtree.keys()) == ("should",):
+            if "bool" in x._filter:
                 self.subtree["should"].append(x.build())
             else:
                 self.subtree["should"].append(x.subtree)
             return self
-        elif isinstance(x, OrFilter):
-            if "must_not" in self.subtree:
+        elif tuple(x.subtree.keys()) == ("should",):
+            if "bool" in self._filter:
                 x.subtree["should"].append(self.build())
             else:
                 x.subtree["should"].append(self.subtree)
@@ -52,7 +48,7 @@ class BooleanFilter:
         return not bool(self._filter)
 
     def __repr__(self) -> str:
-        return str(self._filter)
+        return str(self.build())
 
     @property
     def subtree(self) -> Dict[str, Any]:
