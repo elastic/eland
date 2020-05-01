@@ -175,22 +175,32 @@ class TailTask(SizeTask):
 
 
 class SampleTask(SizeTask):
-    def __init__(self, count):
+    def __init__(self, sort_field: str, count: int, random_state: int):
         super().__init__("sample")
         self._count = count
+        self._random_state = random_state
+        self._sort_field = sort_field
 
     def resolve_task(
         self,
-        query_params: QUERY_PARAMS_TYPE,
+        query_params: "QueryParams",
         post_processing: List["PostProcessingAction"],
         query_compiler: "QueryCompiler",
     ) -> RESOLVED_TASK_TYPE:
-        query_params["query"].random_score()
+        query_params.query.random_score(self._random_state)
 
-        if query_params.get("query_size") is not None:
-            query_params["query_size"] = min(self._count, query_params["query_size"])
+        query_sort_field = self._sort_field
+        query_size = self._count
+
+        if query_params.size is not None:
+            query_params.size = min(query_size, query_params.size)
         else:
-            query_params["query_size"] = self._count
+            query_params.size = query_size
+
+        if query_params.sort_field is None:
+            query_params.sort_field = query_sort_field
+
+        post_processing.append(SortIndexAction())
 
         return query_params, post_processing
 

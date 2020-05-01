@@ -21,8 +21,8 @@ Attributes and underlying data
 
    Series.index
    Series.shape
-   Series.name   
-   Series.empty   
+   Series.name
+   Series.empty
 
 Indexing, iteration
 ~~~~~~~~~~~~~~~~~~~
@@ -31,6 +31,7 @@ Indexing, iteration
 
    Series.head
    Series.tail
+   Series.sample
 
 Binary operator functions
 ~~~~~~~~~~~~~~~~~~~~~~~~~

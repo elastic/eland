@@ -393,7 +393,7 @@ class QueryCompiler:
 
         return result
 
-    def sample(self, n=None, frac=None):
+    def sample(self, n=None, frac=None, random_state=None):
         result = self.copy()
 
         if n is None and frac is None:
@@ -407,7 +407,7 @@ class QueryCompiler:
                 "A negative number of rows requested. Please provide positive value."
             )
 
-        result._operations.sample(n)
+        result._operations.sample(self._index, n, random_state)
 
         return result
 

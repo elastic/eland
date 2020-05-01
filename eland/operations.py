@@ -85,8 +85,8 @@ class Operations:
         task = TailTask(index.sort_field, n)
         self._tasks.append(task)
 
-    def sample(self, n):
-        task = SampleTask(n)
+    def sample(self, index, n, random_state):
+        task = SampleTask(index.sort_field, n, random_state)
         self._tasks.append(task)
 
     def arithmetic_op_fields(self, display_name, arithmetic_series):
