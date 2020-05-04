@@ -6,6 +6,7 @@
 
 from eland.tests.common import TestData
 from eland.tests.common import assert_pandas_eland_frame_equal
+from eland.utils import eland_to_pandas
 
 
 class TestDataFrameHeadTail(TestData):
@@ -95,3 +96,9 @@ class TestDataFrameHeadTail(TestData):
         df = df[["timestamp", "OriginAirportID", "DestAirportID", "FlightDelayMin"]]
         df = df.tail()
         print(df)
+
+    def test_doc_test_tail_empty(self):
+        df = self.ed_flights()
+        df = df[df.OriginAirportID == "NADA"]
+        df = df.tail()
+        assert df.shape[0] == 0

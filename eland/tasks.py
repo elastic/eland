@@ -57,12 +57,12 @@ class SizeTask(Task):
 
 
 class HeadTask(SizeTask):
-    def __init__(self, sort_field: str, count: int):
+    def __init__(self, index, count: int):
         super().__init__("head")
 
         # Add a task that is an ascending sort with size=count
-        self._sort_field = sort_field
-        self._count = count
+        self._sort_field = index.sort_field
+        self._count = min(len(index), count)
 
     def __repr__(self) -> str:
         return f"('{self._task_type}': ('sort_field': '{self._sort_field}', 'count': {self._count}))"
@@ -108,12 +108,12 @@ class HeadTask(SizeTask):
 
 
 class TailTask(SizeTask):
-    def __init__(self, sort_field: str, count: int):
+    def __init__(self, index, count: int):
         super().__init__("tail")
 
         # Add a task that is descending sort with size=count
-        self._sort_field = sort_field
-        self._count = count
+        self._sort_field = index.sort_field
+        self._count = min(len(index), count)
 
     def resolve_task(
         self,
@@ -175,11 +175,11 @@ class TailTask(SizeTask):
 
 
 class SampleTask(SizeTask):
-    def __init__(self, sort_field: str, count: int, random_state: int):
+    def __init__(self, index, count: int, random_state: int):
         super().__init__("sample")
-        self._count = count
+        self._count = min(len(index), count)
         self._random_state = random_state
-        self._sort_field = sort_field
+        self._sort_field = index.sort_field
 
     def resolve_task(
         self,

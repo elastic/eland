@@ -77,16 +77,16 @@ class Operations:
 
     def head(self, index, n):
         # Add a task that is an ascending sort with size=n
-        task = HeadTask(index.sort_field, n)
+        task = HeadTask(index, n)
         self._tasks.append(task)
 
     def tail(self, index, n):
         # Add a task that is descending sort with size=n
-        task = TailTask(index.sort_field, n)
+        task = TailTask(index, n)
         self._tasks.append(task)
 
     def sample(self, index, n, random_state):
-        task = SampleTask(index.sort_field, n, random_state)
+        task = SampleTask(index, n, random_state)
         self._tasks.append(task)
 
     def arithmetic_op_fields(self, display_name, arithmetic_series):
