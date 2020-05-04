@@ -490,5 +490,5 @@ class NDFrame(ABC):
         pass
 
     @abstractmethod
-    def sample(self, n=None, frac=None):
+    def sample(self, n=None, frac=None, random_state=None):
         pass

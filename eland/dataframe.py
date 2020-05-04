@@ -256,7 +256,9 @@ class DataFrame(NDFrame):
         """
         return DataFrame(query_compiler=self._query_compiler.tail(n))
 
-    def sample(self, n=None, frac=None, random_state=None) -> "DataFrame":
+    def sample(
+        self, n: int = None, frac: float = None, random_state: int = None
+    ) -> "DataFrame":
         """
         Return n randomly sample rows or the specify fraction of rows
 

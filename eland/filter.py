@@ -156,10 +156,10 @@ class NotNull(BooleanFilter):
 
 class ScriptFilter(BooleanFilter):
     def __init__(
-            self,
-            inline: str,
-            lang: Optional[str] = None,
-            params: Optional[Dict[str, Any]] = None,
+        self,
+        inline: str,
+        lang: Optional[str] = None,
+        params: Optional[Dict[str, Any]] = None,
     ) -> None:
         super().__init__()
         script: Dict[str, Union[str, Dict[str, Any]]] = {"source": inline}
@@ -181,21 +181,12 @@ class MatchAllFilter(QueryFilter):
         super().__init__({"match_all": {}})
 
 
-class RandomScoreFilter:
-    def __init__(self, query, random_state):
-
+class RandomScoreFilter(QueryFilter):
+    def __init__(self, query: QueryFilter, random_state: int) -> None:
         q = MatchAllFilter() if query.empty() else query
 
         seed = {}
         if random_state is not None:
             seed = {"seed": random_state, "field": "_seq_no"}
 
-        self._score = {"function_score": {"query": q.build(), "random_score": seed}}
-
-    def empty(self):
-        if self._score is None:
-            return True
-        return False
-
-    def build(self):
-        return self._score
+        super().__init__({"function_score": {"query": q.build(), "random_score": seed}})
