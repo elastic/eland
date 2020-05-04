@@ -56,6 +56,7 @@ class TestOperators:
 
     def test_and_filter2(self):
         exp = GreaterEqual("a", 2) & Less("b", 3) & Equal("c", 4)
+        print(exp.build())
         assert exp.build() == {
             "bool": {
                 "must": [
@@ -228,3 +229,22 @@ class TestOperators:
             }
         }
         assert a == b
+
+    def test_complex_filter(self):
+        exp = (
+            Greater("a", 10)
+            & ~Greater("a", 250)
+            & (Equal("b", "X") | (Equal("b", "Y")))
+            & (Equal("b", "Z"))
+        )
+
+        assert exp.build() == {
+            "bool": {
+                "must": [
+                    {"range": {"a": {"gt": 10}}},
+                    {"bool": {"must_not": {"range": {"a": {"gt": 250}}}}},
+                    {"bool": {"should": [{"term": {"b": "X"}}, {"term": {"b": "Y"}}]}},
+                    {"term": {"b": "Z"}},
+                ]
+            }
+        }
