@@ -225,6 +225,9 @@ class Series(NDFrame):
     def tail(self, n=5):
         return Series(query_compiler=self._query_compiler.tail(n))
 
+    def sample(self, n: int = None, frac: float = None, random_state: int = None):
+        return Series(query_compiler=self._query_compiler.sample(n, frac, random_state))
+
     def value_counts(self, es_size=10):
         """
         Return the value counts for the specified field.

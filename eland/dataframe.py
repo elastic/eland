@@ -256,6 +256,45 @@ class DataFrame(NDFrame):
         """
         return DataFrame(query_compiler=self._query_compiler.tail(n))
 
+    def sample(
+        self, n: int = None, frac: float = None, random_state: int = None
+    ) -> "DataFrame":
+        """
+        Return n randomly sample rows or the specify fraction of rows
+
+        Parameters
+        ----------
+        n : int, optional
+            Number of documents from index to return. Cannot be used with `frac`.
+            Default = 1 if `frac` = None.
+        frac : float, optional
+            Fraction of axis items to return. Cannot be used with `n`.
+        random_state : int, optional
+            Seed for the random number generator.
+
+        Returns
+        -------
+        eland.DataFrame:
+            eland DataFrame filtered containing n rows randomly sampled
+
+        See Also
+        --------
+        :pandas_api_docs:`pandas.DataFrame.sample`
+        """
+
+        if frac is not None and not (0.0 < frac <= 1.0):
+            raise ValueError("`frac` must be between 0. and 1.")
+        elif n is not None and frac is None and n % 1 != 0:
+            raise ValueError("Only integers accepted as `n` values")
+        elif (n is not None) == (frac is not None):
+            raise ValueError("Please enter a value for `frac` OR `n`, not both")
+
+        return DataFrame(
+            query_compiler=self._query_compiler.sample(
+                n=n, frac=frac, random_state=random_state
+            )
+        )
+
     def drop(
         self,
         labels=None,

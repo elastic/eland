@@ -170,3 +170,19 @@ class QueryFilter(BooleanFilter):
     def __init__(self, query: Dict[str, Any]) -> None:
         super().__init__()
         self._filter = query
+
+
+class MatchAllFilter(QueryFilter):
+    def __init__(self) -> None:
+        super().__init__({"match_all": {}})
+
+
+class RandomScoreFilter(QueryFilter):
+    def __init__(self, query: QueryFilter, random_state: int) -> None:
+        q = MatchAllFilter() if query.empty() else query
+
+        seed = {}
+        if random_state is not None:
+            seed = {"seed": random_state, "field": "_seq_no"}
+
+        super().__init__({"function_score": {"query": q.build(), "random_score": seed}})

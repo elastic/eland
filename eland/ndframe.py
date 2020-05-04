@@ -488,3 +488,7 @@ class NDFrame(ABC):
     @abstractmethod
     def tail(self, n=5):
         pass
+
+    @abstractmethod
+    def sample(self, n=None, frac=None, random_state=None):
+        pass

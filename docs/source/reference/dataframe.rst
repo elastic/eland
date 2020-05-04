@@ -21,10 +21,10 @@ Attributes and underlying data
 
    DataFrame.index
    DataFrame.columns
-   DataFrame.dtypes   
-   DataFrame.select_dtypes   
-   DataFrame.values   
-   DataFrame.empty   
+   DataFrame.dtypes
+   DataFrame.select_dtypes
+   DataFrame.values
+   DataFrame.empty
    DataFrame.shape
 
 Indexing, iteration
@@ -37,6 +37,7 @@ Indexing, iteration
    DataFrame.tail
    DataFrame.get
    DataFrame.query
+   DataFrame.sample
 
 Function application, GroupBy & window
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

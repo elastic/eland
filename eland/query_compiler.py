@@ -9,10 +9,10 @@ from typing import Optional, TYPE_CHECKING
 import numpy as np
 import pandas as pd
 
-from eland import Index
 from eland.field_mappings import FieldMappings
-from eland.operations import Operations
 from eland.filter import QueryFilter
+from eland.operations import Operations
+from eland import Index
 from eland.common import (
     ensure_es_client,
     DEFAULT_PROGRESS_REPORTING_NUM_ROWS,
@@ -390,6 +390,24 @@ class QueryCompiler:
         result = self.copy()
 
         result._operations.tail(self._index, n)
+
+        return result
+
+    def sample(self, n=None, frac=None, random_state=None):
+        result = self.copy()
+
+        if n is None and frac is None:
+            n = 1
+        elif n is None and frac is not None:
+            index_length = self._index_count()
+            n = int(round(frac * index_length))
+
+        if n < 0:
+            raise ValueError(
+                "A negative number of rows requested. Please provide positive value."
+            )
+
+        result._operations.sample(self._index, n, random_state)
 
         return result
 
