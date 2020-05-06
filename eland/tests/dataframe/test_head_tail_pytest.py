@@ -95,3 +95,14 @@ class TestDataFrameHeadTail(TestData):
         df = df[["timestamp", "OriginAirportID", "DestAirportID", "FlightDelayMin"]]
         df = df.tail()
         print(df)
+
+    def test_doc_test_tail_empty(self):
+        df = self.ed_flights()
+        df = df[df.OriginAirportID == "NADA"]
+        df = df.tail()
+        assert df.shape[0] == 0
+
+    def test_doc_test_tail_single(self):
+        df = self.ed_flights_small()
+        df = df[(df.Carrier == "Kibana Airlines") & (df.DestAirportID == "ITM")].tail()
+        assert df.shape[0] == 1
