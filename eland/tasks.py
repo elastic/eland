@@ -50,6 +50,11 @@ class Task(ABC):
 
 
 class SizeTask(Task):
+    def __init__(self, task_type: str, index, count: int):
+        super().__init__(task_type)
+        self._sort_field = index.sort_field
+        self._count = min(len(index), count)
+
     @abstractmethod
     def size(self) -> int:
         # must override
@@ -58,11 +63,7 @@ class SizeTask(Task):
 
 class HeadTask(SizeTask):
     def __init__(self, index, count: int):
-        super().__init__("head")
-
-        # Add a task that is an ascending sort with size=count
-        self._sort_field = index.sort_field
-        self._count = min(len(index), count)
+        super().__init__("head", index, count)
 
     def __repr__(self) -> str:
         return f"('{self._task_type}': ('sort_field': '{self._sort_field}', 'count': {self._count}))"
@@ -109,11 +110,7 @@ class HeadTask(SizeTask):
 
 class TailTask(SizeTask):
     def __init__(self, index, count: int):
-        super().__init__("tail")
-
-        # Add a task that is descending sort with size=count
-        self._sort_field = index.sort_field
-        self._count = min(len(index), count)
+        super().__init__("tail", index, count)
 
     def resolve_task(
         self,
@@ -176,10 +173,8 @@ class TailTask(SizeTask):
 
 class SampleTask(SizeTask):
     def __init__(self, index, count: int, random_state: int):
-        super().__init__("sample")
-        self._count = min(len(index), count)
+        super().__init__("sample", index, count)
         self._random_state = random_state
-        self._sort_field = index.sort_field
 
     def resolve_task(
         self,
