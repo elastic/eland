@@ -14,6 +14,7 @@ if TYPE_CHECKING:
     from .filter import BooleanFilter  # noqa: F401
     from .query_compiler import QueryCompiler  # noqa: F401
     from .operations import QueryParams  # noqa: F401
+    from .index import Index  # noqa: F401
 
 RESOLVED_TASK_TYPE = Tuple["QueryParams", List["PostProcessingAction"]]
 
@@ -50,7 +51,7 @@ class Task(ABC):
 
 
 class SizeTask(Task):
-    def __init__(self, task_type: str, index, count: int):
+    def __init__(self, task_type: str, index: "Index", count: int):
         super().__init__(task_type)
         self._sort_field = index.sort_field
         self._count = min(len(index), count)
@@ -62,7 +63,7 @@ class SizeTask(Task):
 
 
 class HeadTask(SizeTask):
-    def __init__(self, index, count: int):
+    def __init__(self, index: "Index", count: int):
         super().__init__("head", index, count)
 
     def __repr__(self) -> str:
@@ -109,7 +110,7 @@ class HeadTask(SizeTask):
 
 
 class TailTask(SizeTask):
-    def __init__(self, index, count: int):
+    def __init__(self, index: "Index", count: int):
         super().__init__("tail", index, count)
 
     def resolve_task(
@@ -172,7 +173,7 @@ class TailTask(SizeTask):
 
 
 class SampleTask(SizeTask):
-    def __init__(self, index, count: int, random_state: int):
+    def __init__(self, index: "Index", count: int, random_state: int):
         super().__init__("sample", index, count)
         self._random_state = random_state
 

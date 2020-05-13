@@ -178,7 +178,7 @@ class MatchAllFilter(QueryFilter):
 
 
 class RandomScoreFilter(QueryFilter):
-    def __init__(self, query: QueryFilter, random_state: int) -> None:
+    def __init__(self, query: BooleanFilter, random_state: int) -> None:
         q = MatchAllFilter() if query.empty() else query
 
         seed = {}

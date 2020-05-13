@@ -6,28 +6,25 @@ from typing import Union, List, Optional, Tuple, TYPE_CHECKING, cast
 
 import numpy as np  # type: ignore
 
-from eland.common import es_version
-from eland.ml._model_transformers import (
-    SKLearnDecisionTreeTransformer,
-    SKLearnForestRegressorTransformer,
-    SKLearnForestClassifierTransformer,
-    XGBoostRegressorTransformer,
-    XGBoostClassifierTransformer,
-)
-from eland.ml._model_serializer import ModelSerializer
-from eland.ml._optional import import_optional_dependency
-from eland.ml.ml_model import MLModel
-
-sklearn = import_optional_dependency("sklearn")
-xgboost = import_optional_dependency("xgboost")
-
-from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor  # type: ignore
-from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor  # type: ignore
-from xgboost import XGBRegressor, XGBClassifier  # type: ignore
+from .ml_model import MLModel
+from .transformers import get_model_transformer
+from ..common import es_version
 
 
 if TYPE_CHECKING:
     from elasticsearch import Elasticsearch  # type: ignore # noqa: F401
+
+    # Try importing each ML lib separately so mypy users don't have to
+    # have both installed to use type-checking.
+    try:
+        from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor  # type: ignore # noqa: F401
+        from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor  # type: ignore # noqa: F401
+    except ImportError:
+        pass
+    try:
+        from xgboost import XGBRegressor, XGBClassifier  # type: ignore # noqa: F401
+    except ImportError:
+        pass
 
 
 class ImportedMLModel(MLModel):
@@ -99,12 +96,12 @@ class ImportedMLModel(MLModel):
         es_client: Union[str, List[str], Tuple[str, ...], "Elasticsearch"],
         model_id: str,
         model: Union[
-            DecisionTreeClassifier,
-            DecisionTreeRegressor,
-            RandomForestRegressor,
-            RandomForestClassifier,
-            XGBClassifier,
-            XGBRegressor,
+            "DecisionTreeClassifier",
+            "DecisionTreeRegressor",
+            "RandomForestRegressor",
+            "RandomForestClassifier",
+            "XGBClassifier",
+            "XGBRegressor",
         ],
         feature_names: List[str],
         classification_labels: Optional[List[str]] = None,
@@ -114,42 +111,15 @@ class ImportedMLModel(MLModel):
         super().__init__(es_client, model_id)
 
         self._feature_names = feature_names
-        self._model_type = None
 
-        serializer: ModelSerializer  # type def
-        # Transform model
-        if isinstance(model, DecisionTreeRegressor):
-            serializer = SKLearnDecisionTreeTransformer(
-                model, feature_names
-            ).transform()
-            self._model_type = MLModel.TYPE_REGRESSION
-        elif isinstance(model, DecisionTreeClassifier):
-            serializer = SKLearnDecisionTreeTransformer(
-                model, feature_names, classification_labels
-            ).transform()
-            self._model_type = MLModel.TYPE_CLASSIFICATION
-        elif isinstance(model, RandomForestRegressor):
-            serializer = SKLearnForestRegressorTransformer(
-                model, feature_names
-            ).transform()
-            self._model_type = MLModel.TYPE_REGRESSION
-        elif isinstance(model, RandomForestClassifier):
-            serializer = SKLearnForestClassifierTransformer(
-                model, feature_names, classification_labels
-            ).transform()
-            self._model_type = MLModel.TYPE_CLASSIFICATION
-        elif isinstance(model, XGBRegressor):
-            serializer = XGBoostRegressorTransformer(model, feature_names).transform()
-            self._model_type = MLModel.TYPE_REGRESSION
-        elif isinstance(model, XGBClassifier):
-            serializer = XGBoostClassifierTransformer(
-                model, feature_names, classification_labels
-            ).transform()
-            self._model_type = MLModel.TYPE_CLASSIFICATION
-        else:
-            raise NotImplementedError(
-                f"ML model of type {type(model)}, not currently implemented"
-            )
+        transformer = get_model_transformer(
+            model,
+            feature_names=feature_names,
+            classification_labels=classification_labels,
+            classification_weights=classification_weights,
+        )
+        self._model_type = transformer.model_type
+        serializer = transformer.transform()
 
         if overwrite:
             self.delete_model()

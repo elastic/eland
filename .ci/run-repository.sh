@@ -35,4 +35,4 @@ docker run \
   --name eland-test-runner \
   --rm \
   elastic/eland \
-  nox -s test-${PYTHON_VERSION}
+  nox -s lint test-${PYTHON_VERSION}
