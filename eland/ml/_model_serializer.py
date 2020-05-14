@@ -6,7 +6,7 @@ import base64
 import gzip
 import json
 from abc import ABC
-from typing import List, Dict, Any, Optional
+from typing import Sequence, Dict, Any, Optional
 
 
 def add_if_exists(d: Dict[str, Any], k: str, v: Any) -> None:
@@ -17,9 +17,9 @@ def add_if_exists(d: Dict[str, Any], k: str, v: Any) -> None:
 class ModelSerializer(ABC):
     def __init__(
         self,
-        feature_names: List[str],
+        feature_names: Sequence[str],
         target_type: Optional[str] = None,
-        classification_labels: Optional[List[str]] = None,
+        classification_labels: Optional[Sequence[str]] = None,
     ):
         self._target_type = target_type
         self._feature_names = feature_names
@@ -33,7 +33,7 @@ class ModelSerializer(ABC):
         return d
 
     @property
-    def feature_names(self) -> List[str]:
+    def feature_names(self) -> Sequence[str]:
         return self._feature_names
 
     def serialize_model(self) -> Dict[str, Any]:
@@ -84,10 +84,10 @@ class TreeNode:
 class Tree(ModelSerializer):
     def __init__(
         self,
-        feature_names: List[str],
+        feature_names: Sequence[str],
         target_type: Optional[str] = None,
-        tree_structure: Optional[List[TreeNode]] = None,
-        classification_labels: Optional[List[str]] = None,
+        tree_structure: Optional[Sequence[TreeNode]] = None,
+        classification_labels: Optional[Sequence[str]] = None,
     ):
         super().__init__(
             feature_names=feature_names,
@@ -107,12 +107,12 @@ class Tree(ModelSerializer):
 class Ensemble(ModelSerializer):
     def __init__(
         self,
-        feature_names: List[str],
-        trained_models: List[ModelSerializer],
+        feature_names: Sequence[str],
+        trained_models: Sequence[ModelSerializer],
         output_aggregator: Dict[str, Any],
         target_type: Optional[str] = None,
-        classification_labels: Optional[List[str]] = None,
-        classification_weights: Optional[List[float]] = None,
+        classification_labels: Optional[Sequence[str]] = None,
+        classification_weights: Optional[Sequence[float]] = None,
     ):
         super().__init__(
             feature_names=feature_names,

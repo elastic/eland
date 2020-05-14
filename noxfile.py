@@ -29,8 +29,13 @@ TYPED_FILES = {
     "eland/index.py",
     "eland/query.py",
     "eland/tasks.py",
+    "eland/ml/__init__.py",
     "eland/ml/_model_serializer.py",
     "eland/ml/imported_ml_model.py",
+    "eland/ml/transformers/__init__.py",
+    "eland/ml/transformers/base.py",
+    "eland/ml/transformers/sklearn.py",
+    "eland/ml/transformers/xgboost.py",
 }
 
 
@@ -75,6 +80,24 @@ def test(session):
     session.install("-r", "requirements-dev.txt")
     session.run("python", "-m", "eland.tests.setup_tests")
     session.run("pytest", "--doctest-modules", *(session.posargs or ("eland/",)))
+
+    session.run("python", "-m", "pip", "uninstall", "--yes", "scikit-learn", "xgboost")
+    session.run("pytest", "eland/tests/ml/")
+
+
+@nox.session(python=["3.6", "3.7", "3.8"], name="test-ml-deps")
+def test_ml_deps(session):
+    def session_uninstall(*deps):
+        session.run("python", "-m", "pip", "uninstall", "--yes", *deps)
+
+    session.install("-r", "requirements-dev.txt")
+    session.run("python", "-m", "eland.tests.setup_tests")
+
+    session_uninstall("xgboost", "scikit-learn")
+    session.run("pytest", *(session.posargs or ("eland/tests/ml/",)))
+
+    session.install(".[scikit-learn]")
+    session.run("pytest", *(session.posargs or ("eland/tests/ml/",)))
 
 
 @nox.session(reuse_venv=True)

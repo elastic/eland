@@ -2,17 +2,49 @@
 # Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 # See the LICENSE file in the project root for more information
 
+import pytest
 import numpy as np
-from sklearn import datasets
-from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
-from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
-from xgboost import XGBRegressor, XGBClassifier
 
 from eland.ml import ImportedMLModel
 from eland.tests import ES_TEST_CLIENT
 
 
+try:
+    from sklearn import datasets
+    from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
+    from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
+
+    HAS_SKLEARN = True
+except ImportError:
+    HAS_SKLEARN = False
+
+try:
+    from xgboost import XGBRegressor, XGBClassifier
+
+    HAS_XGBOOST = True
+except ImportError:
+    HAS_XGBOOST = False
+
+
+requires_sklearn = pytest.mark.skipif(
+    not HAS_SKLEARN, reason="This test requires 'scikit-learn' package to run"
+)
+requires_xgboost = pytest.mark.skipif(
+    not HAS_XGBOOST, reason="This test requires 'xgboost' package to run"
+)
+requires_no_ml_extras = pytest.mark.skipif(
+    HAS_SKLEARN or HAS_XGBOOST,
+    reason="This test requires 'scikit-learn' and 'xgboost' to not be installed",
+)
+
+
+@requires_no_ml_extras
+def test_import_ml_model_when_dependencies_are_not_available():
+    from eland.ml import MLModel, ImportedMLModel  # noqa: F401
+
+
 class TestImportedMLModel:
+    @requires_sklearn
     def test_decision_tree_classifier(self):
         # Train model
         training_data = datasets.make_classification(n_features=5)
@@ -37,6 +69,7 @@ class TestImportedMLModel:
         # Clean up
         es_model.delete_model()
 
+    @requires_sklearn
     def test_decision_tree_regressor(self):
         # Train model
         training_data = datasets.make_regression(n_features=5)
@@ -61,6 +94,7 @@ class TestImportedMLModel:
         # Clean up
         es_model.delete_model()
 
+    @requires_sklearn
     def test_random_forest_classifier(self):
         # Train model
         training_data = datasets.make_classification(n_features=5)
@@ -85,6 +119,7 @@ class TestImportedMLModel:
         # Clean up
         es_model.delete_model()
 
+    @requires_sklearn
     def test_random_forest_regressor(self):
         # Train model
         training_data = datasets.make_regression(n_features=5)
@@ -109,6 +144,7 @@ class TestImportedMLModel:
         # Clean up
         es_model.delete_model()
 
+    @requires_xgboost
     def test_xgb_classifier(self):
         # Train model
         training_data = datasets.make_classification(n_features=5)
@@ -133,6 +169,7 @@ class TestImportedMLModel:
         # Clean up
         es_model.delete_model()
 
+    @requires_xgboost
     def test_xgb_regressor(self):
         # Train model
         training_data = datasets.make_regression(n_features=5)
@@ -158,6 +195,7 @@ class TestImportedMLModel:
         # Clean up
         es_model.delete_model()
 
+    @requires_xgboost
     def test_predict_single_feature_vector(self):
         # Train model
         training_data = datasets.make_regression(n_features=1)
