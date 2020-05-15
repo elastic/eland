@@ -104,6 +104,11 @@ exclude_patterns = ["**.ipynb_checkpoints"]
 # a list of builtin themes.
 
 html_theme = "pydata_sphinx_theme"
+html_theme_options = {
+    "external_links": [],
+    "github_url": "https://github.com/elastic/eland",
+    "twitter_url": "https://twitter.com/elastic",
+}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
