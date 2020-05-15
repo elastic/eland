@@ -7,12 +7,21 @@ _Note, this project is still very much a work in progress and in an alpha state;
 </p>
 <table>
 <tr>
-  <td>Latest Release</td>
+  <td>PyPI</td>
   <td>
     <a href="https://pypi.org/project/eland/">
-    <img src="https://img.shields.io/pypi/v/eland.svg" alt="latest release" />
+    <img src="https://img.shields.io/pypi/v/eland.svg" alt="latest release"/>
     </a>
   </td>
+</tr>
+<tr>
+  <td>Conda Forge</td>
+  <td>
+    <a href="https://anaconda.org/conda-forge/eland">
+    <img src="https://img.shields.io/conda/vn/conda-forge/eland" alt="latest release"/>
+    </a>
+  </td>
+</tr>
 <tr>
   <td>Package Status</td>
   <td>
@@ -161,15 +170,20 @@ Operations:
 See [docs](https://eland.readthedocs.io/en/latest) and [demo_notebook.ipynb](https://eland.readthedocs.io/en/latest/examples/demo_notebook.html) for more examples.
 
 ## Where to get it
-The source code is currently hosted on GitHub at:
-https://github.com/elastic/eland
 
-Binary installers for the latest released version are available at the [Python
-package index](https://pypi.org/project/eland).
+Eland can be installed from [PyPI](https://pypi.org/project/eland) via pip:
 
-```sh
-python -m pip install eland
+```bash
+$ python -m pip install eland
 ```
+
+Eland can also be installed from [Conda Forge](https://anaconda.org/conda-forge/eland) with Conda:
+
+```bash
+$ conda install -c conda-forge eland
+```
+
+The [source code](https://github.com/elastic/eland) is currently available on GitHub.
 
 ## Versions and Compatibility
 

@@ -17,6 +17,20 @@ eland: pandas-like data analysis toolkit backed by Elasticsearch
 Where possible the package uses existing Python APIs and data structures to make it easy to switch between Numpy, Pandas, Scikit-learn to their elasticsearch powered equivalents.
 In general, the data resides in elasticsearch and not in memory, which allows eland to access large datasets stored in elasticsearch.
 
+Installing Eland
+~~~~~~~~~~~~~~~~
+
+Eland can be installed from `PyPI <https://pypi.org/project/eland>`_ via pip:
+
+ .. code-block:: bash
+
+    $ python -m pip install eland
+
+Eland can also be installed from `Conda Forge <https://anaconda.org/conda-forge/eland>`_ with Conda:
+
+ .. code-block:: bash
+
+    $ conda install -c conda-forge eland
 
 .. toctree::
    :maxdepth: 2
