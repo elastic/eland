@@ -10,4 +10,4 @@ Flat File
 .. autosummary::
    :toctree: api/
 
-    read_csv
+    csv_to_eland

@@ -65,7 +65,7 @@ class TestDataFrameToCSV(TestData):
 
         test_index = FLIGHTS_INDEX_NAME + "." + str(now_millis)
 
-        ed_flights_from_csv = ed.read_csv(
+        ed_flights_from_csv = ed.csv_to_eland(
             results_file,
             ES_TEST_CLIENT,
             test_index,

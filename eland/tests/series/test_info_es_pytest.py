@@ -12,4 +12,4 @@ class TestSeriesInfoEs(TestData):
         ed_flights = self.ed_flights()["AvgTicketPrice"]
 
         # No assertion, just test it can be called
-        ed_flights.info_es()
+        ed_flights.es_info()

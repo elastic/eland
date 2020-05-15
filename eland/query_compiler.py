@@ -12,7 +12,7 @@ import pandas as pd
 from eland.field_mappings import FieldMappings
 from eland.filter import QueryFilter
 from eland.operations import Operations
-from eland import Index
+from eland.index import Index
 from eland.common import (
     ensure_es_client,
     DEFAULT_PROGRESS_REPORTING_NUM_ROWS,
@@ -64,7 +64,7 @@ class QueryCompiler:
         if to_copy is not None:
             self._client = to_copy._client
             self._index_pattern = to_copy._index_pattern
-            self._index = Index(self, to_copy._index.index_field)
+            self._index = Index(self, to_copy._index.es_index_field)
             self._operations = copy.deepcopy(to_copy._operations)
             self._mappings: FieldMappings = copy.deepcopy(to_copy._mappings)
         else:
@@ -240,9 +240,9 @@ class QueryCompiler:
 
             # get index value - can be _id or can be field value in source
             if self._index.is_source_field:
-                index_field = row[self._index.index_field]
+                index_field = row[self._index.es_index_field]
             else:
-                index_field = hit[self._index.index_field]
+                index_field = hit[self._index.es_index_field]
             index.append(index_field)
 
             # flatten row to map correctly to 2D DataFrame
@@ -349,7 +349,7 @@ class QueryCompiler:
         index_count: int
             Count of docs where index_field exists
         """
-        return self._operations.index_count(self, self.index.index_field)
+        return self._operations.index_count(self, self.index.es_index_field)
 
     def _index_matches_count(self, items):
         """
@@ -358,7 +358,9 @@ class QueryCompiler:
         index_count: int
             Count of docs where items exist
         """
-        return self._operations.index_matches_count(self, self.index.index_field, items)
+        return self._operations.index_matches_count(
+            self, self.index.es_index_field, items
+        )
 
     def _empty_pd_ef(self):
         # Return an empty dataframe with correct columns and dtypes
@@ -463,7 +465,7 @@ class QueryCompiler:
             result._mappings.display_names = new_columns.to_list()
 
         if index is not None:
-            result._operations.drop_index_values(self, self.index.index_field, index)
+            result._operations.drop_index_values(self, self.index.es_index_field, index)
 
         return result
 
@@ -503,12 +505,12 @@ class QueryCompiler:
     def value_counts(self, es_size):
         return self._operations.value_counts(self, es_size)
 
-    def info_es(self, buf):
-        buf.write(f"index_pattern: {self._index_pattern}\n")
+    def es_info(self, buf):
+        buf.write(f"es_index_pattern: {self._index_pattern}\n")
 
-        self._index.info_es(buf)
-        self._mappings.info_es(buf)
-        self._operations.info_es(self, buf)
+        self._index.es_info(buf)
+        self._mappings.es_info(buf)
+        self._operations.es_info(self, buf)
 
     def describe(self):
         return self._operations.describe(self)
@@ -550,10 +552,10 @@ class QueryCompiler:
                 f"{self._client} != {right._client}"
             )
 
-        if self._index.index_field != right._index.index_field:
+        if self._index.es_index_field != right._index.es_index_field:
             raise ValueError(
                 f"Can not perform arithmetic operations across different index fields "
-                f"{self._index.index_field} != {right._index.index_field}"
+                f"{self._index.es_index_field} != {right._index.es_index_field}"
             )
 
         if self._index_pattern != right._index_pattern:

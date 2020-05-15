@@ -7,7 +7,7 @@ import pytest
 from pandas.testing import assert_frame_equal
 
 from eland.tests.common import TestData
-from eland.utils import eland_to_pandas
+from eland import eland_to_pandas
 
 
 class TestDataFrameSample(TestData):

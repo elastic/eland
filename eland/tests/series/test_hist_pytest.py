@@ -47,7 +47,7 @@ class TestSeriesFrameHist(TestData):
         pd_weights = pd.DataFrame({"FlightDelayMin": pd_filteredhist[0]})
 
         d = ed_flights[ed_flights.FlightDelay == True].FlightDelayMin
-        print(d.info_es())
+        print(d.es_info())
 
         ed_bins, ed_weights = ed_flights[
             ed_flights.FlightDelay == True

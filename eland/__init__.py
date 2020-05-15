@@ -17,7 +17,7 @@ from eland.index import Index
 from eland.ndframe import NDFrame
 from eland.series import Series
 from eland.dataframe import DataFrame
-from eland.utils import pandas_to_eland, eland_to_pandas, read_es, read_csv
+from eland.etl import pandas_to_eland, eland_to_pandas, read_es, read_csv, csv_to_eland
 
 __all__ = [
     "DataFrame",
@@ -26,6 +26,7 @@ __all__ = [
     "Index",
     "pandas_to_eland",
     "eland_to_pandas",
+    "csv_to_eland",
     "read_csv",
     "read_es",
     "SortOrder",

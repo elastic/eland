@@ -14,7 +14,7 @@ class TestSeriesSample(TestData):
     SEED = 42
 
     def build_from_index(self, ed_series):
-        ed2pd_series = ed_series._to_pandas()
+        ed2pd_series = ed_series.to_pandas()
         return self.pd_flights()["Carrier"].iloc[ed2pd_series.index]
 
     def test_sample(self):

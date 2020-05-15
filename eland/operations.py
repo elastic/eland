@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 from elasticsearch.helpers import scan
 
-from eland import Index
+from eland.index import Index
 from eland.common import (
     SortOrder,
     DEFAULT_CSV_BATCH_OUTPUT_SIZE,
@@ -860,7 +860,7 @@ class Operations:
         # This can return None
         return size
 
-    def info_es(self, query_compiler, buf):
+    def es_info(self, query_compiler, buf):
         buf.write("Operations:\n")
         buf.write(f" tasks: {self._tasks}\n")
 

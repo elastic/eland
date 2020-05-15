@@ -101,7 +101,7 @@ class TestDataFrameDateTime(TestData):
         # print(df.to_string())
         # print(ed_df.to_string())
         # print(ed_df.dtypes)
-        # print(ed_df._to_pandas().dtypes)
+        # print(ed_df.to_pandas().dtypes)
 
         assert_series_equal(df.dtypes, ed_df.dtypes)
 
@@ -109,7 +109,7 @@ class TestDataFrameDateTime(TestData):
 
     def test_all_formats(self):
         index_name = self.time_index_name
-        ed_df = ed.read_es(ES_TEST_CLIENT, index_name)
+        ed_df = ed.DataFrame(ES_TEST_CLIENT, index_name)
 
         for format_name in self.time_formats.keys():
             times = [
