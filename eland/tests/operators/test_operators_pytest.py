@@ -31,7 +31,7 @@ class TestOperators:
         assert Like("a", "a*b").build() == {"wildcard": {"a": "a*b"}}
         assert Rlike("a", "a*b").build() == {"regexp": {"a": "a*b"}}
         assert Startswith("a", "jj").build() == {"prefix": {"a": "jj"}}
-        assert IsNull("a").build() == {"missing": {"field": "a"}}
+        assert IsNull("a").build() == {"bool": {"must_not": {"exists": {"field": "a"}}}}
         assert NotNull("a").build() == {"exists": {"field": "a"}}
         assert ScriptFilter(
             'doc["num1"].value > params.param1', lang="painless", params={"param1": 5}

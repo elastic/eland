@@ -39,6 +39,8 @@ from eland.filter import (
     LessEqual,
     ScriptFilter,
     IsIn,
+    IsNull,
+    NotNull,
 )
 
 
@@ -467,6 +469,37 @@ class Series(NDFrame):
             return IsIn(field=self.name, value=other)
         else:
             raise NotImplementedError(other, type(other))
+
+    def isna(self):
+        """
+        Detect missing values.
+
+        Returns
+        -------
+        eland.Series
+            Mask of bool values for each element in Series that indicates whether an element is not an NA value.
+
+        See Also
+        --------
+        :pandas_api_docs:`pandas.Series.isna`
+        """
+        return IsNull(field=self.name)
+
+    def notna(self):
+        """
+        Detect existing (non-missing) values.
+
+        Returns
+        -------
+        eland.Series
+            Mask of bool values for each element in Series that indicates whether an element is not an NA value
+
+        See Also
+        --------
+        :pandas_api_docs:`pandas.Series.notna`
+
+        """
+        return NotNull(field=self.name)
 
     @property
     def ndim(self):

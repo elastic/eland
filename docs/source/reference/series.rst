@@ -74,6 +74,8 @@ Reindexing / selection / label manipulation
    :toctree: api/
 
    Series.rename
+   Series.isna
+   Series.notna
 
 Plotting
 ~~~~~~~~

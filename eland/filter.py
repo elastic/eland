@@ -141,7 +141,7 @@ class Startswith(BooleanFilter):
 class IsNull(BooleanFilter):
     def __init__(self, field: str) -> None:
         super().__init__()
-        self._filter = {"missing": {"field": field}}
+        self._filter = {"bool": {"must_not": {"exists": {"field": field}}}}
 
 
 class NotNull(BooleanFilter):
