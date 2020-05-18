@@ -272,6 +272,37 @@ class QueryTermsTask(Task):
         )
 
 
+class QueryRegexpTask(Task):
+    def __init__(self, field: str, value: str):
+        """
+        Parameters
+        ----------
+        field: str
+            field_name to filter
+
+        value: str
+            regular expression pattern for filter
+        """
+        super().__init__("regexp")
+
+        self._field = field
+        self._value = value
+
+    def resolve_task(
+        self,
+        query_params: "QueryParams",
+        post_processing: List["PostProcessingAction"],
+        query_compiler: "QueryCompiler",
+    ) -> RESOLVED_TASK_TYPE:
+        query_params.query.regexp(self._field, self._value)
+        return query_params, post_processing
+
+    def __repr__(self) -> str:
+        return (
+            f"('{self._task_type}': ('field': '{self._field}', 'value': {self._value}))"
+        )
+
+
 class BooleanFilterTask(Task):
     def __init__(self, boolean_filter: "BooleanFilter"):
         """

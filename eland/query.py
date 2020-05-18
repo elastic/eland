@@ -6,7 +6,14 @@ import warnings
 from copy import deepcopy
 from typing import Optional, Dict, List, Any
 
-from eland.filter import RandomScoreFilter, BooleanFilter, NotNull, IsNull, IsIn
+from eland.filter import (
+    RandomScoreFilter,
+    BooleanFilter,
+    NotNull,
+    IsNull,
+    IsIn,
+    Rlike,
+)
 
 
 class Query:
@@ -74,6 +81,16 @@ class Query:
                 self._query = ~(IsIn(field, items))
             else:
                 self._query = self._query & ~(IsIn(field, items))
+
+    def regexp(self, field: str, value: str) -> None:
+        """
+        Add regexp query
+        https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-regexp-query.html
+        """
+        if self._query.empty():
+            self._query = Rlike(field, value)
+        else:
+            self._query = self._query & Rlike(field, value)
 
     def terms_aggs(self, name: str, func: str, field: str, es_size: int) -> None:
         """

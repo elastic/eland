@@ -5,6 +5,8 @@
 import sys
 import warnings
 from io import StringIO
+import re
+from typing import Optional, Sequence, Union
 
 import numpy as np
 import pandas as pd
@@ -383,7 +385,7 @@ class DataFrame(NDFrame):
         if labels is not None:
             if index is not None or columns is not None:
                 raise ValueError("Cannot specify both 'labels' and 'index'/'columns'")
-            axis = pd.DataFrame()._get_axis_name(axis)
+            axis = pd.DataFrame._get_axis_name(axis)
             axes = {axis: labels}
         elif index is not None or columns is not None:
             axes, _ = pd.DataFrame()._construct_axes_from_arguments(
@@ -1442,6 +1444,81 @@ class DataFrame(NDFrame):
             return self._getitem(key)
         else:
             return default
+
+    def filter(
+        self,
+        items: Optional[Sequence[str]] = None,
+        like: Optional[str] = None,
+        regex: Optional[str] = None,
+        axis: Optional[Union[int, str]] = None,
+    ):
+        """
+        Subset the dataframe rows or columns according to the specified index labels.
+        Note that this routine does not filter a dataframe on its
+        contents. The filter is applied to the labels of the index.
+
+        Parameters
+        ----------
+        items : list-like
+            Keep labels from axis which are in items.
+        like : str
+            Keep labels from axis for which "like in label == True".
+        regex : str (regular expression)
+            Keep labels from axis for which re.search(regex, label) == True.
+        axis : {0 or ‘index’, 1 or ‘columns’, None}, default None
+            The axis to filter on, expressed either as an index (int) or axis name (str). By default this is the info axis, ‘index’ for Series, ‘columns’ for DataFrame.
+
+        Returns
+        -------
+        eland.DataFrame
+
+        See Also
+        --------
+        :pandas_api_docs:`pandas.DataFrame.filter`
+
+        Notes
+        -----
+        The ``items``, ``like``, and ``regex`` parameters are
+        enforced to be mutually exclusive.
+        """
+        filter_options_passed = sum([items is not None, bool(like), bool(regex)])
+        if filter_options_passed > 1:
+            raise TypeError(
+                "Keyword arguments `items`, `like`, or `regex` "
+                "are mutually exclusive"
+            )
+        elif filter_options_passed == 0:
+            raise TypeError("Must pass either 'items', 'like', or 'regex'")
+
+        # axis defaults to 'columns' for DataFrame, 'index' for Series
+        if axis is None:
+            axis = "columns"
+        axis = pd.DataFrame._get_axis_name(axis)
+
+        if axis == "index":
+            new_query_compiler = self._query_compiler.filter(
+                items=items, like=like, regex=regex
+            )
+            return self._create_or_update_from_compiler(
+                new_query_compiler, inplace=False
+            )
+
+        else:  # axis == "columns"
+            if items is not None:
+                # Pandas skips over columns that don't exist
+                # and maintains order of items=[...]
+                existing_columns = set(self.columns.to_list())
+                return self[[column for column in items if column in existing_columns]]
+
+            elif like is not None:
+
+                def matcher(x):
+                    return like in x
+
+            else:
+                matcher = re.compile(regex).search
+
+            return self[[column for column in self.columns if matcher(column)]]
 
     @property
     def values(self):
