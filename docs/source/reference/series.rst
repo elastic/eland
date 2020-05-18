@@ -89,10 +89,11 @@ Serialization / IO / conversion
 
    Series.to_string
    Series.to_numpy
+   Series.to_pandas
 
-Elasticsearch utilities
+Elasticsearch Functions
 ~~~~~~~~~~~~~~~~~~~~~~~
 .. autosummary::
    :toctree: api/
 
-   Series.info_es
+   Series.es_info

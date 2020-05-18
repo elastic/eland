@@ -82,7 +82,7 @@ Elasticsearch Functions
 .. autosummary::
    :toctree: api/
 
-   DataFrame.info_es
+   DataFrame.es_info
    DataFrame.es_query
 
 Serialization / IO / conversion
@@ -95,3 +95,4 @@ Serialization / IO / conversion
    DataFrame.to_csv
    DataFrame.to_html
    DataFrame.to_string
+   DataFrame.to_pandas

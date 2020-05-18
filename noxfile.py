@@ -25,6 +25,7 @@ TYPED_FILES = {
     "eland/actions.py",
     "eland/arithmetics.py",
     "eland/common.py",
+    "eland/etl.py",
     "eland/filter.py",
     "eland/index.py",
     "eland/query.py",
@@ -106,7 +107,7 @@ def docs(session):
     session.run("pandoc", "--version", external=True)
 
     session.install("-r", "docs/requirements-docs.txt")
-    session.run("python", "setup.py", "install")
+    session.install(".")
 
     # See if we have an Elasticsearch cluster active
     # to rebuild the Jupyter notebooks with.

@@ -40,6 +40,7 @@ from eland.filter import (
     ScriptFilter,
     IsIn,
 )
+from eland.utils import deprecated_api
 
 
 def _get_method_name():
@@ -52,13 +53,13 @@ class Series(NDFrame):
 
     Parameters
     ----------
-    client : elasticsearch.Elasticsearch
+    es_client : elasticsearch.Elasticsearch
         A reference to a Elasticsearch python client
 
-    index_pattern : str
+    es_index_pattern : str
         An Elasticsearch index pattern. This can contain wildcards.
 
-    index_field : str
+    es_index_field : str
         The field to base the series on
 
     Notes
@@ -72,7 +73,7 @@ class Series(NDFrame):
 
     Examples
     --------
-    >>> ed.Series(client='localhost', index_pattern='flights', name='Carrier')
+    >>> ed.Series(es_client='localhost', es_index_pattern='flights', name='Carrier')
     0         Kibana Airlines
     1        Logstash Airways
     2        Logstash Airways
@@ -89,11 +90,11 @@ class Series(NDFrame):
 
     def __init__(
         self,
-        client=None,
-        index_pattern=None,
+        es_client=None,
+        es_index_pattern=None,
         name=None,
-        index_field=None,
-        query_compiler=None,
+        es_index_field=None,
+        _query_compiler=None,
     ):
         # Series has 1 column
         if name is None:
@@ -102,11 +103,11 @@ class Series(NDFrame):
             columns = [name]
 
         super().__init__(
-            client=client,
-            index_pattern=index_pattern,
+            es_client=es_client,
+            es_index_pattern=es_index_pattern,
             columns=columns,
-            index_field=index_field,
-            query_compiler=query_compiler,
+            es_index_field=es_index_field,
+            _query_compiler=_query_compiler,
         )
 
     hist = eland.plotting.ed_hist_series
@@ -217,16 +218,20 @@ class Series(NDFrame):
         13058            JetBeats
         Name: Airline, Length: 13059, dtype: object
         """
-        return Series(query_compiler=self._query_compiler.rename({self.name: new_name}))
+        return Series(
+            _query_compiler=self._query_compiler.rename({self.name: new_name})
+        )
 
     def head(self, n=5):
-        return Series(query_compiler=self._query_compiler.head(n))
+        return Series(_query_compiler=self._query_compiler.head(n))
 
     def tail(self, n=5):
-        return Series(query_compiler=self._query_compiler.tail(n))
+        return Series(_query_compiler=self._query_compiler.tail(n))
 
     def sample(self, n: int = None, frac: float = None, random_state: int = None):
-        return Series(query_compiler=self._query_compiler.sample(n, frac, random_state))
+        return Series(
+            _query_compiler=self._query_compiler.sample(n, frac, random_state)
+        )
 
     def value_counts(self, es_size=10):
         """
@@ -390,7 +395,7 @@ class Series(NDFrame):
             result = _buf.getvalue()
             return result
 
-    def _to_pandas(self, show_progress=False):
+    def to_pandas(self, show_progress=False):
         return self._query_compiler.to_pandas(show_progress=show_progress)[self.name]
 
     @property
@@ -484,12 +489,16 @@ class Series(NDFrame):
         """
         return 1
 
-    def info_es(self):
+    def es_info(self):
         buf = StringIO()
 
-        super()._info_es(buf)
+        super()._es_info(buf)
 
         return buf.getvalue()
+
+    @deprecated_api("eland.Series.es_info()")
+    def info_es(self):
+        return self.es_info()
 
     def __add__(self, right):
         """
@@ -1081,7 +1090,7 @@ class Series(NDFrame):
         left_object.arithmetic_operation(method_name, right_object)
 
         series = Series(
-            query_compiler=self._query_compiler.arithmetic_op_fields(
+            _query_compiler=self._query_compiler.arithmetic_op_fields(
                 display_name, left_object
             )
         )

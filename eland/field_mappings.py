@@ -14,7 +14,10 @@ from pandas.core.dtypes.common import (
     is_string_dtype,
 )
 from pandas.core.dtypes.inference import is_list_like
-from typing import NamedTuple, Optional
+from typing import NamedTuple, Optional, Mapping, Dict, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from eland import DataFrame
 
 
 class Field(NamedTuple):
@@ -431,7 +434,9 @@ class FieldMappings:
         return es_dtype
 
     @staticmethod
-    def _generate_es_mappings(dataframe, es_type_overrides=None):
+    def _generate_es_mappings(
+        dataframe: "DataFrame", es_type_overrides: Optional[Mapping[str, str]] = None
+    ) -> Dict[str, str]:
         """Given a pandas dataframe, generate the associated Elasticsearch mapping
 
         Parameters
@@ -712,7 +717,7 @@ class FieldMappings:
         # Convert return from 'str' to 'np.dtype'
         return pd_dtypes.apply(lambda x: np.dtype(x))
 
-    def info_es(self, buf):
+    def es_info(self, buf):
         buf.write("Mappings:\n")
         buf.write(f" capabilities:\n{self._mappings_capabilities.to_string()}\n")
 

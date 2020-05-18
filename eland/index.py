@@ -4,6 +4,7 @@
 
 
 from typing import Optional, TextIO, TYPE_CHECKING
+from eland.utils import deprecated_api
 
 if TYPE_CHECKING:
     from .query_compiler import QueryCompiler
@@ -30,7 +31,7 @@ class Index:
     ID_SORT_FIELD = "_doc"  # if index field is _id, sort by _doc
 
     def __init__(
-        self, query_compiler: "QueryCompiler", index_field: Optional[str] = None
+        self, query_compiler: "QueryCompiler", es_index_field: Optional[str] = None
     ):
         self._query_compiler = query_compiler
 
@@ -41,7 +42,7 @@ class Index:
         # The type:ignore is due to mypy not being smart enough
         # to recognize the property.setter has a different type
         # than the property.getter.
-        self.index_field = index_field  # type: ignore
+        self.es_index_field = es_index_field  # type: ignore
 
     @property
     def sort_field(self) -> str:
@@ -54,11 +55,11 @@ class Index:
         return self._is_source_field
 
     @property
-    def index_field(self) -> str:
+    def es_index_field(self) -> str:
         return self._index_field
 
-    @index_field.setter
-    def index_field(self, index_field: Optional[str]) -> None:
+    @es_index_field.setter
+    def es_index_field(self, index_field: Optional[str]) -> None:
         if index_field is None or index_field == Index.ID_INDEX_FIELD:
             self._index_field = Index.ID_INDEX_FIELD
             self._is_source_field = False
@@ -77,7 +78,11 @@ class Index:
     def __iter__(self) -> "Index":
         return self
 
-    def info_es(self, buf: TextIO) -> None:
+    def es_info(self, buf: TextIO) -> None:
         buf.write("Index:\n")
-        buf.write(f" index_field: {self.index_field}\n")
+        buf.write(f" es_index_field: {self.es_index_field}\n")
         buf.write(f" is_source_field: {self.is_source_field}\n")
+
+    @deprecated_api("eland.Index.es_info()")
+    def info_es(self, buf: TextIO) -> None:
+        self.es_info(buf)

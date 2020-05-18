@@ -36,11 +36,11 @@ only Elasticsearch aggregatable fields can be aggregated or grouped.
 class NDFrame(ABC):
     def __init__(
         self,
-        client=None,
-        index_pattern=None,
+        es_client=None,
+        es_index_pattern=None,
         columns=None,
-        index_field=None,
-        query_compiler=None,
+        es_index_field=None,
+        _query_compiler=None,
     ):
         """
         pandas.DataFrame/Series like API that proxies into Elasticsearch index(es).
@@ -50,14 +50,14 @@ class NDFrame(ABC):
         client : elasticsearch.Elasticsearch
             A reference to a Elasticsearch python client
         """
-        if query_compiler is None:
-            query_compiler = QueryCompiler(
-                client=client,
-                index_pattern=index_pattern,
+        if _query_compiler is None:
+            _query_compiler = QueryCompiler(
+                client=es_client,
+                index_pattern=es_index_pattern,
                 display_names=columns,
-                index_field=index_field,
+                index_field=es_index_field,
             )
-        self._query_compiler = query_compiler
+        self._query_compiler = _query_compiler
 
     def _get_index(self):
         """
@@ -77,11 +77,11 @@ class NDFrame(ABC):
         --------
         >>> df = ed.DataFrame('localhost', 'flights')
         >>> assert isinstance(df.index, ed.Index)
-        >>> df.index.index_field
+        >>> df.index.es_index_field
         '_id'
         >>> s = df['Carrier']
         >>> assert isinstance(s.index, ed.Index)
-        >>> s.index.index_field
+        >>> s.index.es_index_field
         '_id'
         """
         return self._query_compiler.index
@@ -118,15 +118,15 @@ class NDFrame(ABC):
     def _build_repr(self, num_rows):
         # self could be Series or DataFrame
         if len(self.index) <= num_rows:
-            return self._to_pandas()
+            return self.to_pandas()
 
         num_rows = num_rows
 
         head_rows = int(num_rows / 2) + num_rows % 2
         tail_rows = num_rows - head_rows
 
-        head = self.head(head_rows)._to_pandas()
-        tail = self.tail(tail_rows)._to_pandas()
+        head = self.head(head_rows).to_pandas()
+        tail = self.tail(tail_rows).to_pandas()
 
         return head.append(tail)
 
@@ -142,8 +142,8 @@ class NDFrame(ABC):
         """
         return len(self.index)
 
-    def _info_es(self, buf):
-        self._query_compiler.info_es(buf)
+    def _es_info(self, buf):
+        self._query_compiler.es_info(buf)
 
     def mean(self, numeric_only=True):
         """
@@ -478,7 +478,7 @@ class NDFrame(ABC):
         return self._query_compiler.describe()
 
     @abstractmethod
-    def _to_pandas(self, show_progress=False):
+    def to_pandas(self, show_progress=False):
         pass
 
     @abstractmethod

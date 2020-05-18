@@ -19,10 +19,11 @@ from pandas.io.formats.printing import pprint_thing
 from pandas.util._validators import validate_bool_kwarg
 
 import eland.plotting as gfx
-from eland import NDFrame
-from eland import Series
+from eland.ndframe import NDFrame
+from eland.series import Series
 from eland.common import DEFAULT_NUM_ROWS_DISPLAYED, docstring_parameter
 from eland.filter import BooleanFilter
+from eland.utils import deprecated_api
 
 
 class DataFrame(NDFrame):
@@ -34,14 +35,14 @@ class DataFrame(NDFrame):
 
     Parameters
     ----------
-    client: Elasticsearch client argument(s) (e.g. 'localhost:9200')
+    es_client: Elasticsearch client argument(s) (e.g. 'localhost:9200')
         - elasticsearch-py parameters or
         - elasticsearch-py instance
-    index_pattern: str
+    es_index_pattern: str
         Elasticsearch index pattern. This can contain wildcards. (e.g. 'flights')
     columns: list of str, optional
         List of DataFrame columns. A subset of the Elasticsearch index's fields.
-    index_field: str, optional
+    es_index_field: str, optional
         The Elasticsearch index field to use as the DataFrame index. Defaults to _id if None is used.
 
     See Also
@@ -68,7 +69,7 @@ class DataFrame(NDFrame):
 
     >>> from elasticsearch import Elasticsearch
     >>> es = Elasticsearch("localhost:9200")
-    >>> df = ed.DataFrame(client=es, index_pattern='flights', columns=['AvgTicketPrice', 'Cancelled'])
+    >>> df = ed.DataFrame(es_client=es, es_index_pattern='flights', columns=['AvgTicketPrice', 'Cancelled'])
     >>> df.head()
        AvgTicketPrice  Cancelled
     0      841.265642      False
@@ -83,8 +84,12 @@ class DataFrame(NDFrame):
     index field
     (TODO - currently index_field must also be a field if not _id)
 
-    >>> df = ed.DataFrame(client='localhost', index_pattern='flights', columns=['AvgTicketPrice', 'timestamp'],
-    ...                   index_field='timestamp')
+    >>> df = ed.DataFrame(
+    ...     es_client='localhost',
+    ...     es_index_pattern='flights',
+    ...     columns=['AvgTicketPrice', 'timestamp'],
+    ...     es_index_field='timestamp'
+    ... )
     >>> df.head()
                          AvgTicketPrice           timestamp
     2018-01-01T00:00:00      841.265642 2018-01-01 00:00:00
@@ -98,12 +103,12 @@ class DataFrame(NDFrame):
 
     def __init__(
         self,
-        client=None,
-        index_pattern=None,
+        es_client=None,
+        es_index_pattern=None,
+        es_index_field=None,
         columns=None,
-        index_field=None,
-        query_compiler=None,
-    ):
+        _query_compiler=None,
+    ) -> None:
         """
         There are effectively 2 constructors:
 
@@ -112,18 +117,18 @@ class DataFrame(NDFrame):
 
         The constructor with 'query_compiler' is for internal use only.
         """
-        if query_compiler is None:
-            if client is None or index_pattern is None:
+        if _query_compiler is None:
+            if es_client is None or es_index_pattern is None:
                 raise ValueError(
                     "client and index_pattern must be defined in DataFrame constructor"
                 )
         # python 3 syntax
         super().__init__(
-            client=client,
-            index_pattern=index_pattern,
+            es_client=es_client,
+            es_index_pattern=es_index_pattern,
             columns=columns,
-            index_field=index_field,
-            query_compiler=query_compiler,
+            es_index_field=es_index_field,
+            _query_compiler=_query_compiler,
         )
 
     def _get_columns(self):
@@ -210,7 +215,7 @@ class DataFrame(NDFrame):
         <BLANKLINE>
         [3 rows x 2 columns]
         """
-        return DataFrame(query_compiler=self._query_compiler.head(n))
+        return DataFrame(_query_compiler=self._query_compiler.head(n))
 
     def tail(self, n: int = 5) -> "DataFrame":
         """
@@ -254,7 +259,7 @@ class DataFrame(NDFrame):
         <BLANKLINE>
         [5 rows x 2 columns]
         """
-        return DataFrame(query_compiler=self._query_compiler.tail(n))
+        return DataFrame(_query_compiler=self._query_compiler.tail(n))
 
     def sample(
         self, n: int = None, frac: float = None, random_state: int = None
@@ -290,7 +295,7 @@ class DataFrame(NDFrame):
             raise ValueError("Please enter a value for `frac` OR `n`, not both")
 
         return DataFrame(
-            query_compiler=self._query_compiler.sample(
+            _query_compiler=self._query_compiler.sample(
                 n=n, frac=frac, random_state=random_state
             )
         )
@@ -543,7 +548,7 @@ class DataFrame(NDFrame):
         """
         return self._query_compiler.count()
 
-    def info_es(self):
+    def es_info(self):
         # noinspection PyPep8
         """
         A debug summary of an eland DataFrame internals.
@@ -570,10 +575,10 @@ class DataFrame(NDFrame):
         12907 2018-02-11 20:08:25             AMS           LIM             225
         <BLANKLINE>
         [5 rows x 4 columns]
-        >>> print(df.info_es())
-        index_pattern: flights
+        >>> print(df.es_info())
+        es_index_pattern: flights
         Index:
-         index_field: _id
+         es_index_field: _id
          is_source_field: False
         Mappings:
          capabilities:
@@ -593,9 +598,13 @@ class DataFrame(NDFrame):
         """
         buf = StringIO()
 
-        super()._info_es(buf)
+        super()._es_info(buf)
 
         return buf.getvalue()
+
+    @deprecated_api("eland.DataFrame.es_info()")
+    def info_es(self):
+        return self.es_info()
 
     def es_query(self, query):
         """Applies an Elasticsearch DSL query to the current DataFrame.
@@ -651,7 +660,7 @@ class DataFrame(NDFrame):
             raise TypeError("'query' must be of type 'dict'")
         if tuple(query) == ("query",):
             query = query["query"]
-        return DataFrame(query_compiler=self._query_compiler.es_query(query))
+        return DataFrame(_query_compiler=self._query_compiler.es_query(query))
 
     def _index_summary(self):
         # Print index summary e.g.
@@ -659,11 +668,11 @@ class DataFrame(NDFrame):
         # Do this by getting head and tail of dataframe
         if self.empty:
             # index[0] is out of bounds for empty df
-            head = self.head(1)._to_pandas()
-            tail = self.tail(1)._to_pandas()
+            head = self.head(1).to_pandas()
+            tail = self.tail(1).to_pandas()
         else:
-            head = self.head(1)._to_pandas().index[0]
-            tail = self.tail(1)._to_pandas().index[0]
+            head = self.head(1).to_pandas().index[0]
+            tail = self.tail(1).to_pandas().index[0]
         index_summary = f", {pprint_thing(head)} to {pprint_thing(tail)}"
 
         name = "Index"
@@ -1076,7 +1085,7 @@ class DataFrame(NDFrame):
         elif isinstance(key, DataFrame):
             return self.where(key)
         elif isinstance(key, BooleanFilter):
-            return DataFrame(query_compiler=self._query_compiler._update_query(key))
+            return DataFrame(_query_compiler=self._query_compiler._update_query(key))
         else:
             return self._getitem_column(key)
 
@@ -1088,7 +1097,7 @@ class DataFrame(NDFrame):
 
     def _getitem_array(self, key):
         if isinstance(key, Series):
-            key = key._to_pandas()
+            key = key.to_pandas()
         if is_bool_indexer(key):
             if isinstance(key, pd.Series) and not key.index.equals(self.index):
                 warnings.warn(
@@ -1107,7 +1116,7 @@ class DataFrame(NDFrame):
             key = pd.RangeIndex(len(self.index))[key]
             if len(key):
                 return DataFrame(
-                    query_compiler=self._query_compiler.getitem_row_array(key)
+                    _query_compiler=self._query_compiler.getitem_row_array(key)
                 )
             else:
                 return DataFrame(columns=self.columns)
@@ -1118,7 +1127,7 @@ class DataFrame(NDFrame):
                     f" not index"
                 )
             return DataFrame(
-                query_compiler=self._query_compiler.getitem_column_array(key)
+                _query_compiler=self._query_compiler.getitem_column_array(key)
             )
 
     def _create_or_update_from_compiler(self, new_query_compiler, inplace=False):
@@ -1128,13 +1137,13 @@ class DataFrame(NDFrame):
             or type(new_query_compiler) in self._query_compiler.__class__.__bases__
         ), f"Invalid Query Compiler object: {type(new_query_compiler)}"
         if not inplace:
-            return DataFrame(query_compiler=new_query_compiler)
+            return DataFrame(_query_compiler=new_query_compiler)
         else:
             self._query_compiler = new_query_compiler
 
     @staticmethod
     def _reduce_dimension(query_compiler):
-        return Series(query_compiler=query_compiler)
+        return Series(_query_compiler=query_compiler)
 
     def to_csv(
         self,
@@ -1189,7 +1198,7 @@ class DataFrame(NDFrame):
         }
         return self._query_compiler.to_csv(**kwargs)
 
-    def _to_pandas(self, show_progress=False):
+    def to_pandas(self, show_progress: bool = False) -> "DataFrame":
         """
         Utility method to convert eland.Dataframe to pandas.Dataframe
 
@@ -1256,7 +1265,7 @@ class DataFrame(NDFrame):
 
         Examples
         --------
-        >>> df = ed.read_es('localhost', 'ecommerce')
+        >>> df = ed.DataFrame('localhost', 'ecommerce')
         >>> df.shape
         (4675, 45)
         """
@@ -1372,7 +1381,7 @@ class DataFrame(NDFrame):
 
         Examples
         --------
-        >>> df = ed.read_es('localhost', 'flights')
+        >>> df = ed.DataFrame('localhost', 'flights')
         >>> df.shape
         (13059, 27)
         >>> df.query('FlightDelayMin > 60').shape
@@ -1380,7 +1389,7 @@ class DataFrame(NDFrame):
         """
         if isinstance(expr, BooleanFilter):
             return DataFrame(
-                query_compiler=self._query_compiler._update_query(BooleanFilter(expr))
+                _query_compiler=self._query_compiler._update_query(BooleanFilter(expr))
             )
         elif isinstance(expr, str):
             column_resolver = {}
@@ -1390,7 +1399,7 @@ class DataFrame(NDFrame):
             resolvers = column_resolver, {}
             # Use pandas eval to parse query - TODO validate this further
             filter = eval(expr, target=self, resolvers=tuple(tuple(resolvers)))
-            return DataFrame(query_compiler=self._query_compiler._update_query(filter))
+            return DataFrame(_query_compiler=self._query_compiler._update_query(filter))
         else:
             raise NotImplementedError(expr, type(expr))
 

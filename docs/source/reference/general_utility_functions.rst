@@ -5,13 +5,6 @@ General utility functions
 =========================
 .. currentmodule:: eland
 
-Elasticsearch access
-~~~~~~~~~~~~~~~~~~~~
-.. autosummary::
-   :toctree: api/
-
-    read_es
-
 Pandas and Eland
 ~~~~~~~~~~~~~~~~
 .. autosummary::
