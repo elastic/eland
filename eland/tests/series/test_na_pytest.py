@@ -22,7 +22,9 @@ class TestSeriesNA(TestData):
         for column in self.columns:
             not_isna_ed_ecommerce = ed_ecommerce[~ed_ecommerce[column].isna()]
             not_isna_pd_ecommerce = pd_ecommerce[~pd_ecommerce[column].isna()]
-            assert_pandas_eland_frame_equal(not_isna_pd_ecommerce, not_isna_ed_ecommerce)
+            assert_pandas_eland_frame_equal(
+                not_isna_pd_ecommerce, not_isna_ed_ecommerce
+            )
 
     def test_isna(self):
         ed_ecommerce = self.ed_ecommerce()
