@@ -15,14 +15,22 @@ class TestSeriesNA(TestData):
         "geoip.region_name",
     ]
 
-    def test_isna(self):
+    def test_not_isna(self):
         ed_ecommerce = self.ed_ecommerce()
         pd_ecommerce = eland_to_pandas(ed_ecommerce)
 
         for column in self.columns:
-            isna_ed_ecommerce = ed_ecommerce[~ed_ecommerce[column].isna()]
-            isna_pd_ecommerce = pd_ecommerce[~pd_ecommerce[column].isna()]
-            assert_pandas_eland_frame_equal(isna_pd_ecommerce, isna_ed_ecommerce)
+            not_isna_ed_ecommerce = ed_ecommerce[~ed_ecommerce[column].isna()]
+            not_isna_pd_ecommerce = pd_ecommerce[~pd_ecommerce[column].isna()]
+            assert_pandas_eland_frame_equal(not_isna_pd_ecommerce, not_isna_ed_ecommerce)
+
+    def isna(self):
+        ed_ecommerce = self.ed_ecommerce()
+        pd_ecommerce = eland_to_pandas(ed_ecommerce)
+
+        isna_ed_ecommerce = ed_ecommerce[ed_ecommerce["geoip.region_name"].isna()]
+        isna_pd_ecommerce = pd_ecommerce[pd_ecommerce["geoip.region_name"].isna()]
+        assert_pandas_eland_frame_equal(isna_pd_ecommerce, isna_ed_ecommerce)
 
     def test_notna(self):
         ed_ecommerce = self.ed_ecommerce()

@@ -485,6 +485,8 @@ class Series(NDFrame):
         """
         return IsNull(field=self.name)
 
+    isnull = isna
+
     def notna(self):
         """
         Detect existing (non-missing) values.
@@ -500,6 +502,8 @@ class Series(NDFrame):
 
         """
         return NotNull(field=self.name)
+
+    notnull = notna
 
     @property
     def ndim(self):
