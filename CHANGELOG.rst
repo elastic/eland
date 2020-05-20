@@ -1,6 +1,54 @@
 Changelog
 =========
 
+7.7.0a1 (2020-05-20)
+--------------------
+
+* Added the package to Conda Forge, install via
+  ``conda install -c conda-forge eland`` (`#209`_)
+* Added ``DataFrame.sample()`` and ``Series.sample()`` for querying
+  a random sample of data from the index (`#196`_, contributed by `@mesejo`_)
+* Added ``Series.isna()`` and ``Series.notna()`` for filtering out
+  missing, ``NaN`` or null values from a column (`#210`_, contributed by `@mesejo`_)
+* Added ``DataFrame.filter()`` and ``Series.filter()`` for reducing an axis
+  using a sequence of items or a pattern (`#212`_)
+* Added ``DataFrame.to_pandas()`` and ``Series.to_pandas()`` for converting
+  an Eland dataframe or series into a Pandas dataframe or series inline (`#208`_)
+* Added support for XGBoost v1.0.0 (`#200`_)
+* Deprecated ``info_es()`` in favor of ``es_info()`` (`#208`_)
+* Deprecated ``eland.read_csv()`` in favor of ``eland.csv_to_eland()`` (`#208`_)
+* Deprecated ``eland.read_es()`` in favor of ``eland.DataFrame()`` (`#208`_)
+* Fixed ``DeprecationWarning`` raised from ``pandas.Series`` when an
+  an empty series was created without specifying ``dtype`` (`#188`_, contributed by `@mesejo`_)
+* Fixed a bug when filtering columns on complex combinations of and and or (`#204`_)
+* Fixed an issue where ``DataFrame.shape`` would return a larger value than
+  in the index if a sized operation like ``.head(X)`` was applied to the data
+  frame (`#205`_, contributed by `@mesejo`_)
+* Fixed issue where both ``scikit-learn`` and ``xgboost`` libraries were
+  required to use ``eland.ml.ImportedMLModel``, now only one library is
+  required to use this feature (`#206`_)
+* Changed ``var`` and ``std`` aggregations to use sample instead of
+  population in line with Pandas (`#185`_)
+* Changed painless scripts to use ``source`` rather than ``inline`` to improve
+  script caching performance (`#191`_, contributed by `@mesejo`_)
+* Changed minimum ``elasticsearch`` Python library version to v7.7.0 (`#207`_)
+* Changed name of ``Index.field_name`` to ``Index.es_field_name`` (`#208`_)
+
+ .. _#200: https://github.com/elastic/eland/pull/200
+ .. _#201: https://github.com/elastic/eland/pull/201
+ .. _#204: https://github.com/elastic/eland/pull/204
+ .. _#205: https://github.com/elastic/eland/pull/205
+ .. _#206: https://github.com/elastic/eland/pull/206
+ .. _#207: https://github.com/elastic/eland/pull/207
+ .. _#191: https://github.com/elastic/eland/pull/191
+ .. _#210: https://github.com/elastic/eland/pull/210
+ .. _#185: https://github.com/elastic/eland/pull/185
+ .. _#188: https://github.com/elastic/eland/pull/188
+ .. _#196: https://github.com/elastic/eland/pull/196
+ .. _#208: https://github.com/elastic/eland/pull/208
+ .. _#209: https://github.com/elastic/eland/pull/209
+ .. _#212: https://github.com/elastic/eland/pull/212
+
 7.6.0a5 (2020-04-14)
 --------------------
 
