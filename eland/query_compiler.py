@@ -469,6 +469,14 @@ class QueryCompiler:
 
         return result
 
+    def filter(self, items=None, like=None, regex=None):
+        # field will be es_index_field for DataFrames or the column for Series.
+        # This function is only called for axis='index',
+        # DataFrame.filter(..., axis="columns") calls .drop()
+        result = self.copy()
+        result._operations.filter(self, items=items, like=like, regex=regex)
+        return result
+
     def aggs(self, func):
         return self._operations.aggs(self, func)
 

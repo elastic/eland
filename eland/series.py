@@ -21,6 +21,7 @@ Based on NDFrame which underpins eland.DataFrame
 import sys
 import warnings
 from io import StringIO
+from typing import Optional, Union, Sequence
 
 import numpy as np
 import pandas as pd
@@ -153,14 +154,14 @@ class Series(NDFrame):
         return num_rows, num_columns
 
     @property
-    def field_name(self):
+    def es_field_name(self):
         """
         Returns
         -------
-        field_name: str
+        es_field_name: str
             Return the Elasticsearch field name for this series
         """
-        return self._query_compiler.field_names[0]
+        return self._query_compiler.get_field_names(include_scripted_fields=True)[0]
 
     def _get_name(self):
         return self._query_compiler.columns[0]
@@ -525,6 +526,62 @@ class Series(NDFrame):
         :pandas_api_docs:`pandas.Series.ndim`
         """
         return 1
+
+    def filter(
+        self,
+        items: Optional[Sequence[str]] = None,
+        like: Optional[str] = None,
+        regex: Optional[str] = None,
+        axis: Optional[Union[int, str]] = None,
+    ) -> "Series":
+        """
+        Subset the dataframe rows or columns according to the specified index labels.
+        Note that this routine does not filter a dataframe on its
+        contents. The filter is applied to the labels of the index.
+
+        Parameters
+        ----------
+        items : list-like
+            Keep labels from axis which are in items.
+        like : str
+            Keep labels from axis for which "like in label == True".
+        regex : str (regular expression)
+            Keep labels from axis for which re.search(regex, label) == True.
+        axis : {0 or ‘index’, 1 or ‘columns’, None}, default None
+            The axis to filter on, expressed either as an index (int) or axis name (str).
+            By default this is the info axis, ‘index’ for Series, ‘columns’ for DataFrame.
+
+        Returns
+        -------
+        eland.Series
+
+        See Also
+        --------
+        :pandas_api_docs:`pandas.Series.filter`
+
+        Notes
+        -----
+        The ``items``, ``like``, and ``regex`` parameters are
+        enforced to be mutually exclusive.
+        """
+        filter_options_passed = sum([items is not None, bool(like), bool(regex)])
+        if filter_options_passed > 1:
+            raise TypeError(
+                "Keyword arguments `items`, `like`, or `regex` "
+                "are mutually exclusive"
+            )
+        elif filter_options_passed == 0:
+            raise TypeError("Must pass either 'items', 'like', or 'regex'")
+
+        # axis defaults to 'columns' for DataFrame, 'index' for Series
+        if axis is None:
+            axis = "index"
+        pd.Series._get_axis_name(axis)
+
+        new_query_compiler = self._query_compiler.filter(
+            items=items, like=like, regex=regex
+        )
+        return Series(_query_compiler=new_query_compiler)
 
     def es_info(self):
         buf = StringIO()

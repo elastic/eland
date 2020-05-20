@@ -527,6 +527,25 @@ class Operations:
         results = self._metric_aggs(query_compiler, pd_aggs, numeric_only=False)
         return pd.DataFrame(results, index=pd_aggs)
 
+    def filter(self, query_compiler, items=None, like=None, regex=None):
+        # This function is only called for axis='index',
+        # DataFrame.filter(..., axis="columns") calls .drop()
+        if items is not None:
+            self.filter_index_values(
+                query_compiler, field=query_compiler.index.es_index_field, items=items
+            )
+            return
+        elif like is not None:
+            arg_name = "like"
+        else:
+            assert regex is not None
+            arg_name = "regex"
+
+        raise NotImplementedError(
+            f".filter({arg_name}='...', axis='index') is currently not supported due "
+            f"to substring and regex operations not being available for Elasticsearch document IDs."
+        )
+
     def describe(self, query_compiler):
         query_params, post_processing = self._resolve_tasks(query_compiler)
 
@@ -674,7 +693,7 @@ class Operations:
             # _source to the body rather than as a _source parameter
             body["_source"] = _source
         else:
-            _source = False
+            body["_source"] = False
 
         es_results = None
 
@@ -792,6 +811,16 @@ class Operations:
             task = QueryIdsTask(False, items)
         else:
             task = QueryTermsTask(False, field, items)
+        self._tasks.append(task)
+
+    def filter_index_values(self, query_compiler, field, items):
+        # Basically .drop_index_values() except with must=True on tasks.
+        self._validate_index_operation(query_compiler, items)
+
+        if field == Index.ID_INDEX_FIELD:
+            task = QueryIdsTask(True, items)
+        else:
+            task = QueryTermsTask(True, field, items)
         self._tasks.append(task)
 
     @staticmethod

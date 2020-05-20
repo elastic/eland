@@ -41,6 +41,8 @@ _ed_ecommerce = ed.DataFrame(ES_TEST_CLIENT, ECOMMERCE_INDEX_NAME)
 
 
 class TestData:
+    client = ES_TEST_CLIENT
+
     def pd_flights(self):
         return _pd_flights
 
