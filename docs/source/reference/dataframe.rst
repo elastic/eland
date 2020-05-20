@@ -60,6 +60,10 @@ Computations / descriptive stats
    DataFrame.max
    DataFrame.mean
    DataFrame.min
+   DataFrame.median
+   DataFrame.mad
+   DataFrame.std
+   DataFrame.var
    DataFrame.sum
    DataFrame.nunique
 
@@ -69,6 +73,7 @@ Reindexing / selection / label manipulation
    :toctree: api/
 
    DataFrame.drop
+   DataFrame.filter
 
 Plotting
 ~~~~~~~~
