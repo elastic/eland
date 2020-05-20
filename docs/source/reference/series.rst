@@ -40,16 +40,22 @@ Binary operator functions
 
    Series.add
    Series.sub
+   Series.subtract
    Series.mul
+   Series.multiply
    Series.div
+   Series.divide
    Series.truediv
    Series.floordiv
    Series.mod
    Series.pow
    Series.radd
    Series.rsub
+   Series.rsubtract
    Series.rmul
+   Series.rmultiply
    Series.rdiv
+   Series.rdivide
    Series.rtruediv
    Series.rfloordiv
    Series.rmod
@@ -65,6 +71,10 @@ Computations / descriptive stats
    Series.mean
    Series.min
    Series.sum
+   Series.median
+   Series.mad
+   Series.std
+   Series.var
    Series.nunique
    Series.value_counts
 
@@ -76,6 +86,10 @@ Reindexing / selection / label manipulation
    Series.rename
    Series.isna
    Series.notna
+   Series.isnull
+   Series.notnull
+   Series.isin
+   Series.filter
 
 Plotting
 ~~~~~~~~
