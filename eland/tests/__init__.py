@@ -50,7 +50,7 @@ FLIGHTS_MAPPING = {
             "OriginLocation": {"type": "geo_point"},
             "OriginRegion": {"type": "keyword"},
             "OriginWeather": {"type": "keyword"},
-            "dayOfWeek": {"type": "integer"},
+            "dayOfWeek": {"type": "byte"},
             "timestamp": {"type": "date", "format": "strict_date_hour_minute_second"},
         }
     }
