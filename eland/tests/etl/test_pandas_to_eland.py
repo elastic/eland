@@ -1,0 +1,183 @@
+# Licensed to Elasticsearch B.V under one or more agreements.
+# Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+# See the LICENSE file in the project root for more information
+
+from datetime import datetime, timedelta
+import pytest
+import pandas as pd
+from elasticsearch.helpers import BulkIndexError
+from eland import pandas_to_eland, DataFrame
+from eland.tests.common import (
+    ES_TEST_CLIENT,
+    assert_frame_equal,
+    assert_pandas_eland_frame_equal,
+)
+
+dt = datetime.utcnow()
+pd_df = pd.DataFrame(
+    {
+        "a": [1, 2, 3],
+        "b": [1.0, 2.0, 3.0],
+        "c": ["A", "B", "C"],
+        "d": [dt, dt + timedelta(1), dt + timedelta(2)],
+    },
+    index=["0", "1", "2"],
+)
+
+pd_df2 = pd.DataFrame({"Z": [3, 2, 1], "a": ["C", "D", "E"]}, index=["0", "1", "2"])
+
+
+@pytest.fixture(scope="function", autouse=True)
+def delete_test_index():
+    ES_TEST_CLIENT.indices.delete(index="test-index", ignore=404)
+    yield
+    ES_TEST_CLIENT.indices.delete(index="test-index", ignore=404)
+
+
+class TestPandasToEland:
+    def test_returns_eland_dataframe(self):
+        df = pandas_to_eland(
+            pd_df, es_client=ES_TEST_CLIENT, es_dest_index="test-index"
+        )
+
+        assert isinstance(df, DataFrame)
+        assert "es_index_pattern: test-index" in df.es_info()
+
+    def test_es_if_exists_fail(self):
+        pandas_to_eland(pd_df, es_client=ES_TEST_CLIENT, es_dest_index="test-index")
+
+        with pytest.raises(ValueError) as e:
+            pandas_to_eland(pd_df, es_client=ES_TEST_CLIENT, es_dest_index="test-index")
+
+        assert str(e.value) == (
+            "Could not create the index [test-index] because it "
+            "already exists. Change the 'es_if_exists' parameter "
+            "to 'append' or 'replace' data."
+        )
+
+    def test_es_if_exists_replace(self):
+        # Assert that 'replace' allows for creation
+        df1 = pandas_to_eland(
+            pd_df2,
+            es_client=ES_TEST_CLIENT,
+            es_dest_index="test-index",
+            es_if_exists="replace",
+            es_refresh=True,
+        ).to_pandas()
+        assert_frame_equal(pd_df2, df1)
+
+        # Assert that 'replace' will replace existing mapping and entries
+        df2 = pandas_to_eland(
+            pd_df,
+            es_client=ES_TEST_CLIENT,
+            es_dest_index="test-index",
+            es_if_exists="replace",
+            es_refresh=True,
+        )
+        assert_pandas_eland_frame_equal(pd_df, df2)
+
+        df3 = pandas_to_eland(
+            pd_df2,
+            es_client=ES_TEST_CLIENT,
+            es_dest_index="test-index",
+            es_if_exists="replace",
+            es_refresh=True,
+        ).to_pandas()
+        assert_frame_equal(df1, df3)
+
+    def test_es_if_exists_append(self):
+        df1 = pandas_to_eland(
+            pd_df,
+            es_client=ES_TEST_CLIENT,
+            es_dest_index="test-index",
+            es_if_exists="append",
+            es_refresh=True,
+            # We use 'short' here specifically so that the
+            # assumed type of 'long' is coerced into a 'short'
+            # by append mode.
+            es_type_overrides={"a": "short"},
+        )
+        assert_pandas_eland_frame_equal(pd_df, df1)
+        assert df1.shape == (3, 4)
+
+        pd_df2 = pd.DataFrame(
+            {
+                "a": [4, 5, 6],
+                "b": [-1.0, -2.0, -3.0],
+                "c": ["A", "B", "C"],
+                "d": [dt, dt - timedelta(1), dt - timedelta(2)],
+            },
+            index=["3", "4", "5"],
+        )
+        df2 = pandas_to_eland(
+            pd_df2,
+            es_client=ES_TEST_CLIENT,
+            es_dest_index="test-index",
+            es_if_exists="append",
+            es_refresh=True,
+        )
+
+        # Assert that the second pandas dataframe is actually appended
+        assert df2.shape == (6, 4)
+        pd_df3 = pd_df.append(pd_df2)
+        assert_pandas_eland_frame_equal(pd_df3, df2)
+
+    def test_es_if_exists_append_mapping_mismatch(self):
+        df1 = pandas_to_eland(
+            pd_df,
+            es_client=ES_TEST_CLIENT,
+            es_dest_index="test-index",
+            es_if_exists="append",
+            es_refresh=True,
+        )
+
+        with pytest.raises(ValueError) as e:
+            pandas_to_eland(
+                pd_df2,
+                es_client=ES_TEST_CLIENT,
+                es_dest_index="test-index",
+                es_if_exists="append",
+            )
+
+        assert str(e.value) == (
+            "DataFrame dtypes and Elasticsearch index mapping aren't compatible:\n"
+            "- 'b' is missing from DataFrame columns\n"
+            "- 'c' is missing from DataFrame columns\n"
+            "- 'd' is missing from DataFrame columns\n"
+            "- 'Z' is missing from ES index mapping\n"
+            "- 'a' column type ('keyword') not compatible with ES index mapping type ('long')"
+        )
+        # Assert that the index isn't modified
+        assert_pandas_eland_frame_equal(pd_df, df1)
+
+    def test_es_if_exists_append_es_type_coerce_error(self):
+        df1 = pandas_to_eland(
+            pd_df,
+            es_client=ES_TEST_CLIENT,
+            es_dest_index="test-index",
+            es_if_exists="append",
+            es_refresh=True,
+            es_type_overrides={"a": "byte"},
+        )
+        assert_pandas_eland_frame_equal(pd_df, df1)
+
+        pd_df_short = pd.DataFrame(
+            {
+                "a": [128],  # This value is too large for 'byte'
+                "b": [-1.0],
+                "c": ["A"],
+                "d": [dt],
+            },
+            index=["3"],
+        )
+
+        with pytest.raises(BulkIndexError) as e:
+            pandas_to_eland(
+                pd_df_short,
+                es_client=ES_TEST_CLIENT,
+                es_dest_index="test-index",
+                es_if_exists="append",
+            )
+
+        # Assert that the value 128 caused the index error
+        assert "Value [128] is out of range for a byte" in str(e.value)

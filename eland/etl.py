@@ -9,7 +9,7 @@ import pandas as pd  # type: ignore
 from pandas.io.parsers import _c_parser_defaults  # type: ignore
 
 from eland import DataFrame
-from eland.field_mappings import FieldMappings
+from eland.field_mappings import FieldMappings, verify_mapping_compatibility
 from eland.common import ensure_es_client, DEFAULT_CHUNK_SIZE
 from eland.utils import deprecated_api
 from elasticsearch import Elasticsearch  # type: ignore
@@ -172,14 +172,23 @@ def pandas_to_eland(
             raise ValueError(
                 f"Could not create the index [{es_dest_index}] because it "
                 f"already exists. "
-                f"Change the if_exists parameter to "
+                f"Change the 'es_if_exists' parameter to "
                 f"'append' or 'replace' data."
             )
+
         elif es_if_exists == "replace":
             es_client.indices.delete(index=es_dest_index)
             es_client.indices.create(index=es_dest_index, body=mapping)
-        # elif if_exists == "append":
-        # TODO validate mapping are compatible
+
+        elif es_if_exists == "append":
+            dest_mapping = es_client.indices.get_mapping(index=es_dest_index)[
+                es_dest_index
+            ]
+            verify_mapping_compatibility(
+                ed_mapping=mapping,
+                es_mapping=dest_mapping,
+                es_type_overrides=es_type_overrides,
+            )
     else:
         es_client.indices.create(index=es_dest_index, body=mapping)
 
