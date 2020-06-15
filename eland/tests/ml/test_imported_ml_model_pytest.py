@@ -4,6 +4,7 @@
 
 import pytest
 import numpy as np
+from elasticsearch import ElasticsearchException
 
 from eland.ml import ImportedMLModel
 from eland.tests import ES_TEST_CLIENT
@@ -38,12 +39,55 @@ requires_no_ml_extras = pytest.mark.skipif(
 )
 
 
-@requires_no_ml_extras
-def test_import_ml_model_when_dependencies_are_not_available():
-    from eland.ml import MLModel, ImportedMLModel  # noqa: F401
-
-
 class TestImportedMLModel:
+    @requires_no_ml_extras
+    def test_import_ml_model_when_dependencies_are_not_available(self):
+        from eland.ml import MLModel, ImportedMLModel  # noqa: F401
+
+    @requires_sklearn
+    def test_unpack_and_raise_errors_in_ingest_simulate(self, mocker):
+        # Train model
+        training_data = datasets.make_classification(n_features=5)
+        classifier = DecisionTreeClassifier()
+        classifier.fit(training_data[0], training_data[1])
+
+        # Serialise the models to Elasticsearch
+        feature_names = ["f0", "f1", "f2", "f3", "f4"]
+        model_id = "test_decision_tree_classifier"
+        test_data = [[0.1, 0.2, 0.3, -0.5, 1.0], [1.6, 2.1, -10, 50, -1.0]]
+
+        es_model = ImportedMLModel(
+            ES_TEST_CLIENT,
+            model_id,
+            classifier,
+            feature_names,
+            overwrite=True,
+            es_compress_model_definition=True,
+        )
+
+        # Mock the ingest.simulate API to return an error within {'docs': [...]}
+        mock = mocker.patch.object(ES_TEST_CLIENT.ingest, "simulate")
+        mock.return_value = {
+            "docs": [
+                {
+                    "error": {
+                        "type": "x_content_parse_exception",
+                        "reason": "[1:1052] [inference_model_definition] failed to parse field [trained_model]",
+                    }
+                }
+            ]
+        }
+
+        with pytest.raises(RuntimeError) as err:
+            es_model.predict(test_data)
+
+        assert repr(err.value) == (
+            'RuntimeError("Failed to run prediction for model ID '
+            "'test_decision_tree_classifier'\", {'type': 'x_content_parse_exception', "
+            "'reason': '[1:1052] [inference_model_definition] failed to parse "
+            "field [trained_model]'})"
+        )
+
     @requires_sklearn
     @pytest.mark.parametrize("compress_model_definition", [True, False])
     def test_decision_tree_classifier(self, compress_model_definition):
@@ -66,7 +110,7 @@ class TestImportedMLModel:
             classifier,
             feature_names,
             overwrite=True,
-            compress_es_model_definition=compress_model_definition,
+            es_compress_model_definition=compress_model_definition,
         )
         es_results = es_model.predict(test_data)
 
@@ -97,7 +141,7 @@ class TestImportedMLModel:
             regressor,
             feature_names,
             overwrite=True,
-            compress_es_model_definition=compress_model_definition,
+            es_compress_model_definition=compress_model_definition,
         )
         es_results = es_model.predict(test_data)
 
@@ -128,7 +172,7 @@ class TestImportedMLModel:
             classifier,
             feature_names,
             overwrite=True,
-            compress_es_model_definition=compress_model_definition,
+            es_compress_model_definition=compress_model_definition,
         )
         es_results = es_model.predict(test_data)
 
@@ -159,7 +203,7 @@ class TestImportedMLModel:
             regressor,
             feature_names,
             overwrite=True,
-            compress_es_model_definition=compress_model_definition,
+            es_compress_model_definition=compress_model_definition,
         )
         es_results = es_model.predict(test_data)
 
@@ -190,7 +234,7 @@ class TestImportedMLModel:
             classifier,
             feature_names,
             overwrite=True,
-            compress_es_model_definition=compress_model_definition,
+            es_compress_model_definition=compress_model_definition,
         )
         es_results = es_model.predict(test_data)
 
@@ -221,7 +265,7 @@ class TestImportedMLModel:
             regressor,
             feature_names,
             overwrite=True,
-            compress_es_model_definition=compress_model_definition,
+            es_compress_model_definition=compress_model_definition,
         )
 
         es_results = es_model.predict(test_data)

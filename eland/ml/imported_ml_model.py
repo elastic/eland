@@ -61,6 +61,11 @@ class ImportedMLModel(MLModel):
     overwrite: bool
         Delete and overwrite existing model (if exists)
 
+    es_compress_model_definition: bool
+        If True will use 'compressed_definition' which uses gzipped
+        JSON instead of raw JSON to reduce the amount of data sent
+        over the wire in HTTP requests. Defaults to 'True'.
+
     Examples
     --------
     >>> from sklearn import datasets
@@ -107,7 +112,7 @@ class ImportedMLModel(MLModel):
         classification_labels: Optional[List[str]] = None,
         classification_weights: Optional[List[float]] = None,
         overwrite: bool = False,
-        compress_es_model_definition: bool = True,
+        es_compress_model_definition: bool = True,
     ):
         super().__init__(es_client, model_id)
 
@@ -132,7 +137,7 @@ class ImportedMLModel(MLModel):
         if es_version(self._client) >= (7, 8):
             body["inference_config"] = {self._model_type: {}}
 
-        if compress_es_model_definition:
+        if es_compress_model_definition:
             body["compressed_definition"] = serializer.serialize_and_compress_model()
         else:
             body["definition"] = serializer.serialize_model()
@@ -220,10 +225,17 @@ class ImportedMLModel(MLModel):
             }
         )
 
-        y = [
-            doc["doc"]["_source"]["ml"]["inference"]["predicted_value"]
-            for doc in results["docs"]
-        ]
+        # Unpack results into an array. Errors can be present
+        # within the response without a non-2XX HTTP status code.
+        y = []
+        for doc in results["docs"]:
+            if "error" in doc:
+                raise RuntimeError(
+                    f"Failed to run prediction for model ID {self._model_id!r}",
+                    doc["error"],
+                )
+
+            y.append(doc["doc"]["_source"]["ml"]["inference"]["predicted_value"])
 
         # Return results as np.ndarray of float32 or int (consistent with sklearn/xgboost)
         if self._model_type == MLModel.TYPE_CLASSIFICATION:
