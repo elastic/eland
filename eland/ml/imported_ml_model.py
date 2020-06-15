@@ -2,7 +2,7 @@
 # Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 # See the LICENSE file in the project root for more information
 
-from typing import Union, List, Optional, Tuple, TYPE_CHECKING, cast
+from typing import Union, List, Optional, Tuple, TYPE_CHECKING, cast, Dict, Any
 
 import numpy as np  # type: ignore
 
@@ -107,6 +107,7 @@ class ImportedMLModel(MLModel):
         classification_labels: Optional[List[str]] = None,
         classification_weights: Optional[List[float]] = None,
         overwrite: bool = False,
+        compress_es_model_definition: bool = True,
     ):
         super().__init__(es_client, model_id)
 
@@ -124,14 +125,17 @@ class ImportedMLModel(MLModel):
         if overwrite:
             self.delete_model()
 
-        serialized_model = serializer.serialize_and_compress_model()
-        body = {
-            "compressed_definition": serialized_model,
+        body: Dict[str, Any] = {
             "input": {"field_names": feature_names},
         }
         # 'inference_config' is required in 7.8+ but isn't available in <=7.7
         if es_version(self._client) >= (7, 8):
             body["inference_config"] = {self._model_type: {}}
+
+        if compress_es_model_definition:
+            body["compressed_definition"] = serializer.serialize_and_compress_model()
+        else:
+            body["definition"] = serializer.serialize_model()
 
         self._client.ml.put_trained_model(
             model_id=self._model_id, body=body,

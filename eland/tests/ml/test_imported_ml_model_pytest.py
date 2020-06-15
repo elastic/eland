@@ -45,7 +45,8 @@ def test_import_ml_model_when_dependencies_are_not_available():
 
 class TestImportedMLModel:
     @requires_sklearn
-    def test_decision_tree_classifier(self):
+    @pytest.mark.parametrize("compress_model_definition", [True, False])
+    def test_decision_tree_classifier(self, compress_model_definition):
         # Train model
         training_data = datasets.make_classification(n_features=5)
         classifier = DecisionTreeClassifier()
@@ -60,7 +61,12 @@ class TestImportedMLModel:
         model_id = "test_decision_tree_classifier"
 
         es_model = ImportedMLModel(
-            ES_TEST_CLIENT, model_id, classifier, feature_names, overwrite=True
+            ES_TEST_CLIENT,
+            model_id,
+            classifier,
+            feature_names,
+            overwrite=True,
+            compress_es_model_definition=compress_model_definition,
         )
         es_results = es_model.predict(test_data)
 
@@ -70,7 +76,8 @@ class TestImportedMLModel:
         es_model.delete_model()
 
     @requires_sklearn
-    def test_decision_tree_regressor(self):
+    @pytest.mark.parametrize("compress_model_definition", [True, False])
+    def test_decision_tree_regressor(self, compress_model_definition):
         # Train model
         training_data = datasets.make_regression(n_features=5)
         regressor = DecisionTreeRegressor()
@@ -85,7 +92,12 @@ class TestImportedMLModel:
         model_id = "test_decision_tree_regressor"
 
         es_model = ImportedMLModel(
-            ES_TEST_CLIENT, model_id, regressor, feature_names, overwrite=True
+            ES_TEST_CLIENT,
+            model_id,
+            regressor,
+            feature_names,
+            overwrite=True,
+            compress_es_model_definition=compress_model_definition,
         )
         es_results = es_model.predict(test_data)
 
@@ -95,7 +107,8 @@ class TestImportedMLModel:
         es_model.delete_model()
 
     @requires_sklearn
-    def test_random_forest_classifier(self):
+    @pytest.mark.parametrize("compress_model_definition", [True, False])
+    def test_random_forest_classifier(self, compress_model_definition):
         # Train model
         training_data = datasets.make_classification(n_features=5)
         classifier = RandomForestClassifier()
@@ -110,7 +123,12 @@ class TestImportedMLModel:
         model_id = "test_random_forest_classifier"
 
         es_model = ImportedMLModel(
-            ES_TEST_CLIENT, model_id, classifier, feature_names, overwrite=True
+            ES_TEST_CLIENT,
+            model_id,
+            classifier,
+            feature_names,
+            overwrite=True,
+            compress_es_model_definition=compress_model_definition,
         )
         es_results = es_model.predict(test_data)
 
@@ -120,7 +138,8 @@ class TestImportedMLModel:
         es_model.delete_model()
 
     @requires_sklearn
-    def test_random_forest_regressor(self):
+    @pytest.mark.parametrize("compress_model_definition", [True, False])
+    def test_random_forest_regressor(self, compress_model_definition):
         # Train model
         training_data = datasets.make_regression(n_features=5)
         regressor = RandomForestRegressor()
@@ -135,7 +154,12 @@ class TestImportedMLModel:
         model_id = "test_random_forest_regressor"
 
         es_model = ImportedMLModel(
-            ES_TEST_CLIENT, model_id, regressor, feature_names, overwrite=True
+            ES_TEST_CLIENT,
+            model_id,
+            regressor,
+            feature_names,
+            overwrite=True,
+            compress_es_model_definition=compress_model_definition,
         )
         es_results = es_model.predict(test_data)
 
@@ -145,7 +169,8 @@ class TestImportedMLModel:
         es_model.delete_model()
 
     @requires_xgboost
-    def test_xgb_classifier(self):
+    @pytest.mark.parametrize("compress_model_definition", [True, False])
+    def test_xgb_classifier(self, compress_model_definition):
         # Train model
         training_data = datasets.make_classification(n_features=5)
         classifier = XGBClassifier(booster="gbtree")
@@ -160,7 +185,12 @@ class TestImportedMLModel:
         model_id = "test_xgb_classifier"
 
         es_model = ImportedMLModel(
-            ES_TEST_CLIENT, model_id, classifier, feature_names, overwrite=True
+            ES_TEST_CLIENT,
+            model_id,
+            classifier,
+            feature_names,
+            overwrite=True,
+            compress_es_model_definition=compress_model_definition,
         )
         es_results = es_model.predict(test_data)
 
@@ -170,7 +200,8 @@ class TestImportedMLModel:
         es_model.delete_model()
 
     @requires_xgboost
-    def test_xgb_regressor(self):
+    @pytest.mark.parametrize("compress_model_definition", [True, False])
+    def test_xgb_regressor(self, compress_model_definition):
         # Train model
         training_data = datasets.make_regression(n_features=5)
         regressor = XGBRegressor()
@@ -185,7 +216,12 @@ class TestImportedMLModel:
         model_id = "test_xgb_regressor"
 
         es_model = ImportedMLModel(
-            ES_TEST_CLIENT, model_id, regressor, feature_names, overwrite=True
+            ES_TEST_CLIENT,
+            model_id,
+            regressor,
+            feature_names,
+            overwrite=True,
+            compress_es_model_definition=compress_model_definition,
         )
 
         es_results = es_model.predict(test_data)
