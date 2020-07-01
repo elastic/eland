@@ -25,7 +25,7 @@ from eland.ndframe import NDFrame
 from eland.series import Series
 from eland.common import DEFAULT_NUM_ROWS_DISPLAYED, docstring_parameter
 from eland.filter import BooleanFilter
-from eland.utils import deprecated_api
+from eland.utils import deprecated_api, is_valid_attr_name
 
 
 class DataFrame(NDFrame):
@@ -444,6 +444,16 @@ class DataFrame(NDFrame):
 
     def __getitem__(self, key):
         return self._getitem(key)
+
+    def __dir__(self):
+        """
+        Provide autocompletion on field names in interactive environment.
+        """
+        return super().__dir__() + [
+            column_name
+            for column_name in self._query_compiler.columns.to_list()
+            if is_valid_attr_name(column_name)
+        ]
 
     def __repr__(self):
         """
