@@ -8,4 +8,3 @@ Implementation Notes
    :maxdepth: 2
 
    details.rst 
-   dataframe_supported.rst 

@@ -2,9 +2,9 @@
 
 .. module:: eland
 
-****************************************************************
-eland: pandas-like data analysis toolkit backed by Elasticsearch
-****************************************************************
+**************************************************************
+Eland: DataFrames and Machine Learning backed by Elasticsearch
+**************************************************************
 
 **Date**: |today| **Version**: |version|
 
@@ -13,9 +13,12 @@ eland: pandas-like data analysis toolkit backed by Elasticsearch
 `Issues & Ideas <https://github.com/elastic/eland/issues>`__ |
 `Q&A Support <https://discuss.elastic.co>`__ |
 
-:mod:`eland` is an open source, Apache2-licensed elasticsearch Python client to analyse, explore and manipulate data that resides in elasticsearch.
-Where possible the package uses existing Python APIs and data structures to make it easy to switch between Numpy, Pandas, Scikit-learn to their elasticsearch powered equivalents.
-In general, the data resides in elasticsearch and not in memory, which allows eland to access large datasets stored in elasticsearch.
+Eland is a Python Elasticsearch client for exploring and analyzing data
+residing in Elasticsearch with a familiar Pandas-compatible API.
+
+Where possible the package uses existing Python APIs and data structures to make it easy to switch between numpy,
+pandas, scikit-learn to their Elasticsearch powered equivalents. In general, the data resides in Elasticsearch and
+not in memory, which allows Eland to access large datasets stored in Elasticsearch.
 
 Installing Eland
 ~~~~~~~~~~~~~~~~
@@ -32,6 +35,14 @@ Eland can also be installed from `Conda Forge <https://anaconda.org/conda-forge/
 
     $ conda install -c conda-forge eland
 
+Getting Started
+~~~~~~~~~~~~~~~
+
+If it's your first time using Eland we recommend looking through the
+:doc:`examples/index` documentation for ideas on what Eland is capable of.
+
+If you're new to Elasticsearch we recommend `reading the documentation <https://www.elastic.co/elasticsearch>`_.
+
 .. toctree::
    :maxdepth: 2
    :hidden:
@@ -44,6 +55,7 @@ Eland can also be installed from `Conda Forge <https://anaconda.org/conda-forge/
 
 * :doc:`reference/index`
 
+  * :doc:`reference/supported_apis`
   * :doc:`reference/io`
   * :doc:`reference/general_utility_functions`
   * :doc:`reference/dataframe`
@@ -54,7 +66,6 @@ Eland can also be installed from `Conda Forge <https://anaconda.org/conda-forge/
 * :doc:`implementation/index`
 
   * :doc:`implementation/details`
-  * :doc:`implementation/dataframe_supported`
 
 * :doc:`development/index`
 

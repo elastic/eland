@@ -124,7 +124,10 @@ def docs(session):
     if es_active:
         session.install("jupyter-client", "ipykernel")
         for filename in os.listdir(BASE_DIR / "docs/source/examples"):
-            if filename.endswith(".ipynb"):
+            if (
+                filename.endswith(".ipynb")
+                and filename != "introduction_to_eland_webinar.ipynb"
+            ):
                 session.run(
                     "jupyter",
                     "nbconvert",
