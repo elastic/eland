@@ -50,10 +50,12 @@ _Note, this project is still very much a work in progress and in an alpha state;
 
 # What is it?
 
-eland is a Elasticsearch client Python package to analyse, explore and manipulate data that resides in Elasticsearch. 
-Where possible the package uses existing Python APIs and data structures to make it easy to switch between numpy, 
-pandas, scikit-learn to their Elasticsearch powered equivalents. In general, the data resides in Elasticsearch and 
-not in memory, which allows eland to access large datasets stored in Elasticsearch.
+Eland is a Python Elasticsearch client for exploring and analyzing data
+residing in Elasticsearch with a familiar Pandas-compatible API.
+
+Where possible the package uses existing Python APIs and data structures to make it easy to switch between numpy,
+pandas, scikit-learn to their Elasticsearch powered equivalents. In general, the data resides in Elasticsearch and
+not in memory, which allows Eland to access large datasets stored in Elasticsearch.
 
 For example, to explore data in a large Elasticsearch index, simply create an eland DataFrame from an Elasticsearch 
 index pattern, and explore using an API that mirrors a subset of the pandas.DataFrame API: 
