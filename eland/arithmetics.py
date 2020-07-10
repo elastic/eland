@@ -138,7 +138,7 @@ class ArithmeticSeries(ArithmeticObject):
         for task in self._tasks:
             if task.op_name == "__add__":
                 value = f"({value} + {task.object.resolve()})"
-            elif task.op_name == "__truediv__":
+            elif task.op_name in ("__truediv__", "__div__"):
                 value = f"({value} / {task.object.resolve()})"
             elif task.op_name == "__floordiv__":
                 value = f"Math.floor({value} / {task.object.resolve()})"

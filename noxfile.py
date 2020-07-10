@@ -43,6 +43,7 @@ TYPED_FILES = {
     "eland/index.py",
     "eland/query.py",
     "eland/tasks.py",
+    "eland/utils.py",
     "eland/ml/__init__.py",
     "eland/ml/_model_serializer.py",
     "eland/ml/imported_ml_model.py",
@@ -75,6 +76,7 @@ def lint(session):
             session.error(f"The file {typed_file!r} couldn't be found")
         popen = subprocess.Popen(
             f"mypy --strict {typed_file}",
+            env=session.env,
             shell=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,

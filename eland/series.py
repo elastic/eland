@@ -33,8 +33,9 @@ Based on NDFrame which underpins eland.DataFrame
 
 import sys
 import warnings
+from collections.abc import Collection
 from io import StringIO
-from typing import Optional, Union, Sequence
+from typing import Optional, Union, Sequence, Any, Tuple, TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
@@ -45,6 +46,7 @@ from eland import NDFrame
 from eland.arithmetics import ArithmeticSeries, ArithmeticString, ArithmeticNumber
 from eland.common import DEFAULT_NUM_ROWS_DISPLAYED, docstring_parameter
 from eland.filter import (
+    BooleanFilter,
     NotFilter,
     Equal,
     Greater,
@@ -56,10 +58,14 @@ from eland.filter import (
     IsNull,
     NotNull,
 )
-from eland.utils import deprecated_api
+from eland.utils import deprecated_api, to_list
+
+if TYPE_CHECKING:  # type: ignore
+    from elasticsearch import Elasticsearch  # noqa: F401
+    from eland.query_compiler import QueryCompiler  # noqa: F401
 
 
-def _get_method_name():
+def _get_method_name() -> str:
     return sys._getframe(1).f_code.co_name
 
 
@@ -106,12 +112,12 @@ class Series(NDFrame):
 
     def __init__(
         self,
-        es_client=None,
-        es_index_pattern=None,
-        name=None,
-        es_index_field=None,
-        _query_compiler=None,
-    ):
+        es_client: Optional["Elasticsearch"] = None,
+        es_index_pattern: Optional[str] = None,
+        name: Optional[str] = None,
+        es_index_field: Optional[str] = None,
+        _query_compiler: Optional["QueryCompiler"] = None,
+    ) -> None:
         # Series has 1 column
         if name is None:
             columns = None
@@ -129,7 +135,7 @@ class Series(NDFrame):
     hist = eland.plotting.ed_hist_series
 
     @property
-    def empty(self):
+    def empty(self) -> bool:
         """Determines if the Series is empty.
 
         Returns:
@@ -139,7 +145,7 @@ class Series(NDFrame):
         return len(self.index) == 0
 
     @property
-    def shape(self):
+    def shape(self) -> Tuple[int, int]:
         """
         Return a tuple representing the dimensionality of the Series.
 
@@ -167,7 +173,7 @@ class Series(NDFrame):
         return num_rows, num_columns
 
     @property
-    def es_field_name(self):
+    def es_field_name(self) -> str:
         """
         Returns
         -------
@@ -176,15 +182,15 @@ class Series(NDFrame):
         """
         return self._query_compiler.get_field_names(include_scripted_fields=True)[0]
 
-    def _get_name(self):
+    @property
+    def name(self) -> str:
         return self._query_compiler.columns[0]
 
-    def _set_name(self, name):
+    @name.setter
+    def name(self, name: str) -> None:
         self._query_compiler.rename({self.name: name}, inplace=True)
 
-    name = property(_get_name, _set_name)
-
-    def rename(self, new_name):
+    def rename(self, new_name: str) -> "Series":
         """
         Rename name of series. Only column rename is supported. This does not change the underlying
         Elasticsearch index, but adds a symbolic link from the new name (column) to the Elasticsearch field name.
@@ -238,18 +244,23 @@ class Series(NDFrame):
             _query_compiler=self._query_compiler.rename({self.name: new_name})
         )
 
-    def head(self, n=5):
+    def head(self, n: int = 5) -> "Series":
         return Series(_query_compiler=self._query_compiler.head(n))
 
-    def tail(self, n=5):
+    def tail(self, n: int = 5) -> "Series":
         return Series(_query_compiler=self._query_compiler.tail(n))
 
-    def sample(self, n: int = None, frac: float = None, random_state: int = None):
+    def sample(
+        self,
+        n: Optional[int] = None,
+        frac: Optional[float] = None,
+        random_state: Optional[int] = None,
+    ) -> "Series":
         return Series(
             _query_compiler=self._query_compiler.sample(n, frac, random_state)
         )
 
-    def value_counts(self, es_size=10):
+    def value_counts(self, es_size: int = 10) -> pd.Series:
         """
         Return the value counts for the specified field.
 
@@ -287,9 +298,8 @@ class Series(NDFrame):
         """
         if not isinstance(es_size, int):
             raise TypeError("es_size must be a positive integer.")
-        if not es_size > 0:
+        elif es_size <= 0:
             raise ValueError("es_size must be a positive integer.")
-
         return self._query_compiler.value_counts(es_size)
 
     # dtype not implemented for Series as causes query to fail
@@ -297,7 +307,7 @@ class Series(NDFrame):
 
     # ----------------------------------------------------------------------
     # Rendering Methods
-    def __repr__(self):
+    def __repr__(self) -> str:
         """
         Return a string representation for a particular Series.
         """
@@ -339,7 +349,7 @@ class Series(NDFrame):
         name=False,
         max_rows=None,
         min_rows=None,
-    ):
+    ) -> Optional[str]:
         """
         Render a string representation of the Series.
 
@@ -411,15 +421,15 @@ class Series(NDFrame):
             result = _buf.getvalue()
             return result
 
-    def to_pandas(self, show_progress=False):
+    def to_pandas(self, show_progress: bool = False) -> pd.Series:
         return self._query_compiler.to_pandas(show_progress=show_progress)[self.name]
 
     @property
-    def _dtype(self):
+    def _dtype(self) -> np.dtype:
         # DO NOT MAKE PUBLIC (i.e. def dtype) as this breaks query eval implementation
         return self._query_compiler.dtypes[0]
 
-    def __gt__(self, other):
+    def __gt__(self, other: Union[int, float, "Series"]) -> BooleanFilter:
         if isinstance(other, Series):
             # Need to use scripted query to compare to values
             painless = f"doc['{self.name}'].value > doc['{other.name}'].value"
@@ -429,7 +439,7 @@ class Series(NDFrame):
         else:
             raise NotImplementedError(other, type(other))
 
-    def __lt__(self, other):
+    def __lt__(self, other: Union[int, float, "Series"]) -> BooleanFilter:
         if isinstance(other, Series):
             # Need to use scripted query to compare to values
             painless = f"doc['{self.name}'].value < doc['{other.name}'].value"
@@ -439,7 +449,7 @@ class Series(NDFrame):
         else:
             raise NotImplementedError(other, type(other))
 
-    def __ge__(self, other):
+    def __ge__(self, other: Union[int, float, "Series"]) -> BooleanFilter:
         if isinstance(other, Series):
             # Need to use scripted query to compare to values
             painless = f"doc['{self.name}'].value >= doc['{other.name}'].value"
@@ -449,7 +459,7 @@ class Series(NDFrame):
         else:
             raise NotImplementedError(other, type(other))
 
-    def __le__(self, other):
+    def __le__(self, other: Union[int, float, "Series"]) -> BooleanFilter:
         if isinstance(other, Series):
             # Need to use scripted query to compare to values
             painless = f"doc['{self.name}'].value <= doc['{other.name}'].value"
@@ -459,7 +469,7 @@ class Series(NDFrame):
         else:
             raise NotImplementedError(other, type(other))
 
-    def __eq__(self, other):
+    def __eq__(self, other: Union[int, float, str, "Series"]) -> BooleanFilter:
         if isinstance(other, Series):
             # Need to use scripted query to compare to values
             painless = f"doc['{self.name}'].value == doc['{other.name}'].value"
@@ -471,7 +481,7 @@ class Series(NDFrame):
         else:
             raise NotImplementedError(other, type(other))
 
-    def __ne__(self, other):
+    def __ne__(self, other: Union[int, float, str, "Series"]) -> BooleanFilter:
         if isinstance(other, Series):
             # Need to use scripted query to compare to values
             painless = f"doc['{self.name}'].value != doc['{other.name}'].value"
@@ -483,13 +493,13 @@ class Series(NDFrame):
         else:
             raise NotImplementedError(other, type(other))
 
-    def isin(self, other):
-        if isinstance(other, list):
-            return IsIn(field=self.name, value=other)
+    def isin(self, other: Union[Collection, pd.Series]) -> BooleanFilter:
+        if isinstance(other, (Collection, pd.Series)):
+            return IsIn(field=self.name, value=to_list(other))
         else:
             raise NotImplementedError(other, type(other))
 
-    def isna(self):
+    def isna(self) -> BooleanFilter:
         """
         Detect missing values.
 
@@ -506,7 +516,7 @@ class Series(NDFrame):
 
     isnull = isna
 
-    def notna(self):
+    def notna(self) -> BooleanFilter:
         """
         Detect existing (non-missing) values.
 
@@ -525,7 +535,7 @@ class Series(NDFrame):
     notnull = notna
 
     @property
-    def ndim(self):
+    def ndim(self) -> int:
         """
         Returns 1 by definition of a Series
 
@@ -596,7 +606,7 @@ class Series(NDFrame):
         )
         return Series(_query_compiler=new_query_compiler)
 
-    def es_info(self):
+    def es_info(self) -> str:
         buf = StringIO()
 
         super()._es_info(buf)
@@ -604,7 +614,7 @@ class Series(NDFrame):
         return buf.getvalue()
 
     @deprecated_api("eland.Series.es_info()")
-    def info_es(self):
+    def info_es(self) -> str:
         return self.es_info()
 
     def __add__(self, right):
@@ -1149,7 +1159,12 @@ class Series(NDFrame):
     rsubtract = __rsub__
     rtruediv = __rtruediv__
 
-    def _numeric_op(self, right, method_name):
+    # __div__ is technically Python 2.x only
+    # but pandas has it so we do too.
+    __div__ = __truediv__
+    __rdiv__ = __rtruediv__
+
+    def _numeric_op(self, right: Any, method_name: str) -> "Series":
         """
         return a op b
 

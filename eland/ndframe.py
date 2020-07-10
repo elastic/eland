@@ -17,9 +17,13 @@
 
 import sys
 from abc import ABC, abstractmethod
-from typing import Tuple
-
+from typing import TYPE_CHECKING, Tuple
+import pandas as pd
 from eland.query_compiler import QueryCompiler
+
+
+if TYPE_CHECKING:
+    from eland.index import Index
 
 """
 NDFrame
@@ -73,7 +77,8 @@ class NDFrame(ABC):
             )
         self._query_compiler = _query_compiler
 
-    def _get_index(self):
+    @property
+    def index(self) -> "Index":
         """
         Return eland index referencing Elasticsearch field to index a DataFrame/Series
 
@@ -100,10 +105,8 @@ class NDFrame(ABC):
         """
         return self._query_compiler.index
 
-    index = property(_get_index)
-
     @property
-    def dtypes(self):
+    def dtypes(self) -> pd.Series:
         """
         Return the pandas dtypes in the DataFrame. Elasticsearch types are mapped
         to pandas dtypes via Mappings._es_dtype_to_pd_dtype.__doc__
@@ -129,7 +132,7 @@ class NDFrame(ABC):
         """
         return self._query_compiler.dtypes
 
-    def _build_repr(self, num_rows):
+    def _build_repr(self, num_rows) -> pd.DataFrame:
         # self could be Series or DataFrame
         if len(self.index) <= num_rows:
             return self.to_pandas()
@@ -144,11 +147,11 @@ class NDFrame(ABC):
 
         return head.append(tail)
 
-    def __sizeof__(self):
+    def __sizeof__(self) -> int:
         # Don't default to pandas, just return approximation TODO - make this more accurate
         return sys.getsizeof(self._query_compiler)
 
-    def __len__(self):
+    def __len__(self) -> int:
         """Gets the length of the DataFrame.
 
         Returns:
@@ -159,7 +162,7 @@ class NDFrame(ABC):
     def _es_info(self, buf):
         self._query_compiler.es_info(buf)
 
-    def mean(self, numeric_only=True):
+    def mean(self, numeric_only: bool = True) -> pd.Series:
         """
         Return mean value for each numeric column
 
@@ -191,7 +194,7 @@ class NDFrame(ABC):
         """
         return self._query_compiler.mean(numeric_only=numeric_only)
 
-    def sum(self, numeric_only=True):
+    def sum(self, numeric_only: bool = True) -> pd.Series:
         """
         Return sum for each numeric column
 
@@ -223,7 +226,7 @@ class NDFrame(ABC):
         """
         return self._query_compiler.sum(numeric_only=numeric_only)
 
-    def min(self, numeric_only=True):
+    def min(self, numeric_only: bool = True) -> pd.Series:
         """
         Return the minimum value for each numeric column
 
@@ -255,7 +258,7 @@ class NDFrame(ABC):
         """
         return self._query_compiler.min(numeric_only=numeric_only)
 
-    def var(self, numeric_only=True):
+    def var(self, numeric_only: bool = True) -> pd.Series:
         """
         Return variance for each numeric column
 
@@ -285,7 +288,7 @@ class NDFrame(ABC):
         """
         return self._query_compiler.var(numeric_only=numeric_only)
 
-    def std(self, numeric_only=True):
+    def std(self, numeric_only: bool = True) -> pd.Series:
         """
         Return standard deviation for each numeric column
 
@@ -315,7 +318,7 @@ class NDFrame(ABC):
         """
         return self._query_compiler.std(numeric_only=numeric_only)
 
-    def median(self, numeric_only=True):
+    def median(self, numeric_only: bool = True) -> pd.Series:
         """
         Return the median value for each numeric column
 
@@ -345,7 +348,7 @@ class NDFrame(ABC):
         """
         return self._query_compiler.median(numeric_only=numeric_only)
 
-    def max(self, numeric_only=True):
+    def max(self, numeric_only: bool = True) -> pd.Series:
         """
         Return the maximum value for each numeric column
 
@@ -377,7 +380,7 @@ class NDFrame(ABC):
         """
         return self._query_compiler.max(numeric_only=numeric_only)
 
-    def nunique(self):
+    def nunique(self) -> pd.Series:
         """
         Return cardinality of each field.
 
@@ -423,7 +426,7 @@ class NDFrame(ABC):
         """
         return self._query_compiler.nunique()
 
-    def mad(self, numeric_only=True):
+    def mad(self, numeric_only: bool = True) -> pd.Series:
         """
         Return standard deviation for each numeric column
 
@@ -456,7 +459,7 @@ class NDFrame(ABC):
     def _hist(self, num_bins):
         return self._query_compiler._hist(num_bins)
 
-    def describe(self):
+    def describe(self) -> pd.DataFrame:
         """
         Generate descriptive statistics that summarize the central tendency, dispersion and shape of a
         dataset’s distribution, excluding NaN values.
