@@ -38,3 +38,10 @@ class TestDataFrameShape(TestData):
         ed_shape = ed_flights.shape
 
         assert pd_shape == ed_shape
+
+    def test_size(self):
+        pd_flights = self.pd_flights()
+        ed_flights = self.ed_flights()
+
+        assert pd_flights.size == ed_flights.size
+        assert pd_flights.FlightDelayMin.size == ed_flights.FlightDelayMin.size

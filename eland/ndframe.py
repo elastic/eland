@@ -17,6 +17,7 @@
 
 import sys
 from abc import ABC, abstractmethod
+from typing import Tuple
 
 from eland.query_compiler import QueryCompiler
 
@@ -505,3 +506,28 @@ class NDFrame(ABC):
     @abstractmethod
     def sample(self, n=None, frac=None, random_state=None):
         pass
+
+    @property
+    def shape(self) -> Tuple[int, ...]:
+        raise NotImplementedError
+
+    @property
+    def size(self) -> int:
+        """
+        Return an int representing the number of elements in this object.
+
+        Return the number of rows if Series. Otherwise return the number of rows times number of columns if DataFrame.
+
+        Returns
+        -------
+        int:
+            Number of elements in the object
+
+        See Also
+        --------
+        :pandas_api_docs:`pandas.DataFrame.size`
+        """
+        product = 0
+        for dim in self.shape:
+            product = (product or 1) * dim
+        return product
