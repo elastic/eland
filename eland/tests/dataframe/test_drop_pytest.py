@@ -17,51 +17,36 @@
 
 # File called _pytest for PyCharm compatability
 
-from eland.tests.common import TestData
-from eland.tests.common import assert_pandas_eland_frame_equal
 
+class TestDataFrameDrop:
+    def test_drop(self, df):
+        df.drop(["Carrier", "DestCityName"], axis=1)
+        df.drop(columns=["Carrier", "DestCityName"])
 
-class TestDataFrameDrop(TestData):
-    def test_flights_small_drop(self):
-        ed_flights_small = self.ed_flights_small()
-        pd_flights_small = self.pd_flights_small()
+        df.drop(["1", "2"])
+        df.drop(["1", "2"], axis=0)
+        df.drop(index=["1", "2"])
 
-        # ['AvgTicketPrice', 'Cancelled', 'Carrier', 'Dest', 'DestAirportID',
-        #        'DestCityName', 'DestCountry', 'DestLocation', 'DestRegion',
-        #        'DestWeather', 'DistanceKilometers', 'DistanceMiles', 'FlightDelay',
-        #        'FlightDelayMin', 'FlightDelayType', 'FlightNum', 'FlightTimeHour',
-        #        'FlightTimeMin', 'Origin', 'OriginAirportID', 'OriginCityName',
-        #        'OriginCountry', 'OriginLocation', 'OriginRegion', 'OriginWeather',
-        #        'dayOfWeek', 'timestamp']
-        pd_col0 = pd_flights_small.drop(["Carrier", "DestCityName"], axis=1)
-        pd_col1 = pd_flights_small.drop(columns=["Carrier", "DestCityName"])
+    def test_drop_all_columns(self, df):
+        all_columns = list(df.columns)
+        rows = df.shape[0]
 
-        ed_col0 = ed_flights_small.drop(["Carrier", "DestCityName"], axis=1)
-        ed_col1 = ed_flights_small.drop(columns=["Carrier", "DestCityName"])
+        for dropped in (
+            df.drop(labels=all_columns, axis=1),
+            df.drop(columns=all_columns),
+            df.drop(all_columns, axis=1),
+        ):
+            assert dropped.shape == (rows, 0)
+            assert list(dropped.columns) == []
 
-        assert_pandas_eland_frame_equal(pd_col0, ed_col0)
-        assert_pandas_eland_frame_equal(pd_col1, ed_col1)
+    def test_drop_all_index(self, df):
+        all_index = list(df.pd.index)
+        cols = df.shape[1]
 
-        # Drop rows by index
-        pd_idx0 = pd_flights_small.drop(["1", "2"])
-        ed_idx0 = ed_flights_small.drop(["1", "2"])
-
-        assert_pandas_eland_frame_equal(pd_idx0, ed_idx0)
-
-    def test_flights_drop_all_columns(self):
-        ed_flights_small = self.ed_flights_small()
-        pd_flights_small = self.pd_flights_small()
-
-        all_columns = ed_flights_small.columns
-
-        pd_col0 = pd_flights_small.drop(labels=all_columns, axis=1)
-        pd_col1 = pd_flights_small.drop(columns=all_columns)
-
-        ed_col0 = ed_flights_small.drop(labels=all_columns, axis=1)
-        ed_col1 = ed_flights_small.drop(columns=all_columns)
-
-        assert_pandas_eland_frame_equal(pd_col0, ed_col0)
-        assert_pandas_eland_frame_equal(pd_col1, ed_col1)
-
-        assert ed_col0.columns.equals(pd_col0.columns)
-        assert ed_col1.columns.equals(pd_col1.columns)
+        for dropped in (
+            df.drop(all_index),
+            df.drop(all_index, axis=0),
+            df.drop(index=all_index),
+        ):
+            assert dropped.shape == (0, cols)
+            assert list(dropped.to_pandas().index) == []
