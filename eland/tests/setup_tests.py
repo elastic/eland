@@ -35,6 +35,7 @@ from eland.tests import (
     ES_TEST_CLIENT,
     ELASTICSEARCH_HOST,
 )
+from eland.common import es_version
 
 
 DATA_LIST = [
@@ -87,7 +88,10 @@ def _setup_data(es):
 
 def _update_max_compilations_limit(es, limit="10000/1m"):
     print("Updating script.max_compilations_rate to ", limit)
-    body = {"transient": {"script.max_compilations_rate": limit}}
+    if es_version(es) < (7, 8):
+        body = {"transient": {"script.max_compilations_rate": limit}}
+    else:
+        body = {"transient": {"script.context.field.max_compilations_rate": limit}}
     es.cluster.put_settings(body=body)
 
 
