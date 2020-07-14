@@ -27,15 +27,16 @@ from pandas.core.dtypes.common import (
     is_string_dtype,
 )
 from pandas.core.dtypes.inference import is_list_like
-from typing import NamedTuple, Optional, Mapping, Dict, Any, TYPE_CHECKING
+from typing import NamedTuple, Optional, Mapping, Dict, Any, TYPE_CHECKING, List, Set
 
 if TYPE_CHECKING:
+    from elasticsearch import Elasticsearch
     from eland import DataFrame
 
 
-ES_FLOAT_TYPES = {"double", "float", "half_float", "scaled_float"}
-ES_INTEGER_TYPES = {"long", "integer", "short", "byte"}
-ES_COMPATIBLE_TYPES = {
+ES_FLOAT_TYPES: Set[str] = {"double", "float", "half_float", "scaled_float"}
+ES_INTEGER_TYPES: Set[str] = {"long", "integer", "short", "byte"}
+ES_COMPATIBLE_TYPES: Dict[str, Set[str]] = {
     "double": ES_FLOAT_TYPES,
     "scaled_float": ES_FLOAT_TYPES,
     "float": ES_FLOAT_TYPES,
@@ -80,7 +81,7 @@ class Field(NamedTuple):
     def np_dtype(self):
         return np.dtype(self.pd_dtype)
 
-    def is_es_agg_compatible(self, es_agg):
+    def is_es_agg_compatible(self, es_agg) -> bool:
         # Cardinality works for all types
         # Numerics and bools work for all aggs
         if es_agg == "cardinality" or self.is_numeric or self.is_bool:
@@ -115,7 +116,7 @@ class FieldMappings:
                                       or es_field_name.keyword (if exists) or None
     """
 
-    ES_DTYPE_TO_PD_DTYPE = {
+    ES_DTYPE_TO_PD_DTYPE: Dict[str, str] = {
         "text": "object",
         "keyword": "object",
         "long": "int64",
@@ -133,7 +134,7 @@ class FieldMappings:
     }
 
     # the labels for each column (display_name is index)
-    column_labels = [
+    column_labels: List[str] = [
         "es_field_name",
         "is_source",
         "es_dtype",
@@ -145,7 +146,12 @@ class FieldMappings:
         "aggregatable_es_field_name",
     ]
 
-    def __init__(self, client=None, index_pattern=None, display_names=None):
+    def __init__(
+        self,
+        client: "Elasticsearch",
+        index_pattern: str,
+        display_names: Optional[List[str]] = None,
+    ):
         """
         Parameters
         ----------
@@ -184,7 +190,9 @@ class FieldMappings:
             self.display_names = display_names
 
     @staticmethod
-    def _extract_fields_from_mapping(mappings, source_only=False, date_format=None):
+    def _extract_fields_from_mapping(
+        mappings: Dict[str, Any], source_only: bool = False
+    ) -> Dict[str, str]:
         """
         Extract all field names and types from a mapping.
         ```
@@ -256,10 +264,10 @@ class FieldMappings:
 
         # Recurse until we get a 'type: xxx'
         def flatten(x, name=""):
-            if type(x) is dict:
+            if isinstance(x, dict):
                 for a in x:
-                    if (
-                        a == "type" and type(x[a]) is str
+                    if a == "type" and isinstance(
+                        x[a], str
                     ):  # 'type' can be a name of a field
                         field_name = name[:-1]
                         field_type = x[a]

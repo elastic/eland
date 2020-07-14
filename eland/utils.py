@@ -18,16 +18,21 @@
 import re
 import functools
 import warnings
-from typing import Callable, TypeVar
+from typing import Callable, TypeVar, Any, Union, List, cast, Collection
+from collections.abc import Collection as ABCCollection
+import pandas as pd  # type: ignore
 
 
-F = TypeVar("F")
+RT = TypeVar("RT")
+Item = TypeVar("Item")
 
 
-def deprecated_api(replace_with: str) -> Callable[[F], F]:
-    def wrapper(f: F) -> F:
+def deprecated_api(
+    replace_with: str,
+) -> Callable[[Callable[..., RT]], Callable[..., RT]]:
+    def wrapper(f: Callable[..., RT]) -> Callable[..., RT]:
         @functools.wraps(f)
-        def wrapped(*args, **kwargs):
+        def wrapped(*args: Any, **kwargs: Any) -> RT:
             warnings.warn(
                 f"{f.__name__} is deprecated, use {replace_with} instead",
                 DeprecationWarning,
@@ -39,10 +44,18 @@ def deprecated_api(replace_with: str) -> Callable[[F], F]:
     return wrapper
 
 
-def is_valid_attr_name(s):
+def is_valid_attr_name(s: str) -> bool:
     """
     Ensure the given string can be used as attribute on an object instance.
     """
-    return isinstance(s, str) and re.search(
-        string=s, pattern=r"^[a-zA-Z_][a-zA-Z0-9_]*$"
+    return bool(
+        isinstance(s, str) and re.search(string=s, pattern=r"^[a-zA-Z_][a-zA-Z0-9_]*$")
     )
+
+
+def to_list(x: Union[Collection[Any], pd.Series]) -> List[Any]:
+    if isinstance(x, ABCCollection):
+        return list(x)
+    elif isinstance(x, pd.Series):
+        return cast(List[Any], x.to_list())
+    raise NotImplementedError(f"Could not convert {type(x).__name__} into a list")

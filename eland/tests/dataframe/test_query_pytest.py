@@ -86,10 +86,11 @@ class TestDataFrameQuery(TestData):
         ed_flights = self.ed_flights()
         pd_flights = self.pd_flights()
 
-        assert (
-            pd_flights[pd_flights.OriginAirportID.isin(["LHR", "SYD"])].shape
-            == ed_flights[ed_flights.OriginAirportID.isin(["LHR", "SYD"])].shape
-        )
+        for obj in (["LHR", "SYD"], ("LHR", "SYD"), pd.Series(data=["LHR", "SYD"])):
+            assert (
+                pd_flights[pd_flights.OriginAirportID.isin(obj)].shape
+                == ed_flights[ed_flights.OriginAirportID.isin(obj)].shape
+            )
 
     def test_multiitem_query(self):
         # Examples from:

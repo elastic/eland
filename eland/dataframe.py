@@ -19,7 +19,7 @@ import sys
 import warnings
 from io import StringIO
 import re
-from typing import Optional, Sequence, Union
+from typing import Optional, Sequence, Union, Tuple
 
 import numpy as np
 import pandas as pd
@@ -631,7 +631,7 @@ class DataFrame(NDFrame):
     def info_es(self):
         return self.es_info()
 
-    def es_query(self, query):
+    def es_query(self, query) -> "DataFrame":
         """Applies an Elasticsearch DSL query to the current DataFrame.
 
         Parameters
@@ -705,7 +705,7 @@ class DataFrame(NDFrame):
 
     def info(
         self, verbose=None, buf=None, max_cols=None, memory_usage=None, null_counts=None
-    ):
+    ) -> None:
         """
         Print a concise summary of a DataFrame.
 
@@ -822,7 +822,7 @@ class DataFrame(NDFrame):
                 dtype = dtypes.iloc[i]
                 col = pprint_thing(col)
 
-                line_no = _put_str(" {num}".format(num=i), space_num)
+                line_no = _put_str(f" {i}", space_num)
 
                 count = ""
                 if show_counts:
@@ -1223,7 +1223,7 @@ class DataFrame(NDFrame):
         }
         return self._query_compiler.to_csv(**kwargs)
 
-    def to_pandas(self, show_progress: bool = False) -> "DataFrame":
+    def to_pandas(self, show_progress: bool = False) -> pd.DataFrame:
         """
         Utility method to convert eland.Dataframe to pandas.Dataframe
 
@@ -1233,10 +1233,10 @@ class DataFrame(NDFrame):
         """
         return self._query_compiler.to_pandas(show_progress=show_progress)
 
-    def _empty_pd_df(self):
+    def _empty_pd_df(self) -> pd.DataFrame:
         return self._query_compiler._empty_pd_ef()
 
-    def select_dtypes(self, include=None, exclude=None):
+    def select_dtypes(self, include=None, exclude=None) -> "DataFrame":
         """
         Return a subset of the DataFrame's columns based on the column dtypes.
 
@@ -1272,7 +1272,7 @@ class DataFrame(NDFrame):
         return self._getitem_array(empty_df.columns)
 
     @property
-    def shape(self):
+    def shape(self) -> Tuple[int, int]:
         """
         Return a tuple representing the dimensionality of the DataFrame.
 
@@ -1299,7 +1299,23 @@ class DataFrame(NDFrame):
 
         return num_rows, num_columns
 
-    def keys(self):
+    @property
+    def ndim(self) -> int:
+        """
+        Returns 2 by definition of a DataFrame
+
+        Returns
+        -------
+        int
+            By definition 2
+
+        See Also
+        --------
+        :pandas_api_docs:`pandas.DataFrame.ndim`
+        """
+        return 2
+
+    def keys(self) -> pd.Index:
         """
         Return columns
 
@@ -1381,7 +1397,7 @@ class DataFrame(NDFrame):
 
     hist = gfx.ed_hist_frame
 
-    def query(self, expr):
+    def query(self, expr) -> "DataFrame":
         """
         Query the columns of a DataFrame with a boolean expression.
 
@@ -1474,7 +1490,7 @@ class DataFrame(NDFrame):
         like: Optional[str] = None,
         regex: Optional[str] = None,
         axis: Optional[Union[int, str]] = None,
-    ):
+    ) -> "DataFrame":
         """
         Subset the dataframe rows or columns according to the specified index labels.
         Note that this routine does not filter a dataframe on its
