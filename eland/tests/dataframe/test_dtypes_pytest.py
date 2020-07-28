@@ -18,30 +18,17 @@
 # File called _pytest for PyCharm compatability
 
 import numpy as np
-from pandas.testing import assert_series_equal
-
-from eland.tests.common import TestData
-from eland.tests.common import assert_pandas_eland_frame_equal
 
 
-class TestDataFrameDtypes(TestData):
-    def test_flights_dtypes(self):
-        pd_flights = self.pd_flights()
-        ed_flights = self.ed_flights()
+class TestDataFrameDtypes:
+    def test_dtypes(self, df):
+        print(df.dtypes)
 
-        print(pd_flights.dtypes)
-        print(ed_flights.dtypes)
+        for i in range(0, len(df.dtypes) - 1):
+            assert isinstance(df.dtypes[i], type(df.dtypes[i]))
 
-        assert_series_equal(pd_flights.dtypes, ed_flights.dtypes)
-
-        for i in range(0, len(pd_flights.dtypes) - 1):
-            assert isinstance(pd_flights.dtypes[i], type(ed_flights.dtypes[i]))
-
-    def test_flights_select_dtypes(self):
-        pd_flights = self.pd_flights_small()
-        ed_flights = self.ed_flights_small()
-
-        assert_pandas_eland_frame_equal(
-            pd_flights.select_dtypes(include=np.number),
-            ed_flights.select_dtypes(include=np.number),
-        )
+    def test_select_dtypes(self, df):
+        df.select_dtypes(include=np.number)
+        df.select_dtypes(exclude=np.number)
+        df.select_dtypes(include=np.float64)
+        df.select_dtypes(exclude=np.float64)

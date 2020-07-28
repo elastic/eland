@@ -19,23 +19,20 @@
 
 import pytest
 from eland.tests.common import TestData
-from eland.tests.common import assert_pandas_eland_frame_equal
 
 
 class TestDataFrameFilter(TestData):
-    def test_filter_arguments_mutually_exclusive(self):
-        ed_flights_small = self.ed_flights_small()
-
+    def test_filter_arguments_mutually_exclusive(self, df):
         with pytest.raises(TypeError):
-            ed_flights_small.filter(items=[], like="!", regex="!")
+            df.filter(items=[], like="!", regex="!")
         with pytest.raises(TypeError):
-            ed_flights_small.filter(items=[], regex="!")
+            df.filter(items=[], regex="!")
         with pytest.raises(TypeError):
-            ed_flights_small.filter(items=[], like="!")
+            df.filter(items=[], like="!")
         with pytest.raises(TypeError):
-            ed_flights_small.filter(like="!", regex="!")
+            df.filter(like="!", regex="!")
         with pytest.raises(TypeError):
-            ed_flights_small.filter()
+            df.filter()
 
     @pytest.mark.parametrize(
         "items",
@@ -45,46 +42,22 @@ class TestDataFrameFilter(TestData):
             ["notfound", "AvgTicketPrice"],
         ],
     )
-    def test_flights_filter_columns_items(self, items):
-        ed_flights_small = self.ed_flights_small()
-        pd_flights_small = self.pd_flights_small()
-
-        ed_df = ed_flights_small.filter(items=items)
-        pd_df = pd_flights_small.filter(items=items)
-
-        assert_pandas_eland_frame_equal(pd_df, ed_df)
+    def test_filter_columns_items(self, df, items):
+        df.filter(items=items)
 
     @pytest.mark.parametrize("like", ["Flight", "Nope"])
-    def test_flights_filter_columns_like(self, like):
-        ed_flights_small = self.ed_flights_small()
-        pd_flights_small = self.pd_flights_small()
-
-        ed_df = ed_flights_small.filter(like=like)
-        pd_df = pd_flights_small.filter(like=like)
-
-        assert_pandas_eland_frame_equal(pd_df, ed_df)
+    def test_filter_columns_like(self, df, like):
+        df.filter(like=like)
 
     @pytest.mark.parametrize("regex", ["^Flig", "^Flight.*r$", ".*", "^[^C]"])
-    def test_flights_filter_columns_regex(self, regex):
-        ed_flights_small = self.ed_flights_small()
-        pd_flights_small = self.pd_flights_small()
-
-        ed_df = ed_flights_small.filter(regex=regex)
-        pd_df = pd_flights_small.filter(regex=regex)
-
-        assert_pandas_eland_frame_equal(pd_df, ed_df)
+    def test_filter_columns_regex(self, df, regex):
+        df.filter(regex=regex)
 
     @pytest.mark.parametrize("items", [[], ["20"], [str(x) for x in range(30)]])
-    def test_flights_filter_index_items(self, items):
-        ed_flights_small = self.ed_flights_small()
-        pd_flights_small = self.pd_flights_small()
+    def test_filter_index_items(self, df, items):
+        df.filter(items=items, axis=0)
 
-        ed_df = ed_flights_small.filter(items=items, axis=0)
-        pd_df = pd_flights_small.filter(items=items, axis=0)
-
-        assert_pandas_eland_frame_equal(pd_df, ed_df)
-
-    def test_flights_filter_index_like_and_regex(self):
+    def test_filter_index_like_and_regex(self):
         ed_flights_small = self.ed_flights_small()
 
         with pytest.raises(NotImplementedError):
