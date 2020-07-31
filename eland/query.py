@@ -25,6 +25,7 @@ from eland.filter import (
     NotNull,
     IsNull,
     IsIn,
+    Like,
     Rlike,
 )
 
@@ -94,6 +95,16 @@ class Query:
                 self._query = ~(IsIn(field, items))
             else:
                 self._query = self._query & ~(IsIn(field, items))
+
+    def wildcard(self, field: str, value: str) -> None:
+        """
+        Add wildcard query
+        https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-wildcard-query.html
+        """
+        if self._query.empty():
+            self._query = Like(field, value)
+        else:
+            self._query = self._query & Like(field, value)
 
     def regexp(self, field: str, value: str) -> None:
         """

@@ -66,7 +66,7 @@ class Task(ABC):
 class SizeTask(Task):
     def __init__(self, task_type: str, index: "Index", count: int):
         super().__init__(task_type)
-        self._sort_field = index.sort_field
+        self._sort_fields = index.sort_fields
         self._count = min(len(index), count)
 
     @abstractmethod
@@ -80,7 +80,7 @@ class HeadTask(SizeTask):
         super().__init__("head", index, count)
 
     def __repr__(self) -> str:
-        return f"('{self._task_type}': ('sort_field': '{self._sort_field}', 'count': {self._count}))"
+        return f"('{self._task_type}': ('sort_fields': '{self._sort_fields}', 'count': {self._count}))"
 
     def resolve_task(
         self,
@@ -90,8 +90,8 @@ class HeadTask(SizeTask):
     ) -> RESOLVED_TASK_TYPE:
         # head - sort asc, size n
         # |12345-------------|
-        query_sort_field = self._sort_field
-        query_sort_order = SortOrder.ASC
+        query_sort_fields = self._sort_fields
+        query_sort_orders = tuple([SortOrder.ASC for _ in query_sort_fields])
         query_size = self._count
 
         # If we are already postprocessing the query results, we just get 'head' of these
@@ -101,12 +101,12 @@ class HeadTask(SizeTask):
             post_processing.append(HeadAction(self._count))
             return query_params, post_processing
 
-        if query_params.sort_field is None:
-            query_params.sort_field = query_sort_field
+        if query_params.sort_fields is None:
+            query_params.sort_fields = query_sort_fields
         # if it is already sorted we use existing field
 
-        if query_params.sort_order is None:
-            query_params.sort_order = query_sort_order
+        if query_params.sort_orders is None:
+            query_params.sort_orders = query_sort_orders
         # if it is already sorted we get head of existing order
 
         if query_params.size is None:
@@ -134,14 +134,14 @@ class TailTask(SizeTask):
     ) -> RESOLVED_TASK_TYPE:
         # tail - sort desc, size n, post-process sort asc
         # |-------------12345|
-        query_sort_field = self._sort_field
-        query_sort_order = SortOrder.DESC
+        query_sort_fields = self._sort_fields
+        query_sort_orders = tuple([SortOrder.DESC for _ in query_sort_fields])
         query_size = self._count
 
         # If this is a tail of a tail adjust settings and return
         if (
             query_params.size is not None
-            and query_params.sort_order == query_sort_order
+            and query_params.sort_orders == query_sort_orders
             and (
                 len(post_processing) == 1
                 and isinstance(post_processing[0], SortIndexAction)
@@ -166,13 +166,15 @@ class TailTask(SizeTask):
             return query_params, post_processing
         else:
             query_params.size = query_size
-        if query_params.sort_field is None:
-            query_params.sort_field = query_sort_field
-        if query_params.sort_order is None:
-            query_params.sort_order = query_sort_order
+        if query_params.sort_fields is None:
+            query_params.sort_fields = query_sort_fields
+        if query_params.sort_orders is None:
+            query_params.sort_orders = query_sort_orders
         else:
             # reverse sort order
-            query_params.sort_order = SortOrder.reverse(query_sort_order)
+            query_params.sort_orders = tuple(
+                [SortOrder.reverse(so) for so in query_sort_orders]
+            )
 
         post_processing.append(SortIndexAction())
 
@@ -182,7 +184,7 @@ class TailTask(SizeTask):
         return self._count
 
     def __repr__(self) -> str:
-        return f"('{self._task_type}': ('sort_field': '{self._sort_field}', 'count': {self._count}))"
+        return f"('{self._task_type}': ('sort_fields': '{self._sort_fields}', 'count': {self._count}))"
 
 
 class SampleTask(SizeTask):
@@ -198,7 +200,7 @@ class SampleTask(SizeTask):
     ) -> RESOLVED_TASK_TYPE:
         query_params.query.random_score(self._random_state)
 
-        query_sort_field = self._sort_field
+        query_sort_fields = self._sort_fields
         query_size = self._count
 
         if query_params.size is not None:
@@ -206,8 +208,8 @@ class SampleTask(SizeTask):
         else:
             query_params.size = query_size
 
-        if query_params.sort_field is None:
-            query_params.sort_field = query_sort_field
+        if query_params.sort_fields is None:
+            query_params.sort_fields = query_sort_fields
 
         post_processing.append(SortIndexAction())
 
@@ -308,6 +310,37 @@ class QueryRegexpTask(Task):
         query_compiler: "QueryCompiler",
     ) -> RESOLVED_TASK_TYPE:
         query_params.query.regexp(self._field, self._value)
+        return query_params, post_processing
+
+    def __repr__(self) -> str:
+        return (
+            f"('{self._task_type}': ('field': '{self._field}', 'value': {self._value}))"
+        )
+
+
+class QueryWildcardTask(Task):
+    def __init__(self, field: str, value: str):
+        """
+        Parameters
+        ----------
+        field: str
+            field_name to filter
+
+        value: str
+            wildcard pattern for filter
+        """
+        super().__init__("wildcard")
+
+        self._field = field
+        self._value = value
+
+    def resolve_task(
+        self,
+        query_params: "QueryParams",
+        post_processing: List["PostProcessingAction"],
+        query_compiler: "QueryCompiler",
+    ) -> RESOLVED_TASK_TYPE:
+        query_params.query.wildcard(self._field, self._value)
         return query_params, post_processing
 
     def __repr__(self) -> str:

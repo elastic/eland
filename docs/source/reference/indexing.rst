@@ -15,3 +15,4 @@ Constructor
    :toctree: api/
 
    Index
+   MultiIndex

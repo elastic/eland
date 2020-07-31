@@ -73,7 +73,7 @@ class NDFrame(ABC):
                 client=es_client,
                 index_pattern=es_index_pattern,
                 display_names=columns,
-                index_field=es_index_field,
+                index_fields=es_index_field,
             )
         self._query_compiler = _query_compiler
 

@@ -17,8 +17,20 @@
 
 import re
 import functools
+from itertools import zip_longest
+
 import warnings
-from typing import Callable, TypeVar, Any, Union, List, cast, Collection, Iterable
+from typing import (
+    Callable,
+    TypeVar,
+    Any,
+    Union,
+    List,
+    cast,
+    Collection,
+    Iterable,
+    Tuple,
+)
 from collections.abc import Collection as ABCCollection
 import pandas as pd  # type: ignore
 
@@ -54,12 +66,20 @@ def is_valid_attr_name(s: str) -> bool:
     )
 
 
-def to_list(x: Union[Collection[Any], pd.Series]) -> List[Any]:
+def to_list(x: Union[Collection[Item], pd.Series]) -> List[Item]:
     if isinstance(x, ABCCollection):
         return list(x)
     elif isinstance(x, pd.Series):
-        return cast(List[Any], x.to_list())
+        return cast(List[Item], x.to_list())
     raise NotImplementedError(f"Could not convert {type(x).__name__} into a list")
+
+
+def zip_equal(*iterables: Iterable[RT]) -> Iterable[Tuple[RT, ...]]:
+    notequal = object()
+    for row in zip_longest(*iterables, fillvalue=notequal):
+        if any(i is notequal for i in row):
+            raise ValueError("Iterables of unequal length passed to zip_equal()")
+        yield row
 
 
 def try_sort(iterable: Iterable[Item]) -> Iterable[Item]:

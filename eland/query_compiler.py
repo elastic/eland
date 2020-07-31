@@ -17,7 +17,7 @@
 
 import copy
 from datetime import datetime
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
@@ -25,7 +25,7 @@ import pandas as pd
 from eland.field_mappings import FieldMappings
 from eland.filter import QueryFilter
 from eland.operations import Operations
-from eland.index import Index
+from eland.index import make_index
 from eland.common import (
     ensure_es_client,
     DEFAULT_PROGRESS_REPORTING_NUM_ROWS,
@@ -70,19 +70,20 @@ class QueryCompiler:
         client=None,
         index_pattern=None,
         display_names=None,
-        index_field=None,
+        index_fields=None,
         to_copy=None,
     ):
         # Implement copy as we don't deep copy the client
         if to_copy is not None:
             self._client = to_copy._client
             self._index_pattern = to_copy._index_pattern
-            self._index = Index(self, to_copy._index.es_index_field)
+            self._index = make_index(self, to_copy._index.es_index_fields)
             self._operations = copy.deepcopy(to_copy._operations)
             self._mappings: FieldMappings = copy.deepcopy(to_copy._mappings)
         else:
             self._client = ensure_es_client(client)
             self._index_pattern = index_pattern
+            self._index = make_index(self, index_fields)
             # Get and persist mappings, this allows us to correctly
             # map returned types from Elasticsearch to pandas datatypes
             self._mappings: FieldMappings = FieldMappings(
@@ -90,7 +91,6 @@ class QueryCompiler:
                 index_pattern=self._index_pattern,
                 display_names=display_names,
             )
-            self._index = Index(self, index_field)
             self._operations = Operations()
 
     @property
@@ -238,7 +238,7 @@ class QueryCompiler:
 
         i = 0
         for hit in iterator:
-            i = i + 1
+            i += 1
 
             if "_source" in hit:
                 row = hit["_source"]
@@ -252,11 +252,18 @@ class QueryCompiler:
                     row[key] = value
 
             # get index value - can be _id or can be field value in source
-            if self._index.is_source_field:
-                index_field = row[self._index.es_index_field]
+            index_row = []
+            for index_field, is_source_field in self._index.is_source_fields:
+                if is_source_field:
+                    index_row.append(row[index_field])
+                else:
+                    index_row.append(hit[index_field])
+
+            if len(index_row) == 1:
+                index_row = index_row[0]
             else:
-                index_field = hit[self._index.es_index_field]
-            index.append(index_field)
+                index_row = tuple(index_row)
+            index.append(index_row)
 
             # flatten row to map correctly to 2D DataFrame
             rows.append(self._flatten_dict(row, field_mapping_cache))
@@ -270,8 +277,15 @@ class QueryCompiler:
                 if i % DEFAULT_PROGRESS_REPORTING_NUM_ROWS == 0:
                     print(f"{datetime.now()}: read {i} rows")
 
+        if len(self._index.es_index_fields) == 1:
+            pd_index = pd.Index(index)
+        else:
+            pd_index = pd.MultiIndex.from_tuples(
+                index, names=self._index.es_index_fields
+            )
+
         # Create pandas DataFrame
-        df = pd.DataFrame(data=rows, index=index)
+        df = pd.DataFrame(data=rows, index=pd_index)
 
         # _source may not contain all field_names in the mapping
         # therefore, fill in missing field_names
@@ -362,17 +376,16 @@ class QueryCompiler:
         index_count: int
             Count of docs where index_field exists
         """
-        return self._operations.index_count(self, self.index.es_index_field)
+        return self._operations.index_count(self, self.index.es_index_fields)
 
-    def _index_matches_count(self, items):
+    def _index_matches_count(self, items) -> Tuple[int]:
         """
         Returns
         -------
-        index_count: int
-            Count of docs where items exist
+        Tuple[int, ...] Count of docs for each item within items
         """
         return self._operations.index_matches_count(
-            self, self.index.es_index_field, items
+            self, self.index.es_index_fields, items
         )
 
     def _empty_pd_ef(self):
@@ -478,7 +491,9 @@ class QueryCompiler:
             result._mappings.display_names = new_columns.to_list()
 
         if index is not None:
-            result._operations.drop_index_values(self, self.index.es_index_field, index)
+            result._operations.drop_index_values(
+                self, self.index.es_index_fields, index
+            )
 
         return result
 
@@ -573,10 +588,10 @@ class QueryCompiler:
                 f"{self._client} != {right._client}"
             )
 
-        if self._index.es_index_field != right._index.es_index_field:
+        if self._index.es_index_fields != right._index.es_index_fields:
             raise ValueError(
                 f"Can not perform arithmetic operations across different index fields "
-                f"{self._index.es_index_field} != {right._index.es_index_field}"
+                f"{self._index.es_index_fields} != {right._index.es_index_fields}"
             )
 
         if self._index_pattern != right._index_pattern:

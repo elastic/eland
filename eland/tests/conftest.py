@@ -38,6 +38,14 @@ class SymmetricAPIChecker:
         self.ed = ed_obj
         self.pd = pd_obj
 
+    def set_objects(self, ed_obj, pd_obj):
+        checker = SymmetricAPIChecker(ed_obj, pd_obj)
+        checker.check_values(ed_obj, pd_obj)
+        return checker
+
+    def get_objects(self):
+        return self.ed, self.pd
+
     def load_dataset(self, dataset):
         if dataset == "flights":
             self.ed = _ed_flights
@@ -93,13 +101,19 @@ class SymmetricAPIChecker:
             assert_series_equal(ed_obj, pd_obj)
         elif isinstance(ed_obj, pd.Index):
             assert ed_obj.equals(pd_obj)
+        # Eland indexes can't be directly compared, pass through to the test.
+        elif isinstance(ed_obj, (ed.MultiIndex, ed.Index)):
+            pass
         else:
             assert ed_obj == pd_obj
 
     def check_exception(self, ed_exc, pd_exc):
         """Checks that either an exception was raised or not from both eland and pandas"""
-        assert (ed_exc is None) == (pd_exc is None) and type(ed_exc) == type(pd_exc)
+        assert (ed_exc is None) == (pd_exc is None) and type(ed_exc) == type(
+            pd_exc
+        ), f"Exceptions are not the same: ed={ed_exc!r} pd={pd_exc!r}"
         if pd_exc is not None:
+            assert ed_exc.args == pd_exc.args
             raise pd_exc
 
     def __getitem__(self, item):
@@ -136,7 +150,7 @@ class SymmetricAPIChecker:
 
         self.check_values(ed_obj, pd_obj)
 
-        if isinstance(ed_obj, (ed.DataFrame, ed.Series)):
+        if isinstance(ed_obj, (ed.DataFrame, ed.Series, ed.Index, ed.MultiIndex)):
             return SymmetricAPIChecker(ed_obj, pd_obj)
         return pd_obj
 

@@ -68,7 +68,7 @@ def lint(session):
     session.install("black", "flake8", "mypy")
     session.run("python", "utils/license-headers.py", "check", *SOURCE_FILES)
     session.run("black", "--check", "--target-version=py36", *SOURCE_FILES)
-    session.run("flake8", "--ignore=E501,W503,E402,E712,E203", *SOURCE_FILES)
+    session.run("flake8", "--ignore=E501,W503,W291,E402,E712,E203", *SOURCE_FILES)
 
     # TODO: When all files are typed we can change this to .run("mypy", "--strict", "eland/")
     session.log("mypy --strict eland/")

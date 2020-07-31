@@ -32,6 +32,7 @@ from eland.common import (
     elasticsearch_date_to_pandas_date,
     build_pd_series,
 )
+from eland.filter import NotFilter, Equal, AndFilter, OrFilter
 from eland.query import Query
 from eland.actions import SortFieldAction
 from eland.tasks import (
@@ -42,8 +43,11 @@ from eland.tasks import (
     ArithmeticOpFieldsTask,
     QueryTermsTask,
     QueryIdsTask,
+    QueryRegexpTask,
+    QueryWildcardTask,
     SizeTask,
 )
+from eland.utils import zip_equal
 
 if typing.TYPE_CHECKING:
     from eland.query_compiler import QueryCompiler
@@ -52,11 +56,19 @@ if typing.TYPE_CHECKING:
 class QueryParams:
     def __init__(self):
         self.query = Query()
-        self.sort_field: Optional[str] = None
-        self.sort_order: Optional[SortOrder] = None
+        self.sort_fields: Optional[Tuple[str, ...]] = None
+        self.sort_orders: Optional[Tuple[SortOrder, ...]] = None
         self.size: Optional[int] = None
         self.fields: Optional[List[str]] = None
         self.script_fields: Optional[Dict[str, Dict[str, Any]]] = None
+
+    def search_sort_params(self):
+        if not self.sort_fields or not self.sort_orders:
+            return None
+        return [
+            {sf: {"order": SortOrder.to_string(so)}}
+            for sf, so in zip_equal(self.sort_fields, self.sort_orders)
+        ]
 
 
 class Operations:
@@ -547,21 +559,30 @@ class Operations:
     def filter(self, query_compiler, items=None, like=None, regex=None):
         # This function is only called for axis='index',
         # DataFrame.filter(..., axis="columns") calls .drop()
+
+        fields = query_compiler.index.es_index_fields
         if items is not None:
-            self.filter_index_values(
-                query_compiler, field=query_compiler.index.es_index_field, items=items
-            )
+            self.filter_index_values(query_compiler, fields=fields, items=items)
             return
-        elif like is not None:
-            arg_name = "like"
+
+        # We can't support '_id' for wildcard or regexp filters
+        if Index.ID_INDEX_FIELD in fields:
+            if like is not None:
+                arg_name = "like"
+            else:
+                assert regex is not None
+                arg_name = "regex"
+
+            raise NotImplementedError(
+                f".filter({arg_name}='...', axis='index') is currently not supported due "
+                f"to substring and regex operations not being available for Elasticsearch document IDs."
+            )
+
+        if like is not None:
+            self.filter_index_values(query_compiler, fields=fields, like=like)
         else:
             assert regex is not None
-            arg_name = "regex"
-
-        raise NotImplementedError(
-            f".filter({arg_name}='...', axis='index') is currently not supported due "
-            f"to substring and regex operations not being available for Elasticsearch document IDs."
-        )
+            self.filter_index_values(query_compiler, fields=fields, regex=regex)
 
     def describe(self, query_compiler):
         query_params, post_processing = self._resolve_tasks(query_compiler)
@@ -688,14 +709,17 @@ class Operations:
     def _es_results(self, query_compiler, collector):
         query_params, post_processing = self._resolve_tasks(query_compiler)
 
-        size, sort_params = Operations._query_params_to_size_and_sort(query_params)
-
+        size = query_params.size
         script_fields = query_params.script_fields
         query = Query(query_params.query)
+        sort_params = query_params.search_sort_params()
 
         body = query.to_search_body()
         if script_fields is not None:
             body["script_fields"] = script_fields
+
+        if sort_params is not None:
+            body["sort"] = sort_params
 
         # Only return requested field_names
         _source = query_compiler.get_field_names(include_scripted_fields=False)
@@ -720,11 +744,9 @@ class Operations:
         if size is not None and size <= DEFAULT_ES_MAX_RESULT_WINDOW:
             if size > 0:
                 try:
-
                     es_results = query_compiler._client.search(
                         index=query_compiler._index_pattern,
                         size=size,
-                        sort=sort_params,
                         body=body,
                     )
                 except Exception:
@@ -746,7 +768,9 @@ class Operations:
             )
             # create post sort
             if sort_params is not None:
-                post_processing.append(SortFieldAction(sort_params))
+                post_processing.append(
+                    SortFieldAction(sort_params, query_compiler._index.es_index_fields)
+                )
 
         if is_scan:
             while True:
@@ -762,7 +786,7 @@ class Operations:
             df = self._apply_df_post_processing(df, post_processing)
             collector.collect(df)
 
-    def index_count(self, query_compiler, field):
+    def index_count(self, query_compiler, fields):
         # field is the index field so count values
         query_params, post_processing = self._resolve_tasks(query_compiler)
 
@@ -774,16 +798,14 @@ class Operations:
             return size
 
         body = Query(query_params.query)
-        body.exists(field, must=True)
+        for field in fields:
+            body.exists(field, must=True)
 
         return query_compiler._client.count(
             index=query_compiler._index_pattern, body=body.to_count_body()
         )["count"]
 
     def _validate_index_operation(self, query_compiler, items):
-        if not isinstance(items, list):
-            raise TypeError(f"list item required - not {type(items)}")
-
         # field is the index field so count values
         query_params, post_processing = self._resolve_tasks(query_compiler)
 
@@ -797,23 +819,61 @@ class Operations:
 
         return query_params, post_processing
 
-    def index_matches_count(self, query_compiler, field, items):
+    def index_matches_count(self, query_compiler, index_fields, items):
+        if not isinstance(items, list):
+            raise TypeError(f"list item required - not {type(items)}")
+
         query_params, post_processing = self._validate_index_operation(
             query_compiler, items
         )
 
-        body = Query(query_params.query)
+        search_bodies = []
 
-        if field == Index.ID_INDEX_FIELD:
-            body.ids(items, must=True)
+        def add_search_body(body):
+            body_json = body.to_search_body()
+            body_json["size"] = 0
+            search_bodies.extend([{}, body_json])
+
+        if len(index_fields) == 1:
+            index_field = index_fields[0]
+            for item in items:
+                body = Query(query_params.query)
+                if index_field == Index.ID_INDEX_FIELD:
+                    body.ids([item], must=True)
+                else:
+                    body.terms(index_field, [item], must=True)
+                add_search_body(body)
         else:
-            body.terms(field, items, must=True)
+            for item in items:
+                if not isinstance(item, tuple):
+                    raise TypeError(f"Expected 'tuple' got '{type(item).__name__}'")
+                elif len(item) != len(index_fields):
+                    raise ValueError(
+                        "Length of names must match number of levels in MultiIndex."
+                    )
+                body = Query(query_params.query)
+                body.update_boolean_filter(
+                    AndFilter(
+                        *[
+                            Equal(index_field, index_value)
+                            for index_field, index_value in zip(index_fields, item)
+                        ]
+                    )
+                )
+                add_search_body(body)
 
-        return query_compiler._client.count(
-            index=query_compiler._index_pattern, body=body.to_count_body()
-        )["count"]
+        resp = query_compiler._client.msearch(
+            index=query_compiler._index_pattern,
+            body=search_bodies,
+        )
+        return tuple(mresp["hits"]["total"]["value"] for mresp in resp["responses"])
 
-    def drop_index_values(self, query_compiler, field, items):
+    def drop_or_filter_index_value_tasks(
+        self, query_compiler, index_fields, items, must
+    ):
+        if not isinstance(items, list):
+            raise TypeError(f"list item required - not {type(items)}")
+
         self._validate_index_operation(query_compiler, items)
 
         # Putting boolean queries together
@@ -824,34 +884,79 @@ class Operations:
         # a in ['a','b','c']
         # b not in ['a','b','c']
         # For now use term queries
-        if field == Index.ID_INDEX_FIELD:
-            task = QueryIdsTask(False, items)
-        else:
-            task = QueryTermsTask(False, field, items)
-        self._tasks.append(task)
 
-    def filter_index_values(self, query_compiler, field, items):
+        # If there's only one column in the index then we
+        # can use a single task.
+        if len(index_fields) == 1:
+            if index_fields[0] == Index.ID_INDEX_FIELD:
+                return QueryIdsTask(must, items)
+            else:
+                return QueryTermsTask(must, index_fields[0], items)
+
+        # Otherwise the tasks become more complicated.
+        else:
+            bool_filters = []
+            for item in items:
+                if not isinstance(item, tuple):
+                    raise TypeError(f"Expected 'tuple' got '{type(item).__name__}")
+                elif len(item) != len(index_fields):
+                    raise ValueError(
+                        "Length of names must match number of levels in MultiIndex."
+                    )
+                bool_filters.append(
+                    AndFilter(
+                        *[
+                            Equal(index_field, index_value)
+                            for index_field, index_value in zip(index_fields, item)
+                        ]
+                    )
+                )
+
+            if must:
+                bool_filter = OrFilter(*bool_filters)
+            else:
+                bool_filter = AndFilter(*[NotFilter(f) for f in bool_filters])
+            return BooleanFilterTask(bool_filter)
+
+    def drop_index_values(self, query_compiler, index_fields, items):
+        self._tasks.append(
+            self.drop_or_filter_index_value_tasks(
+                query_compiler, index_fields, items, must=False
+            )
+        )
+
+    def filter_index_values(
+        self, query_compiler, fields, items=None, like=None, regex=None
+    ):
         # Basically .drop_index_values() except with must=True on tasks.
+        if items is not None and not isinstance(items, list):
+            raise TypeError(f"list item required - not {type(items)}")
         self._validate_index_operation(query_compiler, items)
 
-        if field == Index.ID_INDEX_FIELD:
-            task = QueryIdsTask(True, items)
-        else:
-            task = QueryTermsTask(True, field, items)
-        self._tasks.append(task)
-
-    @staticmethod
-    def _query_params_to_size_and_sort(
-        query_params: QueryParams,
-    ) -> Tuple[Optional[int], Optional[str]]:
-        sort_params = None
-        if query_params.sort_field and query_params.sort_order:
-            sort_params = (
-                f"{query_params.sort_field}:"
-                f"{SortOrder.to_string(query_params.sort_order)}"
+        if len(fields) > 1:
+            if like is not None or regex is not None:
+                raise NotImplementedError(
+                    "'like' and 'regex' not supported for MultiIndex"
+                )
+            self._tasks.append(
+                self.drop_or_filter_index_value_tasks(
+                    query_compiler, fields, items, must=True
+                )
             )
-        size = query_params.size
-        return size, sort_params
+        else:
+            field = fields[0]
+            if items is not None:
+                if field == Index.ID_INDEX_FIELD:
+                    task = QueryIdsTask(True, items)
+                else:
+                    task = QueryTermsTask(True, field, items)
+            elif like is not None:
+                task = QueryWildcardTask(field, f"*{like}*")
+            else:
+                assert regex is not None
+                task = QueryRegexpTask(field, regex)
+
+            self._tasks.append(task)
 
     @staticmethod
     def _count_post_processing(post_processing):
@@ -876,6 +981,12 @@ class Operations:
         # other operations require in-core post-processing of results
         query_params = QueryParams()
         post_processing = []
+
+        if query_compiler.index.es_index_fields != (Index.ID_INDEX_FIELD,):
+            query_params.sort_fields = query_compiler.index.sort_fields
+            query_params.sort_orders = tuple(
+                SortOrder.ASC for _ in query_params.sort_fields
+            )
 
         for task in self._tasks:
             query_params, post_processing = task.resolve_task(
@@ -911,7 +1022,6 @@ class Operations:
         buf.write(f" tasks: {self._tasks}\n")
 
         query_params, post_processing = self._resolve_tasks(query_compiler)
-        size, sort_params = Operations._query_params_to_size_and_sort(query_params)
         _source = query_compiler._mappings.get_field_names()
 
         script_fields = query_params.script_fields
@@ -920,8 +1030,8 @@ class Operations:
         if script_fields is not None:
             body["script_fields"] = script_fields
 
-        buf.write(f" size: {size}\n")
-        buf.write(f" sort_params: {sort_params}\n")
+        buf.write(f" size: {query_params.size}\n")
+        buf.write(f" sort_params: {query_params.search_sort_params()}\n")
         buf.write(f" _source: {_source}\n")
         buf.write(f" body: {body}\n")
         buf.write(f" post_processing: {post_processing}\n")

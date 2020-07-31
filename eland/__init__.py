@@ -26,7 +26,7 @@ from eland._version import (  # noqa: F401
     __maintainer_email__,
 )
 from eland.common import SortOrder
-from eland.index import Index
+from eland.index import Index, MultiIndex
 from eland.ndframe import NDFrame
 from eland.series import Series
 from eland.dataframe import DataFrame
@@ -37,6 +37,7 @@ __all__ = [
     "Series",
     "NDFrame",
     "Index",
+    "MultiIndex",
     "pandas_to_eland",
     "eland_to_pandas",
     "csv_to_eland",

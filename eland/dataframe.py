@@ -409,18 +409,17 @@ class DataFrame(NDFrame):
                 "Need to specify at least one of 'labels', 'index' or 'columns'"
             )
 
-        # TODO Clean up this error checking
         if "index" not in axes:
             axes["index"] = None
         elif axes["index"] is not None:
             if not is_list_like(axes["index"]):
                 axes["index"] = [axes["index"]]
             if errors == "raise":
-                # Check if axes['index'] values exists in index
-                count = self._query_compiler._index_matches_count(axes["index"])
-                if count != len(axes["index"]):
-                    raise ValueError(
-                        f"number of labels {count}!={len(axes['index'])} not contained in axis"
+                # Check if each value in axes['index'] exists in index
+                counts = self._query_compiler._index_matches_count(axes["index"])
+                if any(x == 0 for x in counts):
+                    raise KeyError(
+                        f"[{' '.join(repr(x) for x in axes['index'])}] not found in axis"
                     )
             else:
                 """
@@ -603,8 +602,8 @@ class DataFrame(NDFrame):
         >>> print(df.es_info())
         es_index_pattern: flights
         Index:
-         es_index_field: _id
-         is_source_field: False
+         es_index_fields: ['_id']
+         is_source_fields: [False]
         Mappings:
          capabilities:
                            es_field_name  is_source es_dtype                  es_date_format        pd_dtype  is_searchable  is_aggregatable  is_scripted aggregatable_es_field_name
@@ -615,10 +614,10 @@ class DataFrame(NDFrame):
         Operations:
          tasks: [('boolean_filter': ('boolean_filter': {'bool': {'must': [{'term': {'OriginAirportID': 'AMS'}}, {'range': {'FlightDelayMin': {'gt': 60}}}]}})), ('tail': ('sort_field': '_doc', 'count': 5))]
          size: 5
-         sort_params: _doc:desc
+         sort_params: [{'_doc': {'order': 'desc'}}]
          _source: ['timestamp', 'OriginAirportID', 'DestAirportID', 'FlightDelayMin']
          body: {'query': {'bool': {'must': [{'term': {'OriginAirportID': 'AMS'}}, {'range': {'FlightDelayMin': {'gt': 60}}}]}}}
-         post_processing: [('sort_index')]
+         post_processing: [('sort_index': ('sort_orders': None))]
         <BLANKLINE>
         """
         buf = StringIO()
@@ -1504,7 +1503,8 @@ class DataFrame(NDFrame):
         regex : str (regular expression)
             Keep labels from axis for which re.search(regex, label) == True.
         axis : {0 or ‘index’, 1 or ‘columns’, None}, default None
-            The axis to filter on, expressed either as an index (int) or axis name (str). By default this is the info axis, ‘index’ for Series, ‘columns’ for DataFrame.
+            The axis to filter on, expressed either as an index (int) or axis name (str).
+            By default this is the info axis, ‘index’ for Series, ‘columns’ for DataFrame.
 
         Returns
         -------
