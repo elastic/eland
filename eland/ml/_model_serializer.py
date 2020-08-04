@@ -19,7 +19,7 @@ import base64
 import gzip
 import json
 from abc import ABC
-from typing import Sequence, Dict, Any, Optional
+from typing import Sequence, Dict, Any, Optional, List
 
 
 def add_if_exists(d: Dict[str, Any], k: str, v: Any) -> None:
@@ -69,7 +69,7 @@ class TreeNode:
         right_child: Optional[int] = None,
         split_feature: Optional[int] = None,
         threshold: Optional[float] = None,
-        leaf_value: Optional[float] = None,
+        leaf_value: Optional[List[float]] = None,
     ):
         self._node_idx = node_idx
         self._decision_type = decision_type
