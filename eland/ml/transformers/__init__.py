@@ -82,3 +82,16 @@ try:
     _MODEL_TRANSFORMERS.update(_XGBOOST_MODEL_TRANSFORMERS)
 except ImportError:
     pass
+
+try:
+    from .lightgbm import (
+        LGBMRegressor,
+        LGBMForestTransformer,
+        LGBMRegressorTransformer,
+        _MODEL_TRANSFORMERS as _LGBOOST_MODEL_TRANSFORMERS,
+    )
+
+    __all__ += ["LGBMRegressor", "LGBMForestTransformer", "LGBMRegressorTransformer"]
+    _MODEL_TRANSFORMERS.update(_LGBOOST_MODEL_TRANSFORMERS)
+except ImportError:
+    pass
