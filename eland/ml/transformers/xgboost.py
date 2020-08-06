@@ -178,21 +178,6 @@ class XGBoostForestTransformer(ModelTransformer):
 
 
 class XGBoostRegressorTransformer(XGBoostForestTransformer):
-    """
-    Transform trained XGBClassifier into an Elasticsearch supported format.
-
-    Parameters
-    ----------
-    model: XGBRegressor
-       Only a subset of the operators are supported: ["reg:squarederror",
-           "reg:linear",
-           "reg:squaredlogerror",
-           "reg:logistic",]
-       Any regression model built with a different operator will fail to be transformed.
-    feature_names: List[str]
-        model feature names
-    """
-
     def __init__(self, model: XGBRegressor, feature_names: List[str]):
         # XGBRegressor.base_score defaults to 0.5.
         base_score = model.base_score
@@ -222,23 +207,6 @@ class XGBoostRegressorTransformer(XGBoostForestTransformer):
 
 
 class XGBoostClassifierTransformer(XGBoostForestTransformer):
-    """
-    Transform trained XGBClassifier into an Elasticsearch supported format.
-
-    Parameters
-    ----------
-    model: XGBClassifier
-       Only a subset of the operators are supported: ["binary:logistic",
-           "binary:hinge",
-           "multi:softmax",
-           "multi:softprob"]
-       Any classification model built with a different operator will fail to be transformed.
-    feature_names: List[str]
-        model feature names
-    classification_labels: Optional[List[str]]
-        classification labels
-    """
-
     def __init__(
         self,
         model: XGBClassifier,

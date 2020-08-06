@@ -60,7 +60,17 @@ class ImportedMLModel(MLModel):
         - sklearn.ensemble.RandomForestRegressor
         - sklearn.ensemble.RandomForestClassifier
         - xgboost.XGBClassifier
+            - only the following operators are supported:
+                - "binary:logistic"
+                - "binary:hinge"
+                - "multi:softmax"
+                - "multi:softprob"
         - xgboost.XGBRegressor
+            - only the following operators are supportd:
+                - "reg:squarederror"
+                - "reg:linear"
+                - "reg:squaredlogerror"
+                - "reg:logistic"
 
     feature_names: List[str]
         Names of the features (required)
