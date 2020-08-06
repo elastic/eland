@@ -72,18 +72,18 @@ class LGBMForestTransformer(ModelTransformer):
         self._node_decision_type = "lte"
         self._objective = model.params["objective"]
 
-    def build_tree(self, tree_json_obj: dict) -> Tree:
+    def build_tree(self, tree_json_obj: Dict[str, Any]) -> Tree:
         tree_nodes = list()
         next_id = Counter()
-        py_id_to_node_id = dict()
+        py_id_to_node_id: Dict[int, int] = dict()
 
-        def add_tree_node(tree_node_json_obj: dict, counter: Counter):
+        def add_tree_node(tree_node_json_obj: Dict[str, Any], counter: Counter) -> None:
             curr_id = py_id_to_node_id[id(tree_node_json_obj)]
             if "leaf_value" in tree_node_json_obj:
                 tree_nodes.append(
                     TreeNode(
                         node_idx=curr_id,
-                        leaf_value=float(tree_node_json_obj["leaf_value"]),
+                        leaf_value=[float(tree_node_json_obj["leaf_value"])],
                     )
                 )
                 return
@@ -145,7 +145,7 @@ class LGBMForestTransformer(ModelTransformer):
     def is_objective_supported(self) -> bool:
         return False
 
-    def check_model_booster(self):
+    def check_model_booster(self) -> None:
         raise NotImplementedError("check_model_booster must be implemented")
 
     def transform(self) -> Ensemble:

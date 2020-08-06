@@ -193,5 +193,6 @@ setup(
     extras_require={
         "xgboost": ["xgboost>=0.90,<2"],
         "scikit-learn": ["scikit-learn>=0.22.1,<1"],
+        "lightgbm": ["lightgbm>=2,<2.4"],
     },
 )
