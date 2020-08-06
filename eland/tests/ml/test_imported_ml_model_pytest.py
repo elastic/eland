@@ -226,10 +226,19 @@ class TestImportedMLModel:
 
     @requires_xgboost
     @pytest.mark.parametrize("compress_model_definition", [True, False])
-    def test_xgb_classifier(self, compress_model_definition):
+    @pytest.mark.parametrize("multi_class", [True, False])
+    def test_xgb_classifier(self, compress_model_definition, multi_class):
+        # test both multiple and binary classification
+        if multi_class:
+            training_data = datasets.make_classification(
+                n_features=5, n_classes=3, n_informative=3
+            )
+            classifier = XGBClassifier(booster="gbtree", objective="multi:softmax")
+        else:
+            training_data = datasets.make_classification(n_features=5)
+            classifier = XGBClassifier(booster="gbtree")
+
         # Train model
-        training_data = datasets.make_classification(n_features=5)
-        classifier = XGBClassifier(booster="gbtree")
         classifier.fit(training_data[0], training_data[1])
 
         # Get some test results
