@@ -64,6 +64,7 @@ class ImportedMLModel(MLModel):
         - sklearn.ensemble.RandomForestRegressor
         - sklearn.ensemble.RandomForestClassifier
         - lightgbm.LGBMRegressor
+            - Categorical fields are expected to already be processed
             - Only the following objectives are supported
                 - "regression"
                 - "regression_l1"
@@ -76,7 +77,6 @@ class ImportedMLModel(MLModel):
                 - "rf"
                 - "dart"
                 - "goss"
-            - Categorical fields are expected to already be processed
         - xgboost.XGBClassifier
             - only the following objectives are supported:
                 - "binary:logistic"

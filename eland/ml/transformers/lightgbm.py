@@ -44,9 +44,9 @@ class Counter:
     def __init__(self, start: int = 0):
         self._value = start
 
-    def inc(self) -> int:
+    def inc(self) -> "Counter":
         self._value += 1
-        return self._value
+        return self
 
     def value(self) -> int:
         return self._value
@@ -75,10 +75,9 @@ class LGBMForestTransformer(ModelTransformer):
     def build_tree(self, tree_json_obj: Dict[str, Any]) -> Tree:
         tree_nodes = list()
         next_id = Counter()
-        py_id_to_node_id: Dict[int, int] = dict()
 
-        def add_tree_node(tree_node_json_obj: Dict[str, Any], counter: Counter) -> None:
-            curr_id = py_id_to_node_id[id(tree_node_json_obj)]
+        def add_tree_node(tree_node_json_obj: Dict[str, Any], counter: Counter) -> int:
+            curr_id = counter.value()
             if "leaf_value" in tree_node_json_obj:
                 tree_nodes.append(
                     TreeNode(
@@ -86,18 +85,9 @@ class LGBMForestTransformer(ModelTransformer):
                         leaf_value=[float(tree_node_json_obj["leaf_value"])],
                     )
                 )
-                return
-            left_py_id = id(tree_node_json_obj["left_child"])
-            right_py_id = id(tree_node_json_obj["right_child"])
-            parse_left = False
-            parse_right = False
-            if left_py_id not in py_id_to_node_id:
-                parse_left = True
-                py_id_to_node_id[left_py_id] = counter.inc()
-            if right_py_id not in py_id_to_node_id:
-                parse_right = True
-                py_id_to_node_id[right_py_id] = counter.inc()
-
+                return curr_id
+            left_id = add_tree_node(tree_node_json_obj["left_child"], counter.inc())
+            right_id = add_tree_node(tree_node_json_obj["right_child"], counter.inc())
             tree_nodes.append(
                 TreeNode(
                     node_idx=curr_id,
@@ -107,20 +97,16 @@ class LGBMForestTransformer(ModelTransformer):
                     decision_type=transform_decider(
                         tree_node_json_obj["decision_type"]
                     ),
-                    left_child=py_id_to_node_id[left_py_id],
-                    right_child=py_id_to_node_id[right_py_id],
+                    left_child=left_id,
+                    right_child=right_id,
                 )
             )
-            if parse_left:
-                add_tree_node(tree_node_json_obj["left_child"], counter)
-            if parse_right:
-                add_tree_node(tree_node_json_obj["right_child"], counter)
+            return curr_id
 
-        py_id_to_node_id[id(tree_json_obj["tree_structure"])] = next_id.value()
         add_tree_node(tree_json_obj["tree_structure"], next_id)
         tree_nodes.sort(key=lambda n: n.node_idx)
         return Tree(
-            self._feature_names,
+            feature_names=self._feature_names,
             target_type=self.determine_target_type(),
             tree_structure=tree_nodes,
         )

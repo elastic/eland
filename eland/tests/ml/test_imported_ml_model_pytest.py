@@ -41,9 +41,9 @@ except ImportError:
 try:
     from lightgbm import LGBMRegressor
 
-    HAS_LGBOOST = True
+    HAS_LIGHTGBM = True
 except ImportError:
-    HAS_LGBOOST = False
+    HAS_LIGHTGBM = False
 
 
 requires_sklearn = pytest.mark.skipif(
@@ -57,8 +57,8 @@ requires_no_ml_extras = pytest.mark.skipif(
     reason="This test requires 'scikit-learn' and 'xgboost' to not be installed",
 )
 
-requires_lgboost = pytest.mark.skipif(
-    not HAS_LGBOOST, reason="This test requires 'lightgbm' package to run"
+requires_lightgbm = pytest.mark.skipif(
+    not HAS_LIGHTGBM, reason="This test requires 'lightgbm' package to run"
 )
 
 
@@ -334,7 +334,7 @@ class TestImportedMLModel:
         # Clean up
         es_model.delete_model()
 
-    @requires_lgboost
+    @requires_lightgbm
     @pytest.mark.parametrize("compress_model_definition", [True, False])
     def test_lgbm_regressor(self, compress_model_definition):
         # Train model

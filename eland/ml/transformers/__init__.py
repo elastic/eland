@@ -88,10 +88,10 @@ try:
         LGBMRegressor,
         LGBMForestTransformer,
         LGBMRegressorTransformer,
-        _MODEL_TRANSFORMERS as _LGBOOST_MODEL_TRANSFORMERS,
+        _MODEL_TRANSFORMERS as _LIGHTGBM_MODEL_TRANSFORMERS,
     )
 
     __all__ += ["LGBMRegressor", "LGBMForestTransformer", "LGBMRegressorTransformer"]
-    _MODEL_TRANSFORMERS.update(_LGBOOST_MODEL_TRANSFORMERS)
+    _MODEL_TRANSFORMERS.update(_LIGHTGBM_MODEL_TRANSFORMERS)
 except ImportError:
     pass
