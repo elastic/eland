@@ -151,7 +151,8 @@ currently using a minimum version of PyCharm 2019.2.4.
     Tools\'-\>\'Docstring format\' to `numpy`
 -   Install development requirements. Open terminal in virtual
     environment and run `pip install -r requirements-dev.txt`
--   Setup Elasticsearch instance (assumes `localhost:9200`), and run
+-   Setup Elasticsearch instance with docker `ELASTICSEARCH_VERSION=elasticsearch:7.x-SNAPSHOT .ci/run-elasticsearch.sh` and check `http://localhost:9200`
+- Run
     `python -m eland.tests.setup_tests` to setup test environment -*note
     this modifies Elasticsearch indices*
 -   Install local `eland` module (required to execute notebook tests)

@@ -36,6 +36,7 @@ def deprecated_api(
             warnings.warn(
                 f"{f.__name__} is deprecated, use {replace_with} instead",
                 DeprecationWarning,
+                stacklevel=2,
             )
             return f(*args, **kwargs)
 

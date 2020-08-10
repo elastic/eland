@@ -22,6 +22,7 @@ import numpy as np  # type: ignore
 from .ml_model import MLModel
 from .transformers import get_model_transformer
 from ..common import es_version
+import warnings
 
 
 if TYPE_CHECKING:
@@ -100,7 +101,10 @@ class ImportedMLModel(MLModel):
     classification_weights: List[str]
         Weights of the classification targets
 
-    overwrite: bool
+    es_if_exists: bool
+        Delete and overwrite existing model (if exists)
+    
+    overwrite:**DEPRECATED** - bool
         Delete and overwrite existing model (if exists)
 
     es_compress_model_definition: bool
@@ -127,7 +131,7 @@ class ImportedMLModel(MLModel):
     >>> # Serialise the model to Elasticsearch
     >>> feature_names = ["f0", "f1", "f2", "f3", "f4"]
     >>> model_id = "test_decision_tree_classifier"
-    >>> es_model = ImportedMLModel('localhost', model_id, classifier, feature_names, overwrite=True)
+    >>> es_model = ImportedMLModel('localhost', model_id, classifier, feature_names, es_if_exists=True)
 
     >>> # Get some test results from Elasticsearch model
     >>> es_model.predict(test_data)
@@ -155,6 +159,7 @@ class ImportedMLModel(MLModel):
         feature_names: List[str],
         classification_labels: Optional[List[str]] = None,
         classification_weights: Optional[List[float]] = None,
+        es_if_exists: bool = False,
         overwrite: bool = False,
         es_compress_model_definition: bool = True,
     ):
@@ -171,7 +176,15 @@ class ImportedMLModel(MLModel):
         self._model_type = transformer.model_type
         serializer = transformer.transform()
 
+        if es_if_exists:
+            self.delete_model()
+
         if overwrite:
+            warnings.warn(
+                f" overwrite is deprecated, use es_if_exists instead ",
+                DeprecationWarning,
+                stacklevel=2,
+            )
             self.delete_model()
 
         body: Dict[str, Any] = {
@@ -224,7 +237,7 @@ class ImportedMLModel(MLModel):
         >>> # Serialise the model to Elasticsearch
         >>> feature_names = ["f0", "f1", "f2", "f3", "f4", "f5"]
         >>> model_id = "test_xgb_regressor"
-        >>> es_model = ImportedMLModel('localhost', model_id, regressor, feature_names, overwrite=True)
+        >>> es_model = ImportedMLModel('localhost', model_id, regressor, feature_names, es_if_exists=True)
 
         >>> # Get some test results from Elasticsearch model
         >>> es_model.predict(test_data)

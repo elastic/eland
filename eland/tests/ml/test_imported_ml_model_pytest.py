@@ -103,7 +103,7 @@ class TestImportedMLModel:
             model_id,
             classifier,
             feature_names,
-            overwrite=True,
+            es_if_exists=True,
             es_compress_model_definition=True,
         )
 
@@ -147,7 +147,7 @@ class TestImportedMLModel:
             model_id,
             classifier,
             feature_names,
-            overwrite=True,
+            es_if_exists=True,
             es_compress_model_definition=compress_model_definition,
         )
 
@@ -176,7 +176,7 @@ class TestImportedMLModel:
             model_id,
             regressor,
             feature_names,
-            overwrite=True,
+            es_if_exists=True,
             es_compress_model_definition=compress_model_definition,
         )
         # Get some test results
@@ -204,7 +204,7 @@ class TestImportedMLModel:
             model_id,
             classifier,
             feature_names,
-            overwrite=True,
+            es_if_exists=True,
             es_compress_model_definition=compress_model_definition,
         )
         # Get some test results
@@ -232,7 +232,7 @@ class TestImportedMLModel:
             model_id,
             regressor,
             feature_names,
-            overwrite=True,
+            es_if_exists=True,
             es_compress_model_definition=compress_model_definition,
         )
         # Get some test results
@@ -270,7 +270,7 @@ class TestImportedMLModel:
             model_id,
             classifier,
             feature_names,
-            overwrite=True,
+            es_if_exists=True,
             es_compress_model_definition=compress_model_definition,
         )
         # Get some test results
@@ -342,7 +342,7 @@ class TestImportedMLModel:
             model_id,
             regressor,
             feature_names,
-            overwrite=True,
+            es_if_exists=True,
             es_compress_model_definition=compress_model_definition,
         )
         # Get some test results
@@ -369,7 +369,7 @@ class TestImportedMLModel:
         model_id = "test_xgb_regressor"
 
         es_model = ImportedMLModel(
-            ES_TEST_CLIENT, model_id, regressor, feature_names, overwrite=True
+            ES_TEST_CLIENT, model_id, regressor, feature_names, es_if_exists=True
         )
 
         # Single feature
