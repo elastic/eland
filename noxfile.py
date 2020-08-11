@@ -49,6 +49,7 @@ TYPED_FILES = {
     "eland/ml/imported_ml_model.py",
     "eland/ml/transformers/__init__.py",
     "eland/ml/transformers/base.py",
+    "eland/ml/transformers/lightgbm.py",
     "eland/ml/transformers/sklearn.py",
     "eland/ml/transformers/xgboost.py",
 }
@@ -109,7 +110,7 @@ def test_ml_deps(session):
     session.install("-r", "requirements-dev.txt")
     session.run("python", "-m", "eland.tests.setup_tests")
 
-    session_uninstall("xgboost", "scikit-learn")
+    session_uninstall("xgboost", "scikit-learn", "lightgbm")
     session.run("pytest", *(session.posargs or ("eland/tests/ml/",)))
 
     session.install(".[scikit-learn]")

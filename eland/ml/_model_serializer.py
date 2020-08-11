@@ -80,6 +80,10 @@ class TreeNode:
         self._leaf_value = leaf_value
         self._default_left = default_left
 
+    @property
+    def node_idx(self) -> int:
+        return self._node_idx
+
     def to_dict(self) -> Dict[str, Any]:
         d: Dict[str, Any] = {}
         add_if_exists(d, "node_index", self._node_idx)

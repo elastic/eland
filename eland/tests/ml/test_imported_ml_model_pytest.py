@@ -38,6 +38,13 @@ try:
 except ImportError:
     HAS_XGBOOST = False
 
+try:
+    from lightgbm import LGBMRegressor
+
+    HAS_LIGHTGBM = True
+except ImportError:
+    HAS_LIGHTGBM = False
+
 
 requires_sklearn = pytest.mark.skipif(
     not HAS_SKLEARN, reason="This test requires 'scikit-learn' package to run"
@@ -48,6 +55,10 @@ requires_xgboost = pytest.mark.skipif(
 requires_no_ml_extras = pytest.mark.skipif(
     HAS_SKLEARN or HAS_XGBOOST,
     reason="This test requires 'scikit-learn' and 'xgboost' to not be installed",
+)
+
+requires_lightgbm = pytest.mark.skipif(
+    not HAS_LIGHTGBM, reason="This test requires 'lightgbm' package to run"
 )
 
 
@@ -317,6 +328,38 @@ class TestImportedMLModel:
 
         # Single feature
         es_results = es_model.predict(test_data[0])
+
+        np.testing.assert_almost_equal(test_results, es_results, decimal=2)
+
+        # Clean up
+        es_model.delete_model()
+
+    @requires_lightgbm
+    @pytest.mark.parametrize("compress_model_definition", [True, False])
+    def test_lgbm_regressor(self, compress_model_definition):
+        # Train model
+        training_data = datasets.make_regression(n_features=5)
+        regressor = LGBMRegressor()
+        regressor.fit(training_data[0], training_data[1])
+
+        # Get some test results
+        test_data = [[0.1, 0.2, 0.3, -0.5, 1.0], [1.6, 2.1, -10, 50, -1.0]]
+        test_results = regressor.predict(np.asarray(test_data))
+
+        # Serialise the models to Elasticsearch
+        feature_names = ["Column_0", "Column_1", "Column_2", "Column_3", "Column_4"]
+        model_id = "test_lgbm_regressor"
+
+        es_model = ImportedMLModel(
+            ES_TEST_CLIENT,
+            model_id,
+            regressor,
+            feature_names,
+            overwrite=True,
+            es_compress_model_definition=compress_model_definition,
+        )
+
+        es_results = es_model.predict(test_data)
 
         np.testing.assert_almost_equal(test_results, es_results, decimal=2)
 

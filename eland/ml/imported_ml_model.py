@@ -38,6 +38,10 @@ if TYPE_CHECKING:
         from xgboost import XGBRegressor, XGBClassifier  # type: ignore # noqa: F401
     except ImportError:
         pass
+    try:
+        from lightgbm import LGBMRegressor  # type: ignore # noqa: f401
+    except ImportError:
+        pass
 
 
 class ImportedMLModel(MLModel):
@@ -59,14 +63,23 @@ class ImportedMLModel(MLModel):
         - sklearn.tree.DecisionTreeRegressor
         - sklearn.ensemble.RandomForestRegressor
         - sklearn.ensemble.RandomForestClassifier
+        - lightgbm.LGBMRegressor
+            - Categorical fields are expected to already be processed
+            - Only the following objectives are supported
+                - "regression"
+                - "regression_l1"
+                - "huber"
+                - "fair"
+                - "quantile"
+                - "mape"
         - xgboost.XGBClassifier
-            - only the following operators are supported:
+            - only the following objectives are supported:
                 - "binary:logistic"
                 - "binary:hinge"
                 - "multi:softmax"
                 - "multi:softprob"
         - xgboost.XGBRegressor
-            - only the following operators are supportd:
+            - only the following objectives are supported:
                 - "reg:squarederror"
                 - "reg:linear"
                 - "reg:squaredlogerror"
@@ -130,6 +143,7 @@ class ImportedMLModel(MLModel):
             "RandomForestClassifier",
             "XGBClassifier",
             "XGBRegressor",
+            "LGBMRegressor",
         ],
         feature_names: List[str],
         classification_labels: Optional[List[str]] = None,
