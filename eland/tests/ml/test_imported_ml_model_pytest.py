@@ -62,6 +62,13 @@ requires_lightgbm = pytest.mark.skipif(
 )
 
 
+def check_prediction_equality(es_model, py_model, test_data):
+    # Get some test results
+    test_results = py_model.predict(np.asarray(test_data))
+    es_results = es_model.predict(test_data)
+    np.testing.assert_almost_equal(test_results, es_results, decimal=2)
+
+
 class TestImportedMLModel:
     @requires_no_ml_extras
     def test_import_ml_model_when_dependencies_are_not_available(self):
@@ -119,10 +126,6 @@ class TestImportedMLModel:
         classifier = DecisionTreeClassifier()
         classifier.fit(training_data[0], training_data[1])
 
-        # Get some test results
-        test_data = [[0.1, 0.2, 0.3, -0.5, 1.0], [1.6, 2.1, -10, 50, -1.0]]
-        test_results = classifier.predict(test_data)
-
         # Serialise the models to Elasticsearch
         feature_names = ["f0", "f1", "f2", "f3", "f4"]
         model_id = "test_decision_tree_classifier"
@@ -135,9 +138,10 @@ class TestImportedMLModel:
             overwrite=True,
             es_compress_model_definition=compress_model_definition,
         )
-        es_results = es_model.predict(test_data)
 
-        np.testing.assert_almost_equal(test_results, es_results, decimal=2)
+        # Get some test results
+        test_data = [[0.1, 0.2, 0.3, -0.5, 1.0], [1.6, 2.1, -10, 50, -1.0]]
+        check_prediction_equality(es_model, classifier, test_data)
 
         # Clean up
         es_model.delete_model()
@@ -149,10 +153,6 @@ class TestImportedMLModel:
         training_data = datasets.make_regression(n_features=5)
         regressor = DecisionTreeRegressor()
         regressor.fit(training_data[0], training_data[1])
-
-        # Get some test results
-        test_data = [[0.1, 0.2, 0.3, -0.5, 1.0], [1.6, 2.1, -10, 50, -1.0]]
-        test_results = regressor.predict(test_data)
 
         # Serialise the models to Elasticsearch
         feature_names = ["f0", "f1", "f2", "f3", "f4"]
@@ -166,9 +166,9 @@ class TestImportedMLModel:
             overwrite=True,
             es_compress_model_definition=compress_model_definition,
         )
-        es_results = es_model.predict(test_data)
-
-        np.testing.assert_almost_equal(test_results, es_results, decimal=2)
+        # Get some test results
+        test_data = [[0.1, 0.2, 0.3, -0.5, 1.0], [1.6, 2.1, -10, 50, -1.0]]
+        check_prediction_equality(es_model, regressor, test_data)
 
         # Clean up
         es_model.delete_model()
@@ -180,10 +180,6 @@ class TestImportedMLModel:
         training_data = datasets.make_classification(n_features=5)
         classifier = RandomForestClassifier()
         classifier.fit(training_data[0], training_data[1])
-
-        # Get some test results
-        test_data = [[0.1, 0.2, 0.3, -0.5, 1.0], [1.6, 2.1, -10, 50, -1.0]]
-        test_results = classifier.predict(test_data)
 
         # Serialise the models to Elasticsearch
         feature_names = ["f0", "f1", "f2", "f3", "f4"]
@@ -197,9 +193,9 @@ class TestImportedMLModel:
             overwrite=True,
             es_compress_model_definition=compress_model_definition,
         )
-        es_results = es_model.predict(test_data)
-
-        np.testing.assert_almost_equal(test_results, es_results, decimal=2)
+        # Get some test results
+        test_data = [[0.1, 0.2, 0.3, -0.5, 1.0], [1.6, 2.1, -10, 50, -1.0]]
+        check_prediction_equality(es_model, classifier, test_data)
 
         # Clean up
         es_model.delete_model()
@@ -211,10 +207,6 @@ class TestImportedMLModel:
         training_data = datasets.make_regression(n_features=5)
         regressor = RandomForestRegressor()
         regressor.fit(training_data[0], training_data[1])
-
-        # Get some test results
-        test_data = [[0.1, 0.2, 0.3, -0.5, 1.0], [1.6, 2.1, -10, 50, -1.0]]
-        test_results = regressor.predict(test_data)
 
         # Serialise the models to Elasticsearch
         feature_names = ["f0", "f1", "f2", "f3", "f4"]
@@ -228,9 +220,9 @@ class TestImportedMLModel:
             overwrite=True,
             es_compress_model_definition=compress_model_definition,
         )
-        es_results = es_model.predict(test_data)
-
-        np.testing.assert_almost_equal(test_results, es_results, decimal=2)
+        # Get some test results
+        test_data = [[0.1, 0.2, 0.3, -0.5, 1.0], [1.6, 2.1, -10, 50, -1.0]]
+        check_prediction_equality(es_model, regressor, test_data)
 
         # Clean up
         es_model.delete_model()
@@ -252,10 +244,6 @@ class TestImportedMLModel:
         # Train model
         classifier.fit(training_data[0], training_data[1])
 
-        # Get some test results
-        test_data = [[0.1, 0.2, 0.3, -0.5, 1.0], [1.6, 2.1, -10, 50, -1.0]]
-        test_results = classifier.predict(np.asarray(test_data))
-
         # Serialise the models to Elasticsearch
         feature_names = ["f0", "f1", "f2", "f3", "f4"]
         model_id = "test_xgb_classifier"
@@ -268,24 +256,62 @@ class TestImportedMLModel:
             overwrite=True,
             es_compress_model_definition=compress_model_definition,
         )
-        es_results = es_model.predict(test_data)
+        # Get some test results
+        test_data = [[0.1, 0.2, 0.3, -0.5, 1.0], [1.6, 2.1, -10, 50, -1.0]]
+        check_prediction_equality(es_model, classifier, test_data)
 
-        np.testing.assert_almost_equal(test_results, es_results, decimal=2)
+        # Clean up
+        es_model.delete_model()
+
+    @requires_xgboost
+    @pytest.mark.parametrize(
+        "objective", ["multi:softmax", "multi:softprob", "binary:logistic"]
+    )
+    @pytest.mark.parametrize("booster", ["gbtree", "dart"])
+    def test_xgb_classifier_objectives_and_booster(self, objective, booster):
+        # test both multiple and binary classification
+        if objective.startswith("multi"):
+            training_data = datasets.make_classification(
+                n_features=5, n_classes=3, n_informative=3
+            )
+            classifier = XGBClassifier(booster=booster, objective=objective)
+        else:
+            training_data = datasets.make_classification(n_features=5)
+            classifier = XGBClassifier(booster=booster, objective=objective)
+
+        # Train model
+        classifier.fit(training_data[0], training_data[1])
+
+        # Serialise the models to Elasticsearch
+        feature_names = ["f0", "f1", "f2", "f3", "f4"]
+        model_id = "test_xgb_classifier"
+
+        es_model = ImportedMLModel(
+            ES_TEST_CLIENT, model_id, classifier, feature_names, overwrite=True
+        )
+        # Get some test results
+        test_data = [[0.1, 0.2, 0.3, -0.5, 1.0], [1.6, 2.1, -10, 50, -1.0]]
+        check_prediction_equality(es_model, classifier, test_data)
 
         # Clean up
         es_model.delete_model()
 
     @requires_xgboost
     @pytest.mark.parametrize("compress_model_definition", [True, False])
-    def test_xgb_regressor(self, compress_model_definition):
+    @pytest.mark.parametrize(
+        "objective",
+        ["reg:squarederror", "reg:squaredlogerror", "reg:linear", "reg:logistic"],
+    )
+    @pytest.mark.parametrize("booster", ["gbtree", "dart"])
+    def test_xgb_regressor(self, compress_model_definition, objective, booster):
         # Train model
         training_data = datasets.make_regression(n_features=5)
-        regressor = XGBRegressor()
-        regressor.fit(training_data[0], training_data[1])
-
-        # Get some test results
-        test_data = [[0.1, 0.2, 0.3, -0.5, 1.0], [1.6, 2.1, -10, 50, -1.0]]
-        test_results = regressor.predict(np.asarray(test_data))
+        regressor = XGBRegressor(objective=objective, booster=booster)
+        regressor.fit(
+            training_data[0],
+            np.exp(training_data[1] - np.max(training_data[1]))
+            / sum(np.exp(training_data[1])),
+        )
 
         # Serialise the models to Elasticsearch
         feature_names = ["f0", "f1", "f2", "f3", "f4"]
@@ -299,10 +325,9 @@ class TestImportedMLModel:
             overwrite=True,
             es_compress_model_definition=compress_model_definition,
         )
-
-        es_results = es_model.predict(test_data)
-
-        np.testing.assert_almost_equal(test_results, es_results, decimal=2)
+        # Get some test results
+        test_data = [[0.1, 0.2, 0.3, -0.5, 1.0], [1.6, 2.1, -10, 50, -1.0]]
+        check_prediction_equality(es_model, regressor, test_data)
 
         # Clean up
         es_model.delete_model()
@@ -336,15 +361,24 @@ class TestImportedMLModel:
 
     @requires_lightgbm
     @pytest.mark.parametrize("compress_model_definition", [True, False])
-    def test_lgbm_regressor(self, compress_model_definition):
+    @pytest.mark.parametrize(
+        "objective",
+        ["regression", "regression_l1", "huber", "fair", "quantile", "mape"],
+    )
+    @pytest.mark.parametrize("booster", ["gbdt", "rf", "dart", "goss"])
+    def test_lgbm_regressor(self, compress_model_definition, objective, booster):
         # Train model
         training_data = datasets.make_regression(n_features=5)
-        regressor = LGBMRegressor()
+        if booster == "rf":
+            regressor = LGBMRegressor(
+                boosting_type=booster,
+                objective=objective,
+                bagging_fraction=0.5,
+                bagging_freq=3,
+            )
+        else:
+            regressor = LGBMRegressor(boosting_type=booster, objective=objective)
         regressor.fit(training_data[0], training_data[1])
-
-        # Get some test results
-        test_data = [[0.1, 0.2, 0.3, -0.5, 1.0], [1.6, 2.1, -10, 50, -1.0]]
-        test_results = regressor.predict(np.asarray(test_data))
 
         # Serialise the models to Elasticsearch
         feature_names = ["Column_0", "Column_1", "Column_2", "Column_3", "Column_4"]
@@ -358,10 +392,9 @@ class TestImportedMLModel:
             overwrite=True,
             es_compress_model_definition=compress_model_definition,
         )
-
-        es_results = es_model.predict(test_data)
-
-        np.testing.assert_almost_equal(test_results, es_results, decimal=2)
+        # Get some test results
+        test_data = [[0.1, 0.2, 0.3, -0.5, 1.0], [1.6, 2.1, -10, 50, -1.0]]
+        check_prediction_equality(es_model, regressor, test_data)
 
         # Clean up
         es_model.delete_model()
