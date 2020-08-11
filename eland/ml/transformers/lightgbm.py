@@ -36,7 +36,7 @@ def transform_decider(decider: str) -> str:
     if decider == ">=":
         return "gte"
     raise ValueError(
-        "Unsupported splitting decider: %s. Only <=, " "<, >=, and > are allowed."
+        "Unsupported splitting decider: %s. Only <=, <, >=, and > are allowed."
     )
 
 
