@@ -365,10 +365,19 @@ class TestImportedMLModel:
         "objective",
         ["regression", "regression_l1", "huber", "fair", "quantile", "mape"],
     )
-    def test_lgbm_regressor(self, compress_model_definition, objective):
+    @pytest.mark.parametrize("booster", ["gbdt", "rf", "dart", "goss"])
+    def test_lgbm_regressor(self, compress_model_definition, objective, booster):
         # Train model
         training_data = datasets.make_regression(n_features=5)
-        regressor = LGBMRegressor(objective=objective)
+        if booster == "rf":
+            regressor = LGBMRegressor(
+                boosting_type=booster,
+                objective=objective,
+                bagging_fraction=0.5,
+                bagging_freq=3,
+            )
+        else:
+            regressor = LGBMRegressor(boosting_type=booster, objective=objective)
         regressor.fit(training_data[0], training_data[1])
 
         # Serialise the models to Elasticsearch
@@ -389,32 +398,3 @@ class TestImportedMLModel:
 
         # Clean up
         es_model.delete_model()
-
-    @requires_lightgbm
-    @pytest.mark.parametrize("booster", ["gbdt", "rf", "dart", "goss"])
-    def test_lgbm_regressor_boosters(self, booster):
-        # Train model
-        training_data = datasets.make_regression(n_features=5)
-        if booster == "rf":
-            regressor = LGBMRegressor(
-                boosting_type=booster, bagging_fraction=0.5, bagging_freq=3
-            )
-        else:
-            regressor = LGBMRegressor(boosting_type=booster)
-
-        regressor.fit(training_data[0], training_data[1])
-
-        # Serialise the models to Elasticsearch
-        feature_names = ["Column_0", "Column_1", "Column_2", "Column_3", "Column_4"]
-        model_id = "test_lgbm_regressor"
-
-        es_model = ImportedMLModel(
-            ES_TEST_CLIENT, model_id, regressor, feature_names, overwrite=True,
-        )
-        # Get some test results
-        test_data = [[0.1, 0.2, 0.3, -0.5, 1.0], [1.6, 2.1, -10, 50, -1.0]]
-        check_prediction_equality(es_model, regressor, test_data)
-
-        # Clean up
-        es_model.delete_model()
-
