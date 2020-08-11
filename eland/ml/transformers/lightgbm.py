@@ -154,6 +154,7 @@ class LGBMForestTransformer(ModelTransformer):
 class LGBMRegressorTransformer(LGBMForestTransformer):
     def __init__(self, model: LGBMRegressor, feature_names: List[str]):
         super().__init__(model.booster_, feature_names)
+        self.n_estimators = model.n_estimators
 
     def is_objective_supported(self) -> bool:
         return self._objective in {
@@ -176,6 +177,12 @@ class LGBMRegressorTransformer(LGBMForestTransformer):
         return "regression"
 
     def build_aggregator_output(self) -> Dict[str, Any]:
+        if self._model.params["boosting_type"] == "rf":
+            return {
+                "weighted_sum": {
+                    "weights": [1.0 / self.n_estimators] * self.n_estimators
+                }
+            }
         return {"weighted_sum": {}}
 
     @property

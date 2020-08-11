@@ -193,12 +193,15 @@ class XGBoostRegressorTransformer(XGBoostForestTransformer):
     def is_objective_supported(self) -> bool:
         return self._objective in {
             "reg:squarederror",
-            "reg:linear",
             "reg:squaredlogerror",
+            "reg:pseudohubererror",
+            "reg:linear",
             "reg:logistic",
         }
 
     def build_aggregator_output(self) -> Dict[str, Any]:
+        if self._objective == "reg:logistic":
+            return {"logistic_regression": {}}
         return {"weighted_sum": {}}
 
     @property
@@ -240,7 +243,6 @@ class XGBoostClassifierTransformer(XGBoostForestTransformer):
     def is_objective_supported(self) -> bool:
         return self._objective in {
             "binary:logistic",
-            "binary:hinge",
             "multi:softmax",
             "multi:softprob",
         }

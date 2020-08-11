@@ -75,7 +75,6 @@ class ImportedMLModel(MLModel):
         - xgboost.XGBClassifier
             - only the following objectives are supported:
                 - "binary:logistic"
-                - "binary:hinge"
                 - "multi:softmax"
                 - "multi:softprob"
         - xgboost.XGBRegressor
@@ -84,6 +83,7 @@ class ImportedMLModel(MLModel):
                 - "reg:linear"
                 - "reg:squaredlogerror"
                 - "reg:logistic"
+                - "reg:pseudohubererror"
 
     feature_names: List[str]
         Names of the features (required)
