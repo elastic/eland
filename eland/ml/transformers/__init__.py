@@ -86,12 +86,20 @@ except ImportError:
 try:
     from .lightgbm import (
         LGBMRegressor,
+        LGBMClassifier,
         LGBMForestTransformer,
         LGBMRegressorTransformer,
+        LGBMClassifierTransformer,
         _MODEL_TRANSFORMERS as _LIGHTGBM_MODEL_TRANSFORMERS,
     )
 
-    __all__ += ["LGBMRegressor", "LGBMForestTransformer", "LGBMRegressorTransformer"]
+    __all__ += [
+        "LGBMRegressor",
+        "LGBMClassifier",
+        "LGBMForestTransformer",
+        "LGBMRegressorTransformer",
+        "LGBMClassifierTransformer",
+    ]
     _MODEL_TRANSFORMERS.update(_LIGHTGBM_MODEL_TRANSFORMERS)
 except ImportError:
     pass

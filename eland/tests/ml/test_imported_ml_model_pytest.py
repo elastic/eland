@@ -39,7 +39,7 @@ except ImportError:
     HAS_XGBOOST = False
 
 try:
-    from lightgbm import LGBMRegressor
+    from lightgbm import LGBMRegressor, LGBMClassifier
 
     HAS_LIGHTGBM = True
 except ImportError:
@@ -60,6 +60,10 @@ requires_no_ml_extras = pytest.mark.skipif(
 requires_lightgbm = pytest.mark.skipif(
     not HAS_LIGHTGBM, reason="This test requires 'lightgbm' package to run"
 )
+
+
+def random_rows(data, size):
+    return data[np.random.randint(data.shape[0], size=size), :].tolist()
 
 
 def check_prediction_equality(es_model, py_model, test_data):
@@ -140,8 +144,9 @@ class TestImportedMLModel:
         )
 
         # Get some test results
-        test_data = [[0.1, 0.2, 0.3, -0.5, 1.0], [1.6, 2.1, -10, 50, -1.0]]
-        check_prediction_equality(es_model, classifier, test_data)
+        check_prediction_equality(
+            es_model, classifier, random_rows(training_data[0], 20)
+        )
 
         # Clean up
         es_model.delete_model()
@@ -167,8 +172,9 @@ class TestImportedMLModel:
             es_compress_model_definition=compress_model_definition,
         )
         # Get some test results
-        test_data = [[0.1, 0.2, 0.3, -0.5, 1.0], [1.6, 2.1, -10, 50, -1.0]]
-        check_prediction_equality(es_model, regressor, test_data)
+        check_prediction_equality(
+            es_model, regressor, random_rows(training_data[0], 20)
+        )
 
         # Clean up
         es_model.delete_model()
@@ -194,8 +200,9 @@ class TestImportedMLModel:
             es_compress_model_definition=compress_model_definition,
         )
         # Get some test results
-        test_data = [[0.1, 0.2, 0.3, -0.5, 1.0], [1.6, 2.1, -10, 50, -1.0]]
-        check_prediction_equality(es_model, classifier, test_data)
+        check_prediction_equality(
+            es_model, classifier, random_rows(training_data[0], 20)
+        )
 
         # Clean up
         es_model.delete_model()
@@ -221,8 +228,9 @@ class TestImportedMLModel:
             es_compress_model_definition=compress_model_definition,
         )
         # Get some test results
-        test_data = [[0.1, 0.2, 0.3, -0.5, 1.0], [1.6, 2.1, -10, 50, -1.0]]
-        check_prediction_equality(es_model, regressor, test_data)
+        check_prediction_equality(
+            es_model, regressor, random_rows(training_data[0], 20)
+        )
 
         # Clean up
         es_model.delete_model()
@@ -257,8 +265,9 @@ class TestImportedMLModel:
             es_compress_model_definition=compress_model_definition,
         )
         # Get some test results
-        test_data = [[0.1, 0.2, 0.3, -0.5, 1.0], [1.6, 2.1, -10, 50, -1.0]]
-        check_prediction_equality(es_model, classifier, test_data)
+        check_prediction_equality(
+            es_model, classifier, random_rows(training_data[0], 20)
+        )
 
         # Clean up
         es_model.delete_model()
@@ -290,8 +299,9 @@ class TestImportedMLModel:
             ES_TEST_CLIENT, model_id, classifier, feature_names, overwrite=True
         )
         # Get some test results
-        test_data = [[0.1, 0.2, 0.3, -0.5, 1.0], [1.6, 2.1, -10, 50, -1.0]]
-        check_prediction_equality(es_model, classifier, test_data)
+        check_prediction_equality(
+            es_model, classifier, random_rows(training_data[0], 20)
+        )
 
         # Clean up
         es_model.delete_model()
@@ -326,8 +336,9 @@ class TestImportedMLModel:
             es_compress_model_definition=compress_model_definition,
         )
         # Get some test results
-        test_data = [[0.1, 0.2, 0.3, -0.5, 1.0], [1.6, 2.1, -10, 50, -1.0]]
-        check_prediction_equality(es_model, regressor, test_data)
+        check_prediction_equality(
+            es_model, regressor, random_rows(training_data[0], 20)
+        )
 
         # Clean up
         es_model.delete_model()
@@ -393,8 +404,49 @@ class TestImportedMLModel:
             es_compress_model_definition=compress_model_definition,
         )
         # Get some test results
-        test_data = [[0.1, 0.2, 0.3, -0.5, 1.0], [1.6, 2.1, -10, 50, -1.0]]
-        check_prediction_equality(es_model, regressor, test_data)
+        check_prediction_equality(
+            es_model, regressor, random_rows(training_data[0], 20)
+        )
+
+        # Clean up
+        es_model.delete_model()
+
+    @requires_lightgbm
+    @pytest.mark.parametrize("compress_model_definition", [True, False])
+    @pytest.mark.parametrize("objective", ["binary", "multiclass", "multiclassova"])
+    @pytest.mark.parametrize("booster", ["gbdt", "dart", "goss"])
+    def test_lgbm_classifier_objectives_and_booster(
+        self, compress_model_definition, objective, booster
+    ):
+        # test both multiple and binary classification
+        if objective.startswith("multi"):
+            training_data = datasets.make_classification(
+                n_features=5, n_classes=3, n_informative=3
+            )
+            classifier = LGBMClassifier(boosting_type=booster, objective=objective)
+        else:
+            training_data = datasets.make_classification(n_features=5)
+            classifier = LGBMClassifier(boosting_type=booster, objective=objective)
+
+        # Train model
+        classifier.fit(training_data[0], training_data[1])
+
+        # Serialise the models to Elasticsearch
+        feature_names = ["Column_0", "Column_1", "Column_2", "Column_3", "Column_4"]
+        model_id = "test_lgbm_classifier"
+
+        es_model = ImportedMLModel(
+            ES_TEST_CLIENT,
+            model_id,
+            classifier,
+            feature_names,
+            overwrite=True,
+            es_compress_model_definition=compress_model_definition,
+        )
+
+        check_prediction_equality(
+            es_model, classifier, random_rows(training_data[0], 20)
+        )
 
         # Clean up
         es_model.delete_model()

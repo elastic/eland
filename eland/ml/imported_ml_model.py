@@ -39,7 +39,7 @@ if TYPE_CHECKING:
     except ImportError:
         pass
     try:
-        from lightgbm import LGBMRegressor  # type: ignore # noqa: f401
+        from lightgbm import LGBMRegressor, LGBMClassifier  # type: ignore # noqa: f401
     except ImportError:
         pass
 
@@ -72,6 +72,12 @@ class ImportedMLModel(MLModel):
                 - "fair"
                 - "quantile"
                 - "mape"
+        - lightgbm.LGBMClassifier
+            - Categorical fields are expected to already be processed
+            - Only the following objectives are supported
+                - "binary"
+                - "multiclass"
+                - "multiclassova"
         - xgboost.XGBClassifier
             - only the following objectives are supported:
                 - "binary:logistic"
@@ -144,6 +150,7 @@ class ImportedMLModel(MLModel):
             "XGBClassifier",
             "XGBRegressor",
             "LGBMRegressor",
+            "LGBMClassifier",
         ],
         feature_names: List[str],
         classification_labels: Optional[List[str]] = None,
