@@ -100,3 +100,14 @@ class TestSeriesMetrics(TestData):
         ed_metric = getattr(ed_timestamps, agg)()
 
         assert ed_metric == expected_values[agg]
+
+    def test_flights_datetime_median_metric(self):
+        ed_series = self.ed_flights_small()["timestamp"]
+
+        median = ed_series.median()
+        assert isinstance(median, pd.Timestamp)
+        assert (
+            pd.to_datetime("2018-01-01 10:00:00.000")
+            <= median
+            <= pd.to_datetime("2018-01-01 12:00:00.000")
+        )

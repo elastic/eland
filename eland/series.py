@@ -1255,7 +1255,7 @@ class Series(NDFrame):
         Returns
         -------
         float
-            max value
+            mean value
 
         See Also
         --------
@@ -1270,6 +1270,30 @@ class Series(NDFrame):
         results = super().mean(numeric_only=numeric_only)
         return results.squeeze()
 
+    def median(self, numeric_only=None):
+        """
+        Return the median of the Series values
+
+        TODO - implement remainder of pandas arguments, currently non-numerics are not supported
+
+        Returns
+        -------
+        float
+            median value
+
+        See Also
+        --------
+        :pandas_api_docs:`pandas.Series.median`
+
+        Examples
+        --------
+        >>> s = ed.DataFrame('localhost', 'flights')['AvgTicketPrice']
+        >>> int(s.median())
+        640
+        """
+        results = super().median(numeric_only=numeric_only)
+        return results.squeeze()
+
     def min(self, numeric_only=None):
         """
         Return the minimum of the Series values
@@ -1279,7 +1303,7 @@ class Series(NDFrame):
         Returns
         -------
         float
-            max value
+            min value
 
         See Also
         --------
@@ -1303,7 +1327,7 @@ class Series(NDFrame):
         Returns
         -------
         float
-            max value
+            sum of all values
 
         See Also
         --------
