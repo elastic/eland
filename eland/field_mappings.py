@@ -27,7 +27,16 @@ from pandas.core.dtypes.common import (
     is_string_dtype,
 )
 from pandas.core.dtypes.inference import is_list_like
-from typing import NamedTuple, Optional, Mapping, Dict, Any, TYPE_CHECKING, List, Set
+from typing import (
+    NamedTuple,
+    Optional,
+    Mapping,
+    Dict,
+    Any,
+    TYPE_CHECKING,
+    List,
+    Set,
+)
 
 if TYPE_CHECKING:
     from elasticsearch import Elasticsearch
@@ -82,6 +91,9 @@ class Field(NamedTuple):
         return np.dtype(self.pd_dtype)
 
     def is_es_agg_compatible(self, es_agg) -> bool:
+        # Unpack the actual aggregation if this is 'extended_stats'
+        if isinstance(es_agg, tuple):
+            es_agg = es_agg[1]
         # Cardinality works for all types
         # Numerics and bools work for all aggs
         if es_agg == "cardinality" or self.is_numeric or self.is_bool:
@@ -90,6 +102,13 @@ class Field(NamedTuple):
         if es_agg in {"min", "max", "avg"} and self.is_timestamp:
             return True
         return False
+
+    @property
+    def nan_value(self) -> Any:
+        """Returns NaN for any field except datetimes which use NaT"""
+        if self.is_timestamp:
+            return pd.NaT
+        return np.float64(np.NaN)
 
 
 class FieldMappings:

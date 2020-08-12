@@ -242,9 +242,9 @@ class Operations:
             values = []
             for es_agg, pd_agg in zip(es_aggs, pd_aggs):
 
-                # If the field and agg aren't compatible we add a NaN
+                # If the field and agg aren't compatible we add a NaN/NaT
                 if not field.is_es_agg_compatible(es_agg):
-                    values.append(np.float64(np.NaN))
+                    values.append(field.nan_value)
                     continue
 
                 if isinstance(es_agg, tuple):
@@ -284,21 +284,25 @@ class Operations:
                 else:
                     agg_value = response["aggregations"][
                         f"{es_agg}_{field.es_field_name}"
-                    ]
-                    if "value_as_string" in agg_value and field.is_timestamp:
-                        agg_value = elasticsearch_date_to_pandas_date(
-                            agg_value["value_as_string"], field.es_date_format
-                        )
-                    else:
-                        agg_value = agg_value["value"]
-
-                # These aggregations maintain the column datatype
-                if pd_agg in ("max", "min"):
-                    agg_value = field.np_dtype.type(agg_value)
+                    ]["value"]
 
                 # Null usually means there were no results.
                 if agg_value is None:
-                    agg_value = np.float64(np.NaN)
+                    agg_value = field.nan_value
+
+                # Cardinality is always either NaN or integer.
+                elif pd_agg == "nunique":
+                    agg_value = int(agg_value)
+
+                # If this is a non-null timestamp field convert to a pd.Timestamp()
+                elif field.is_timestamp:
+                    agg_value = elasticsearch_date_to_pandas_date(
+                        agg_value, field.es_date_format
+                    )
+
+                # These aggregations maintain the column datatype
+                elif pd_agg in ("max", "min"):
+                    agg_value = field.np_dtype.type(agg_value)
 
                 values.append(agg_value)
 

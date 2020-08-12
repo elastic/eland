@@ -110,10 +110,11 @@ def elasticsearch_date_to_pandas_date(
         or epoch_millis.
     """
 
-    if date_format is None:
+    if date_format is None or isinstance(value, (int, float)):
         try:
-            value = int(value)
-            return pd.to_datetime(value, unit="ms")
+            return pd.to_datetime(
+                value, unit="s" if date_format == "epoch_second" else "ms"
+            )
         except ValueError:
             return pd.to_datetime(value)
     elif date_format == "epoch_millis":

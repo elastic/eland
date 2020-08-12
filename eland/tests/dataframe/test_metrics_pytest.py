@@ -17,6 +17,9 @@
 
 # File called _pytest for PyCharm compatibility
 
+import pytest
+import numpy as np
+import pandas as pd
 from pandas.testing import assert_series_equal
 
 from eland.tests.common import TestData
@@ -26,13 +29,25 @@ class TestDataFrameMetrics(TestData):
     funcs = ["max", "min", "mean", "sum"]
     extended_funcs = ["median", "mad", "var", "std"]
 
-    def test_flights_metrics(self):
+    @pytest.mark.parametrize("numeric_only", [False, None])
+    def test_flights_metrics(self, numeric_only):
         pd_flights = self.pd_flights()
         ed_flights = self.ed_flights()
 
         for func in self.funcs:
-            pd_metric = getattr(pd_flights, func)(numeric_only=True)
-            ed_metric = getattr(ed_flights, func)(numeric_only=True)
+            # Pandas v1.0 doesn't support mean() on datetime
+            # Pandas and Eland don't support sum() on datetime
+            if not numeric_only:
+                dtype_include = (
+                    [np.number, np.datetime64]
+                    if func not in ("mean", "sum")
+                    else [np.number]
+                )
+                pd_flights = pd_flights.select_dtypes(include=dtype_include)
+                ed_flights = ed_flights.select_dtypes(include=dtype_include)
+
+            pd_metric = getattr(pd_flights, func)(numeric_only=numeric_only)
+            ed_metric = getattr(ed_flights, func)(numeric_only=numeric_only)
 
             assert_series_equal(pd_metric, ed_metric)
 
@@ -144,3 +159,49 @@ class TestDataFrameMetrics(TestData):
                 getattr(ed_ecommerce, func)(numeric_only=True),
                 check_less_precise=True,
             )
+
+    def test_flights_datetime_metrics_agg(self):
+        ed_timestamps = self.ed_flights()[["timestamp"]]
+        expected_values = {
+            "timestamp": {
+                "min": pd.Timestamp("2018-01-01 00:00:00"),
+                "mean": pd.Timestamp("2018-01-21 19:20:45.564438232"),
+                "max": pd.Timestamp("2018-02-11 23:50:12"),
+                "mad": pd.NaT,
+                "median": pd.NaT,
+                "std": pd.NaT,
+                "sum": pd.NaT,
+                "var": pd.NaT,
+                "nunique": 12236,
+            }
+        }
+
+        ed_metrics = ed_timestamps.agg(self.funcs + self.extended_funcs + ["nunique"])
+        assert ed_metrics.to_dict() == expected_values
+
+    @pytest.mark.parametrize("agg", ["mean", "min", "max"])
+    def test_flights_datetime_metrics_single_agg(self, agg):
+        ed_timestamps = self.ed_flights()[["timestamp"]]
+        expected_values = {
+            "min": pd.Timestamp("2018-01-01 00:00:00"),
+            "mean": pd.Timestamp("2018-01-21 19:20:45.564438232"),
+            "max": pd.Timestamp("2018-02-11 23:50:12"),
+            "nunique": 12236,
+        }
+        ed_metric = ed_timestamps.agg([agg])
+
+        assert ed_metric.dtypes["timestamp"] == np.dtype("datetime64[ns]")
+        assert ed_metric["timestamp"][0] == expected_values[agg]
+
+    @pytest.mark.parametrize("agg", ["mean", "min", "max"])
+    def test_flights_datetime_metrics_agg_func(self, agg):
+        ed_timestamps = self.ed_flights()[["timestamp"]]
+        expected_values = {
+            "min": pd.Timestamp("2018-01-01 00:00:00"),
+            "mean": pd.Timestamp("2018-01-21 19:20:45.564438232"),
+            "max": pd.Timestamp("2018-02-11 23:50:12"),
+        }
+        ed_metric = getattr(ed_timestamps, agg)(numeric_only=False)
+
+        assert ed_metric.dtype == np.dtype("datetime64[ns]")
+        assert ed_metric[0] == expected_values[agg]
