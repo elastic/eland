@@ -19,6 +19,7 @@ import os
 
 import pandas as pd
 from elasticsearch import Elasticsearch
+from eland.common import es_version
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -33,6 +34,8 @@ if TEST_SUITE == "xpack":
     )
 else:
     ES_TEST_CLIENT = Elasticsearch(ELASTICSEARCH_HOST)
+
+ES_VERSION = es_version(ES_TEST_CLIENT)
 
 FLIGHTS_INDEX_NAME = "flights"
 FLIGHTS_MAPPING = {

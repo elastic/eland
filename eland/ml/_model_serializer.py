@@ -94,7 +94,12 @@ class TreeNode:
             add_if_exists(d, "split_feature", self._split_feature)
             add_if_exists(d, "threshold", self._threshold)
         else:
-            add_if_exists(d, "leaf_value", self._leaf_value)
+            if len(self._leaf_value) == 1:
+                # Support Elasticsearch 7.6 which only
+                # singular leaf_values not in arrays
+                add_if_exists(d, "leaf_value", self._leaf_value[0])
+            else:
+                add_if_exists(d, "leaf_value", self._leaf_value)
         return d
 
 
