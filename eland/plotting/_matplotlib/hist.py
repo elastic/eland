@@ -16,10 +16,10 @@
 #  under the License.
 
 import numpy as np
-import pandas.core.common as com
 from pandas.core.dtypes.generic import ABCIndexClass
 from pandas.plotting._matplotlib import converter
 from pandas.plotting._matplotlib.tools import _flatten, _set_ticks_props, _subplots
+from eland.utils import try_sort
 
 
 def hist_series(
@@ -120,7 +120,7 @@ def hist_frame(
     )
     _axes = _flatten(axes)
 
-    for i, col in enumerate(com.try_sort(data.columns)):
+    for i, col in enumerate(try_sort(data.columns)):
         ax = _axes[i]
         ax.hist(
             ed_df_bins[col][:-1],

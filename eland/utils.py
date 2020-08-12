@@ -18,7 +18,7 @@
 import re
 import functools
 import warnings
-from typing import Callable, TypeVar, Any, Union, List, cast, Collection
+from typing import Callable, TypeVar, Any, Union, List, cast, Collection, Iterable
 from collections.abc import Collection as ABCCollection
 import pandas as pd  # type: ignore
 
@@ -59,3 +59,13 @@ def to_list(x: Union[Collection[Any], pd.Series]) -> List[Any]:
     elif isinstance(x, pd.Series):
         return cast(List[Any], x.to_list())
     raise NotImplementedError(f"Could not convert {type(x).__name__} into a list")
+
+
+def try_sort(iterable: Iterable[Item]) -> Iterable[Item]:
+    # Pulled from pandas.core.common since
+    # it was deprecated and removed in 1.1
+    listed = list(iterable)
+    try:
+        return sorted(listed)
+    except TypeError:
+        return listed
