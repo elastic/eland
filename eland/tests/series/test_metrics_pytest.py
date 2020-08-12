@@ -17,7 +17,10 @@
 
 # File called _pytest for PyCharm compatability
 
+import pytest
+import pandas as pd
 import numpy as np
+from datetime import timedelta
 
 from eland.tests.common import TestData
 
@@ -50,11 +53,12 @@ class TestSeriesMetrics(TestData):
             pd_metric = getattr(pd_flights, func)()
             ed_metric = getattr(ed_flights, func)()
 
-            if hasattr(pd_metric, "floor"):
-                pd_metric = pd_metric.floor("S")  # floor or pandas mean with have ns
-
             if func == "nunique":
+                print(pd_metric, ed_metric)
                 self.assert_almost_equal_for_agg(func, pd_metric, ed_metric)
+            elif func == "mean":
+                offset = timedelta(seconds=0.001)
+                assert (ed_metric - offset) < pd_metric < (ed_metric + offset)
             else:
                 assert pd_metric == ed_metric
 
@@ -84,3 +88,15 @@ class TestSeriesMetrics(TestData):
                 pd_metric = getattr(pd_ecommerce, func)()
                 ed_metric = getattr(ed_ecommerce, func)()
                 self.assert_almost_equal_for_agg(func, pd_metric, ed_metric)
+
+    @pytest.mark.parametrize("agg", ["mean", "min", "max"])
+    def test_flights_datetime_metrics_agg(self, agg):
+        ed_timestamps = self.ed_flights()["timestamp"]
+        expected_values = {
+            "min": pd.Timestamp("2018-01-01 00:00:00"),
+            "mean": pd.Timestamp("2018-01-21 19:20:45.564438232"),
+            "max": pd.Timestamp("2018-02-11 23:50:12"),
+        }
+        ed_metric = getattr(ed_timestamps, agg)()
+
+        assert ed_metric == expected_values[agg]
