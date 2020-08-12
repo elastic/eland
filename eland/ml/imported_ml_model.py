@@ -39,7 +39,7 @@ if TYPE_CHECKING:
     except ImportError:
         pass
     try:
-        from lightgbm import LGBMRegressor, LGBMClassifier  # type: ignore # noqa: f401
+        from lightgbm import LGBMRegressor, LGBMClassifier  # type: ignore # noqa: F401
     except ImportError:
         pass
 

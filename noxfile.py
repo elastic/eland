@@ -98,23 +98,17 @@ def test(session):
     session.run("python", "-m", "eland.tests.setup_tests")
     session.run("pytest", "--doctest-modules", *(session.posargs or ("eland/",)))
 
-    session.run("python", "-m", "pip", "uninstall", "--yes", "scikit-learn", "xgboost")
+    session.run(
+        "python",
+        "-m",
+        "pip",
+        "uninstall",
+        "--yes",
+        "scikit-learn",
+        "xgboost",
+        "lightgbm",
+    )
     session.run("pytest", "eland/tests/ml/")
-
-
-@nox.session(python=["3.6", "3.7", "3.8"], name="test-ml-deps")
-def test_ml_deps(session):
-    def session_uninstall(*deps):
-        session.run("python", "-m", "pip", "uninstall", "--yes", *deps)
-
-    session.install("-r", "requirements-dev.txt")
-    session.run("python", "-m", "eland.tests.setup_tests")
-
-    session_uninstall("xgboost", "scikit-learn", "lightgbm")
-    session.run("pytest", *(session.posargs or ("eland/tests/ml/",)))
-
-    session.install(".[scikit-learn]")
-    session.run("pytest", *(session.posargs or ("eland/tests/ml/",)))
 
 
 @nox.session(reuse_venv=True)

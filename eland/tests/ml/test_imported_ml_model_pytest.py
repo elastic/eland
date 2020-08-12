@@ -19,7 +19,7 @@ import pytest
 import numpy as np
 
 from eland.ml import ImportedMLModel
-from eland.tests import ES_TEST_CLIENT
+from eland.tests import ES_TEST_CLIENT, ES_VERSION
 
 
 try:
@@ -60,6 +60,14 @@ requires_no_ml_extras = pytest.mark.skipif(
 requires_lightgbm = pytest.mark.skipif(
     not HAS_LIGHTGBM, reason="This test requires 'lightgbm' package to run"
 )
+
+
+def skip_if_multiclass_classifition():
+    if ES_VERSION < (7, 7):
+        raise pytest.skip(
+            "Skipped because multiclass classification "
+            "isn't supported on Elasticsearch 7.6"
+        )
 
 
 def random_rows(data, size):
@@ -241,6 +249,7 @@ class TestImportedMLModel:
     def test_xgb_classifier(self, compress_model_definition, multi_class):
         # test both multiple and binary classification
         if multi_class:
+            skip_if_multiclass_classifition()
             training_data = datasets.make_classification(
                 n_features=5, n_classes=3, n_informative=3
             )
@@ -280,6 +289,7 @@ class TestImportedMLModel:
     def test_xgb_classifier_objectives_and_booster(self, objective, booster):
         # test both multiple and binary classification
         if objective.startswith("multi"):
+            skip_if_multiclass_classifition()
             training_data = datasets.make_classification(
                 n_features=5, n_classes=3, n_informative=3
             )
@@ -420,6 +430,7 @@ class TestImportedMLModel:
     ):
         # test both multiple and binary classification
         if objective.startswith("multi"):
+            skip_if_multiclass_classifition()
             training_data = datasets.make_classification(
                 n_features=5, n_classes=3, n_informative=3
             )
