@@ -167,19 +167,20 @@ class TestDataFrameMetrics(TestData):
                 "min": pd.Timestamp("2018-01-01 00:00:00"),
                 "mean": pd.Timestamp("2018-01-21 19:20:45.564438232"),
                 "max": pd.Timestamp("2018-02-11 23:50:12"),
+                "nunique": 12236,
                 "mad": pd.NaT,
-                "median": pd.NaT,
                 "std": pd.NaT,
                 "sum": pd.NaT,
                 "var": pd.NaT,
-                "nunique": 12236,
             }
         }
 
         ed_metrics = ed_timestamps.agg(self.funcs + self.extended_funcs + ["nunique"])
-        assert ed_metrics.to_dict() == expected_values
+        ed_metrics_dict = ed_metrics.to_dict()
+        ed_metrics_dict["timestamp"].pop("median")  # Median is tested below.
+        assert ed_metrics_dict == expected_values
 
-    @pytest.mark.parametrize("agg", ["mean", "min", "max"])
+    @pytest.mark.parametrize("agg", ["mean", "min", "max", "nunique"])
     def test_flights_datetime_metrics_single_agg(self, agg):
         ed_timestamps = self.ed_flights()[["timestamp"]]
         expected_values = {
@@ -190,7 +191,10 @@ class TestDataFrameMetrics(TestData):
         }
         ed_metric = ed_timestamps.agg([agg])
 
-        assert ed_metric.dtypes["timestamp"] == np.dtype("datetime64[ns]")
+        if agg == "nunique":
+            assert ed_metric.dtypes["timestamp"] == np.int64
+        else:
+            assert ed_metric.dtypes["timestamp"] == np.dtype("datetime64[ns]")
         assert ed_metric["timestamp"][0] == expected_values[agg]
 
     @pytest.mark.parametrize("agg", ["mean", "min", "max"])
@@ -205,3 +209,22 @@ class TestDataFrameMetrics(TestData):
 
         assert ed_metric.dtype == np.dtype("datetime64[ns]")
         assert ed_metric[0] == expected_values[agg]
+
+    def test_flights_datetime_metrics_median(self):
+        ed_df = self.ed_flights_small()[["timestamp"]]
+
+        median = ed_df.median(numeric_only=False)[0]
+        assert isinstance(median, pd.Timestamp)
+        assert (
+            pd.to_datetime("2018-01-01 10:00:00.000")
+            <= median
+            <= pd.to_datetime("2018-01-01 12:00:00.000")
+        )
+
+        median = ed_df.agg(["mean"])["timestamp"][0]
+        assert isinstance(median, pd.Timestamp)
+        assert (
+            pd.to_datetime("2018-01-01 10:00:00.000")
+            <= median
+            <= pd.to_datetime("2018-01-01 12:00:00.000")
+        )

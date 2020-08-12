@@ -91,15 +91,19 @@ class Field(NamedTuple):
         return np.dtype(self.pd_dtype)
 
     def is_es_agg_compatible(self, es_agg) -> bool:
-        # Unpack the actual aggregation if this is 'extended_stats'
+        # Unpack the actual aggregation if this is 'extended_stats/percentiles'
         if isinstance(es_agg, tuple):
-            es_agg = es_agg[1]
+            if es_agg[0] == "extended_stats":
+                es_agg = es_agg[1]
+            elif es_agg[0] == "percentiles":
+                es_agg = "percentiles"
+
         # Cardinality works for all types
         # Numerics and bools work for all aggs
         if es_agg == "cardinality" or self.is_numeric or self.is_bool:
             return True
         # Timestamps also work for 'min', 'max' and 'avg'
-        if es_agg in {"min", "max", "avg"} and self.is_timestamp:
+        if es_agg in {"min", "max", "avg", "percentiles"} and self.is_timestamp:
             return True
         return False
 
