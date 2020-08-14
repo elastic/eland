@@ -58,7 +58,7 @@ class XGBoostForestTransformer(ModelTransformer):
             except ValueError:
                 raise RuntimeError(f"Unable to interpret '{feature_id}'")
         f_id = self._feature_dict.get(feature_id)
-        if f_id:
+        if f_id or f_id == 0:
             return f_id
         else:
             try:
