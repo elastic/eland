@@ -101,7 +101,7 @@ class ImportedMLModel(MLModel):
     classification_weights: List[str]
         Weights of the classification targets
 
-    es_if_exists: {'fail', 'replace} default 'fail'
+    es_if_exists: {'fail', 'replace'} default 'fail'
         How to behave if model already exists
 
         - fail: Raise a Value Error
