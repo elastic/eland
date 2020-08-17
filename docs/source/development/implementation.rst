@@ -15,9 +15,9 @@ use of powerful Elasticsearch features such as aggregations.
 Pandas and 3rd Party Storage Systems
 ------------------------------------
 
-Generally, integrations with [3rd party storage systems](https://pandas.pydata.org/pandas-docs/stable/user_guide/io.html)
+Generally, integrations with `3rd party storage systems <https://pandas.pydata.org/pandas-docs/stable/user_guide/io.html>`_
 (SQL, Google Big Query etc.) involve accessing these systems and reading all external data into an
-in-core pandas data structure. This also applies to [Apache Arrow](https://arrow.apache.org/docs/python/pandas.html)
+in-core pandas data structure. This also applies to `Apache Arrow <https://arrow.apache.org/docs/python/pandas.html>`_
 structures.
 
 Whilst this provides access to data in these systems, for large datasets this can require significant
