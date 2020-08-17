@@ -425,7 +425,7 @@ class Series(NDFrame):
         return self._query_compiler.to_pandas(show_progress=show_progress)[self.name]
 
     @property
-    def _dtype(self) -> np.dtype:
+    def dtype(self) -> np.dtype:
         # DO NOT MAKE PUBLIC (i.e. def dtype) as this breaks query eval implementation
         return self._query_compiler.dtypes[0]
 
@@ -1192,7 +1192,7 @@ class Series(NDFrame):
             self._query_compiler.check_arithmetics(right._query_compiler)
 
             right_object = ArithmeticSeries(
-                right._query_compiler, right.name, right._dtype
+                right._query_compiler, right.name, right.dtype
             )
             display_name = None
         elif np.issubdtype(np.dtype(type(right)), np.number):
@@ -1204,11 +1204,11 @@ class Series(NDFrame):
         else:
             raise TypeError(
                 f"unsupported operation type(s) [{method_name!r}] "
-                f"for operands ['{type(self)}' with dtype '{self._dtype}', "
+                f"for operands ['{type(self)}' with dtype '{self.dtype}', "
                 f"'{type(right).__name__}']"
             )
 
-        left_object = ArithmeticSeries(self._query_compiler, self.name, self._dtype)
+        left_object = ArithmeticSeries(self._query_compiler, self.name, self.dtype)
         left_object.arithmetic_operation(method_name, right_object)
 
         series = Series(
@@ -1429,6 +1429,41 @@ class Series(NDFrame):
         """
         results = super().mad(numeric_only=numeric_only)
         return results.squeeze()
+
+    def describe(self) -> pd.Series:
+        """
+        Generate descriptive statistics that summarize the central tendency, dispersion and shape of a
+        dataset’s distribution, excluding NaN values.
+
+        Analyzes both numeric and object series, as well as DataFrame column sets of mixed data types.
+        The output will vary depending on what is provided. Refer to the notes below for more detail.
+
+        TODO - add additional arguments (current only numeric values supported)
+
+        Returns
+        -------
+        pandas.Series:
+            Summary information
+
+        See Also
+        --------
+        :pandas_api_docs:`pandas.Series.describe`
+
+        Examples
+        --------
+        >>> df = ed.DataFrame('localhost', 'flights')
+        >>> df.AvgTicketPrice.describe() # ignoring percentiles as they don't generate consistent results
+        count    13059.000000
+        mean       628.253689
+        std        266.386661
+        min        100.020531
+        ...
+        ...
+        ...
+        max       1199.729004
+        Name: AvgTicketPrice, dtype: float64
+        """
+        return super().describe().squeeze()
 
     # def values TODO - not implemented as causes current implementation of query to fail
 
