@@ -14,8 +14,6 @@ Constructor
 
 Attributes and underlying data
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-**Axes**
-
 .. autosummary::
    :toctree: api/
 
@@ -26,6 +24,8 @@ Attributes and underlying data
    DataFrame.values
    DataFrame.empty
    DataFrame.shape
+   DataFrame.ndim
+   DataFrame.size
 
 Indexing, iteration
 ~~~~~~~~~~~~~~~~~~~

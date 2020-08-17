@@ -1,5 +1,5 @@
 =====================
-Contributing to eland
+Contributing to Eland
 =====================
 
 Eland is an open source project and we love to receive contributions

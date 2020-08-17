@@ -8,3 +8,4 @@ Development
    :maxdepth: 2
 
    contributing.rst 
+   implementation.rst

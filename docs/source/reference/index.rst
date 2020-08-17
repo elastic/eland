@@ -1,7 +1,7 @@
 .. _api:
 
 =============
-API reference
+API Reference
 =============
 
 This page gives an overview of all public eland objects, functions and
@@ -11,9 +11,9 @@ methods. All classes and functions exposed in ``eland.*`` namespace are public.
    :maxdepth: 2
 
    supported_apis
-   io
-   general_utility_functions
    dataframe
    series
-   indexing
    ml
+   indexing
+   general_utility_functions
+   io

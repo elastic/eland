@@ -58,4 +58,3 @@ the ``pandas.DataFrame`` API. This resolves some of the issues above as:
 *   Creating a new ``eland.DataFrame`` API gives us full flexibility in terms of implementation. However,
     it does create a large amount of work which may duplicate a lot of the ``pandas`` code - for example,
     printing objects etc. - this creates maintenance issues etc.
-
