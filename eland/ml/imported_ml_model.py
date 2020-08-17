@@ -22,6 +22,7 @@ import numpy as np  # type: ignore
 from .ml_model import MLModel
 from .transformers import get_model_transformer
 from ..common import es_version
+import warnings
 
 
 if TYPE_CHECKING:
@@ -100,7 +101,13 @@ class ImportedMLModel(MLModel):
     classification_weights: List[str]
         Weights of the classification targets
 
-    overwrite: bool
+    es_if_exists: {'fail', 'replace'} default 'fail'
+        How to behave if model already exists
+
+        - fail: Raise a Value Error
+        - replace: Overwrite existing model
+
+    overwrite: **DEPRECATED** - bool
         Delete and overwrite existing model (if exists)
 
     es_compress_model_definition: bool
@@ -127,7 +134,7 @@ class ImportedMLModel(MLModel):
     >>> # Serialise the model to Elasticsearch
     >>> feature_names = ["f0", "f1", "f2", "f3", "f4"]
     >>> model_id = "test_decision_tree_classifier"
-    >>> es_model = ImportedMLModel('localhost', model_id, classifier, feature_names, overwrite=True)
+    >>> es_model = ImportedMLModel('localhost', model_id, classifier, feature_names, es_if_exists='replace')
 
     >>> # Get some test results from Elasticsearch model
     >>> es_model.predict(test_data)
@@ -155,7 +162,8 @@ class ImportedMLModel(MLModel):
         feature_names: List[str],
         classification_labels: Optional[List[str]] = None,
         classification_weights: Optional[List[float]] = None,
-        overwrite: bool = False,
+        es_if_exists: Optional[str] = None,
+        overwrite: Optional[bool] = None,
         es_compress_model_definition: bool = True,
     ):
         super().__init__(es_client, model_id)
@@ -171,7 +179,30 @@ class ImportedMLModel(MLModel):
         self._model_type = transformer.model_type
         serializer = transformer.transform()
 
-        if overwrite:
+        # Verify if both parameters are given
+        if overwrite is not None and es_if_exists is not None:
+            raise ValueError(
+                "Using 'overwrite' and 'es_if_exists' together is invalid, use only 'es_if_exists'"
+            )
+
+        if overwrite is not None:
+            warnings.warn(
+                "'overwrite' parameter is deprecated, use 'es_if_exists' instead",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            es_if_exists = "replace" if overwrite else "fail"
+        elif es_if_exists is None:
+            es_if_exists = "fail"
+
+        if es_if_exists not in ("fail", "replace"):
+            raise ValueError("'es_if_exists' must be either 'fail' or 'replace'")
+        elif es_if_exists == "fail":
+            if self.check_existing_model():
+                raise ValueError(
+                    f"Trained machine learning model {model_id} already exists"
+                )
+        elif es_if_exists == "replace":
             self.delete_model()
 
         body: Dict[str, Any] = {
@@ -224,7 +255,7 @@ class ImportedMLModel(MLModel):
         >>> # Serialise the model to Elasticsearch
         >>> feature_names = ["f0", "f1", "f2", "f3", "f4", "f5"]
         >>> model_id = "test_xgb_regressor"
-        >>> es_model = ImportedMLModel('localhost', model_id, regressor, feature_names, overwrite=True)
+        >>> es_model = ImportedMLModel('localhost', model_id, regressor, feature_names, es_if_exists='replace')
 
         >>> # Get some test results from Elasticsearch model
         >>> es_model.predict(test_data)

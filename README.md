@@ -140,7 +140,7 @@ dtype: int64
 13057    20819.488281
 13058    18315.431274
 Length: 13059, dtype: float64
->>> print(s.info_es())
+>>> print(s.es_info())
 index_pattern: flights
 Index:
  index_field: _id

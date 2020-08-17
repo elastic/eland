@@ -57,3 +57,15 @@ class MLModel:
             self._client.ml.delete_trained_model(model_id=self._model_id, ignore=(404,))
         except elasticsearch.NotFoundError:
             pass
+
+    def check_existing_model(self) -> bool:
+        """
+        Check If model exists in Elastic
+        """
+        try:
+            self._client.ml.get_trained_models(
+                model_id=self._model_id, include_model_definition=False
+            )
+        except elasticsearch.NotFoundError:
+            return False
+        return True

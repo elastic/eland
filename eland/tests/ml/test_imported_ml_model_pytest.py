@@ -103,7 +103,7 @@ class TestImportedMLModel:
             model_id,
             classifier,
             feature_names,
-            overwrite=True,
+            es_if_exists="replace",
             es_compress_model_definition=True,
         )
 
@@ -147,7 +147,7 @@ class TestImportedMLModel:
             model_id,
             classifier,
             feature_names,
-            overwrite=True,
+            es_if_exists="replace",
             es_compress_model_definition=compress_model_definition,
         )
 
@@ -176,7 +176,7 @@ class TestImportedMLModel:
             model_id,
             regressor,
             feature_names,
-            overwrite=True,
+            es_if_exists="replace",
             es_compress_model_definition=compress_model_definition,
         )
         # Get some test results
@@ -204,7 +204,7 @@ class TestImportedMLModel:
             model_id,
             classifier,
             feature_names,
-            overwrite=True,
+            es_if_exists="replace",
             es_compress_model_definition=compress_model_definition,
         )
         # Get some test results
@@ -232,7 +232,7 @@ class TestImportedMLModel:
             model_id,
             regressor,
             feature_names,
-            overwrite=True,
+            es_if_exists="replace",
             es_compress_model_definition=compress_model_definition,
         )
         # Get some test results
@@ -270,7 +270,7 @@ class TestImportedMLModel:
             model_id,
             classifier,
             feature_names,
-            overwrite=True,
+            es_if_exists="replace",
             es_compress_model_definition=compress_model_definition,
         )
         # Get some test results
@@ -306,7 +306,7 @@ class TestImportedMLModel:
         model_id = "test_xgb_classifier"
 
         es_model = ImportedMLModel(
-            ES_TEST_CLIENT, model_id, classifier, feature_names, overwrite=True
+            ES_TEST_CLIENT, model_id, classifier, feature_names, es_if_exists="replace"
         )
         # Get some test results
         check_prediction_equality(
@@ -342,7 +342,7 @@ class TestImportedMLModel:
             model_id,
             regressor,
             feature_names,
-            overwrite=True,
+            es_if_exists="replace",
             es_compress_model_definition=compress_model_definition,
         )
         # Get some test results
@@ -369,7 +369,7 @@ class TestImportedMLModel:
         model_id = "test_xgb_regressor"
 
         es_model = ImportedMLModel(
-            ES_TEST_CLIENT, model_id, regressor, feature_names, overwrite=True
+            ES_TEST_CLIENT, model_id, regressor, feature_names, es_if_exists="replace"
         )
 
         # Single feature
@@ -410,7 +410,7 @@ class TestImportedMLModel:
             model_id,
             regressor,
             feature_names,
-            overwrite=True,
+            es_if_exists="replace",
             es_compress_model_definition=compress_model_definition,
         )
         # Get some test results
@@ -451,7 +451,7 @@ class TestImportedMLModel:
             model_id,
             classifier,
             feature_names,
-            overwrite=True,
+            es_if_exists="replace",
             es_compress_model_definition=compress_model_definition,
         )
 
@@ -461,3 +461,110 @@ class TestImportedMLModel:
 
         # Clean up
         es_model.delete_model()
+
+    # If both overwrite and es_if_exists is given.
+    @requires_sklearn
+    @pytest.mark.parametrize("compress_model_definition", [True, False])
+    @pytest.mark.parametrize("es_if_exists", ["fail", "replace"])
+    @pytest.mark.parametrize("overwrite", [True, False])
+    def test_imported_mlmodel_bothparams(
+        self, compress_model_definition, es_if_exists, overwrite
+    ):
+        # Train model
+        training_data = datasets.make_regression(n_features=5)
+        regressor = RandomForestRegressor()
+        regressor.fit(training_data[0], training_data[1])
+
+        feature_names = ["f0", "f1", "f2", "f3", "f4"]
+        model_id = "test_random_forest_regressor"
+
+        match = "Using 'overwrite' and 'es_if_exists' together is invalid, use only 'es_if_exists'"
+        with pytest.raises(ValueError, match=match):
+            ImportedMLModel(
+                ES_TEST_CLIENT,
+                model_id,
+                regressor,
+                feature_names,
+                es_if_exists=es_if_exists,
+                overwrite=overwrite,
+                es_compress_model_definition=compress_model_definition,
+            )
+
+    # Deprecation warning for overwrite parameter
+    @requires_sklearn
+    @pytest.mark.parametrize("compress_model_definition", [True, False])
+    @pytest.mark.parametrize("overwrite", [True])
+    def test_imported_mlmodel_overwrite_true(
+        self, compress_model_definition, overwrite
+    ):
+        # Train model
+        training_data = datasets.make_regression(n_features=5)
+        regressor = RandomForestRegressor()
+        regressor.fit(training_data[0], training_data[1])
+
+        feature_names = ["f0", "f1", "f2", "f3", "f4"]
+        model_id = "test_random_forest_regressor"
+
+        match = "'overwrite' parameter is deprecated, use 'es_if_exists' instead"
+        with pytest.warns(DeprecationWarning, match=match):
+            ImportedMLModel(
+                ES_TEST_CLIENT,
+                model_id,
+                regressor,
+                feature_names,
+                overwrite=overwrite,
+                es_compress_model_definition=compress_model_definition,
+            )
+
+    @requires_sklearn
+    @pytest.mark.parametrize("compress_model_definition", [True, False])
+    @pytest.mark.parametrize("overwrite", [False])
+    def test_imported_mlmodel_overwrite_false(
+        self, compress_model_definition, overwrite
+    ):
+        # Train model
+        training_data = datasets.make_regression(n_features=5)
+        regressor = RandomForestRegressor()
+        regressor.fit(training_data[0], training_data[1])
+
+        feature_names = ["f0", "f1", "f2", "f3", "f4"]
+        model_id = "test_random_forest_regressor"
+
+        match_error = f"Trained machine learning model {model_id} already exists"
+        match_warning = (
+            "'overwrite' parameter is deprecated, use 'es_if_exists' instead"
+        )
+        with pytest.raises(ValueError, match=match_error):
+            with pytest.warns(DeprecationWarning, match=match_warning):
+                ImportedMLModel(
+                    ES_TEST_CLIENT,
+                    model_id,
+                    regressor,
+                    feature_names,
+                    overwrite=overwrite,
+                    es_compress_model_definition=compress_model_definition,
+                )
+
+    # Raise ValueError if Model exists when es_if_exists = 'fail'
+    @requires_sklearn
+    @pytest.mark.parametrize("compress_model_definition", [True, False])
+    def test_es_if_exists_fail(self, compress_model_definition):
+        # Train model
+        training_data = datasets.make_regression(n_features=5)
+        regressor = RandomForestRegressor()
+        regressor.fit(training_data[0], training_data[1])
+
+        feature_names = ["f0", "f1", "f2", "f3", "f4"]
+        model_id = "test_random_forest_regressor"
+
+        # If both overwrite and es_if_exists is given.
+        match = f"Trained machine learning model {model_id} already exists"
+        with pytest.raises(ValueError, match=match):
+            ImportedMLModel(
+                ES_TEST_CLIENT,
+                model_id,
+                regressor,
+                feature_names,
+                es_if_exists="fail",
+                es_compress_model_definition=compress_model_definition,
+            )
