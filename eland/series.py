@@ -426,7 +426,13 @@ class Series(NDFrame):
 
     @property
     def dtype(self) -> np.dtype:
-        # DO NOT MAKE PUBLIC (i.e. def dtype) as this breaks query eval implementation
+        """
+        Return the dtype object of the underlying data.
+
+        See Also
+        --------
+        :pandas_api_docs:`pandas.Series.dtype`
+        """
         return self._query_compiler.dtypes[0]
 
     def __gt__(self, other: Union[int, float, "Series"]) -> BooleanFilter:
