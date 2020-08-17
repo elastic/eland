@@ -58,9 +58,9 @@ class MLModel:
         except elasticsearch.NotFoundError:
             pass
 
-    def check_existing_model(self) -> bool:
+    def exists_model(self) -> bool:
         """
-        Check If model exists in Elastic
+        Check if the model already exists in Elasticsearch
         """
         try:
             self._client.ml.get_trained_models(

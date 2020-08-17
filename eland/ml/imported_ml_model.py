@@ -198,7 +198,7 @@ class ImportedMLModel(MLModel):
         if es_if_exists not in ("fail", "replace"):
             raise ValueError("'es_if_exists' must be either 'fail' or 'replace'")
         elif es_if_exists == "fail":
-            if self.check_existing_model():
+            if self.exists_model():
                 raise ValueError(
                     f"Trained machine learning model {model_id} already exists"
                 )
