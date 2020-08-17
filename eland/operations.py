@@ -301,7 +301,7 @@ class Operations:
                     )
 
                 # These aggregations maintain the column datatype
-                elif pd_agg in ("max", "min"):
+                elif pd_agg in {"max", "min", "median"}:
                     agg_value = field.np_dtype.type(agg_value)
 
                 values.append(agg_value)

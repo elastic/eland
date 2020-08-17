@@ -228,3 +228,25 @@ class TestDataFrameMetrics(TestData):
             <= median
             <= pd.to_datetime("2018-01-01 12:00:00.000")
         )
+
+    def test_metric_agg_keep_dtypes(self):
+        # max, min, and median maintain their dtypes
+        df = self.ed_flights_small()[["AvgTicketPrice", "Cancelled", "dayOfWeek"]]
+        assert df.min().tolist() == [131.81910705566406, False, 0]
+        assert df.max().tolist() == [989.9527587890625, True, 0]
+        assert df.median().tolist() == [550.276123046875, False, 0]
+        all_agg = df.agg(["min", "max", "median"])
+        assert all_agg.dtypes.tolist() == [
+            np.dtype("float64"),
+            np.dtype("bool"),
+            np.dtype("int64"),
+        ]
+        assert all_agg.to_dict() == {
+            "AvgTicketPrice": {
+                "max": 989.9527587890625,
+                "median": 550.276123046875,
+                "min": 131.81910705566406,
+            },
+            "Cancelled": {"max": True, "median": False, "min": False},
+            "dayOfWeek": {"max": 0, "median": 0, "min": 0},
+        }
