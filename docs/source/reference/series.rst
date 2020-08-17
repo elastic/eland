@@ -14,15 +14,17 @@ Constructor
 
 Attributes and underlying data
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-**Axes**
-
 .. autosummary::
    :toctree: api/
 
    Series.index
+   Series.dtype
+   Series.dtypes
    Series.shape
    Series.name
    Series.empty
+   Series.ndim
+   Series.size
 
 Indexing, iteration
 ~~~~~~~~~~~~~~~~~~~

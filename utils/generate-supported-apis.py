@@ -21,8 +21,10 @@ import re
 import eland
 import pandas
 import inspect
+from pathlib import Path
 
 
+api_docs_dir = Path(__file__).absolute().parent.parent / "docs/source/reference/api"
 is_supported = []
 supported_attr = re.compile(
     r"(?:[a-zA-Z0-9][a-zA-Z0-9_]*|__[a-zA-Z0-9][a-zA-Z0-9_]*__)"
@@ -67,6 +69,23 @@ def main():
             f"| ``{attr}``{' ' * (column1_width - len(attr))}|{' **Yes**    ' if supported else ' No         '}|"
         )
         print(row_delimiter)
+
+    for attr, supported in is_supported:
+        if supported and "__" not in attr:
+            attr = attr.replace("ed.", "eland.").rstrip("()")
+            attr_doc_path = api_docs_dir / f"{attr}.rst"
+            if not attr_doc_path.exists():
+                with attr_doc_path.open(mode="w") as f:
+                    f.truncate()
+                    f.write(
+                        f"""{attr}
+{'=' * len(attr)}
+
+.. currentmodule:: eland
+
+.. automethod:: { attr.replace('eland.', '') }
+"""
+                    )
 
 
 if __name__ == "__main__":
