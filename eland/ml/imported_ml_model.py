@@ -162,7 +162,7 @@ class ImportedMLModel(MLModel):
         feature_names: List[str],
         classification_labels: Optional[List[str]] = None,
         classification_weights: Optional[List[float]] = None,
-        es_if_exists: bool = None,
+        es_if_exists: Optional[str] = None,
         overwrite: Optional[bool] = None,
         es_compress_model_definition: bool = True,
     ):
