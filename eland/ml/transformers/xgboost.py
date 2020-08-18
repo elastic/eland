@@ -15,6 +15,7 @@
 #  specific language governing permissions and limitations
 #  under the License.
 
+import re
 from typing import Optional, List, Dict, Any, Type
 from .base import ModelTransformer
 import pandas as pd  # type: ignore
@@ -52,13 +53,13 @@ class XGBoostForestTransformer(ModelTransformer):
         self._feature_dict = dict(zip(feature_names, range(len(feature_names))))
 
     def get_feature_id(self, feature_id: str) -> int:
-        if feature_id[0] == "f":
+        if re.match(r"^f[0-9]+$", feature_id):
             try:
                 return int(feature_id[1:])
             except ValueError:
                 raise RuntimeError(f"Unable to interpret '{feature_id}'")
         f_id = self._feature_dict.get(feature_id)
-        if f_id:
+        if f_id is not None:
             return f_id
         else:
             try:
