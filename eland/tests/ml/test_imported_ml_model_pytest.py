@@ -302,7 +302,7 @@ class TestImportedMLModel:
         classifier.fit(training_data[0], training_data[1])
 
         # Serialise the models to Elasticsearch
-        feature_names = ["f0", "f1", "f2", "f3", "f4"]
+        feature_names = ["feature0", "feature1", "feature2", "feature3", "feature4"]
         model_id = "test_xgb_classifier"
 
         es_model = ImportedMLModel(
