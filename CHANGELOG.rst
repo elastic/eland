@@ -1,8 +1,64 @@
+=========
 Changelog
 =========
 
+7.9.0a1 (2020-08-18)
+--------------------
+
+Added
+^^^^^
+
+* Added support for Pandas v1.1 (`#253`_)
+* Added support for LightGBM ``LGBMRegressor`` and ``LGBMClassifier`` to ``ImportedMLModel`` (`#247`_, `#252`_)
+* Added support for ``multi:softmax`` and ``multi:softprob`` XGBoost operators to ``ImportedMLModel`` (`#246`_)
+* Added column names to ``DataFrame.__dir__()`` for better auto-completion support (`#223`_, contributed by `@leonardbinet`_)
+* Added support for ``es_if_exists='append'`` to ``pandas_to_eland()`` (`#217`_)
+* Added support for aggregating datetimes with ``nunique`` and ``mean`` (`#253`_)
+* Added ``es_compress_model_definition`` parameter to ``ImportedMLModel`` constructor (`#220`_)
+* Added ``.size`` and ``.ndim`` properties to ``DataFrame`` and ``Series`` (`#231`_ and `#233`_)
+* Added ``.dtype`` property to ``Series`` (`#258`_)
+* Added support for using ``pandas.Series`` with ``Series.isin()`` (`#231`_)
+* Added type hints to many APIs in ``DataFrame`` and ``Series`` (`#231`_)
+
+Deprecated
+^^^^^^^^^^
+
+* Deprecated  the ``overwrite`` parameter in favor of ``es_if_exists`` in ``ImportedMLModel`` constructor (`#249`_, contributed by `@V1NAY8`_)
+
+Changed
+^^^^^^^
+
+* Changed aggregations for datetimes to be higher precision when available (`#253`_)
+
+Fixed
+^^^^^
+
+* Fixed ``ImportedMLModel.predict()`` to fail when ``errors`` are present in the ``ingest.simulate`` response (`#220`_)
+* Fixed ``Series.median()`` aggregation to return a scalar instead of ``pandas.Series`` (`#253`_)
+* Fixed ``Series.describe()`` to return a ``pandas.Series`` instead of ``pandas.DataFrame`` (`#258`_)
+* Fixed ``DataFrame.mean()`` and ``Series.mean()`` dtype (`#258`_)
+* Fixed ``DataFrame.agg()`` aggregations when using ``extended_stats`` Elasticsearch aggregation (`#253`_)
+
+ .. _@leonardbinet: https://github.com/leonardbinet
+ .. _@V1NAY8: https://github.com/V1NAY8
+ .. _#217: https://github.com/elastic/eland/pull/217
+ .. _#220: https://github.com/elastic/eland/pull/220
+ .. _#223: https://github.com/elastic/eland/pull/223
+ .. _#231: https://github.com/elastic/eland/pull/231
+ .. _#233: https://github.com/elastic/eland/pull/233
+ .. _#246: https://github.com/elastic/eland/pull/246
+ .. _#247: https://github.com/elastic/eland/pull/247
+ .. _#249: https://github.com/elastic/eland/pull/249
+ .. _#252: https://github.com/elastic/eland/pull/252
+ .. _#253: https://github.com/elastic/eland/pull/253
+ .. _#258: https://github.com/elastic/eland/pull/258
+
+
 7.7.0a1 (2020-05-20)
 --------------------
+
+Added
+^^^^^
 
 * Added the package to Conda Forge, install via
   ``conda install -c conda-forge eland`` (`#209`_)
@@ -15,9 +71,27 @@ Changelog
 * Added ``DataFrame.to_pandas()`` and ``Series.to_pandas()`` for converting
   an Eland dataframe or series into a Pandas dataframe or series inline (`#208`_)
 * Added support for XGBoost v1.0.0 (`#200`_)
+
+Deprecated
+^^^^^^^^^^
+
 * Deprecated ``info_es()`` in favor of ``es_info()`` (`#208`_)
 * Deprecated ``eland.read_csv()`` in favor of ``eland.csv_to_eland()`` (`#208`_)
 * Deprecated ``eland.read_es()`` in favor of ``eland.DataFrame()`` (`#208`_)
+
+Changed
+^^^^^^^
+
+* Changed ``var`` and ``std`` aggregations to use sample instead of
+  population in line with Pandas (`#185`_)
+* Changed painless scripts to use ``source`` rather than ``inline`` to improve
+  script caching performance (`#191`_, contributed by `@mesejo`_)
+* Changed minimum ``elasticsearch`` Python library version to v7.7.0 (`#207`_)
+* Changed name of ``Index.field_name`` to ``Index.es_field_name`` (`#208`_)
+
+Fixed
+^^^^^
+
 * Fixed ``DeprecationWarning`` raised from ``pandas.Series`` when an
   an empty series was created without specifying ``dtype`` (`#188`_, contributed by `@mesejo`_)
 * Fixed a bug when filtering columns on complex combinations of and and or (`#204`_)
@@ -27,12 +101,6 @@ Changelog
 * Fixed issue where both ``scikit-learn`` and ``xgboost`` libraries were
   required to use ``eland.ml.ImportedMLModel``, now only one library is
   required to use this feature (`#206`_)
-* Changed ``var`` and ``std`` aggregations to use sample instead of
-  population in line with Pandas (`#185`_)
-* Changed painless scripts to use ``source`` rather than ``inline`` to improve
-  script caching performance (`#191`_, contributed by `@mesejo`_)
-* Changed minimum ``elasticsearch`` Python library version to v7.7.0 (`#207`_)
-* Changed name of ``Index.field_name`` to ``Index.es_field_name`` (`#208`_)
 
  .. _#200: https://github.com/elastic/eland/pull/200
  .. _#201: https://github.com/elastic/eland/pull/201
@@ -52,21 +120,36 @@ Changelog
 7.6.0a5 (2020-04-14)
 --------------------
 
+Added
+^^^^^
+
 * Added support for Pandas v1.0.0 (`#141`_, contributed by `@mesejo`_)
 * Added ``use_pandas_index_for_es_ids`` parameter to ``pandas_to_eland()`` (`#154`_)
 * Added ``es_type_overrides`` parameter to ``pandas_to_eland()`` (`#181`_)
 * Added ``NDFrame.var()``, ``.std()`` and ``.median()`` aggregations (`#175`_, `#176`_, contributed by `@mesejo`_)
 * Added ``DataFrame.es_query()`` to allow modifying ES queries directly (`#156`_)
 * Added ``eland.__version__`` (`#153`_, contributed by `@mesejo`_)
+
+Removed
+^^^^^^^
+
 * Removed support for Python 3.5 (`#150`_)
 * Removed ``eland.Client()`` interface, use
   ``elasticsearch.Elasticsearch()`` client instead (`#166`_)
 * Removed all private objects from top-level ``eland`` namespace (`#170`_)
 * Removed ``geo_points`` from ``pandas_to_eland()`` in favor of ``es_type_overrides`` (`#181`_)
-* Fixed ``inference_config`` being required on ML models for ES >=7.8 (`#174`_)
-* Fixed unpacking for ``DataFrame.aggregate("median")`` (`#161`_)
+
+Changed
+^^^^^^^
+
 * Changed ML model serialization to be slightly smaller (`#159`_)
 * Changed minimum ``elasticsearch`` Python library version to v7.6.0 (`#181`_)
+
+Fixed
+^^^^^
+
+* Fixed ``inference_config`` being required on ML models for ES >=7.8 (`#174`_)
+* Fixed unpacking for ``DataFrame.aggregate("median")`` (`#161`_)
 
  .. _@mesejo: https://github.com/mesejo
  .. _#141: https://github.com/elastic/eland/pull/141
@@ -86,10 +169,17 @@ Changelog
 7.6.0a4 (2020-03-23)
 --------------------
 
+Changed
+^^^^^^^
+
+* Changed requirement for ``xgboost`` from ``>=0.90`` to ``==0.90``
+
+Fixed
+^^^^^
+
 * Fixed issue in ``DataFrame.info()`` when called on an empty frame (`#135`_)
 * Fixed issues where many ``_source`` fields would generate
   a ``too_long_frame`` error (`#135`_, `#137`_)
-* Changed requirement for ``xgboost`` from ``>=0.90`` to ``==0.90``
 
  .. _#135: https://github.com/elastic/eland/pull/135
  .. _#137: https://github.com/elastic/eland/pull/137
