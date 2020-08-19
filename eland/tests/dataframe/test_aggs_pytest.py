@@ -19,7 +19,7 @@
 
 import numpy as np
 from pandas.testing import assert_frame_equal, assert_series_equal
-
+import pytest
 from eland.tests.common import TestData
 
 
@@ -115,3 +115,11 @@ class TestDataFrameAggs(TestData):
         print(ed_sum_min_std.dtypes)
 
         assert_series_equal(pd_sum_min_std, ed_sum_min_std)
+
+    # If Wrong Aggregate value is given.
+    def test_terms_wrongaggs(self):
+        ed_flights = self.ed_flights()
+
+        match = "'DataFrame' object has no attribute 'abc'"
+        with pytest.raises(AttributeError, match=match):
+            ed_flights.select_dtypes(include=[np.number]).agg("abc")
