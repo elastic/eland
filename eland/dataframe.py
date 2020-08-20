@@ -1386,14 +1386,12 @@ class DataFrame(NDFrame):
         # ['count', 'mad', 'max', 'mean', 'median', 'min', 'mode', 'quantile',
         # 'rank', 'sem', 'skew', 'sum', 'std', 'var', 'nunique']
         if isinstance(func, str):
-            try:
-                result = getattr(self, func)()
-            except AttributeError:
+            if hasattr(self, func):
                 # If all are implemented, this has to be changed to
                 # print(f"{func} is invalid operation")
-                print(f"{func} is not implemented/invalid")
-                raise
-            return result
+                return getattr(self, func)()
+            else:
+                raise AttributeError(f"{func} is not implemented/invalid")
         elif is_list_like(func):
             # we have a list!
             return self._query_compiler.aggs(func)

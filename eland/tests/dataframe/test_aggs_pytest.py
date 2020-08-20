@@ -100,26 +100,15 @@ class TestDataFrameAggs(TestData):
         pd_flights = self.pd_flights()
         ed_flights = self.ed_flights()
 
-        pd_sum_min = pd_flights.select_dtypes(include=[np.number]).agg(["sum", "min"])
-        ed_sum_min = ed_flights.select_dtypes(include=[np.number]).agg(["sum", "min"])
-
-        # Eland returns all float values for all metric aggs, pandas can return int
-        # TODO - investigate this more
-        pd_sum_min = pd_sum_min.astype("float64")
-        assert_frame_equal(pd_sum_min, ed_sum_min, check_exact=False)
-
         pd_sum_min_std = pd_flights.select_dtypes(include=[np.number]).agg("mean")
         ed_sum_min_std = ed_flights.select_dtypes(include=[np.number]).agg("mean")
-
-        print(pd_sum_min_std.dtypes)
-        print(ed_sum_min_std.dtypes)
 
         assert_series_equal(pd_sum_min_std, ed_sum_min_std)
 
     # If Wrong Aggregate value is given.
     def test_terms_wrongaggs(self):
-        ed_flights = self.ed_flights()
+        ed_flights = self.ed_flights()[["FlightDelayMin"]]
 
-        match = "'DataFrame' object has no attribute 'abc'"
+        match = "abc is not implemented/invalid"
         with pytest.raises(AttributeError, match=match):
             ed_flights.select_dtypes(include=[np.number]).agg("abc")
