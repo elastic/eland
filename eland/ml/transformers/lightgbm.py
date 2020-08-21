@@ -18,7 +18,7 @@
 from typing import Optional, List, Dict, Any, Type
 from .base import ModelTransformer
 from .._model_serializer import Ensemble, Tree, TreeNode
-from ..ml_model import MLModel
+from ..common import TYPE_CLASSIFICATION, TYPE_REGRESSION
 from .._optional import import_optional_dependency
 
 import_optional_dependency("lightgbm", on_version="warn")
@@ -201,7 +201,7 @@ class LGBMRegressorTransformer(LGBMForestTransformer):
 
     @property
     def model_type(self) -> str:
-        return MLModel.TYPE_REGRESSION
+        return TYPE_REGRESSION
 
 
 class LGBMClassifierTransformer(LGBMForestTransformer):
@@ -244,7 +244,7 @@ class LGBMClassifierTransformer(LGBMForestTransformer):
 
     @property
     def model_type(self) -> str:
-        return MLModel.TYPE_CLASSIFICATION
+        return TYPE_CLASSIFICATION
 
     def is_objective_supported(self) -> bool:
         return self._objective in {
