@@ -95,16 +95,26 @@ class TestDataFrameAggs(TestData):
         pd_aggs = pd_aggs.astype("float64")
         assert_frame_equal(pd_aggs, ed_aggs, check_exact=False, check_less_precise=2)
 
-    # If Aggregate is given a string or list with one agg then series is returned.
-    @pytest.mark.parametrize("agg", [["mean"], "mean"])
+    # If Aggregate is given a string then series is returned.
+    @pytest.mark.parametrize("agg", ["mean", "min", "max"])
     def test_terms_aggs_series(self, agg):
         pd_flights = self.pd_flights()
         ed_flights = self.ed_flights()
 
-        pd_sum_min_std = pd_flights.select_dtypes(include=[np.number]).agg("mean")
+        pd_sum_min_std = pd_flights.select_dtypes(include=[np.number]).agg(agg)
         ed_sum_min_std = ed_flights.select_dtypes(include=[np.number]).agg(agg)
 
         assert_series_equal(pd_sum_min_std, ed_sum_min_std)
+
+    def test_terms_aggs_series_with_single_list_agg(self):
+        # aggs list with single agg should return dataframe.
+        pd_flights = self.pd_flights()
+        ed_flights = self.ed_flights()
+
+        pd_sum_min = pd_flights.select_dtypes(include=[np.number]).agg(["mean"])
+        ed_sum_min = ed_flights.select_dtypes(include=[np.number]).agg(["mean"])
+
+        assert_frame_equal(pd_sum_min, ed_sum_min)
 
     # If Wrong Aggregate value is given.
     def test_terms_wrongaggs(self):

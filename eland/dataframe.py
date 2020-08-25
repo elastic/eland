@@ -1388,8 +1388,6 @@ class DataFrame(NDFrame):
         if isinstance(func, str):
             # Wrap in list
             return self._query_compiler.aggs([func]).squeeze().rename(None)
-        elif is_list_like(func) and len(func) == 1:
-            return self._query_compiler.aggs(func).squeeze().rename(None)
         elif is_list_like(func):
             # we have a list!
             return self._query_compiler.aggs(func)
