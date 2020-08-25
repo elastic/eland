@@ -1386,9 +1386,8 @@ class DataFrame(NDFrame):
         # ['count', 'mad', 'max', 'mean', 'median', 'min', 'mode', 'quantile',
         # 'rank', 'sem', 'skew', 'sum', 'std', 'var', 'nunique']
         if isinstance(func, str):
-            # wrap in list
-            func = [func]
-            return self._query_compiler.aggs(func)
+            # Wrap in list
+            return self._query_compiler.aggs([func]).squeeze().rename(None)
         elif is_list_like(func):
             # we have a list!
             return self._query_compiler.aggs(func)
