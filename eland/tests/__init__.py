@@ -30,7 +30,8 @@ ELASTICSEARCH_HOST = os.environ.get("ELASTICSEARCH_HOST") or "localhost"
 TEST_SUITE = os.environ.get("TEST_SUITE", "xpack")
 if TEST_SUITE == "xpack":
     ES_TEST_CLIENT = Elasticsearch(
-        ELASTICSEARCH_HOST, http_auth=("elastic", "changeme"),
+        ELASTICSEARCH_HOST,
+        http_auth=("elastic", "changeme"),
     )
 else:
     ES_TEST_CLIENT = Elasticsearch(ELASTICSEARCH_HOST)

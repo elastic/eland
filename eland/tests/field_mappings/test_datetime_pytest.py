@@ -29,7 +29,7 @@ class TestDateTime(TestData):
 
     @classmethod
     def setup_class(cls):
-        """ setup any state specific to the execution of the given class (which
+        """setup any state specific to the execution of the given class (which
         usually contains tests).
         """
         es = ES_TEST_CLIENT
@@ -58,7 +58,7 @@ class TestDateTime(TestData):
 
     @classmethod
     def teardown_class(cls):
-        """ teardown any state that was previously setup with a call to
+        """teardown any state that was previously setup with a call to
         setup_class.
         """
 
