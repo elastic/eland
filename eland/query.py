@@ -137,7 +137,12 @@ class Query:
         self._aggs[name] = agg
 
     def hist_aggs(
-        self, name: str, field: str, min_value: Any, max_value: Any, num_bins: int,
+        self,
+        name: str,
+        field: str,
+        min_value: Any,
+        max_value: Any,
+        num_bins: int,
     ) -> None:
         """
         Add histogram agg e.g.

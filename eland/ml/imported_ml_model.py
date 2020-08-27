@@ -218,7 +218,8 @@ class ImportedMLModel(MLModel):
             body["definition"] = serializer.serialize_model()
 
         self._client.ml.put_trained_model(
-            model_id=self._model_id, body=body,
+            model_id=self._model_id,
+            body=body,
         )
 
     def predict(self, X: Union[List[float], List[List[float]]]) -> np.ndarray:

@@ -464,14 +464,14 @@ class FieldMappings:
         --------------------------------------------
 
         ```
-        Pandas dtype	Python type	NumPy type	Usage
-        object	str	string_, unicode_	Text
-        int64	int	int_, int8, int16, int32, int64, uint8, uint16, uint32, uint64	Integer numbers
-        float64	float	float_, float16, float32, float64	Floating point numbers
-        bool	bool	bool_	True/False values
-        datetime64	NA	datetime64[ns]	Date and time values
-        timedelta[ns]	NA	NA	Differences between two datetimes
-        category	NA	NA	Finite list of text values
+        Pandas dtype Python type NumPy type Usage
+        object str string_, unicode_ Text
+        int64 int int_, int8, int16, int32, int64, uint8, uint16, uint32, uint64 Integer numbers
+        float64 float float_, float16, float32, float64 Floating point numbers
+        bool bool bool_ True/False values
+        datetime64 NA datetime64[ns] Date and time values
+        timedelta[ns] NA NA Differences between two datetimes
+        category NA NA Finite list of text values
         ```
         """
         es_dtype = None

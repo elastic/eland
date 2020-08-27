@@ -93,7 +93,8 @@ class LGBMForestTransformer(ModelTransformer):
         self, tree_id: int, node_id: int, tree_node_json_obj: Dict[str, Any]
     ) -> TreeNode:
         return TreeNode(
-            node_idx=node_id, leaf_value=[float(tree_node_json_obj["leaf_value"])],
+            node_idx=node_id,
+            leaf_value=[float(tree_node_json_obj["leaf_value"])],
         )
 
     def build_tree(self, tree_id: int, tree_json_obj: Dict[str, Any]) -> Tree:
