@@ -222,7 +222,7 @@ class TestDataFrameDateTime(TestData):
             "strict_week_date_time_no_millis": dt.strftime("%G-W%V-%uT%H:%M:%S%z"),
             "week_date_time_no_millis": dt.strftime("%G-W%V-%uT%H:%M:%S%z"),
             "strict_weekyear": dt.strftime("%G"),
-            "weekyear": dt.strftime("%G"),
+            "week_year": dt.strftime("%G"),
             "strict_weekyear_week": dt.strftime("%G-W%V"),
             "weekyear_week": dt.strftime("%G-W%V"),
             "strict_weekyear_week_day": dt.strftime("%G-W%V-%u"),
