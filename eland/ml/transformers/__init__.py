@@ -37,7 +37,7 @@ def get_model_transformer(model: Any, **kwargs: Any) -> ModelTransformer:
             return transformer(model, **kwargs)
 
     raise NotImplementedError(
-        f"ML model of type {type(model)}, not currently implemented"
+        f"Importing ML models of type {type(model)}, not currently implemented"
     )
 
 

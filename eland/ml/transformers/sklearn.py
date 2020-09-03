@@ -18,7 +18,7 @@
 import numpy as np  # type: ignore
 from typing import Optional, Sequence, Union, Dict, Any, Type, Tuple
 from .base import ModelTransformer
-from ..ml_model import MLModel
+from ..common import TYPE_CLASSIFICATION, TYPE_REGRESSION
 from .._optional import import_optional_dependency
 from .._model_serializer import Ensemble, Tree, TreeNode
 
@@ -148,9 +148,9 @@ class SKLearnDecisionTreeTransformer(SKLearnTransformer):
     @property
     def model_type(self) -> str:
         return (
-            MLModel.TYPE_REGRESSION
+            TYPE_REGRESSION
             if isinstance(self._model, DecisionTreeRegressor)
-            else MLModel.TYPE_CLASSIFICATION
+            else TYPE_CLASSIFICATION
         )
 
 
@@ -223,7 +223,7 @@ class SKLearnForestRegressorTransformer(SKLearnForestTransformer):
 
     @property
     def model_type(self) -> str:
-        return MLModel.TYPE_REGRESSION
+        return TYPE_REGRESSION
 
 
 class SKLearnForestClassifierTransformer(SKLearnForestTransformer):
@@ -247,7 +247,7 @@ class SKLearnForestClassifierTransformer(SKLearnForestTransformer):
 
     @property
     def model_type(self) -> str:
-        return MLModel.TYPE_CLASSIFICATION
+        return TYPE_CLASSIFICATION
 
 
 _MODEL_TRANSFORMERS: Dict[type, Type[ModelTransformer]] = {

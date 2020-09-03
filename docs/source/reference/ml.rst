@@ -27,19 +27,20 @@ Constructor
 .. autosummary::
    :toctree: api/
 
-   ImportedMLModel
+   MLModel
 
 Predictions
 ^^^^^^^^^^^
 .. autosummary::
    :toctree: api/
 
-   ImportedMLModel.predict
+   MLModel.predict
 
 Manage Models
 ^^^^^^^^^^^^^
 .. autosummary::
    :toctree: api/
 
+   MLModel.import_model
    MLModel.exists_model
    MLModel.delete_model

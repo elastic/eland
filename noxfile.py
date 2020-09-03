@@ -34,7 +34,7 @@ SOURCE_FILES = (
 # Whenever type-hints are completed on a file it should
 # be added here so that this file will continue to be checked
 # by mypy. Errors from other files are ignored.
-TYPED_FILES = {
+TYPED_FILES = (
     "eland/actions.py",
     "eland/arithmetics.py",
     "eland/common.py",
@@ -46,13 +46,13 @@ TYPED_FILES = {
     "eland/utils.py",
     "eland/ml/__init__.py",
     "eland/ml/_model_serializer.py",
-    "eland/ml/imported_ml_model.py",
+    "eland/ml/ml_model.py",
     "eland/ml/transformers/__init__.py",
     "eland/ml/transformers/base.py",
     "eland/ml/transformers/lightgbm.py",
     "eland/ml/transformers/sklearn.py",
     "eland/ml/transformers/xgboost.py",
-}
+)
 
 
 @nox.session(reuse_venv=True)

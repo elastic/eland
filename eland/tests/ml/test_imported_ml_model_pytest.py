@@ -18,7 +18,7 @@
 import pytest
 import numpy as np
 
-from eland.ml import ImportedMLModel
+from eland.ml import MLModel
 from eland.tests import ES_TEST_CLIENT, ES_VERSION
 
 
@@ -71,7 +71,7 @@ def skip_if_multiclass_classifition():
 
 
 def random_rows(data, size):
-    return data[np.random.randint(data.shape[0], size=size), :].tolist()
+    return data[np.random.randint(data.shape[0], size=size), :]
 
 
 def check_prediction_equality(es_model, py_model, test_data):
@@ -84,7 +84,7 @@ def check_prediction_equality(es_model, py_model, test_data):
 class TestImportedMLModel:
     @requires_no_ml_extras
     def test_import_ml_model_when_dependencies_are_not_available(self):
-        from eland.ml import MLModel, ImportedMLModel  # noqa: F401
+        from eland.ml import MLModel  # noqa: F401
 
     @requires_sklearn
     def test_unpack_and_raise_errors_in_ingest_simulate(self, mocker):
@@ -98,7 +98,7 @@ class TestImportedMLModel:
         model_id = "test_decision_tree_classifier"
         test_data = [[0.1, 0.2, 0.3, -0.5, 1.0], [1.6, 2.1, -10, 50, -1.0]]
 
-        es_model = ImportedMLModel(
+        es_model = MLModel.import_model(
             ES_TEST_CLIENT,
             model_id,
             classifier,
@@ -142,7 +142,7 @@ class TestImportedMLModel:
         feature_names = ["f0", "f1", "f2", "f3", "f4"]
         model_id = "test_decision_tree_classifier"
 
-        es_model = ImportedMLModel(
+        es_model = MLModel.import_model(
             ES_TEST_CLIENT,
             model_id,
             classifier,
@@ -171,7 +171,7 @@ class TestImportedMLModel:
         feature_names = ["f0", "f1", "f2", "f3", "f4"]
         model_id = "test_decision_tree_regressor"
 
-        es_model = ImportedMLModel(
+        es_model = MLModel.import_model(
             ES_TEST_CLIENT,
             model_id,
             regressor,
@@ -199,7 +199,7 @@ class TestImportedMLModel:
         feature_names = ["f0", "f1", "f2", "f3", "f4"]
         model_id = "test_random_forest_classifier"
 
-        es_model = ImportedMLModel(
+        es_model = MLModel.import_model(
             ES_TEST_CLIENT,
             model_id,
             classifier,
@@ -227,7 +227,7 @@ class TestImportedMLModel:
         feature_names = ["f0", "f1", "f2", "f3", "f4"]
         model_id = "test_random_forest_regressor"
 
-        es_model = ImportedMLModel(
+        es_model = MLModel.import_model(
             ES_TEST_CLIENT,
             model_id,
             regressor,
@@ -265,7 +265,7 @@ class TestImportedMLModel:
         feature_names = ["f0", "f1", "f2", "f3", "f4"]
         model_id = "test_xgb_classifier"
 
-        es_model = ImportedMLModel(
+        es_model = MLModel.import_model(
             ES_TEST_CLIENT,
             model_id,
             classifier,
@@ -305,7 +305,7 @@ class TestImportedMLModel:
         feature_names = ["feature0", "feature1", "feature2", "feature3", "feature4"]
         model_id = "test_xgb_classifier"
 
-        es_model = ImportedMLModel(
+        es_model = MLModel.import_model(
             ES_TEST_CLIENT, model_id, classifier, feature_names, es_if_exists="replace"
         )
         # Get some test results
@@ -337,7 +337,7 @@ class TestImportedMLModel:
         feature_names = ["f0", "f1", "f2", "f3", "f4"]
         model_id = "test_xgb_regressor"
 
-        es_model = ImportedMLModel(
+        es_model = MLModel.import_model(
             ES_TEST_CLIENT,
             model_id,
             regressor,
@@ -368,7 +368,7 @@ class TestImportedMLModel:
         feature_names = ["f0"]
         model_id = "test_xgb_regressor"
 
-        es_model = ImportedMLModel(
+        es_model = MLModel.import_model(
             ES_TEST_CLIENT, model_id, regressor, feature_names, es_if_exists="replace"
         )
 
@@ -405,7 +405,7 @@ class TestImportedMLModel:
         feature_names = ["Column_0", "Column_1", "Column_2", "Column_3", "Column_4"]
         model_id = "test_lgbm_regressor"
 
-        es_model = ImportedMLModel(
+        es_model = MLModel.import_model(
             ES_TEST_CLIENT,
             model_id,
             regressor,
@@ -446,7 +446,7 @@ class TestImportedMLModel:
         feature_names = ["Column_0", "Column_1", "Column_2", "Column_3", "Column_4"]
         model_id = "test_lgbm_classifier"
 
-        es_model = ImportedMLModel(
+        es_model = MLModel.import_model(
             ES_TEST_CLIENT,
             model_id,
             classifier,
@@ -480,7 +480,7 @@ class TestImportedMLModel:
 
         match = "Using 'overwrite' and 'es_if_exists' together is invalid, use only 'es_if_exists'"
         with pytest.raises(ValueError, match=match):
-            ImportedMLModel(
+            MLModel.import_model(
                 ES_TEST_CLIENT,
                 model_id,
                 regressor,
@@ -507,7 +507,7 @@ class TestImportedMLModel:
 
         match = "'overwrite' parameter is deprecated, use 'es_if_exists' instead"
         with pytest.warns(DeprecationWarning, match=match):
-            ImportedMLModel(
+            MLModel.import_model(
                 ES_TEST_CLIENT,
                 model_id,
                 regressor,
@@ -536,7 +536,7 @@ class TestImportedMLModel:
         )
         with pytest.raises(ValueError, match=match_error):
             with pytest.warns(DeprecationWarning, match=match_warning):
-                ImportedMLModel(
+                MLModel.import_model(
                     ES_TEST_CLIENT,
                     model_id,
                     regressor,
@@ -560,7 +560,7 @@ class TestImportedMLModel:
         # If both overwrite and es_if_exists is given.
         match = f"Trained machine learning model {model_id} already exists"
         with pytest.raises(ValueError, match=match):
-            ImportedMLModel(
+            MLModel.import_model(
                 ES_TEST_CLIENT,
                 model_id,
                 regressor,

@@ -20,7 +20,7 @@ from typing import Optional, List, Dict, Any, Type
 from .base import ModelTransformer
 import pandas as pd  # type: ignore
 from .._model_serializer import Ensemble, Tree, TreeNode
-from ..ml_model import MLModel
+from ..common import TYPE_CLASSIFICATION, TYPE_REGRESSION
 from .._optional import import_optional_dependency
 
 import_optional_dependency("xgboost", on_version="warn")
@@ -207,7 +207,7 @@ class XGBoostRegressorTransformer(XGBoostForestTransformer):
 
     @property
     def model_type(self) -> str:
-        return MLModel.TYPE_REGRESSION
+        return TYPE_REGRESSION
 
 
 class XGBoostClassifierTransformer(XGBoostForestTransformer):
@@ -253,7 +253,7 @@ class XGBoostClassifierTransformer(XGBoostForestTransformer):
 
     @property
     def model_type(self) -> str:
-        return MLModel.TYPE_CLASSIFICATION
+        return TYPE_CLASSIFICATION
 
 
 _MODEL_TRANSFORMERS: Dict[type, Type[ModelTransformer]] = {
