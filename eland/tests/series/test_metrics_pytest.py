@@ -72,7 +72,7 @@ class TestSeriesMetrics(TestData):
             if func == "nunique":  # nunique never returns 'NaN'
                 continue
 
-            ed_metric = getattr(ed_ecommerce, func)()
+            ed_metric = getattr(ed_ecommerce, func)(numeric_only=False)
             print(func, ed_metric)
             assert np.isnan(ed_metric)
 
@@ -86,7 +86,9 @@ class TestSeriesMetrics(TestData):
 
             for func in self.all_funcs:
                 pd_metric = getattr(pd_ecommerce, func)()
-                ed_metric = getattr(ed_ecommerce, func)()
+                ed_metric = getattr(ed_ecommerce, func)(
+                    **({"numeric_only": True} if (func != "nunique") else {})
+                )
                 self.assert_almost_equal_for_agg(func, pd_metric, ed_metric)
 
     @pytest.mark.parametrize("agg", ["mean", "min", "max"])

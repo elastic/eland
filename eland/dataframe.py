@@ -19,7 +19,7 @@ import sys
 import warnings
 from io import StringIO
 import re
-from typing import Optional, Sequence, Union, Tuple
+from typing import Optional, Sequence, Union, Tuple, List
 
 import numpy as np
 import pandas as pd
@@ -1328,7 +1328,14 @@ class DataFrame(NDFrame):
         """
         return self.columns
 
-    def aggregate(self, func, axis=0, *args, **kwargs):
+    def aggregate(
+        self,
+        func: List[str],
+        axis: int = 0,
+        numeric_only: Optional[bool] = None,
+        *args,
+        **kwargs,
+    ) -> Union[pd.Series, pd.DataFrame]:
         """
         Aggregate using one or more operations over the specified axis.
 
@@ -1347,8 +1354,13 @@ class DataFrame(NDFrame):
 
             Currently, we only support ``['count', 'mad', 'max', 'mean', 'median', 'min', 'mode', 'quantile',
             'rank', 'sem', 'skew', 'sum', 'std', 'var']``
-        axis
+        axis: int
             Currently, we only support axis=0 (index)
+        numeric_only: {True, False, None} Default is None
+            Which datatype to be returned
+            - True: returns all values with float64, NaN/NaT are ignored.
+            - False: returns all values with float64.
+            - None: returns all values with default datatype.
         *args
             Positional arguments to pass to `func`
         **kwargs
@@ -1369,11 +1381,33 @@ class DataFrame(NDFrame):
         Examples
         --------
         >>> df = ed.DataFrame('localhost', 'flights')
-        >>> df[['DistanceKilometers', 'AvgTicketPrice']].aggregate(['sum', 'min', 'std']).astype(int)
+        >>> df[['DistanceKilometers', 'AvgTicketPrice']].aggregate(['sum', 'min', 'std'],numeric_only=True).astype(int)
              DistanceKilometers  AvgTicketPrice
         sum            92616288         8204364
         min                   0             100
         std                4578             266
+
+        >>> df = ed.DataFrame('localhost', 'flights')
+        >>> df[['AvgTicketPrice','timestamp', 'DestCountry']].aggregate(['sum', 'min', 'std'], numeric_only=True)
+             AvgTicketPrice
+        sum    8.204365e+06
+        min    1.000205e+02
+        std    2.664071e+02
+
+        >>> df = ed.DataFrame('localhost', 'flights')
+        >>> df[['AvgTicketPrice','timestamp', 'DestCountry']].aggregate(['sum', 'min', 'std'], numeric_only=False)
+             AvgTicketPrice  timestamp  DestCountry
+        sum    8.204365e+06        NaT          NaN
+        min    1.000205e+02 2018-01-01          NaN
+        std    2.664071e+02        NaT          NaN
+
+        >>> df = ed.DataFrame('localhost', 'flights')
+        >>> df[['AvgTicketPrice','timestamp', 'DestCountry']].aggregate(['sum', 'min', 'std'], numeric_only=None)
+             AvgTicketPrice  timestamp  DestCountry
+        sum    8.204365e+06        NaT          NaN
+        min    1.000205e+02 2018-01-01          NaN
+        std    2.664071e+02        NaT          NaN
+
         """
         axis = pd.DataFrame._get_axis_number(axis)
 
@@ -1387,10 +1421,14 @@ class DataFrame(NDFrame):
         # 'rank', 'sem', 'skew', 'sum', 'std', 'var', 'nunique']
         if isinstance(func, str):
             # Wrap in list
-            return self._query_compiler.aggs([func]).squeeze().rename(None)
+            return (
+                self._query_compiler.aggs([func], numeric_only=numeric_only)
+                .squeeze()
+                .rename(None)
+            )
         elif is_list_like(func):
             # we have a list!
-            return self._query_compiler.aggs(func)
+            return self._query_compiler.aggs(func, numeric_only=numeric_only)
 
     agg = aggregate
 

@@ -490,34 +490,34 @@ class QueryCompiler:
         result._operations.filter(self, items=items, like=like, regex=regex)
         return result
 
-    def aggs(self, func):
-        return self._operations.aggs(self, func)
+    def aggs(self, func, numeric_only: Optional[bool] = None):
+        return self._operations.aggs(self, func, numeric_only=numeric_only)
 
     def count(self):
         return self._operations.count(self)
 
-    def mean(self, numeric_only=None):
+    def mean(self, numeric_only: Optional[bool] = None):
         return self._operations.mean(self, numeric_only=numeric_only)
 
-    def var(self, numeric_only=None):
+    def var(self, numeric_only: Optional[bool] = None):
         return self._operations.var(self, numeric_only=numeric_only)
 
-    def std(self, numeric_only=None):
+    def std(self, numeric_only: Optional[bool] = None):
         return self._operations.std(self, numeric_only=numeric_only)
 
-    def mad(self, numeric_only=None):
+    def mad(self, numeric_only: Optional[bool] = None):
         return self._operations.mad(self, numeric_only=numeric_only)
 
-    def median(self, numeric_only=None):
+    def median(self, numeric_only: Optional[bool] = None):
         return self._operations.median(self, numeric_only=numeric_only)
 
-    def sum(self, numeric_only=None):
+    def sum(self, numeric_only: Optional[bool] = None):
         return self._operations.sum(self, numeric_only=numeric_only)
 
-    def min(self, numeric_only=None):
+    def min(self, numeric_only: Optional[bool] = None):
         return self._operations.min(self, numeric_only=numeric_only)
 
-    def max(self, numeric_only=None):
+    def max(self, numeric_only: Optional[bool] = None):
         return self._operations.max(self, numeric_only=numeric_only)
 
     def nunique(self):
