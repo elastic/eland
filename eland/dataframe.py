@@ -1381,7 +1381,7 @@ class DataFrame(NDFrame):
         Examples
         --------
         >>> df = ed.DataFrame('localhost', 'flights')
-        >>> df[['DistanceKilometers', 'AvgTicketPrice']].aggregate(['sum', 'min', 'std'],numeric_only=True).astype(int)
+        >>> df[['DistanceKilometers', 'AvgTicketPrice']].aggregate(['sum', 'min', 'std'], numeric_only=True).astype(int)
              DistanceKilometers  AvgTicketPrice
         sum            92616288         8204364
         min                   0             100

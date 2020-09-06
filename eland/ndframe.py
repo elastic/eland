@@ -172,10 +172,9 @@ class NDFrame(ABC):
         ----------
         numeric_only: {True, False, None} Default is None
             Which datatype to be returned
-            - True: returns all values with float64, NaN/NaT are ignored.
-            - False: returns all values with float64.
-            - None: returns all values with default datatypes, NaN/NaT are ignored.
-
+            - True: Returns all values as float64, NaN/NaT values are removed
+            - None: Returns all values as the same dtype where possible, NaN/NaT are removed
+            - False: Returns all values as the same dtype where possible, NaN/NaT are preserved
         Returns
         -------
         pandas.Series
@@ -190,14 +189,14 @@ class NDFrame(ABC):
         >>> df = ed.DataFrame('localhost', 'flights')
         >>> df.mean()
         AvgTicketPrice                              628.254
-        Cancelled                                      True
+        Cancelled                                  0.128494
         DistanceKilometers                          7092.14
         DistanceMiles                               4406.85
-        FlightDelay                                    True
-        FlightDelayMin                                   47
+        FlightDelay                                0.251168
+        FlightDelayMin                              47.3352
         FlightTimeHour                               8.5188
         FlightTimeMin                               511.128
-        dayOfWeek                                         2
+        dayOfWeek                                   2.83598
         timestamp             2018-01-21 19:20:45.564438232
         dtype: object
 
@@ -244,7 +243,6 @@ class NDFrame(ABC):
         dayOfWeek                                   2.83598
         timestamp             2018-01-21 19:20:45.564438232
         dtype: object
-
         """
         return self._query_compiler.mean(numeric_only=numeric_only)
 
@@ -258,9 +256,9 @@ class NDFrame(ABC):
         ----------
         numeric_only: {True, False, None} Default is None
             Which datatype to be returned
-            - True: returns all values with float64, NaN/NaT are ignored.
-            - False: returns all values with float64.
-            - None: returns all values with default datatypes, NaN/NaT are ignored.
+            - True: Returns all values as float64, NaN/NaT values are removed
+            - None: Returns all values as the same dtype where possible, NaN/NaT are removed
+            - False: Returns all values as the same dtype where possible, NaN/NaT are preserved
 
         Returns
         -------
@@ -276,10 +274,10 @@ class NDFrame(ABC):
         >>> df = ed.DataFrame('localhost', 'flights')
         >>> df.sum()
         AvgTicketPrice        8.20436e+06
-        Cancelled                    True
+        Cancelled                    1678
         DistanceKilometers    9.26163e+07
         DistanceMiles         5.75491e+07
-        FlightDelay                  True
+        FlightDelay                  3280
         FlightDelayMin             618150
         FlightTimeHour             111247
         FlightTimeMin         6.67482e+06
@@ -329,7 +327,6 @@ class NDFrame(ABC):
         dayOfWeek                   37035
         timestamp                     NaT
         dtype: object
-
         """
         return self._query_compiler.sum(numeric_only=numeric_only)
 
@@ -343,9 +340,9 @@ class NDFrame(ABC):
         ----------
         numeric_only: {True, False, None} Default is None
             Which datatype to be returned
-            - True: returns all values with float64, NaN/NaT are ignored.
-            - False: returns all values with float64.
-            - None: returns all values with default datatypes, NaN/NaT are ignored.
+            - True: Returns all values as float64, NaN/NaT values are removed
+            - None: Returns all values as the same dtype where possible, NaN/NaT are removed
+            - False: Returns all values as the same dtype where possible, NaN/NaT are preserved
 
         Returns
         -------
@@ -387,33 +384,33 @@ class NDFrame(ABC):
 
         >>> df = ed.DataFrame('localhost', 'flights')
         >>> df.min(numeric_only=False) # doctest: +SKIP
-        AvgTicketPrice                100.021
-        Cancelled                       False
-        Carrier                           NaN
-        Dest                              NaN
-        DestAirportID                     NaN
-        DestCityName                      NaN
-        DestCountry                       NaN
-        DestLocation                      NaN
-        DestRegion                        NaN
-        DestWeather                       NaN
-        DistanceKilometers                  0
-        DistanceMiles                       0
-        FlightDelay                     False
-        FlightDelayMin                      0
-        FlightDelayType                   NaN
-        FlightNum                         NaN
-        FlightTimeHour                      0
-        FlightTimeMin                       0
-        Origin                            NaN
-        OriginAirportID                   NaN
-        OriginCityName                    NaN
-        OriginCountry                     NaN
-        OriginLocation                    NaN
-        OriginRegion                      NaN
-        OriginWeather                     NaN
-        dayOfWeek                           0
-        timestamp         2018-01-01 00:00:00
+        AvgTicketPrice                    100.021
+        Cancelled                           False
+        Carrier                               NaN
+        Dest                                  NaN
+        DestAirportID                         NaN
+        DestCityName                          NaN
+        DestCountry                           NaN
+        DestLocation                          NaN
+        DestRegion                            NaN
+        DestWeather                           NaN
+        DistanceKilometers                      0
+        DistanceMiles                           0
+        FlightDelay                         False
+        FlightDelayMin                          0
+        FlightDelayType                       NaN
+        FlightNum                             NaN
+        FlightTimeHour                          0
+        FlightTimeMin                           0
+        Origin                                NaN
+        OriginAirportID                       NaN
+        OriginCityName                        NaN
+        OriginCountry                         NaN
+        OriginLocation                        NaN
+        OriginRegion                          NaN
+        OriginWeather                         NaN
+        dayOfWeek                               0
+        timestamp             2018-01-01 00:00:00
         dtype: object
         """
         return self._query_compiler.min(numeric_only=numeric_only)
@@ -426,9 +423,9 @@ class NDFrame(ABC):
         ----------
         numeric_only: {True, False, None} Default is None
             Which datatype to be returned
-            - True: returns all values with float64, NaN/NaT are ignored.
-            - False: returns all values with float64.
-            - None: returns all values with default datatypes, NaN/NaT are ignored.
+            - True: Returns all values as float64, NaN/NaT values are removed
+            - None: Returns all values as the same dtype where possible, NaN/NaT are removed
+            - False: Returns all values as the same dtype where possible, NaN/NaT are preserved
 
         Returns
         -------
@@ -444,14 +441,14 @@ class NDFrame(ABC):
         >>> df = ed.DataFrame('localhost', 'flights')
         >>> df.var()
         AvgTicketPrice            70964.6
-        Cancelled                    True
+        Cancelled                0.111987
         DistanceKilometers    2.09613e+07
         DistanceMiles          8.0932e+06
-        FlightDelay                  True
-        FlightDelayMin               9359
+        FlightDelay               0.18809
+        FlightDelayMin            9359.57
         FlightTimeHour            31.1266
         FlightTimeMin              112056
-        dayOfWeek                       3
+        dayOfWeek                 3.76128
         dtype: object
 
         >>> df = ed.DataFrame('localhost', 'flights')
@@ -470,7 +467,7 @@ class NDFrame(ABC):
         >>> df = ed.DataFrame('localhost', 'flights')
         >>> df.var(numeric_only=False) # doctest: +SKIP
         AvgTicketPrice            70964.6
-        Cancelled                    True
+        Cancelled                0.111987
         Carrier                       NaN
         Dest                          NaN
         DestAirportID                 NaN
@@ -481,8 +478,8 @@ class NDFrame(ABC):
         DestWeather                   NaN
         DistanceKilometers    2.09613e+07
         DistanceMiles          8.0932e+06
-        FlightDelay                  True
-        FlightDelayMin               9359
+        FlightDelay               0.18809
+        FlightDelayMin            9359.57
         FlightDelayType               NaN
         FlightNum                     NaN
         FlightTimeHour            31.1266
@@ -494,7 +491,7 @@ class NDFrame(ABC):
         OriginLocation                NaN
         OriginRegion                  NaN
         OriginWeather                 NaN
-        dayOfWeek                       3
+        dayOfWeek                 3.76128
         timestamp                     NaT
         dtype: object
         """
@@ -508,9 +505,9 @@ class NDFrame(ABC):
         ----------
         numeric_only: {True, False, None} Default is None
             Which datatype to be returned
-            - True: returns all values with float64, NaN/NaT are ignored.
-            - False: returns all values with float64.
-            - None: returns all values with default datatypes, NaN/NaT are ignored.
+            - True: Returns all values as float64, NaN/NaT values are removed
+            - None: Returns all values as the same dtype where possible, NaN/NaT are removed
+            - False: Returns all values as the same dtype where possible, NaN/NaT are preserved
 
         Returns
         -------
@@ -525,15 +522,15 @@ class NDFrame(ABC):
         --------
         >>> df = ed.DataFrame('localhost', 'flights')
         >>> df.std()
-        AvgTicketPrice        266.407
-        Cancelled                True
-        DistanceKilometers    4578.61
-        DistanceMiles         2845.02
-        FlightDelay              True
-        FlightDelayMin             96
-        FlightTimeHour        5.57945
-        FlightTimeMin         334.767
-        dayOfWeek                   1
+        AvgTicketPrice         266.407
+        Cancelled             0.334664
+        DistanceKilometers     4578.61
+        DistanceMiles          2845.02
+        FlightDelay           0.433718
+        FlightDelayMin         96.7504
+        FlightTimeHour         5.57945
+        FlightTimeMin          334.767
+        dayOfWeek              1.93951
         dtype: object
 
         >>> df = ed.DataFrame('localhost', 'flights')
@@ -550,7 +547,7 @@ class NDFrame(ABC):
         dtype: float64
 
         >>> df = ed.DataFrame('localhost', 'flights')
-        >>> df.std(numeric_only=False) # doctest: +SKIP
+        >>> df.std(numeric_only=False)  # doctest: +SKIP
         AvgTicketPrice         266.407
         Cancelled             0.334664
         Carrier                    NaN
@@ -579,7 +576,6 @@ class NDFrame(ABC):
         dayOfWeek              1.93951
         timestamp                  NaT
         dtype: object
-
         """
         return self._query_compiler.std(numeric_only=numeric_only)
 
@@ -591,9 +587,9 @@ class NDFrame(ABC):
         ----------
         numeric_only: {True, False, None} Default is None
             Which datatype to be returned
-            - True: returns all values with float64, NaN/NaT are ignored.
-            - False: returns all values with float64.
-            - None: returns all values with default datatypes, NaN/NaT are ignored.
+            - True: Returns all values as float64, NaN/NaT values are removed
+            - None: Returns all values as the same dtype where possible, NaN/NaT are removed
+            - False: Returns all values as the same dtype where possible, NaN/NaT are preserved
 
         Returns
         -------
@@ -615,27 +611,27 @@ class NDFrame(ABC):
         FlightDelay                                   False
         FlightDelayMin                                    0
         FlightTimeHour                              8.38582
-        FlightTimeMin                               502.987
+        FlightTimeMin                               503.149
         dayOfWeek                                         3
-        timestamp             2018-01-21 23:44:29.394281982
+        timestamp             2018-01-21 23:25:13.113169922
         dtype: object
 
         >>> df = ed.DataFrame('localhost', 'flights')
         >>> df.median(numeric_only=True) # doctest: +SKIP
-        AvgTicketPrice         640.424738
+        AvgTicketPrice         640.387285
         Cancelled                0.000000
-        DistanceKilometers    7612.145848
-        DistanceMiles         4728.752630
+        DistanceKilometers    7612.072403
+        DistanceMiles         4729.922470
         FlightDelay              0.000000
         FlightDelayMin           0.000000
-        FlightTimeHour           8.383711
-        FlightTimeMin          502.999492
+        FlightTimeHour           8.385816
+        FlightTimeMin          503.148975
         dayOfWeek                3.000000
         dtype: float64
 
         >>> df = ed.DataFrame('localhost', 'flights')
         >>> df.median(numeric_only=False) # doctest: +SKIP
-        AvgTicketPrice                              640.425
+        AvgTicketPrice                              640.387
         Cancelled                                     False
         Carrier                                         NaN
         Dest                                            NaN
@@ -645,14 +641,14 @@ class NDFrame(ABC):
         DestLocation                                    NaN
         DestRegion                                      NaN
         DestWeather                                     NaN
-        DistanceKilometers                          7612.15
-        DistanceMiles                               4728.75
+        DistanceKilometers                          7612.07
+        DistanceMiles                               4729.92
         FlightDelay                                   False
         FlightDelayMin                                    0
         FlightDelayType                                 NaN
         FlightNum                                       NaN
-        FlightTimeHour                              8.38457
-        FlightTimeMin                               503.074
+        FlightTimeHour                              8.38582
+        FlightTimeMin                               503.149
         Origin                                          NaN
         OriginAirportID                                 NaN
         OriginCityName                                  NaN
@@ -661,9 +657,8 @@ class NDFrame(ABC):
         OriginRegion                                    NaN
         OriginWeather                                   NaN
         dayOfWeek                                         3
-        timestamp             2018-01-21 23:33:14.554215332
+        timestamp             2018-01-22 00:43:09.223130126
         dtype: object
-
         """
         return self._query_compiler.median(numeric_only=numeric_only)
 
@@ -677,9 +672,9 @@ class NDFrame(ABC):
         ----------
         numeric_only: {True, False, None} Default is None
             Which datatype to be returned
-            - True: returns all values with float64, NaN/NaT are ignored.
-            - False: returns all values with float64.
-            - None: returns all values with default datatypes, NaN/NaT are ignored.
+            - True: Returns all values as float64, NaN/NaT values are removed
+            - None: Returns all values as the same dtype where possible, NaN/NaT are removed
+            - False: Returns all values as the same dtype where possible, NaN/NaT are preserved
 
         Returns
         -------
@@ -721,33 +716,33 @@ class NDFrame(ABC):
 
         >>> df = ed.DataFrame('localhost', 'flights')
         >>> df.max(numeric_only=False) # doctest: +SKIP
-        AvgTicketPrice                1199.73
-        Cancelled                        True
-        Carrier                           NaN
-        Dest                              NaN
-        DestAirportID                     NaN
-        DestCityName                      NaN
-        DestCountry                       NaN
-        DestLocation                      NaN
-        DestRegion                        NaN
-        DestWeather                       NaN
-        DistanceKilometers            19881.5
-        DistanceMiles                 12353.8
-        FlightDelay                      True
-        FlightDelayMin                    360
-        FlightDelayType                   NaN
-        FlightNum                         NaN
-        FlightTimeHour                 31.715
-        FlightTimeMin                  1902.9
-        Origin                            NaN
-        OriginAirportID                   NaN
-        OriginCityName                    NaN
-        OriginCountry                     NaN
-        OriginLocation                    NaN
-        OriginRegion                      NaN
-        OriginWeather                     NaN
-        dayOfWeek                           6
-        timestamp         2018-02-11 23:50:12
+        AvgTicketPrice                    1199.73
+        Cancelled                            True
+        Carrier                               NaN
+        Dest                                  NaN
+        DestAirportID                         NaN
+        DestCityName                          NaN
+        DestCountry                           NaN
+        DestLocation                          NaN
+        DestRegion                            NaN
+        DestWeather                           NaN
+        DistanceKilometers                19881.5
+        DistanceMiles                     12353.8
+        FlightDelay                          True
+        FlightDelayMin                        360
+        FlightDelayType                       NaN
+        FlightNum                             NaN
+        FlightTimeHour                     31.715
+        FlightTimeMin                      1902.9
+        Origin                                NaN
+        OriginAirportID                       NaN
+        OriginCityName                        NaN
+        OriginCountry                         NaN
+        OriginLocation                        NaN
+        OriginRegion                          NaN
+        OriginWeather                         NaN
+        dayOfWeek                               6
+        timestamp             2018-02-11 23:50:12
         dtype: object
         """
         return self._query_compiler.max(numeric_only=numeric_only)
@@ -815,16 +810,56 @@ class NDFrame(ABC):
         --------
         >>> df = ed.DataFrame('localhost', 'flights')
         >>> df.mad() # doctest: +SKIP
-        AvgTicketPrice         213.368709
-        Cancelled                0.000000
-        DistanceKilometers    2946.168236
-        DistanceMiles         1830.987236
-        FlightDelay              0.000000
+        AvgTicketPrice         213.443470
+        DistanceKilometers    2948.631194
+        DistanceMiles         1830.663947
         FlightDelayMin           0.000000
-        FlightTimeHour           3.819435
-        FlightTimeMin          229.142297
+        FlightTimeHour           3.819254
+        FlightTimeMin          229.158256
         dayOfWeek                2.000000
         dtype: float64
+
+        >>> df = ed.DataFrame('localhost', 'flights')
+        >>> df.mad(numeric_only=True) # doctest: +SKIP
+        AvgTicketPrice         213.368709
+        DistanceKilometers    2946.168236
+        DistanceMiles         1829.899362
+        FlightDelayMin           0.000000
+        FlightTimeHour           3.819654
+        FlightTimeMin          229.176708
+        dayOfWeek                2.000000
+        dtype: float64
+
+        >>> df = ed.DataFrame('localhost', 'flights')
+        >>> df.mad(numeric_only=False) # doctest: +SKIP
+        AvgTicketPrice        213.451
+        Cancelled                 NaN
+        Carrier                   NaN
+        Dest                      NaN
+        DestAirportID             NaN
+        DestCityName              NaN
+        DestCountry               NaN
+        DestLocation              NaN
+        DestRegion                NaN
+        DestWeather               NaN
+        DistanceKilometers    2946.98
+        DistanceMiles         1830.66
+        FlightDelay               NaN
+        FlightDelayMin              0
+        FlightDelayType           NaN
+        FlightNum                 NaN
+        FlightTimeHour        3.81919
+        FlightTimeMin         229.177
+        Origin                    NaN
+        OriginAirportID           NaN
+        OriginCityName            NaN
+        OriginCountry             NaN
+        OriginLocation            NaN
+        OriginRegion              NaN
+        OriginWeather             NaN
+        dayOfWeek                   2
+        timestamp                 NaT
+        dtype: object
         """
         return self._query_compiler.mad(numeric_only=numeric_only)
 

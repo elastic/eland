@@ -100,7 +100,7 @@ class Field(NamedTuple):
 
         # Cardinality works for all types
         # Numerics and bools work for all aggs
-        # Except "median_absolute_deviation" supports only bool
+        # except "median_absolute_deviation" which doesn't support bool
         if es_agg == "median_absolute_deviation" and self.is_bool:
             return False
         if es_agg == "cardinality" or self.is_numeric or self.is_bool:

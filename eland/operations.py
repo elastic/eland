@@ -147,47 +147,82 @@ class Operations:
 
     def mean(self, query_compiler, numeric_only: Optional[bool] = None):
         results = self._metric_aggs(query_compiler, ["mean"], numeric_only=numeric_only)
-        return build_pd_series(
-            results, index=results.keys(), dtype=(np.float64 if numeric_only else None)
-        )
+        if numeric_only:
+            return build_pd_series(results, index=results.keys(), dtype=np.float64)
+        else:
+            return build_pd_series(
+                results,
+                index=results.keys(),
+                dtype=(None if len(results) <= 1 else "object"),
+            )
 
     def var(self, query_compiler, numeric_only: Optional[bool] = None):
         results = self._metric_aggs(query_compiler, ["var"], numeric_only=numeric_only)
-        return build_pd_series(
-            results, index=results.keys(), dtype=(np.float64 if numeric_only else None)
-        )
+        if numeric_only:
+            return build_pd_series(results, index=results.keys(), dtype=np.float64)
+        else:
+            return build_pd_series(
+                results,
+                index=results.keys(),
+                dtype=(None if len(results) <= 1 else "object"),
+            )
 
     def std(self, query_compiler, numeric_only: Optional[bool] = None):
         results = self._metric_aggs(query_compiler, ["std"], numeric_only=numeric_only)
-        return build_pd_series(
-            results, index=results.keys(), dtype=(np.float64 if numeric_only else None)
-        )
+        if numeric_only:
+            return build_pd_series(results, index=results.keys(), dtype=np.float64)
+        else:
+            return build_pd_series(
+                results,
+                index=results.keys(),
+                dtype=(None if len(results) <= 1 else "object"),
+            )
 
     def median(self, query_compiler, numeric_only: Optional[bool] = None):
         results = self._metric_aggs(
             query_compiler, ["median"], numeric_only=numeric_only
         )
-        return build_pd_series(
-            results, index=results.keys(), dtype=(np.float64 if numeric_only else None)
-        )
+        if numeric_only:
+            return build_pd_series(results, index=results.keys(), dtype=np.float64)
+        else:
+            return build_pd_series(
+                results,
+                index=results.keys(),
+                dtype=(None if len(results) <= 1 else "object"),
+            )
 
     def sum(self, query_compiler, numeric_only: Optional[bool] = None):
         results = self._metric_aggs(query_compiler, ["sum"], numeric_only=numeric_only)
-        return build_pd_series(
-            results, index=results.keys(), dtype=(np.float64 if numeric_only else None)
-        )
+        if numeric_only:
+            return build_pd_series(results, index=results.keys(), dtype=np.float64)
+        else:
+            return build_pd_series(
+                results,
+                index=results.keys(),
+                dtype=(None if len(results) <= 1 else "object"),
+            )
 
     def max(self, query_compiler, numeric_only: Optional[bool] = None):
         results = self._metric_aggs(query_compiler, ["max"], numeric_only=numeric_only)
-        return build_pd_series(
-            results, index=results.keys(), dtype=(np.float64 if numeric_only else None)
-        )
+        if numeric_only:
+            return build_pd_series(results, index=results.keys(), dtype=np.float64)
+        else:
+            return build_pd_series(
+                results,
+                index=results.keys(),
+                dtype=(None if len(results) <= 1 else "object"),
+            )
 
     def min(self, query_compiler, numeric_only: Optional[bool] = None):
         results = self._metric_aggs(query_compiler, ["min"], numeric_only=numeric_only)
-        return build_pd_series(
-            results, index=results.keys(), dtype=(np.float64 if numeric_only else None)
-        )
+        if numeric_only:
+            return build_pd_series(results, index=results.keys(), dtype=np.float64)
+        else:
+            return build_pd_series(
+                results,
+                index=results.keys(),
+                dtype=(None if len(results) <= 1 else "object"),
+            )
 
     def nunique(self, query_compiler):
         results = self._metric_aggs(query_compiler, ["nunique"], numeric_only=False)
@@ -195,9 +230,14 @@ class Operations:
 
     def mad(self, query_compiler, numeric_only: Optional[bool] = None):
         results = self._metric_aggs(query_compiler, ["mad"], numeric_only=numeric_only)
-        return build_pd_series(
-            results, index=results.keys(), dtype=(np.float64 if numeric_only else None)
-        )
+        if numeric_only:
+            return build_pd_series(results, index=results.keys(), dtype=np.float64)
+        else:
+            return build_pd_series(
+                results,
+                index=results.keys(),
+                dtype=(None if len(results) <= 1 else "object"),
+            )
 
     def value_counts(self, query_compiler, es_size):
         return self._terms_aggs(query_compiler, "terms", es_size)
@@ -265,15 +305,15 @@ class Operations:
         for field in fields:
             values = []
             for es_agg, pd_agg in zip(es_aggs, pd_aggs):
-
+                # is_aggregation is used to differentiate agg() and non-agg()
                 # If the field and agg aren't compatible we add a NaN/NaT for agg()
-                # If the field and agg aren't compatible we dont add NaN/NaT for non-agg()
+                # If the field and agg aren't compatible we don't add NaN/NaT for non-agg()
                 if not field.is_es_agg_compatible(es_agg):
                     if is_aggregation and not numeric_only:
                         values.append(field.nan_value)
                     elif not is_aggregation and numeric_only is False:
                         values.append(field.nan_value)
-                    # Explicit condition for mad to add NaN because it doesnt support bool
+                    # Explicit condition for mad to add NaN because it doesn't support bool
                     elif is_aggregation and numeric_only:
                         if pd_agg == "mad":
                             values.append(field.nan_value)
@@ -336,7 +376,13 @@ class Operations:
                     )
                 # If numeric_only is False | None then maintan column datatype
                 elif not numeric_only:
-                    agg_value = field.np_dtype.type(agg_value)
+                    # we're only converting to bool for lossless aggs like min, max, and median.
+                    if pd_agg in {"max", "min", "median", "sum"}:
+                        # 'sum' isn't representable with bool, use int64
+                        if pd_agg == "sum" and field.is_bool:
+                            agg_value = np.int64(agg_value)
+                        else:
+                            agg_value = field.np_dtype.type(agg_value)
 
                 values.append(agg_value)
 
@@ -581,7 +627,7 @@ class Operations:
             query_compiler, pd_aggs, numeric_only=numeric_only, is_aggregation=True
         )
         if numeric_only:
-            return pd.DataFrame(results, index=pd_aggs).astype("float64")
+            return pd.DataFrame(results, index=pd_aggs, dtype=np.float64)
         else:
             return pd.DataFrame(results, index=pd_aggs)
 
