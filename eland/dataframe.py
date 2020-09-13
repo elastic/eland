@@ -1330,7 +1330,7 @@ class DataFrame(NDFrame):
 
     def aggregate(
         self,
-        func: List[str],
+        func: Union[str, List[str]],
         axis: int = 0,
         numeric_only: Optional[bool] = None,
         *args,
@@ -1380,34 +1380,30 @@ class DataFrame(NDFrame):
 
         Examples
         --------
-        >>> df = ed.DataFrame('localhost', 'flights')
-        >>> df[['DistanceKilometers', 'AvgTicketPrice']].aggregate(['sum', 'min', 'std'], numeric_only=True).astype(int)
-             DistanceKilometers  AvgTicketPrice
-        sum            92616288         8204364
-        min                   0             100
-        std                4578             266
+        >>> df = ed.DataFrame('localhost', 'flights').filter(['AvgTicketPrice', 'DistanceKilometers', 'timestamp', 'DestCountry'])
+        >>> df.aggregate(['sum', 'min', 'std'], numeric_only=True).astype(int)
+             AvgTicketPrice  DistanceKilometers
+        sum         8204364            92616288
+        min             100                   0
+        std             266                4578
 
-        >>> df = ed.DataFrame('localhost', 'flights')
-        >>> df[['AvgTicketPrice','timestamp', 'DestCountry']].aggregate(['sum', 'min', 'std'], numeric_only=True)
-             AvgTicketPrice
-        sum    8.204365e+06
-        min    1.000205e+02
-        std    2.664071e+02
+        >>> df.aggregate(['sum', 'min', 'std'], numeric_only=True)
+             AvgTicketPrice  DistanceKilometers
+        sum    8.204365e+06        9.261629e+07
+        min    1.000205e+02        0.000000e+00
+        std    2.664071e+02        4.578614e+03
 
-        >>> df = ed.DataFrame('localhost', 'flights')
-        >>> df[['AvgTicketPrice','timestamp', 'DestCountry']].aggregate(['sum', 'min', 'std'], numeric_only=False)
-             AvgTicketPrice  timestamp  DestCountry
-        sum    8.204365e+06        NaT          NaN
-        min    1.000205e+02 2018-01-01          NaN
-        std    2.664071e+02        NaT          NaN
+        >>> df.aggregate(['sum', 'min', 'std'], numeric_only=False)
+             AvgTicketPrice  DistanceKilometers  timestamp  DestCountry
+        sum    8.204365e+06        9.261629e+07        NaT          NaN
+        min    1.000205e+02        0.000000e+00 2018-01-01          NaN
+        std    2.664071e+02        4.578614e+03        NaT          NaN
 
-        >>> df = ed.DataFrame('localhost', 'flights')
-        >>> df[['AvgTicketPrice','timestamp', 'DestCountry']].aggregate(['sum', 'min', 'std'], numeric_only=None)
-             AvgTicketPrice  timestamp  DestCountry
-        sum    8.204365e+06        NaT          NaN
-        min    1.000205e+02 2018-01-01          NaN
-        std    2.664071e+02        NaT          NaN
-
+        >>> df.aggregate(['sum', 'min', 'std'], numeric_only=None)
+             AvgTicketPrice  DistanceKilometers  timestamp  DestCountry
+        sum    8.204365e+06        9.261629e+07        NaT          NaN
+        min    1.000205e+02        0.000000e+00 2018-01-01          NaN
+        std    2.664071e+02        4.578614e+03        NaT          NaN
         """
         axis = pd.DataFrame._get_axis_number(axis)
 

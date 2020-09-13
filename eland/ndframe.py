@@ -186,62 +186,26 @@ class NDFrame(ABC):
 
         Examples
         --------
-        >>> df = ed.DataFrame('localhost', 'flights')
+        >>> df = ed.DataFrame('localhost', 'flights').filter(["AvgTicketPrice", "Cancelled", "dayOfWeek", "timestamp", "DestCountry"])
         >>> df.mean()
-        AvgTicketPrice                              628.254
-        Cancelled                                  0.128494
-        DistanceKilometers                          7092.14
-        DistanceMiles                               4406.85
-        FlightDelay                                0.251168
-        FlightDelayMin                              47.3352
-        FlightTimeHour                               8.5188
-        FlightTimeMin                               511.128
-        dayOfWeek                                   2.83598
-        timestamp             2018-01-21 19:20:45.564438232
+        AvgTicketPrice                          628.254
+        Cancelled                              0.128494
+        dayOfWeek                               2.83598
+        timestamp         2018-01-21 19:20:45.564438232
         dtype: object
 
-        >>> df = ed.DataFrame('localhost', 'flights')
         >>> df.mean(numeric_only=True)
-        AvgTicketPrice         628.253689
-        Cancelled                0.128494
-        DistanceKilometers    7092.142457
-        DistanceMiles         4406.853010
-        FlightDelay              0.251168
-        FlightDelayMin          47.335171
-        FlightTimeHour           8.518797
-        FlightTimeMin          511.127842
-        dayOfWeek                2.835975
+        AvgTicketPrice    628.253689
+        Cancelled           0.128494
+        dayOfWeek           2.835975
         dtype: float64
 
-        >>> df = ed.DataFrame('localhost', 'flights')
-        >>> df.mean(numeric_only=False) # doctest: +SKIP
-        AvgTicketPrice                              628.254
-        Cancelled                                  0.128494
-        Carrier                                         NaN
-        Dest                                            NaN
-        DestAirportID                                   NaN
-        DestCityName                                    NaN
-        DestCountry                                     NaN
-        DestLocation                                    NaN
-        DestRegion                                      NaN
-        DestWeather                                     NaN
-        DistanceKilometers                          7092.14
-        DistanceMiles                               4406.85
-        FlightDelay                                0.251168
-        FlightDelayMin                              47.3352
-        FlightDelayType                                 NaN
-        FlightNum                                       NaN
-        FlightTimeHour                               8.5188
-        FlightTimeMin                               511.128
-        Origin                                          NaN
-        OriginAirportID                                 NaN
-        OriginCityName                                  NaN
-        OriginCountry                                   NaN
-        OriginLocation                                  NaN
-        OriginRegion                                    NaN
-        OriginWeather                                   NaN
-        dayOfWeek                                   2.83598
-        timestamp             2018-01-21 19:20:45.564438232
+        >>> df.mean(numeric_only=False)
+        AvgTicketPrice                          628.254
+        Cancelled                              0.128494
+        dayOfWeek                               2.83598
+        timestamp         2018-01-21 19:20:45.564438232
+        DestCountry                                 NaN
         dtype: object
         """
         return self._query_compiler.mean(numeric_only=numeric_only)
@@ -271,61 +235,25 @@ class NDFrame(ABC):
 
         Examples
         --------
-        >>> df = ed.DataFrame('localhost', 'flights')
+        >>> df = ed.DataFrame('localhost', 'flights').filter(["AvgTicketPrice", "Cancelled", "dayOfWeek", "timestamp", "DestCountry"])
         >>> df.sum()
-        AvgTicketPrice        8.20436e+06
-        Cancelled                    1678
-        DistanceKilometers    9.26163e+07
-        DistanceMiles         5.75491e+07
-        FlightDelay                  3280
-        FlightDelayMin             618150
-        FlightTimeHour             111247
-        FlightTimeMin         6.67482e+06
-        dayOfWeek                   37035
+        AvgTicketPrice    8.20436e+06
+        Cancelled                1678
+        dayOfWeek               37035
         dtype: object
 
-        >>> df = ed.DataFrame('localhost', 'flights')
         >>> df.sum(numeric_only=True)
-        AvgTicketPrice        8.204365e+06
-        Cancelled             1.678000e+03
-        DistanceKilometers    9.261629e+07
-        DistanceMiles         5.754909e+07
-        FlightDelay           3.280000e+03
-        FlightDelayMin        6.181500e+05
-        FlightTimeHour        1.112470e+05
-        FlightTimeMin         6.674818e+06
-        dayOfWeek             3.703500e+04
+        AvgTicketPrice    8.204365e+06
+        Cancelled         1.678000e+03
+        dayOfWeek         3.703500e+04
         dtype: float64
 
-        >>> df = ed.DataFrame('localhost', 'flights')
-        >>> df.sum(numeric_only=False) # doctest: +SKIP
-        AvgTicketPrice        8.20436e+06
-        Cancelled                    1678
-        Carrier                       NaN
-        Dest                          NaN
-        DestAirportID                 NaN
-        DestCityName                  NaN
-        DestCountry                   NaN
-        DestLocation                  NaN
-        DestRegion                    NaN
-        DestWeather                   NaN
-        DistanceKilometers    9.26163e+07
-        DistanceMiles         5.75491e+07
-        FlightDelay                  3280
-        FlightDelayMin             618150
-        FlightDelayType               NaN
-        FlightNum                     NaN
-        FlightTimeHour             111247
-        FlightTimeMin         6.67482e+06
-        Origin                        NaN
-        OriginAirportID               NaN
-        OriginCityName                NaN
-        OriginCountry                 NaN
-        OriginLocation                NaN
-        OriginRegion                  NaN
-        OriginWeather                 NaN
-        dayOfWeek                   37035
-        timestamp                     NaT
+        >>> df.sum(numeric_only=False)
+        AvgTicketPrice    8.20436e+06
+        Cancelled                1678
+        dayOfWeek               37035
+        timestamp                 NaT
+        DestCountry               NaN
         dtype: object
         """
         return self._query_compiler.sum(numeric_only=numeric_only)
@@ -355,62 +283,26 @@ class NDFrame(ABC):
 
         Examples
         --------
-        >>> df = ed.DataFrame('localhost', 'flights')
+        >>> df = ed.DataFrame('localhost', 'flights').filter(["AvgTicketPrice", "Cancelled", "dayOfWeek", "timestamp", "DestCountry"])
         >>> df.min()
-        AvgTicketPrice                    100.021
-        Cancelled                           False
-        DistanceKilometers                      0
-        DistanceMiles                           0
-        FlightDelay                         False
-        FlightDelayMin                          0
-        FlightTimeHour                          0
-        FlightTimeMin                           0
-        dayOfWeek                               0
-        timestamp             2018-01-01 00:00:00
+        AvgTicketPrice                100.021
+        Cancelled                       False
+        dayOfWeek                           0
+        timestamp         2018-01-01 00:00:00
         dtype: object
 
-        >>> df = ed.DataFrame('localhost', 'flights')
         >>> df.min(numeric_only=True)
-        AvgTicketPrice        100.020531
-        Cancelled               0.000000
-        DistanceKilometers      0.000000
-        DistanceMiles           0.000000
-        FlightDelay             0.000000
-        FlightDelayMin          0.000000
-        FlightTimeHour          0.000000
-        FlightTimeMin           0.000000
-        dayOfWeek               0.000000
+        AvgTicketPrice    100.020531
+        Cancelled           0.000000
+        dayOfWeek           0.000000
         dtype: float64
 
-        >>> df = ed.DataFrame('localhost', 'flights')
-        >>> df.min(numeric_only=False) # doctest: +SKIP
-        AvgTicketPrice                    100.021
-        Cancelled                           False
-        Carrier                               NaN
-        Dest                                  NaN
-        DestAirportID                         NaN
-        DestCityName                          NaN
-        DestCountry                           NaN
-        DestLocation                          NaN
-        DestRegion                            NaN
-        DestWeather                           NaN
-        DistanceKilometers                      0
-        DistanceMiles                           0
-        FlightDelay                         False
-        FlightDelayMin                          0
-        FlightDelayType                       NaN
-        FlightNum                             NaN
-        FlightTimeHour                          0
-        FlightTimeMin                           0
-        Origin                                NaN
-        OriginAirportID                       NaN
-        OriginCityName                        NaN
-        OriginCountry                         NaN
-        OriginLocation                        NaN
-        OriginRegion                          NaN
-        OriginWeather                         NaN
-        dayOfWeek                               0
-        timestamp             2018-01-01 00:00:00
+        >>> df.min(numeric_only=False)
+        AvgTicketPrice                100.021
+        Cancelled                       False
+        dayOfWeek                           0
+        timestamp         2018-01-01 00:00:00
+        DestCountry                       NaN
         dtype: object
         """
         return self._query_compiler.min(numeric_only=numeric_only)
@@ -438,61 +330,25 @@ class NDFrame(ABC):
 
         Examples
         --------
-        >>> df = ed.DataFrame('localhost', 'flights')
+        >>> df = ed.DataFrame('localhost', 'flights').filter(["AvgTicketPrice", "Cancelled", "dayOfWeek", "timestamp", "DestCountry"])
         >>> df.var()
-        AvgTicketPrice            70964.6
-        Cancelled                0.111987
-        DistanceKilometers    2.09613e+07
-        DistanceMiles          8.0932e+06
-        FlightDelay               0.18809
-        FlightDelayMin            9359.57
-        FlightTimeHour            31.1266
-        FlightTimeMin              112056
-        dayOfWeek                 3.76128
-        dtype: object
-
-        >>> df = ed.DataFrame('localhost', 'flights')
-        >>> df.var(numeric_only=True)
-        AvgTicketPrice        7.096457e+04
-        Cancelled             1.119874e-01
-        DistanceKilometers    2.096130e+07
-        DistanceMiles         8.093202e+06
-        FlightDelay           1.880897e-01
-        FlightDelayMin        9.359568e+03
-        FlightTimeHour        3.112664e+01
-        FlightTimeMin         1.120559e+05
-        dayOfWeek             3.761279e+00
+        AvgTicketPrice    70964.570234
+        Cancelled             0.111987
+        dayOfWeek             3.761279
         dtype: float64
 
-        >>> df = ed.DataFrame('localhost', 'flights')
-        >>> df.var(numeric_only=False) # doctest: +SKIP
-        AvgTicketPrice            70964.6
-        Cancelled                0.111987
-        Carrier                       NaN
-        Dest                          NaN
-        DestAirportID                 NaN
-        DestCityName                  NaN
-        DestCountry                   NaN
-        DestLocation                  NaN
-        DestRegion                    NaN
-        DestWeather                   NaN
-        DistanceKilometers    2.09613e+07
-        DistanceMiles          8.0932e+06
-        FlightDelay               0.18809
-        FlightDelayMin            9359.57
-        FlightDelayType               NaN
-        FlightNum                     NaN
-        FlightTimeHour            31.1266
-        FlightTimeMin              112056
-        Origin                        NaN
-        OriginAirportID               NaN
-        OriginCityName                NaN
-        OriginCountry                 NaN
-        OriginLocation                NaN
-        OriginRegion                  NaN
-        OriginWeather                 NaN
-        dayOfWeek                 3.76128
-        timestamp                     NaT
+        >>> df.var(numeric_only=True)
+        AvgTicketPrice    70964.570234
+        Cancelled             0.111987
+        dayOfWeek             3.761279
+        dtype: float64
+
+        >>> df.var(numeric_only=False)
+        AvgTicketPrice     70964.6
+        Cancelled         0.111987
+        dayOfWeek          3.76128
+        timestamp              NaT
+        DestCountry            NaN
         dtype: object
         """
         return self._query_compiler.var(numeric_only=numeric_only)
@@ -520,61 +376,25 @@ class NDFrame(ABC):
 
         Examples
         --------
-        >>> df = ed.DataFrame('localhost', 'flights')
+        >>> df = ed.DataFrame('localhost', 'flights').filter(["AvgTicketPrice", "Cancelled", "dayOfWeek", "timestamp", "DestCountry"])
         >>> df.std()
-        AvgTicketPrice         266.407
-        Cancelled             0.334664
-        DistanceKilometers     4578.61
-        DistanceMiles          2845.02
-        FlightDelay           0.433718
-        FlightDelayMin         96.7504
-        FlightTimeHour         5.57945
-        FlightTimeMin          334.767
-        dayOfWeek              1.93951
-        dtype: object
-
-        >>> df = ed.DataFrame('localhost', 'flights')
-        >>> df.std(numeric_only=True)
-        AvgTicketPrice         266.407061
-        Cancelled                0.334664
-        DistanceKilometers    4578.613803
-        DistanceMiles         2845.018714
-        FlightDelay              0.433718
-        FlightDelayMin          96.750415
-        FlightTimeHour           5.579446
-        FlightTimeMin          334.766770
-        dayOfWeek                1.939513
+        AvgTicketPrice    266.407061
+        Cancelled           0.334664
+        dayOfWeek           1.939513
         dtype: float64
 
-        >>> df = ed.DataFrame('localhost', 'flights')
-        >>> df.std(numeric_only=False)  # doctest: +SKIP
-        AvgTicketPrice         266.407
-        Cancelled             0.334664
-        Carrier                    NaN
-        Dest                       NaN
-        DestAirportID              NaN
-        DestCityName               NaN
-        DestCountry                NaN
-        DestLocation               NaN
-        DestRegion                 NaN
-        DestWeather                NaN
-        DistanceKilometers     4578.61
-        DistanceMiles          2845.02
-        FlightDelay           0.433718
-        FlightDelayMin         96.7504
-        FlightDelayType            NaN
-        FlightNum                  NaN
-        FlightTimeHour         5.57945
-        FlightTimeMin          334.767
-        Origin                     NaN
-        OriginAirportID            NaN
-        OriginCityName             NaN
-        OriginCountry              NaN
-        OriginLocation             NaN
-        OriginRegion               NaN
-        OriginWeather              NaN
-        dayOfWeek              1.93951
-        timestamp                  NaT
+        >>> df.std(numeric_only=True)
+        AvgTicketPrice    266.407061
+        Cancelled           0.334664
+        dayOfWeek           1.939513
+        dtype: float64
+
+        >>> df.std(numeric_only=False)
+        AvgTicketPrice     266.407
+        Cancelled         0.334664
+        dayOfWeek          1.93951
+        timestamp              NaT
+        DestCountry            NaN
         dtype: object
         """
         return self._query_compiler.std(numeric_only=numeric_only)
@@ -602,62 +422,26 @@ class NDFrame(ABC):
 
         Examples
         --------
-        >>> df = ed.DataFrame('localhost', 'flights')
+        >>> df = ed.DataFrame('localhost', 'flights').filter(["AvgTicketPrice", "Cancelled", "dayOfWeek", "timestamp", "DestCountry"])
         >>> df.median() # doctest: +SKIP
-        AvgTicketPrice                              640.387
-        Cancelled                                     False
-        DistanceKilometers                          7612.07
-        DistanceMiles                               4729.92
-        FlightDelay                                   False
-        FlightDelayMin                                    0
-        FlightTimeHour                              8.38582
-        FlightTimeMin                               503.149
-        dayOfWeek                                         3
-        timestamp             2018-01-21 23:25:13.113169922
+        AvgTicketPrice                          640.363
+        Cancelled                                 False
+        dayOfWeek                                     3
+        timestamp         2018-01-21 23:54:06.624776611
         dtype: object
 
-        >>> df = ed.DataFrame('localhost', 'flights')
         >>> df.median(numeric_only=True) # doctest: +SKIP
-        AvgTicketPrice         640.387285
-        Cancelled                0.000000
-        DistanceKilometers    7612.072403
-        DistanceMiles         4729.922470
-        FlightDelay              0.000000
-        FlightDelayMin           0.000000
-        FlightTimeHour           8.385816
-        FlightTimeMin          503.148975
-        dayOfWeek                3.000000
+        AvgTicketPrice    640.362667
+        Cancelled           0.000000
+        dayOfWeek           3.000000
         dtype: float64
 
-        >>> df = ed.DataFrame('localhost', 'flights')
         >>> df.median(numeric_only=False) # doctest: +SKIP
-        AvgTicketPrice                              640.387
-        Cancelled                                     False
-        Carrier                                         NaN
-        Dest                                            NaN
-        DestAirportID                                   NaN
-        DestCityName                                    NaN
-        DestCountry                                     NaN
-        DestLocation                                    NaN
-        DestRegion                                      NaN
-        DestWeather                                     NaN
-        DistanceKilometers                          7612.07
-        DistanceMiles                               4729.92
-        FlightDelay                                   False
-        FlightDelayMin                                    0
-        FlightDelayType                                 NaN
-        FlightNum                                       NaN
-        FlightTimeHour                              8.38582
-        FlightTimeMin                               503.149
-        Origin                                          NaN
-        OriginAirportID                                 NaN
-        OriginCityName                                  NaN
-        OriginCountry                                   NaN
-        OriginLocation                                  NaN
-        OriginRegion                                    NaN
-        OriginWeather                                   NaN
-        dayOfWeek                                         3
-        timestamp             2018-01-22 00:43:09.223130126
+        AvgTicketPrice                          640.387
+        Cancelled                                 False
+        dayOfWeek                                     3
+        timestamp         2018-01-21 23:54:06.624776611
+        DestCountry                                 NaN
         dtype: object
         """
         return self._query_compiler.median(numeric_only=numeric_only)
@@ -687,62 +471,26 @@ class NDFrame(ABC):
 
         Examples
         --------
-        >>> df = ed.DataFrame('localhost', 'flights')
+        >>> df = ed.DataFrame('localhost', 'flights').filter(["AvgTicketPrice", "Cancelled", "dayOfWeek", "timestamp","DestCountry"])
         >>> df.max()
-        AvgTicketPrice                    1199.73
-        Cancelled                            True
-        DistanceKilometers                19881.5
-        DistanceMiles                     12353.8
-        FlightDelay                          True
-        FlightDelayMin                        360
-        FlightTimeHour                     31.715
-        FlightTimeMin                      1902.9
-        dayOfWeek                               6
-        timestamp             2018-02-11 23:50:12
+        AvgTicketPrice                1199.73
+        Cancelled                        True
+        dayOfWeek                           6
+        timestamp         2018-02-11 23:50:12
         dtype: object
 
-        >>> df = ed.DataFrame('localhost', 'flights')
         >>> df.max(numeric_only=True)
-        AvgTicketPrice         1199.729004
-        Cancelled                 1.000000
-        DistanceKilometers    19881.482422
-        DistanceMiles         12353.780273
-        FlightDelay               1.000000
-        FlightDelayMin          360.000000
-        FlightTimeHour           31.715034
-        FlightTimeMin          1902.901978
-        dayOfWeek                 6.000000
+        AvgTicketPrice    1199.729004
+        Cancelled            1.000000
+        dayOfWeek            6.000000
         dtype: float64
 
-        >>> df = ed.DataFrame('localhost', 'flights')
-        >>> df.max(numeric_only=False) # doctest: +SKIP
-        AvgTicketPrice                    1199.73
-        Cancelled                            True
-        Carrier                               NaN
-        Dest                                  NaN
-        DestAirportID                         NaN
-        DestCityName                          NaN
-        DestCountry                           NaN
-        DestLocation                          NaN
-        DestRegion                            NaN
-        DestWeather                           NaN
-        DistanceKilometers                19881.5
-        DistanceMiles                     12353.8
-        FlightDelay                          True
-        FlightDelayMin                        360
-        FlightDelayType                       NaN
-        FlightNum                             NaN
-        FlightTimeHour                     31.715
-        FlightTimeMin                      1902.9
-        Origin                                NaN
-        OriginAirportID                       NaN
-        OriginCityName                        NaN
-        OriginCountry                         NaN
-        OriginLocation                        NaN
-        OriginRegion                          NaN
-        OriginWeather                         NaN
-        dayOfWeek                               6
-        timestamp             2018-02-11 23:50:12
+        >>> df.max(numeric_only=False)
+        AvgTicketPrice                1199.73
+        Cancelled                        True
+        dayOfWeek                           6
+        timestamp         2018-02-11 23:50:12
+        DestCountry                       NaN
         dtype: object
         """
         return self._query_compiler.max(numeric_only=numeric_only)
@@ -808,57 +556,23 @@ class NDFrame(ABC):
 
         Examples
         --------
-        >>> df = ed.DataFrame('localhost', 'flights')
+        >>> df = ed.DataFrame('localhost', 'flights').filter(["AvgTicketPrice", "Cancelled", "dayOfWeek", "timestamp", "DestCountry"])
         >>> df.mad() # doctest: +SKIP
-        AvgTicketPrice         213.443470
-        DistanceKilometers    2948.631194
-        DistanceMiles         1830.663947
-        FlightDelayMin           0.000000
-        FlightTimeHour           3.819254
-        FlightTimeMin          229.158256
-        dayOfWeek                2.000000
+        AvgTicketPrice    213.35497
+        dayOfWeek           2.00000
         dtype: float64
 
-        >>> df = ed.DataFrame('localhost', 'flights')
         >>> df.mad(numeric_only=True) # doctest: +SKIP
-        AvgTicketPrice         213.368709
-        DistanceKilometers    2946.168236
-        DistanceMiles         1829.899362
-        FlightDelayMin           0.000000
-        FlightTimeHour           3.819654
-        FlightTimeMin          229.176708
-        dayOfWeek                2.000000
+        AvgTicketPrice    213.473011
+        dayOfWeek           2.000000
         dtype: float64
 
-        >>> df = ed.DataFrame('localhost', 'flights')
         >>> df.mad(numeric_only=False) # doctest: +SKIP
-        AvgTicketPrice        213.451
-        Cancelled                 NaN
-        Carrier                   NaN
-        Dest                      NaN
-        DestAirportID             NaN
-        DestCityName              NaN
-        DestCountry               NaN
-        DestLocation              NaN
-        DestRegion                NaN
-        DestWeather               NaN
-        DistanceKilometers    2946.98
-        DistanceMiles         1830.66
-        FlightDelay               NaN
-        FlightDelayMin              0
-        FlightDelayType           NaN
-        FlightNum                 NaN
-        FlightTimeHour        3.81919
-        FlightTimeMin         229.177
-        Origin                    NaN
-        OriginAirportID           NaN
-        OriginCityName            NaN
-        OriginCountry             NaN
-        OriginLocation            NaN
-        OriginRegion              NaN
-        OriginWeather             NaN
-        dayOfWeek                   2
-        timestamp                 NaT
+        AvgTicketPrice    213.484
+        Cancelled             NaN
+        dayOfWeek               2
+        timestamp             NaT
+        DestCountry           NaN
         dtype: object
         """
         return self._query_compiler.mad(numeric_only=numeric_only)

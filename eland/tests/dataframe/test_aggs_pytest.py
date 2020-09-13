@@ -87,8 +87,8 @@ class TestDataFrameAggs(TestData):
             ["taxful_total_price", "taxless_total_price", "total_quantity"]
         ].agg(["median", "var"], numeric_only=True)
 
-        # print(pd_aggs, pd_aggs.dtypes)
-        # print(ed_aggs, ed_aggs.dtypes)
+        print(pd_aggs, pd_aggs.dtypes)
+        print(ed_aggs, ed_aggs.dtypes)
 
         # Eland returns all float values for all metric aggs, pandas can return int
         # TODO - investigate this more
