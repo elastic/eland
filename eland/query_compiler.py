@@ -17,7 +17,7 @@
 
 import copy
 from datetime import datetime
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, List
 
 import numpy as np
 import pandas as pd
@@ -490,38 +490,56 @@ class QueryCompiler:
         result._operations.filter(self, items=items, like=like, regex=regex)
         return result
 
-    def aggs(self, func):
-        return self._operations.aggs(self, func)
+    def aggs(self, func: List[str], numeric_only: Optional[bool] = None):
+        return self._operations.aggs(self, func, numeric_only=numeric_only)
 
     def count(self):
         return self._operations.count(self)
 
-    def mean(self, numeric_only=None):
-        return self._operations.mean(self, numeric_only=numeric_only)
+    def mean(self, numeric_only: Optional[bool] = None):
+        return self._operations._metric_agg_series(
+            self, ["mean"], numeric_only=numeric_only
+        )
 
-    def var(self, numeric_only=None):
-        return self._operations.var(self, numeric_only=numeric_only)
+    def var(self, numeric_only: Optional[bool] = None):
+        return self._operations._metric_agg_series(
+            self, ["var"], numeric_only=numeric_only
+        )
 
-    def std(self, numeric_only=None):
-        return self._operations.std(self, numeric_only=numeric_only)
+    def std(self, numeric_only: Optional[bool] = None):
+        return self._operations._metric_agg_series(
+            self, ["std"], numeric_only=numeric_only
+        )
 
-    def mad(self, numeric_only=None):
-        return self._operations.mad(self, numeric_only=numeric_only)
+    def mad(self, numeric_only: Optional[bool] = None):
+        return self._operations._metric_agg_series(
+            self, ["mad"], numeric_only=numeric_only
+        )
 
-    def median(self, numeric_only=None):
-        return self._operations.median(self, numeric_only=numeric_only)
+    def median(self, numeric_only: Optional[bool] = None):
+        return self._operations._metric_agg_series(
+            self, ["median"], numeric_only=numeric_only
+        )
 
-    def sum(self, numeric_only=None):
-        return self._operations.sum(self, numeric_only=numeric_only)
+    def sum(self, numeric_only: Optional[bool] = None):
+        return self._operations._metric_agg_series(
+            self, ["sum"], numeric_only=numeric_only
+        )
 
-    def min(self, numeric_only=None):
-        return self._operations.min(self, numeric_only=numeric_only)
+    def min(self, numeric_only: Optional[bool] = None):
+        return self._operations._metric_agg_series(
+            self, ["min"], numeric_only=numeric_only
+        )
 
-    def max(self, numeric_only=None):
-        return self._operations.max(self, numeric_only=numeric_only)
+    def max(self, numeric_only: Optional[bool] = None):
+        return self._operations._metric_agg_series(
+            self, ["max"], numeric_only=numeric_only
+        )
 
     def nunique(self):
-        return self._operations.nunique(self)
+        return self._operations._metric_agg_series(
+            self, ["nunique"], numeric_only=False
+        )
 
     def value_counts(self, es_size):
         return self._operations.value_counts(self, es_size)

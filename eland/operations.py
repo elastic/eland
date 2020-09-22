@@ -145,43 +145,28 @@ class Operations:
 
         return build_pd_series(data=counts, index=fields)
 
-    def mean(self, query_compiler, numeric_only=True):
-        results = self._metric_aggs(query_compiler, ["mean"], numeric_only=numeric_only)
-        return build_pd_series(results, index=results.keys())
-
-    def var(self, query_compiler, numeric_only=True):
-        results = self._metric_aggs(query_compiler, ["var"], numeric_only=numeric_only)
-        return build_pd_series(results, index=results.keys())
-
-    def std(self, query_compiler, numeric_only=True):
-        results = self._metric_aggs(query_compiler, ["std"], numeric_only=numeric_only)
-        return build_pd_series(results, index=results.keys())
-
-    def median(self, query_compiler, numeric_only=True):
-        results = self._metric_aggs(
-            query_compiler, ["median"], numeric_only=numeric_only
-        )
-        return build_pd_series(results, index=results.keys())
-
-    def sum(self, query_compiler, numeric_only=True):
-        results = self._metric_aggs(query_compiler, ["sum"], numeric_only=numeric_only)
-        return build_pd_series(results, index=results.keys())
-
-    def max(self, query_compiler, numeric_only=True):
-        results = self._metric_aggs(query_compiler, ["max"], numeric_only=numeric_only)
-        return build_pd_series(results, index=results.keys())
-
-    def min(self, query_compiler, numeric_only=True):
-        results = self._metric_aggs(query_compiler, ["min"], numeric_only=numeric_only)
-        return build_pd_series(results, index=results.keys())
-
-    def nunique(self, query_compiler):
-        results = self._metric_aggs(query_compiler, ["nunique"], numeric_only=False)
-        return build_pd_series(results, index=results.keys())
-
-    def mad(self, query_compiler, numeric_only=True):
-        results = self._metric_aggs(query_compiler, ["mad"], numeric_only=numeric_only)
-        return build_pd_series(results, index=results.keys())
+    def _metric_agg_series(
+        self,
+        query_compiler: "QueryCompiler",
+        agg: List,
+        numeric_only: Optional[bool] = None,
+    ) -> pd.Series:
+        results = self._metric_aggs(query_compiler, agg, numeric_only=numeric_only)
+        if numeric_only:
+            return build_pd_series(results, index=results.keys(), dtype=np.float64)
+        else:
+            # If all results are float convert into float64
+            if all(isinstance(i, float) for i in results.values()):
+                dtype = np.float64
+            # If all results are int convert into int64
+            elif all(isinstance(i, int) for i in results.values()):
+                dtype = np.int64
+            # If single result is present consider that datatype instead of object
+            elif len(results) <= 1:
+                dtype = None
+            else:
+                dtype = "object"
+            return build_pd_series(results, index=results.keys(), dtype=dtype)
 
     def value_counts(self, query_compiler, es_size):
         return self._terms_aggs(query_compiler, "terms", es_size)
@@ -189,7 +174,21 @@ class Operations:
     def hist(self, query_compiler, bins):
         return self._hist_aggs(query_compiler, bins)
 
-    def _metric_aggs(self, query_compiler: "QueryCompiler", pd_aggs, numeric_only=True):
+    def aggs(self, query_compiler, pd_aggs, numeric_only=None) -> pd.DataFrame:
+        results = self._metric_aggs(
+            query_compiler, pd_aggs, numeric_only=numeric_only, is_dataframe_agg=True
+        )
+        return pd.DataFrame(
+            results, index=pd_aggs, dtype=(np.float64 if numeric_only else None)
+        )
+
+    def _metric_aggs(
+        self,
+        query_compiler: "QueryCompiler",
+        pd_aggs,
+        numeric_only: Optional[bool] = None,
+        is_dataframe_agg: bool = False,
+    ) -> Dict:
         query_params, post_processing = self._resolve_tasks(query_compiler)
 
         size = self._size(query_params, post_processing)
@@ -201,6 +200,7 @@ class Operations:
         results = {}
         fields = query_compiler._mappings.all_source_fields()
         if numeric_only:
+            # Consider if field is Int/Float/Bool
             fields = [field for field in fields if (field.is_numeric or field.is_bool)]
 
         body = Query(query_params.query)
@@ -210,6 +210,7 @@ class Operations:
 
         for field in fields:
             for es_agg in es_aggs:
+                # NaN/NaT fields are ignored
                 if not field.is_es_agg_compatible(es_agg):
                     continue
 
@@ -241,10 +242,18 @@ class Operations:
         for field in fields:
             values = []
             for es_agg, pd_agg in zip(es_aggs, pd_aggs):
-
-                # If the field and agg aren't compatible we add a NaN/NaT
+                # is_dataframe_agg is used to differentiate agg() and an aggregation called through .mean()
+                # If the field and agg aren't compatible we add a NaN/NaT for agg
+                # If the field and agg aren't compatible we don't add NaN/NaT for an aggregation called through .mean()
                 if not field.is_es_agg_compatible(es_agg):
-                    values.append(field.nan_value)
+                    if is_dataframe_agg and not numeric_only:
+                        values.append(field.nan_value)
+                    elif not is_dataframe_agg and numeric_only is False:
+                        values.append(field.nan_value)
+                    # Explicit condition for mad to add NaN because it doesn't support bool
+                    elif is_dataframe_agg and numeric_only:
+                        if pd_agg == "mad":
+                            values.append(field.nan_value)
                     continue
 
                 if isinstance(es_agg, tuple):
@@ -269,7 +278,7 @@ class Operations:
 
                         # All of the below calculations result in NaN if count<=1
                         if count <= 1:
-                            agg_value = np.float64(np.NaN)
+                            agg_value = np.NaN
 
                         elif es_agg[1] == "std_deviation":
                             agg_value *= count / (count - 1.0)
@@ -287,8 +296,11 @@ class Operations:
                     ]["value"]
 
                 # Null usually means there were no results.
-                if agg_value is None:
-                    agg_value = field.nan_value
+                if agg_value is None or np.isnan(agg_value):
+                    if is_dataframe_agg and not numeric_only:
+                        agg_value = np.NaN
+                    elif not is_dataframe_agg and numeric_only is False:
+                        agg_value = np.NaN
 
                 # Cardinality is always either NaN or integer.
                 elif pd_agg == "nunique":
@@ -299,14 +311,21 @@ class Operations:
                     agg_value = elasticsearch_date_to_pandas_date(
                         agg_value, field.es_date_format
                     )
-
-                # These aggregations maintain the column datatype
-                elif pd_agg in {"max", "min", "median"}:
-                    agg_value = field.np_dtype.type(agg_value)
+                # If numeric_only is False | None then maintain column datatype
+                elif not numeric_only:
+                    # we're only converting to bool for lossless aggs like min, max, and median.
+                    if pd_agg in {"max", "min", "median", "sum"}:
+                        # 'sum' isn't representable with bool, use int64
+                        if pd_agg == "sum" and field.is_bool:
+                            agg_value = np.int64(agg_value)
+                        else:
+                            agg_value = field.np_dtype.type(agg_value)
 
                 values.append(agg_value)
 
-            results[field.index] = values if len(values) > 1 else values[0]
+            # If numeric_only is True and We only have a NaN type field then we check for empty.
+            if values:
+                results[field.index] = values if len(values) > 1 else values[0]
 
         return results
 
@@ -539,10 +558,6 @@ class Operations:
             ]
 
         return es_aggs
-
-    def aggs(self, query_compiler, pd_aggs):
-        results = self._metric_aggs(query_compiler, pd_aggs, numeric_only=False)
-        return pd.DataFrame(results, index=pd_aggs)
 
     def filter(self, query_compiler, items=None, like=None, regex=None):
         # This function is only called for axis='index',

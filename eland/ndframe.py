@@ -17,7 +17,7 @@
 
 import sys
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Tuple
+from typing import TYPE_CHECKING, Tuple, Optional
 import pandas as pd
 from eland.query_compiler import QueryCompiler
 
@@ -162,12 +162,19 @@ class NDFrame(ABC):
     def _es_info(self, buf):
         self._query_compiler.es_info(buf)
 
-    def mean(self, numeric_only: bool = True) -> pd.Series:
+    def mean(self, numeric_only: Optional[bool] = None) -> pd.Series:
         """
         Return mean value for each numeric column
 
         TODO - implement remainder of pandas arguments, currently non-numerics are not supported
 
+        Parameters
+        ----------
+        numeric_only: {True, False, None} Default is None
+            Which datatype to be returned
+            - True: Returns all values as float64, NaN/NaT values are removed
+            - None: Returns all values as the same dtype where possible, NaN/NaT are removed
+            - False: Returns all values as the same dtype where possible, NaN/NaT are preserved
         Returns
         -------
         pandas.Series
@@ -179,26 +186,43 @@ class NDFrame(ABC):
 
         Examples
         --------
-        >>> df = ed.DataFrame('localhost', 'flights')
+        >>> df = ed.DataFrame('localhost', 'flights', columns=["AvgTicketPrice", "Cancelled", "dayOfWeek", "timestamp", "DestCountry"])
         >>> df.mean()
-        AvgTicketPrice         628.253689
-        Cancelled                0.128494
-        DistanceKilometers    7092.142457
-        DistanceMiles         4406.853010
-        FlightDelay              0.251168
-        FlightDelayMin          47.335171
-        FlightTimeHour           8.518797
-        FlightTimeMin          511.127842
-        dayOfWeek                2.835975
+        AvgTicketPrice                          628.254
+        Cancelled                              0.128494
+        dayOfWeek                               2.83598
+        timestamp         2018-01-21 19:20:45.564438232
+        dtype: object
+
+        >>> df.mean(numeric_only=True)
+        AvgTicketPrice    628.253689
+        Cancelled           0.128494
+        dayOfWeek           2.835975
         dtype: float64
+
+        >>> df.mean(numeric_only=False)
+        AvgTicketPrice                          628.254
+        Cancelled                              0.128494
+        dayOfWeek                               2.83598
+        timestamp         2018-01-21 19:20:45.564438232
+        DestCountry                                 NaN
+        dtype: object
         """
         return self._query_compiler.mean(numeric_only=numeric_only)
 
-    def sum(self, numeric_only: bool = True) -> pd.Series:
+    def sum(self, numeric_only: Optional[bool] = None) -> pd.Series:
         """
         Return sum for each numeric column
 
         TODO - implement remainder of pandas arguments, currently non-numerics are not supported
+
+        Parameters
+        ----------
+        numeric_only: {True, False, None} Default is None
+            Which datatype to be returned
+            - True: Returns all values as float64, NaN/NaT values are removed
+            - None: Returns all values as the same dtype where possible, NaN/NaT are removed
+            - False: Returns all values as the same dtype where possible, NaN/NaT are preserved
 
         Returns
         -------
@@ -211,26 +235,42 @@ class NDFrame(ABC):
 
         Examples
         --------
-        >>> df = ed.DataFrame('localhost', 'flights')
+        >>> df = ed.DataFrame('localhost', 'flights', columns=["AvgTicketPrice", "Cancelled", "dayOfWeek", "timestamp", "DestCountry"])
         >>> df.sum()
-        AvgTicketPrice        8.204365e+06
-        Cancelled             1.678000e+03
-        DistanceKilometers    9.261629e+07
-        DistanceMiles         5.754909e+07
-        FlightDelay           3.280000e+03
-        FlightDelayMin        6.181500e+05
-        FlightTimeHour        1.112470e+05
-        FlightTimeMin         6.674818e+06
-        dayOfWeek             3.703500e+04
+        AvgTicketPrice    8.20436e+06
+        Cancelled                1678
+        dayOfWeek               37035
+        dtype: object
+
+        >>> df.sum(numeric_only=True)
+        AvgTicketPrice    8.204365e+06
+        Cancelled         1.678000e+03
+        dayOfWeek         3.703500e+04
         dtype: float64
+
+        >>> df.sum(numeric_only=False)
+        AvgTicketPrice    8.20436e+06
+        Cancelled                1678
+        dayOfWeek               37035
+        timestamp                 NaT
+        DestCountry               NaN
+        dtype: object
         """
         return self._query_compiler.sum(numeric_only=numeric_only)
 
-    def min(self, numeric_only: bool = True) -> pd.Series:
+    def min(self, numeric_only: Optional[bool] = None) -> pd.Series:
         """
         Return the minimum value for each numeric column
 
         TODO - implement remainder of pandas arguments, currently non-numerics are not supported
+
+        Parameters
+        ----------
+        numeric_only: {True, False, None} Default is None
+            Which datatype to be returned
+            - True: Returns all values as float64, NaN/NaT values are removed
+            - None: Returns all values as the same dtype where possible, NaN/NaT are removed
+            - False: Returns all values as the same dtype where possible, NaN/NaT are preserved
 
         Returns
         -------
@@ -243,24 +283,41 @@ class NDFrame(ABC):
 
         Examples
         --------
-        >>> df = ed.DataFrame('localhost', 'flights')
+        >>> df = ed.DataFrame('localhost', 'flights', columns=["AvgTicketPrice", "Cancelled", "dayOfWeek", "timestamp", "DestCountry"])
         >>> df.min()
-        AvgTicketPrice        100.021
-        Cancelled               False
-        DistanceKilometers          0
-        DistanceMiles               0
-        FlightDelay             False
-        FlightDelayMin              0
-        FlightTimeHour              0
-        FlightTimeMin               0
-        dayOfWeek                   0
+        AvgTicketPrice                100.021
+        Cancelled                       False
+        dayOfWeek                           0
+        timestamp         2018-01-01 00:00:00
+        dtype: object
+
+        >>> df.min(numeric_only=True)
+        AvgTicketPrice    100.020531
+        Cancelled           0.000000
+        dayOfWeek           0.000000
+        dtype: float64
+
+        >>> df.min(numeric_only=False)
+        AvgTicketPrice                100.021
+        Cancelled                       False
+        dayOfWeek                           0
+        timestamp         2018-01-01 00:00:00
+        DestCountry                       NaN
         dtype: object
         """
         return self._query_compiler.min(numeric_only=numeric_only)
 
-    def var(self, numeric_only: bool = True) -> pd.Series:
+    def var(self, numeric_only: Optional[bool] = None) -> pd.Series:
         """
         Return variance for each numeric column
+
+        Parameters
+        ----------
+        numeric_only: {True, False, None} Default is None
+            Which datatype to be returned
+            - True: Returns all values as float64, NaN/NaT values are removed
+            - None: Returns all values as the same dtype where possible, NaN/NaT are removed
+            - False: Returns all values as the same dtype where possible, NaN/NaT are preserved
 
         Returns
         -------
@@ -273,24 +330,40 @@ class NDFrame(ABC):
 
         Examples
         --------
-        >>> df = ed.DataFrame('localhost', 'flights')
-        >>> df.var() # doctest: +SKIP
-        AvgTicketPrice        7.096185e+04
-        Cancelled             1.119831e-01
-        DistanceKilometers    2.096049e+07
-        DistanceMiles         8.092892e+06
-        FlightDelay           1.880825e-01
-        FlightDelayMin        9.359209e+03
-        FlightTimeHour        3.112545e+01
-        FlightTimeMin         1.120516e+05
-        dayOfWeek             3.761135e+00
+        >>> df = ed.DataFrame('localhost', 'flights', columns=["AvgTicketPrice", "Cancelled", "dayOfWeek", "timestamp", "DestCountry"])
+        >>> df.var()
+        AvgTicketPrice    70964.570234
+        Cancelled             0.111987
+        dayOfWeek             3.761279
         dtype: float64
+
+        >>> df.var(numeric_only=True)
+        AvgTicketPrice    70964.570234
+        Cancelled             0.111987
+        dayOfWeek             3.761279
+        dtype: float64
+
+        >>> df.var(numeric_only=False)
+        AvgTicketPrice     70964.6
+        Cancelled         0.111987
+        dayOfWeek          3.76128
+        timestamp              NaT
+        DestCountry            NaN
+        dtype: object
         """
         return self._query_compiler.var(numeric_only=numeric_only)
 
-    def std(self, numeric_only: bool = True) -> pd.Series:
+    def std(self, numeric_only: Optional[bool] = None) -> pd.Series:
         """
         Return standard deviation for each numeric column
+
+        Parameters
+        ----------
+        numeric_only: {True, False, None} Default is None
+            Which datatype to be returned
+            - True: Returns all values as float64, NaN/NaT values are removed
+            - None: Returns all values as the same dtype where possible, NaN/NaT are removed
+            - False: Returns all values as the same dtype where possible, NaN/NaT are preserved
 
         Returns
         -------
@@ -303,24 +376,40 @@ class NDFrame(ABC):
 
         Examples
         --------
-        >>> df = ed.DataFrame('localhost', 'flights')
-        >>> df.std() # doctest: +SKIP
-        AvgTicketPrice         266.386661
-        Cancelled                0.334639
-        DistanceKilometers    4578.263193
-        DistanceMiles         2844.800855
-        FlightDelay              0.433685
-        FlightDelayMin          96.743006
-        FlightTimeHour           5.579019
-        FlightTimeMin          334.741135
-        dayOfWeek                1.939365
+        >>> df = ed.DataFrame('localhost', 'flights', columns=["AvgTicketPrice", "Cancelled", "dayOfWeek", "timestamp", "DestCountry"])
+        >>> df.std()
+        AvgTicketPrice    266.407061
+        Cancelled           0.334664
+        dayOfWeek           1.939513
         dtype: float64
+
+        >>> df.std(numeric_only=True)
+        AvgTicketPrice    266.407061
+        Cancelled           0.334664
+        dayOfWeek           1.939513
+        dtype: float64
+
+        >>> df.std(numeric_only=False)
+        AvgTicketPrice     266.407
+        Cancelled         0.334664
+        dayOfWeek          1.93951
+        timestamp              NaT
+        DestCountry            NaN
+        dtype: object
         """
         return self._query_compiler.std(numeric_only=numeric_only)
 
-    def median(self, numeric_only: bool = True) -> pd.Series:
+    def median(self, numeric_only: Optional[bool] = None) -> pd.Series:
         """
         Return the median value for each numeric column
+
+        Parameters
+        ----------
+        numeric_only: {True, False, None} Default is None
+            Which datatype to be returned
+            - True: Returns all values as float64, NaN/NaT values are removed
+            - None: Returns all values as the same dtype where possible, NaN/NaT are removed
+            - False: Returns all values as the same dtype where possible, NaN/NaT are preserved
 
         Returns
         -------
@@ -333,26 +422,43 @@ class NDFrame(ABC):
 
         Examples
         --------
-        >>> df = ed.DataFrame('localhost', 'flights')
+        >>> df = ed.DataFrame('localhost', 'flights', columns=["AvgTicketPrice", "Cancelled", "dayOfWeek", "timestamp", "DestCountry"])
         >>> df.median() # doctest: +SKIP
-        AvgTicketPrice         640.387285
-        Cancelled                0.000000
-        DistanceKilometers    7612.072403
-        DistanceMiles         4729.922470
-        FlightDelay              0.000000
-        FlightDelayMin           0.000000
-        FlightTimeHour           8.383113
-        FlightTimeMin          503.148975
-        dayOfWeek                3.000000
+        AvgTicketPrice                          640.363
+        Cancelled                                 False
+        dayOfWeek                                     3
+        timestamp         2018-01-21 23:54:06.624776611
+        dtype: object
+
+        >>> df.median(numeric_only=True) # doctest: +SKIP
+        AvgTicketPrice    640.362667
+        Cancelled           0.000000
+        dayOfWeek           3.000000
         dtype: float64
+
+        >>> df.median(numeric_only=False) # doctest: +SKIP
+        AvgTicketPrice                          640.387
+        Cancelled                                 False
+        dayOfWeek                                     3
+        timestamp         2018-01-21 23:54:06.624776611
+        DestCountry                                 NaN
+        dtype: object
         """
         return self._query_compiler.median(numeric_only=numeric_only)
 
-    def max(self, numeric_only: bool = True) -> pd.Series:
+    def max(self, numeric_only: Optional[bool] = None) -> pd.Series:
         """
         Return the maximum value for each numeric column
 
         TODO - implement remainder of pandas arguments, currently non-numerics are not supported
+
+        Parameters
+        ----------
+        numeric_only: {True, False, None} Default is None
+            Which datatype to be returned
+            - True: Returns all values as float64, NaN/NaT values are removed
+            - None: Returns all values as the same dtype where possible, NaN/NaT are removed
+            - False: Returns all values as the same dtype where possible, NaN/NaT are preserved
 
         Returns
         -------
@@ -365,17 +471,26 @@ class NDFrame(ABC):
 
         Examples
         --------
-        >>> df = ed.DataFrame('localhost', 'flights')
+        >>> df = ed.DataFrame('localhost', 'flights', columns=["AvgTicketPrice", "Cancelled", "dayOfWeek", "timestamp", "DestCountry"])
         >>> df.max()
-        AvgTicketPrice        1199.73
-        Cancelled                True
-        DistanceKilometers    19881.5
-        DistanceMiles         12353.8
-        FlightDelay              True
-        FlightDelayMin            360
-        FlightTimeHour         31.715
-        FlightTimeMin          1902.9
-        dayOfWeek                   6
+        AvgTicketPrice                1199.73
+        Cancelled                        True
+        dayOfWeek                           6
+        timestamp         2018-02-11 23:50:12
+        dtype: object
+
+        >>> df.max(numeric_only=True)
+        AvgTicketPrice    1199.729004
+        Cancelled            1.000000
+        dayOfWeek            6.000000
+        dtype: float64
+
+        >>> df.max(numeric_only=False)
+        AvgTicketPrice                1199.73
+        Cancelled                        True
+        dayOfWeek                           6
+        timestamp         2018-02-11 23:50:12
+        DestCountry                       NaN
         dtype: object
         """
         return self._query_compiler.max(numeric_only=numeric_only)
@@ -441,18 +556,24 @@ class NDFrame(ABC):
 
         Examples
         --------
-        >>> df = ed.DataFrame('localhost', 'flights')
+        >>> df = ed.DataFrame('localhost', 'flights', columns=["AvgTicketPrice", "Cancelled", "dayOfWeek", "timestamp", "DestCountry"])
         >>> df.mad() # doctest: +SKIP
-        AvgTicketPrice         213.368709
-        Cancelled                0.000000
-        DistanceKilometers    2946.168236
-        DistanceMiles         1830.987236
-        FlightDelay              0.000000
-        FlightDelayMin           0.000000
-        FlightTimeHour           3.819435
-        FlightTimeMin          229.142297
-        dayOfWeek                2.000000
+        AvgTicketPrice    213.35497
+        dayOfWeek           2.00000
         dtype: float64
+
+        >>> df.mad(numeric_only=True) # doctest: +SKIP
+        AvgTicketPrice    213.473011
+        dayOfWeek           2.000000
+        dtype: float64
+
+        >>> df.mad(numeric_only=False) # doctest: +SKIP
+        AvgTicketPrice    213.484
+        Cancelled             NaN
+        dayOfWeek               2
+        timestamp             NaT
+        DestCountry           NaN
+        dtype: object
         """
         return self._query_compiler.mad(numeric_only=numeric_only)
 
