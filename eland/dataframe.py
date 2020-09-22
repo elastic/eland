@@ -1380,7 +1380,7 @@ class DataFrame(NDFrame):
 
         Examples
         --------
-        >>> df = ed.DataFrame('localhost', 'flights').filter(['AvgTicketPrice', 'DistanceKilometers', 'timestamp', 'DestCountry'])
+        >>> df = ed.DataFrame('localhost', 'flights', columns=['AvgTicketPrice', 'DistanceKilometers', 'timestamp', 'DestCountry'])
         >>> df.aggregate(['sum', 'min', 'std'], numeric_only=True).astype(int)
              AvgTicketPrice  DistanceKilometers
         sum         8204364            92616288
