@@ -195,6 +195,15 @@ class MLModel:
 
     @property
     def model_type(self) -> str:
+        # Legacy way of finding model_type from the model definition.
+        if "inference_config" not in self._trained_model_config:
+            trained_model = self._trained_model_config["definition"]["trained_model"]
+            if "tree" in trained_model:
+                target_type = trained_model["tree"]["target_type"]
+            else:
+                target_type = trained_model["ensemble"]["target_type"]
+            return cast(str, target_type)
+
         inference_config = self._trained_model_config["inference_config"]
         if "classification" in inference_config:
             return TYPE_CLASSIFICATION
@@ -208,6 +217,8 @@ class MLModel:
 
     @property
     def results_field(self) -> str:
+        if "inference_config" not in self._trained_model_config:
+            return "predicted_value"
         return cast(
             str,
             self._trained_model_config["inference_config"][self.model_type][
@@ -414,9 +425,7 @@ class MLModel:
         Check if the model already exists in Elasticsearch
         """
         try:
-            self._client.ml.get_trained_models(
-                model_id=self._model_id, include_model_definition=False
-            )
+            self._client.ml.get_trained_models(model_id=self._model_id)
         except elasticsearch.NotFoundError:
             return False
         return True
@@ -425,7 +434,15 @@ class MLModel:
     def _trained_model_config(self) -> Dict[str, Any]:
         """Lazily loads an ML models 'trained_model_config' information"""
         if self._trained_model_config_cache is None:
-            resp = self._client.ml.get_trained_models(model_id=self._model_id)
+
+            # In Elasticsearch 7.7 and earlier you can't get
+            # target type without pulling the model definition
+            # so we check the version first.
+            kwargs = {}
+            if es_version(self._client) < (7, 8):
+                kwargs["include_model_definition"] = True
+
+            resp = self._client.ml.get_trained_models(model_id=self._model_id, **kwargs)
             if resp["count"] > 1:
                 raise ValueError(f"Model ID {self._model_id!r} wasn't unambiguous")
             elif resp["count"] == 0:
