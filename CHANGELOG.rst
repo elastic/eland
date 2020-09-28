@@ -2,6 +2,44 @@
 Changelog
 =========
 
+7.9.1a1 (2020-09-29)
+--------------------
+
+Added
+^^^^^
+
+* Added the ``predict()`` method and ``model_type``,
+  ``feature_names``, and ``results_field`` properties
+  to ``MLModel``  (`#266`_)
+
+
+Deprecated
+^^^^^^^^^^
+
+* Deprecated ``ImportedMLModel`` in favor of
+  ``MLModel.import_model(...)`` (`#266`_)
+
+
+Changed
+^^^^^^^
+
+* Changed DataFrame aggregations to use ``numeric_only=None``
+  instead of ``numeric_only=True`` by default. This is the same
+  behavior as Pandas (`#270`_, contributed by `@V1NAY8`_)
+
+Fixed
+^^^^^
+
+* Fixed ``DataFrame.agg()`` when given a string instead of a list of
+  aggregations will now properly return a ``Series`` instead of
+  a ``DataFrame`` (`#263`_, contributed by `@V1NAY8`_)
+
+
+ .. _#263: https://github.com/elastic/eland/pull/263
+ .. _#266: https://github.com/elastic/eland/pull/266
+ .. _#270: https://github.com/elastic/eland/pull/270
+
+
 7.9.0a1 (2020-08-18)
 --------------------
 
