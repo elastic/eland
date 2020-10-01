@@ -19,6 +19,7 @@ import warnings
 
 import numpy as np
 import pandas as pd
+from eland.common import output_formatter
 from pandas.core.dtypes.common import (
     is_float_dtype,
     is_bool_dtype,
@@ -780,9 +781,12 @@ class FieldMappings:
         # Convert return from 'str' to 'np.dtype'
         return pd_dtypes.apply(lambda x: np.dtype(x))
 
-    def es_info(self, buf):
-        buf.write("Mappings:\n")
-        buf.write(f" capabilities:\n{self._mappings_capabilities.to_string()}\n")
+    def es_info(self) -> None:
+        output_formatter(header="Mappings")
+        # We transpose to display data vertically
+        output_formatter(
+            variable="capabilities", data=self._mappings_capabilities.transpose()
+        )
 
     def rename(self, old_name_new_name_dict):
         """

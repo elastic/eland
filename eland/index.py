@@ -15,8 +15,9 @@
 #  specific language governing permissions and limitations
 #  under the License.
 
-from typing import Optional, TextIO, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 from eland.utils import deprecated_api
+from eland.common import output_formatter
 
 if TYPE_CHECKING:
     from .query_compiler import QueryCompiler
@@ -90,11 +91,11 @@ class Index:
     def __iter__(self) -> "Index":
         return self
 
-    def es_info(self, buf: TextIO) -> None:
-        buf.write("Index:\n")
-        buf.write(f" es_index_field: {self.es_index_field}\n")
-        buf.write(f" is_source_field: {self.is_source_field}\n")
+    def es_info(self) -> None:
+        output_formatter(header="Index")
+        output_formatter(variable="es_index_field", data=self.es_index_field)
+        output_formatter(variable="is_source_field", data=self.is_source_field)
 
     @deprecated_api("eland.Index.es_info()")
-    def info_es(self, buf: TextIO) -> None:
-        self.es_info(buf)
+    def info_es(self) -> None:
+        self.es_info()

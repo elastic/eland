@@ -31,6 +31,7 @@ from eland.common import (
     DEFAULT_ES_MAX_RESULT_WINDOW,
     elasticsearch_date_to_pandas_date,
     build_pd_series,
+    output_formatter,
 )
 from eland.query import Query
 from eland.actions import SortFieldAction
@@ -921,9 +922,9 @@ class Operations:
         # This can return None
         return size
 
-    def es_info(self, query_compiler, buf):
-        buf.write("Operations:\n")
-        buf.write(f" tasks: {self._tasks}\n")
+    def es_info(self, query_compiler) -> None:
+        output_formatter(header="Operations")
+        output_formatter(variable="tasks", data=self._tasks)
 
         query_params, post_processing = self._resolve_tasks(query_compiler)
         size, sort_params = Operations._query_params_to_size_and_sort(query_params)
@@ -935,11 +936,11 @@ class Operations:
         if script_fields is not None:
             body["script_fields"] = script_fields
 
-        buf.write(f" size: {size}\n")
-        buf.write(f" sort_params: {sort_params}\n")
-        buf.write(f" _source: {_source}\n")
-        buf.write(f" body: {body}\n")
-        buf.write(f" post_processing: {post_processing}\n")
+        output_formatter(variable="size", data=size)
+        output_formatter(variable="sort_params", data=sort_params)
+        output_formatter(variable="_source", data=_source)
+        output_formatter(variable="body", data=f"{body}")
+        output_formatter(variable="post_processing", data=post_processing)
 
     def update_query(self, boolean_filter):
         task = BooleanFilterTask(boolean_filter)

@@ -16,8 +16,6 @@
 #  under the License.
 
 # File called _pytest for PyCharm compatability
-from io import StringIO
-
 import numpy as np
 
 from eland.field_mappings import FieldMappings
@@ -36,9 +34,7 @@ class TestScriptedFields(TestData):
         )
 
         # note 'None' is printed as 'NaN' in index, but .index shows it is 'None'
-        # buf = StringIO()
-        # ed_field_mappings.info_es(buf)
-        # print(buf.getvalue())
+        # ed_field_mappings.es_info()
 
         expected = self.pd_flights().columns.to_list()
         expected.append(None)
@@ -55,9 +51,7 @@ class TestScriptedFields(TestData):
         )
 
         # note 'None' is printed as 'NaN' in index, but .index shows it is 'None'
-        buf = StringIO()
-        ed_field_mappings.es_info(buf)
-        print(buf.getvalue())
+        ed_field_mappings.es_info()
 
         expected = self.pd_flights().columns.to_list()
         expected.remove("Carrier")

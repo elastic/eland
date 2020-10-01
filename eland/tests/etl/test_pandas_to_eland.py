@@ -54,7 +54,7 @@ class TestPandasToEland:
         )
 
         assert isinstance(df, DataFrame)
-        assert "es_index_pattern: test-index" in df.es_info()
+        assert "es_index_pattern : test-index" in df.es_info()
 
     def test_es_if_exists_fail(self):
         pandas_to_eland(pd_df, es_client=ES_TEST_CLIENT, es_dest_index="test-index")

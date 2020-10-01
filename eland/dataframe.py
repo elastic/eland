@@ -580,11 +580,6 @@ class DataFrame(NDFrame):
 
         This includes the Elasticsearch search queries and query compiler task list.
 
-        Returns
-        -------
-        str
-            A debug summary of an eland DataFrame internals.
-
         Examples
         --------
         >>> df = ed.DataFrame('localhost', 'flights')
@@ -600,32 +595,48 @@ class DataFrame(NDFrame):
         12907 2018-02-11 20:08:25             AMS           LIM             225
         <BLANKLINE>
         [5 rows x 4 columns]
-        >>> print(df.es_info())
-        es_index_pattern: flights
-        Index:
-         es_index_field: _id
-         is_source_field: False
-        Mappings:
-         capabilities:
-                           es_field_name  is_source es_dtype                  es_date_format        pd_dtype  is_searchable  is_aggregatable  is_scripted aggregatable_es_field_name
-        timestamp              timestamp       True     date  strict_date_hour_minute_second  datetime64[ns]           True             True        False                  timestamp
-        OriginAirportID  OriginAirportID       True  keyword                            None          object           True             True        False            OriginAirportID
-        DestAirportID      DestAirportID       True  keyword                            None          object           True             True        False              DestAirportID
-        FlightDelayMin    FlightDelayMin       True  integer                            None           int64           True             True        False             FlightDelayMin
-        Operations:
-         tasks: [('boolean_filter': ('boolean_filter': {'bool': {'must': [{'term': {'OriginAirportID': 'AMS'}}, {'range': {'FlightDelayMin': {'gt': 60}}}]}})), ('tail': ('sort_field': '_doc', 'count': 5))]
-         size: 5
-         sort_params: _doc:desc
-         _source: ['timestamp', 'OriginAirportID', 'DestAirportID', 'FlightDelayMin']
-         body: {'query': {'bool': {'must': [{'term': {'OriginAirportID': 'AMS'}}, {'range': {'FlightDelayMin': {'gt': 60}}}]}}}
-         post_processing: [('sort_index')]
-        <BLANKLINE>
+        >>> df.es_info() # doctest: +SKIP
+        ==============================================ES_INFO===============================================
+
+        es_index_pattern : flights
+        ===============================================INDEX================================================
+
+        es_index_field : _id
+        ==============================================MAPPINGS==============================================
+
+        AvgTicketPrice:
+            es_field_name:  AvgTicketPrice
+            is_source:  True
+            es_dtype:  float
+            es_date_format:  None
+            pd_dtype:  float64
+            is_searchable:  True
+            is_aggregatable:  True
+            is_scripted:  False
+            aggregatable_es_field_name:  AvgTicketPrice
+        Cancelled:
+            es_field_name:  Cancelled
+            is_source:  True
+            es_dtype:  boolean
+            es_date_format:  None
+            pd_dtype:  bool
+            is_searchable:  True
+            is_aggregatable:  True
+            is_scripted:  False
+            aggregatable_es_field_name:  Cancelled
+        ...
+        =============================================OPERATIONS=============================================
+
+        tasks : [('boolean_filter': ('boolean_filter': {'bool': {'must': [{'term': {'OriginAirportID': 'AMS'}}, {'range': {'FlightDelayMin': {'gt': 60}}}]}}))]
+
+        _source : ['AvgTicketPrice', 'Cancelled', 'Carrier', 'Dest', 'DestAirportID', 'DestCityName', 'DestCountry', 'DestLocation', 'DestRegion', 'DestWeather', 'DistanceKilometers', 'DistanceMiles',
+                   'FlightDelay', 'FlightDelayMin', 'FlightDelayType', 'FlightNum', 'FlightTimeHour', 'FlightTimeMin', 'Origin', 'OriginAirportID', 'OriginCityName', 'OriginCountry', 'OriginLocation', 'OriginRegion', 'OriginWeather', 'dayOfWeek', 'timestamp']
+
+        body : {'query': {'bool': {'must': [{'term': {'OriginAirportID': 'AMS'}}, {'range': {'FlightDelayMin': {'gt': 60}}}]}}}
+        post_processing : []
+
         """
-        buf = StringIO()
-
-        super()._es_info(buf)
-
-        return buf.getvalue()
+        super()._es_info()
 
     @deprecated_api("eland.DataFrame.es_info()")
     def info_es(self):

@@ -73,9 +73,7 @@ class TestDateTime(TestData):
         # do a rename so display_name for a field is different to es_field_name
         ed_field_mappings.rename({"strict_year_month": "renamed_strict_year_month"})
 
-        # buf = StringIO()
-        # ed_field_mappings.info_es(buf)
-        # print(buf.getvalue())
+        # ed_field_mappings.es_info()
 
         for format_name in self.time_formats.keys():
             es_date_format = ed_field_mappings.date_field_format(format_name)

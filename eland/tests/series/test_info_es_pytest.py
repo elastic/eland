@@ -21,7 +21,7 @@ from eland.tests.common import TestData
 
 
 class TestSeriesInfoEs(TestData):
-    def test_flights_info_es(self):
+    def test_flights_es_info(self):
         ed_flights = self.ed_flights()["AvgTicketPrice"]
 
         # No assertion, just test it can be called

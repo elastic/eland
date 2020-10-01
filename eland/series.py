@@ -613,11 +613,55 @@ class Series(NDFrame):
         return Series(_query_compiler=new_query_compiler)
 
     def es_info(self) -> str:
-        buf = StringIO()
+        # noinspection PyPep8
+        """
+        A debug summary of an eland Series internals.
 
-        super()._es_info(buf)
+        This includes the Elasticsearch search queries and query compiler task list.
 
-        return buf.getvalue()
+        Examples
+        --------
+        >>> series = ed.Series('localhost', 'flights', "Carrier")
+        >>> series = series.tail()
+        >>> series
+        13054    Logstash Airways
+        13055    Logstash Airways
+        13056    Logstash Airways
+        13057            JetBeats
+        13058            JetBeats
+        Name: Carrier, dtype: object
+        >>> series.es_info() # doctest: +SKIP
+        ==============================================ES_INFO===============================================
+
+        es_index_pattern : flights
+        ===============================================INDEX================================================
+
+        es_index_field : _id
+
+        ==============================================MAPPINGS==============================================
+
+        Carrier:
+            es_field_name:  Carrier
+            is_source:  True
+            es_dtype:  keyword
+            es_date_format:  None
+            pd_dtype:  object
+            is_searchable:  True
+            is_aggregatable:  True
+            is_scripted:  False
+            aggregatable_es_field_name:  Carrier
+
+        =============================================OPERATIONS=============================================
+
+        tasks : []
+
+        _source : ['Carrier']
+
+        body : {}
+
+        post_processing : []
+        """
+        super()._es_info()
 
     @deprecated_api("eland.Series.es_info()")
     def info_es(self) -> str:

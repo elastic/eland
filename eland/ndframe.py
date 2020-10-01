@@ -20,6 +20,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Tuple, Optional
 import pandas as pd
 from eland.query_compiler import QueryCompiler
+from eland.common import output_formatter
 
 
 if TYPE_CHECKING:
@@ -159,8 +160,9 @@ class NDFrame(ABC):
         """
         return len(self.index)
 
-    def _es_info(self, buf):
-        self._query_compiler.es_info(buf)
+    def _es_info(self) -> None:
+        output_formatter(header="ES_INFO")
+        self._query_compiler.es_info()
 
     def mean(self, numeric_only: Optional[bool] = None) -> pd.Series:
         """

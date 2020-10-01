@@ -308,3 +308,50 @@ def es_version(es_client: Elasticsearch) -> Tuple[int, int, int]:
         major, minor, patch = [int(x) for x in match.groups()]
         es_client._eland_es_version = (major, minor, patch)
     return cast(Tuple[int, int, int], es_client._eland_es_version)
+
+
+def output_formatter(
+    header: Optional[str] = None,
+    variable: Optional[str] = None,
+    data: Union[str, List[Any], Dict[str, Any], pd.DataFrame, None] = None,
+) -> None:
+    """
+    This is used for formatting `es_info` output
+
+    Parameters
+    ----------
+    header : str or None
+        Print header with string given.
+    variable : str or None
+        Name of the variable
+    data : str or list or dataframe or series
+        Data that is printed to the console.
+    """
+    dash_length = 100
+    if header:
+        print(header.upper().center(dash_length, "=") + "\n")
+
+    def pretty_dict(data: Dict[str, Any], depth: int = 0) -> None:
+        """
+        Used to print dict just as yaml
+        """
+        for key, value in data.items():
+            print(" " * depth + f"{key}:", end="")
+            if isinstance(value, dict):
+                print()
+                pretty_dict(value, depth + 4)
+            else:
+                print(" " * 2 + f"{value}")
+        print()
+
+    if isinstance(data, str):
+        print(f"{variable} : {data}\n")
+
+    elif isinstance(data, list):
+        print(f"{variable} : {data}\n")
+
+    elif isinstance(data, dict):
+        pretty_dict(data)
+
+    elif isinstance(data, pd.DataFrame):
+        pretty_dict(data.to_dict())

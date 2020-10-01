@@ -30,6 +30,7 @@ from eland.common import (
     ensure_es_client,
     DEFAULT_PROGRESS_REPORTING_NUM_ROWS,
     elasticsearch_date_to_pandas_date,
+    output_formatter,
 )
 
 if TYPE_CHECKING:
@@ -544,12 +545,11 @@ class QueryCompiler:
     def value_counts(self, es_size):
         return self._operations.value_counts(self, es_size)
 
-    def es_info(self, buf):
-        buf.write(f"es_index_pattern: {self._index_pattern}\n")
-
-        self._index.es_info(buf)
-        self._mappings.es_info(buf)
-        self._operations.es_info(self, buf)
+    def es_info(self):
+        output_formatter(variable="es_index_pattern", data=self._index_pattern)
+        self._index.es_info()
+        self._mappings.es_info()
+        self._operations.es_info(self)
 
     def describe(self):
         return self._operations.describe(self)
