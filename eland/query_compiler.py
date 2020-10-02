@@ -545,7 +545,7 @@ class QueryCompiler:
     def value_counts(self, es_size):
         return self._operations.value_counts(self, es_size)
 
-    def es_info(self):
+    def es_info(self) -> None:
         output_formatter(variable="es_index_pattern", data=self._index_pattern)
         self._index.es_info()
         self._mappings.es_info()

@@ -922,7 +922,7 @@ class Operations:
         # This can return None
         return size
 
-    def es_info(self, query_compiler) -> None:
+    def es_info(self, query_compiler: "QueryCompiler") -> None:
         output_formatter(header="Operations")
         output_formatter(variable="tasks", data=self._tasks)
 

@@ -573,7 +573,7 @@ class DataFrame(NDFrame):
         """
         return self._query_compiler.count()
 
-    def es_info(self):
+    def es_info(self) -> None:
         # noinspection PyPep8
         """
         A debug summary of an eland DataFrame internals.
@@ -599,9 +599,11 @@ class DataFrame(NDFrame):
         ==============================================ES_INFO===============================================
 
         es_index_pattern : flights
+
         ===============================================INDEX================================================
 
         es_index_field : _id
+
         ==============================================MAPPINGS==============================================
 
         AvgTicketPrice:
@@ -633,6 +635,7 @@ class DataFrame(NDFrame):
                    'FlightDelay', 'FlightDelayMin', 'FlightDelayType', 'FlightNum', 'FlightTimeHour', 'FlightTimeMin', 'Origin', 'OriginAirportID', 'OriginCityName', 'OriginCountry', 'OriginLocation', 'OriginRegion', 'OriginWeather', 'dayOfWeek', 'timestamp']
 
         body : {'query': {'bool': {'must': [{'term': {'OriginAirportID': 'AMS'}}, {'range': {'FlightDelayMin': {'gt': 60}}}]}}}
+
         post_processing : []
 
         """

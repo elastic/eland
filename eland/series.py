@@ -612,7 +612,7 @@ class Series(NDFrame):
         )
         return Series(_query_compiler=new_query_compiler)
 
-    def es_info(self) -> str:
+    def es_info(self) -> None:
         # noinspection PyPep8
         """
         A debug summary of an eland Series internals.
@@ -634,6 +634,7 @@ class Series(NDFrame):
         ==============================================ES_INFO===============================================
 
         es_index_pattern : flights
+
         ===============================================INDEX================================================
 
         es_index_field : _id
@@ -660,6 +661,7 @@ class Series(NDFrame):
         body : {}
 
         post_processing : []
+
         """
         super()._es_info()
 

@@ -324,7 +324,7 @@ def output_formatter(
         Print header with string given.
     variable : str or None
         Name of the variable
-    data : str or list or dataframe or series
+    data : str or list or dataframe
         Data that is printed to the console.
     """
     dash_length = 100
