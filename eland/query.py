@@ -17,7 +17,7 @@
 
 import warnings
 from copy import deepcopy
-from typing import Optional, Dict, List, Any
+from typing import Optional, Dict, List, Any, Union
 
 from eland.filter import (
     RandomScoreFilter,
@@ -135,6 +135,84 @@ class Query:
         """
         agg = {func: {"field": field}}
         self._aggs[name] = agg
+
+    def term_aggs(self, name: str, field: str) -> None:
+        """
+        Add term agg e.g.
+
+        "aggs": {
+            "name": {
+                "terms": {
+                    "field": "AvgTicketPrice"
+                }
+            }
+        }
+        """
+        agg = {"terms": {"field": field}}
+        self._aggs[name] = agg
+
+    def composite_agg(
+        self,
+        size: int = 10000,
+        name: str = "groupby_buckets",
+        after_key: Union[Dict[str, Any], None] = None,
+        dropna: bool = True,
+    ) -> None:
+        """
+        Add composite aggregation e.g.
+        https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-composite-aggregation.html
+
+        "aggs": {
+            "groupby_buckets": {
+                "composite": {
+                    "size": 10,
+                    "sources": [
+                        {"total_quantity": {"terms": {"field": "total_quantity"}}}
+                    ],
+                    "after": {"total_quantity": 8},
+                },
+                "aggregations": {
+                    "taxful_total_price_avg": {
+                        "avg": {"field": "taxful_total_price"}
+                    }
+                },
+            }
+        }
+
+        Parameters
+        ----------
+        size: int
+            Pagination size.
+        name: str
+            Name of the buckets
+        after_key: str
+            After key to fetch next bunch of results
+        dropna: bool
+            Drop None values if True.
+            TODO Not yet implemented
+
+        """
+
+        if after_key is not None:
+            self._aggs[name]["composite"]["after"] = after_key
+        else:
+            sources: List[Dict[str, Dict[str, str]]] = []
+            aggregations: Dict[str, Dict[str, str]] = {}
+
+            for _name, agg in self._aggs.items():
+                if agg.get("terms"):
+                    if not dropna:
+                        agg["terms"]["missing_bucket"] = "true"
+                    sources.append({_name: agg})
+                else:
+                    aggregations[_name] = agg
+
+            agg = {
+                "composite": {"size": size, "sources": sources},
+                "aggregations": aggregations,
+            }
+            self._aggs.clear()
+            self._aggs[name] = agg
 
     def hist_aggs(
         self,

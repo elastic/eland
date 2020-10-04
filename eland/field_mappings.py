@@ -33,9 +33,11 @@ from typing import (
     Mapping,
     Dict,
     Any,
+    Tuple,
     TYPE_CHECKING,
     List,
     Set,
+    Union,
 )
 
 if TYPE_CHECKING:
@@ -697,13 +699,47 @@ class FieldMappings:
         pd_dtypes, es_field_names, es_date_formats = self.metric_source_fields()
         return es_field_names
 
-    def all_source_fields(self):
-        source_fields = []
+    def all_source_fields(self) -> List[Field]:
+        """
+        This method is used to return all Field Mappings for fields
+
+        Returns
+        -------
+            a list of Field Mappings
+        """
+        source_fields: List[Field] = []
         for index, row in self._mappings_capabilities.iterrows():
             row = row.to_dict()
             row["index"] = index
             source_fields.append(Field(**row))
         return source_fields
+
+    def groupby_source_fields(self, by: List[str]) -> Tuple[List[Field], List[Field]]:
+        """
+        This method returns all Field Mappings for groupby and non-groupby fields
+
+        Parameters
+        ----------
+        by:
+            a list of groupby fields
+
+        Returns
+        -------
+            a Tuple consisting of a list of field mappings for groupby and non-groupby fields
+
+        """
+        groupby_fields: Union[List[Field], List[None]] = [None] * len(by)
+        aggregatable_fields: List[Field] = []
+        for index_name, row in self._mappings_capabilities.iterrows():
+            row = row.to_dict()
+            row["index"] = index_name
+            if index_name not in by:
+                aggregatable_fields.append(Field(**row))
+            else:
+                # Maintain groupby order as given input
+                groupby_fields[by.index(index_name)] = Field(**row)
+
+        return groupby_fields, aggregatable_fields
 
     def metric_source_fields(self, include_bool=False, include_timestamp=False):
         """

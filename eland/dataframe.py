@@ -19,7 +19,7 @@ import sys
 import warnings
 from io import StringIO
 import re
-from typing import Optional, Sequence, Union, Tuple, List
+from typing import Dict, List, Optional, Sequence, Union, Tuple
 
 import numpy as np
 import pandas as pd
@@ -39,6 +39,7 @@ from eland.series import Series
 from eland.common import DEFAULT_NUM_ROWS_DISPLAYED, docstring_parameter
 from eland.filter import BooleanFilter
 from eland.utils import deprecated_api, is_valid_attr_name
+from eland.groupby import GroupByDataFrame
 
 
 class DataFrame(NDFrame):
@@ -1429,6 +1430,71 @@ class DataFrame(NDFrame):
     agg = aggregate
 
     hist = gfx.ed_hist_frame
+
+    def groupby(
+        self, by: Union[List[str], Dict[str, str], None] = None, dropna: bool = True
+    ) -> "GroupByDataFrame":
+        """
+        Used to perform groupby operations
+
+        Parameters
+        ----------
+        by: List[str]
+
+        Returns
+        -------
+        GroupByDataFrame
+
+        Examples
+        --------
+        >>> ed_flights = df = ed.DataFrame('localhost', 'flights', columns=['AvgTicketPrice', 'DistanceKilometers', 'timestamp', 'DestCountry'])
+        >>> ed_flights.groupby(["DestCountry","Cancelled"]).agg(["min", "max"],True) # doctest: +SKIP
+                            AvgTicketPrice              dayOfWeek     
+                                        min          max       min  max
+        DestCountry Cancelled
+        AE          False         110.799911  1126.148682       0.0  6.0
+                    True          132.443756   817.931030       0.0  6.0
+        AR          False         125.589394  1199.642822       0.0  6.0
+                    True          251.389603  1172.382568       0.0  6.0
+        AT          False         100.020531  1181.835815       0.0  6.0
+        ...                              ...          ...       ...  ...
+        TR          True          307.915649   307.915649       0.0  0.0
+        US          False         100.145966  1199.729004       0.0  6.0
+                    True          102.153069  1192.429932       0.0  6.0
+        ZA          False         102.002663  1196.186157       0.0  6.0
+                    True          121.280296  1175.709961       0.0  6.0
+
+        [63 rows x 4 columns]
+        >>> ed_flights.groupby(["DestCountry","Cancelled"]).mean(True) # doctest: +SKIP
+                            AvgTicketPrice  dayOfWeek
+        DestCountry Cancelled
+        AE          False          643.956793   2.717949
+                    True           388.828809   2.571429
+        AR          False          673.551677   2.746154
+                    True           682.197241   2.733333
+        AT          False          647.158290   2.819936
+        ...                               ...        ...
+        TR          True           307.915649   0.000000
+        US          False          598.063146   2.752014
+                    True           579.799066   2.767068
+        ZA          False          636.998605   2.738589
+                    True           677.794078   2.928571
+
+        [63 rows x 2 columns]
+        """
+        if by is None:
+            raise TypeError("by parameter should be specified for groupby")
+        if isinstance(by, str):
+            if by not in self._query_compiler.columns:
+                raise KeyError(f"Requested column [{by}] is not in the DataFrame.")
+            by = [by]
+        if isinstance(by, list):
+            if set(by) - set(self._query_compiler.columns):
+                raise KeyError("Requested column/s not in the DataFrame.")
+
+        return GroupByDataFrame(
+            by=by, query_compiler=self._query_compiler, dropna=dropna
+        )
 
     def query(self, expr) -> "DataFrame":
         """
