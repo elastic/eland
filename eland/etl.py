@@ -224,7 +224,6 @@ def pandas_to_eland(
                 # Use index as _id
                 id = row[0]
 
-                # Use integer as id field for repeatable results
                 action = {"_index": es_dest_index, "_source": values, "_id": str(id)}
             else:
                 action = {"_index": es_dest_index, "_source": values}
@@ -232,6 +231,7 @@ def pandas_to_eland(
             yield action
 
     # parallel_bulk is lazy generator so use deque to consume them immediately
+    # maxlen = 0 because don't need results of parallel_bulk
     deque(
         parallel_bulk(
             client=es_client,
@@ -240,10 +240,12 @@ def pandas_to_eland(
             ),
             thread_count=thread_count,
             chunk_size=chunksize / thread_count,
-            refresh=es_refresh,
         ),
         maxlen=0,
     )
+
+    if es_refresh:
+        es_client.indices.refresh(index=es_dest_index)
 
     return DataFrame(es_client, es_dest_index)
 
