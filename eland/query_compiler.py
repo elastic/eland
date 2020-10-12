@@ -17,7 +17,7 @@
 
 import copy
 from datetime import datetime
-from typing import Optional, TYPE_CHECKING, List
+from typing import Optional, Sequence, TYPE_CHECKING, List
 
 import numpy as np
 import pandas as pd
@@ -482,7 +482,12 @@ class QueryCompiler:
 
         return result
 
-    def filter(self, items=None, like=None, regex=None):
+    def filter(
+        self,
+        items: Optional[Sequence[str]] = None,
+        like: Optional[str] = None,
+        regex: Optional[str] = None,
+    ) -> "QueryCompiler":
         # field will be es_index_field for DataFrames or the column for Series.
         # This function is only called for axis='index',
         # DataFrame.filter(..., axis="columns") calls .drop()
