@@ -24,7 +24,6 @@ import pandas as pd  # type: ignore
 
 
 RT = TypeVar("RT")
-Item = TypeVar("Item")
 
 
 def deprecated_api(
@@ -62,7 +61,7 @@ def to_list(x: Union[Collection[Any], pd.Series]) -> List[Any]:
     raise NotImplementedError(f"Could not convert {type(x).__name__} into a list")
 
 
-def try_sort(iterable: Iterable[Item]) -> Iterable[Item]:
+def try_sort(iterable: Iterable[str]) -> Iterable[str]:
     # Pulled from pandas.core.common since
     # it was deprecated and removed in 1.1
     listed = list(iterable)
