@@ -16,8 +16,10 @@
 #  under the License.
 
 import numpy as np
+import pandas as pd
 import warnings
 from eland.common import build_pd_series, EMPTY_SERIES_DTYPE
+from eland.tests.common import assert_series_equal
 
 
 def test_empty_series_dtypes():
@@ -33,3 +35,9 @@ def test_empty_series_dtypes():
     assert np.int32 != EMPTY_SERIES_DTYPE
     assert s.dtype == np.int32
     assert w == []
+
+
+def test_series_es_dtypes(testdata):
+    series = testdata.ed_flights_small().AvgTicketPrice
+    assert_series_equal(series.es_dtypes, pd.Series(data={"AvgTicketPrice": "float"}))
+    assert series.es_dtype == "float"

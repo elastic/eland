@@ -29,6 +29,7 @@ from .common import (
     _pd_ecommerce,
     _ed_flights_small,
     _pd_flights_small,
+    TestData,
 )
 import eland as ed
 
@@ -146,3 +147,8 @@ def df():
     return SymmetricAPIChecker(
         ed_obj=_ed_flights_small, pd_obj=_pd_flights_small.copy()
     )
+
+
+@pytest.fixture(scope="session")
+def testdata():
+    return TestData()

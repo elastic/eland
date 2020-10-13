@@ -123,6 +123,10 @@ class QueryCompiler:
     def dtypes(self):
         return self._mappings.dtypes()
 
+    @property
+    def es_dtypes(self):
+        return self._mappings.es_dtypes()
+
     # END Index, columns, and dtypes objects
 
     def _es_results_to_pandas(self, results, batch_size=None, show_progress=False):

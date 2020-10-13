@@ -132,6 +132,28 @@ class NDFrame(ABC):
         """
         return self._query_compiler.dtypes
 
+    @property
+    def es_dtypes(self):
+        """
+        Return the Elasticsearch dtypes in the index
+
+        Returns
+        -------
+        pandas.Series
+            The data type of each column.
+
+        Examples
+        --------
+        >>> df = ed.DataFrame('localhost', 'flights', columns=['Origin', 'AvgTicketPrice', 'timestamp', 'dayOfWeek'])
+        >>> df.es_dtypes
+        Origin            keyword
+        AvgTicketPrice      float
+        timestamp            date
+        dayOfWeek            byte
+        dtype: object
+        """
+        return self._query_compiler.es_dtypes
+
     def _build_repr(self, num_rows) -> pd.DataFrame:
         # self could be Series or DataFrame
         if len(self.index) <= num_rows:
