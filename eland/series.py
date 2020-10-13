@@ -447,6 +447,8 @@ class Series(NDFrame):
         elif isinstance(other, datetime):
             # format datetime object to elasticsearch friendly string
             return Greater(field=self.name, value=datetime_to_elasticsearch_date(other))
+        elif isinstance(other, np.datetime64):
+            return Greater(field=self.name, value=datetime_to_elasticsearch_date(pd.to_datetime(other)))
         else:
             raise NotImplementedError(other, type(other))
 
@@ -459,6 +461,8 @@ class Series(NDFrame):
             return Less(field=self.name, value=other)
         elif isinstance(other, datetime):
             return Less(field=self.name, value=datetime_to_elasticsearch_date(other))
+        elif isinstance(other, np.datetime64):
+            return Less(field=self.name, value=datetime_to_elasticsearch_date(pd.to_datetime(other)))
         else:
             raise NotImplementedError(other, type(other))
 
@@ -471,6 +475,8 @@ class Series(NDFrame):
             return GreaterEqual(field=self.name, value=other)
         elif isinstance(other, datetime):
             return GreaterEqual(field=self.name, value=datetime_to_elasticsearch_date(other))
+        elif isinstance(other, np.datetime64):
+            return GreaterEqual(field=self.name, value=datetime_to_elasticsearch_date(pd.to_datetime(other)))
         else:
             raise NotImplementedError(other, type(other))
 
@@ -483,6 +489,8 @@ class Series(NDFrame):
             return LessEqual(field=self.name, value=other)
         elif isinstance(other, datetime):
             return LessEqual(field=self.name, value=datetime_to_elasticsearch_date(other))
+        elif isinstance(other, np.datetime64):
+            return LessEqual(field=self.name, value=datetime_to_elasticsearch_date(pd.to_datetime(other)))
         else:
             raise NotImplementedError(other, type(other))
 
@@ -497,6 +505,8 @@ class Series(NDFrame):
             return Equal(field=self.name, value=other)
         elif isinstance(other, datetime):
             return Equal(field=self.name, value=datetime_to_elasticsearch_date(other))
+        elif isinstance(other, np.datetime64):
+            return Equal(field=self.name, value=datetime_to_elasticsearch_date(pd.to_datetime(other)))
         else:
             raise NotImplementedError(other, type(other))
 
@@ -511,6 +521,8 @@ class Series(NDFrame):
             return NotFilter(Equal(field=self.name, value=other))
         elif isinstance(other, datetime):
             return NotFilter(field=self.name, value=datetime_to_elasticsearch_date(other))
+        elif isinstance(other, np.datetime64):
+            return NotFilter(field=self.name, value=datetime_to_elasticsearch_date(pd.to_datetime(other)))
         else:
             raise NotImplementedError(other, type(other))
 
