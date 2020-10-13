@@ -863,7 +863,7 @@ class Operations:
         self._validate_index_operation(query_compiler, items)
 
         if field == Index.ID_INDEX_FIELD:
-            task = QueryIdsTask(True, items, maintain_index_order=True)
+            task = QueryIdsTask(True, items, sort_index_by_ids=True)
         else:
             task = QueryTermsTask(True, field, items)
         self._tasks.append(task)
