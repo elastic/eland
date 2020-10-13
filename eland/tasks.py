@@ -221,7 +221,7 @@ class SampleTask(SizeTask):
 
 
 class QueryIdsTask(Task):
-    def __init__(self, must: bool, ids: List[str], maintain_index_order: bool = False):
+    def __init__(self, must: bool, ids: List[str], sort_index_by_ids: bool = False):
         """
         Parameters
         ----------
@@ -235,7 +235,7 @@ class QueryIdsTask(Task):
 
         self._must = must
         self._ids = ids
-        self._maintain_index_order = maintain_index_order
+        self._sort_index_by_ids = sort_index_by_ids
 
     def resolve_task(
         self,
@@ -244,7 +244,7 @@ class QueryIdsTask(Task):
         query_compiler: "QueryCompiler",
     ) -> RESOLVED_TASK_TYPE:
         query_params.query.ids(self._ids, must=self._must)
-        if self._maintain_index_order:
+        if self._sort_index_by_ids:
             post_processing.append(SortIndexAction(items=self._ids))
         return query_params, post_processing
 
