@@ -37,6 +37,8 @@ from collections.abc import Collection
 from io import StringIO
 from typing import Optional, Union, Sequence, Any, Tuple, TYPE_CHECKING
 
+from datetime import datetime
+
 import numpy as np
 import pandas as pd
 from pandas.io.common import _expand_user, stringify_path
@@ -44,7 +46,7 @@ from pandas.io.common import _expand_user, stringify_path
 import eland.plotting
 from eland import NDFrame
 from eland.arithmetics import ArithmeticSeries, ArithmeticString, ArithmeticNumber
-from eland.common import DEFAULT_NUM_ROWS_DISPLAYED, docstring_parameter
+from eland.common import DEFAULT_NUM_ROWS_DISPLAYED, docstring_parameter, datetime_to_elasticsearch_date
 from eland.filter import (
     BooleanFilter,
     NotFilter,
@@ -442,6 +444,9 @@ class Series(NDFrame):
             return ScriptFilter(painless, lang="painless")
         elif isinstance(other, (int, float)):
             return Greater(field=self.name, value=other)
+        elif isinstance(other, datetime):
+            # format datetime object to elasticsearch friendly string
+            return Greater(field=self.name, value=datetime_to_elasticsearch_date(other))
         else:
             raise NotImplementedError(other, type(other))
 
@@ -452,6 +457,8 @@ class Series(NDFrame):
             return ScriptFilter(painless, lang="painless")
         elif isinstance(other, (int, float)):
             return Less(field=self.name, value=other)
+        elif isinstance(other, datetime):
+            return Less(field=self.name, value=datetime_to_elasticsearch_date(other))
         else:
             raise NotImplementedError(other, type(other))
 
@@ -462,6 +469,8 @@ class Series(NDFrame):
             return ScriptFilter(painless, lang="painless")
         elif isinstance(other, (int, float)):
             return GreaterEqual(field=self.name, value=other)
+        elif isinstance(other, datetime):
+            return GreaterEqual(field=self.name, value=datetime_to_elasticsearch_date(other))
         else:
             raise NotImplementedError(other, type(other))
 
@@ -472,6 +481,8 @@ class Series(NDFrame):
             return ScriptFilter(painless, lang="painless")
         elif isinstance(other, (int, float)):
             return LessEqual(field=self.name, value=other)
+        elif isinstance(other, datetime):
+            return LessEqual(field=self.name, value=datetime_to_elasticsearch_date(other))
         else:
             raise NotImplementedError(other, type(other))
 
@@ -484,6 +495,8 @@ class Series(NDFrame):
             return Equal(field=self.name, value=other)
         elif isinstance(other, str):
             return Equal(field=self.name, value=other)
+        elif isinstance(other, datetime):
+            return Equal(field=self.name, value=datetime_to_elasticsearch_date(other))
         else:
             raise NotImplementedError(other, type(other))
 
@@ -496,6 +509,8 @@ class Series(NDFrame):
             return NotFilter(Equal(field=self.name, value=other))
         elif isinstance(other, str):
             return NotFilter(Equal(field=self.name, value=other))
+        elif isinstance(other, datetime):
+            return NotFilter(field=self.name, value=datetime_to_elasticsearch_date(other))
         else:
             raise NotImplementedError(other, type(other))
 
