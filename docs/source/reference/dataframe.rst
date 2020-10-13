@@ -12,7 +12,7 @@ Constructor
 
    DataFrame
 
-Attributes and underlying data
+Attributes and Underlying Data
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. autosummary::
    :toctree: api/
@@ -27,7 +27,7 @@ Attributes and underlying data
    DataFrame.ndim
    DataFrame.size
 
-Indexing, iteration
+Indexing, Iteration
 ~~~~~~~~~~~~~~~~~~~
 .. autosummary::
    :toctree: api/
@@ -39,7 +39,7 @@ Indexing, iteration
    DataFrame.query
    DataFrame.sample
 
-Function application, GroupBy & window
+Function Application, GroupBy & Window
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. autosummary::
    :toctree: api/
@@ -49,7 +49,7 @@ Function application, GroupBy & window
 
 .. _api.dataframe.stats:
 
-Computations / descriptive stats
+Computations / Descriptive Stats
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. autosummary::
    :toctree: api/
@@ -67,7 +67,7 @@ Computations / descriptive stats
    DataFrame.sum
    DataFrame.nunique
 
-Reindexing / selection / label manipulation
+Reindexing / Selection / Label Manipulation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. autosummary::
    :toctree: api/
@@ -89,8 +89,9 @@ Elasticsearch Functions
 
    DataFrame.es_info
    DataFrame.es_query
+   DataFrame.es_dtypes
 
-Serialization / IO / conversion
+Serialization / IO / Conversion
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. autosummary::
    :toctree: api/

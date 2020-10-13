@@ -435,6 +435,13 @@ class Series(NDFrame):
         """
         return self._query_compiler.dtypes[0]
 
+    @property
+    def es_dtype(self) -> str:
+        """
+        Return the Elasticsearch type of the underlying data.
+        """
+        return self._query_compiler.es_dtypes[0]
+
     def __gt__(self, other: Union[int, float, "Series"]) -> BooleanFilter:
         if isinstance(other, Series):
             # Need to use scripted query to compare to values

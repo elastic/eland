@@ -780,6 +780,20 @@ class FieldMappings:
         # Convert return from 'str' to 'np.dtype'
         return pd_dtypes.apply(lambda x: np.dtype(x))
 
+    def es_dtypes(self):
+        """
+        Returns
+        -------
+        dtypes: pd.Series
+            Index: Display name
+            Values: es_dtype as a string
+        """
+        es_dtypes = self._mappings_capabilities["es_dtype"]
+
+        # Set name of the returned series as None
+        es_dtypes.name = None
+        return es_dtypes
+
     def es_info(self, buf):
         buf.write("Mappings:\n")
         buf.write(f" capabilities:\n{self._mappings_capabilities.to_string()}\n")

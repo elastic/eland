@@ -18,8 +18,8 @@ The fastest way to get started with machine learning features is to
 
 See `Elasticsearch Machine Learning documentation <https://www.elastic.co/guide/en/machine-learning/current/setup.html>`_ more details.
 
-ImportedMLModel
-~~~~~~~~~~~~~~~
+MLModel
+~~~~~~~
 .. currentmodule:: eland.ml
 
 Constructor

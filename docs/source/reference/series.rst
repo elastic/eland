@@ -1,8 +1,8 @@
 .. _api.series:
 
-=========
+======
 Series
-=========
+======
 .. currentmodule:: eland
 
 Constructor
@@ -12,7 +12,7 @@ Constructor
 
    Series
 
-Attributes and underlying data
+Attributes and Underlying Data
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. autosummary::
    :toctree: api/
@@ -26,7 +26,7 @@ Attributes and underlying data
    Series.ndim
    Series.size
 
-Indexing, iteration
+Indexing, Iteration
 ~~~~~~~~~~~~~~~~~~~
 .. autosummary::
    :toctree: api/
@@ -35,7 +35,7 @@ Indexing, iteration
    Series.tail
    Series.sample
 
-Binary operator functions
+Binary Operator Functions
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 .. autosummary::
    :toctree: api/
@@ -63,7 +63,7 @@ Binary operator functions
    Series.rmod
    Series.rpow
 
-Computations / descriptive stats
+Computations / Descriptive Stats
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. autosummary::
    :toctree: api/
@@ -80,7 +80,7 @@ Computations / descriptive stats
    Series.nunique
    Series.value_counts
 
-Reindexing / selection / label manipulation
+Reindexing / Selection / Label Manipulation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. autosummary::
    :toctree: api/
@@ -100,7 +100,7 @@ Plotting
 
    Series.hist
 
-Serialization / IO / conversion
+Serialization / IO / Conversion
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. autosummary::
    :toctree: api/
@@ -115,3 +115,5 @@ Elasticsearch Functions
    :toctree: api/
 
    Series.es_info
+   Series.es_dtype
+   Series.es_dtypes
