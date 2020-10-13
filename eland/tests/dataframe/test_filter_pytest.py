@@ -64,3 +64,13 @@ class TestDataFrameFilter(TestData):
             ed_flights_small.filter(like="2", axis=0)
         with pytest.raises(NotImplementedError):
             ed_flights_small.filter(regex="^2", axis=0)
+
+    def test_filter_index_order(self):
+        # Filtering dataframe should retain order of items
+        ed_flights = self.ed_flights()
+
+        items = ["4", "2", "3", "1", "0"]
+
+        assert [
+            i for i in ed_flights.filter(axis="index", items=items).to_pandas().index
+        ] == items

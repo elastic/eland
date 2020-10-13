@@ -18,7 +18,7 @@
 import copy
 import typing
 import warnings
-from typing import Optional, Tuple, List, Dict, Any
+from typing import Optional, Sequence, Tuple, List, Dict, Any
 
 import numpy as np
 import pandas as pd
@@ -33,9 +33,10 @@ from eland.common import (
     build_pd_series,
 )
 from eland.query import Query
-from eland.actions import SortFieldAction
+from eland.actions import PostProcessingAction, SortFieldAction
 from eland.tasks import (
     HeadTask,
+    RESOLVED_TASK_TYPE,
     TailTask,
     SampleTask,
     BooleanFilterTask,
@@ -559,7 +560,13 @@ class Operations:
 
         return es_aggs
 
-    def filter(self, query_compiler, items=None, like=None, regex=None):
+    def filter(
+        self,
+        query_compiler: "QueryCompiler",
+        items: Optional[Sequence[str]] = None,
+        like: Optional[str] = None,
+        regex: Optional[str] = None,
+    ) -> None:
         # This function is only called for axis='index',
         # DataFrame.filter(..., axis="columns") calls .drop()
         if items is not None:
@@ -795,7 +802,9 @@ class Operations:
             index=query_compiler._index_pattern, body=body.to_count_body()
         )["count"]
 
-    def _validate_index_operation(self, query_compiler, items):
+    def _validate_index_operation(
+        self, query_compiler: "QueryCompiler", items: Sequence[str]
+    ) -> RESOLVED_TASK_TYPE:
         if not isinstance(items, list):
             raise TypeError(f"list item required - not {type(items)}")
 
@@ -828,7 +837,9 @@ class Operations:
             index=query_compiler._index_pattern, body=body.to_count_body()
         )["count"]
 
-    def drop_index_values(self, query_compiler, field, items):
+    def drop_index_values(
+        self, query_compiler: "QueryCompiler", field: str, items: Sequence[str]
+    ) -> None:
         self._validate_index_operation(query_compiler, items)
 
         # Putting boolean queries together
@@ -845,12 +856,14 @@ class Operations:
             task = QueryTermsTask(False, field, items)
         self._tasks.append(task)
 
-    def filter_index_values(self, query_compiler, field, items):
+    def filter_index_values(
+        self, query_compiler: "QueryCompiler", field: str, items: Sequence[str]
+    ) -> None:
         # Basically .drop_index_values() except with must=True on tasks.
         self._validate_index_operation(query_compiler, items)
 
         if field == Index.ID_INDEX_FIELD:
-            task = QueryIdsTask(True, items)
+            task = QueryIdsTask(True, items, sort_index_by_ids=True)
         else:
             task = QueryTermsTask(True, field, items)
         self._tasks.append(task)
@@ -869,7 +882,9 @@ class Operations:
         return size, sort_params
 
     @staticmethod
-    def _count_post_processing(post_processing):
+    def _count_post_processing(
+        post_processing: List["PostProcessingAction"],
+    ) -> Optional[int]:
         size = None
         for action in post_processing:
             if isinstance(action, SizeTask):
@@ -878,13 +893,15 @@ class Operations:
         return size
 
     @staticmethod
-    def _apply_df_post_processing(df, post_processing):
+    def _apply_df_post_processing(
+        df: "pd.DataFrame", post_processing: List["PostProcessingAction"]
+    ) -> pd.DataFrame:
         for action in post_processing:
             df = action.resolve_action(df)
 
         return df
 
-    def _resolve_tasks(self, query_compiler):
+    def _resolve_tasks(self, query_compiler: "QueryCompiler") -> RESOLVED_TASK_TYPE:
         # We now try and combine all tasks into an Elasticsearch query
         # Some operations can be simply combined into a single query
         # other operations require pre-queries and then combinations
@@ -907,7 +924,9 @@ class Operations:
 
         return query_params, post_processing
 
-    def _size(self, query_params, post_processing):
+    def _size(
+        self, query_params: "QueryParams", post_processing: List["PostProcessingAction"]
+    ) -> Optional[int]:
         # Shrink wrap code around checking if size parameter is set
         size = query_params.size
 
