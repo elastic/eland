@@ -35,8 +35,6 @@ class TestGroupbyDataFrame(TestData):
 
     @pytest.mark.parametrize("numeric_only", [True])
     def test_groupby_aggregate(self, numeric_only):
-        # TODO numeric_only False and None
-        # TODO Add more tests
         pd_flights = self.pd_flights().filter(self.filter_data)
         ed_flights = self.ed_flights().filter(self.filter_data)
 
@@ -46,7 +44,45 @@ class TestGroupbyDataFrame(TestData):
         # checking only values because dtypes are checked in other tests
         assert_frame_equal(pd_groupby, ed_groupby, check_exact=False, check_dtype=False)
 
-    def test_groupby_single_agg(self):
-        # Write tests when grouped is implemented in eland.
-        # Should write single agg tests
+    @pytest.mark.parametrize("pd_agg", ["max", "min", "mean", "sum", "median"])
+    def test_groupby_aggs_1(self, pd_agg):
+        pd_flights = self.pd_flights().filter(self.filter_data)
+        ed_flights = self.ed_flights().filter(self.filter_data)
+
+        pd_groupby = getattr(pd_flights.groupby("Cancelled"), pd_agg)(numeric_only=True)
+        ed_groupby = getattr(ed_flights.groupby("Cancelled"), pd_agg)(numeric_only=True)
+
+        # checking only values because dtypes are checked in other tests
+        assert_frame_equal(
+            pd_groupby, ed_groupby, check_exact=False, check_dtype=False, rtol=4
+        )
+
+    @pytest.mark.parametrize("pd_agg", ["mad", "var", "std"])
+    def test_groupby_aggs_2(self, pd_agg):
+        pd_flights = self.pd_flights().filter(self.filter_data)
+        ed_flights = self.ed_flights().filter(self.filter_data)
+
+        pd_groupby = getattr(pd_flights.groupby("Cancelled"), pd_agg)()
+        ed_groupby = getattr(ed_flights.groupby("Cancelled"), pd_agg)(numeric_only=True)
+
+        # checking only values because dtypes are checked in other tests
+        assert_frame_equal(
+            pd_groupby, ed_groupby, check_exact=False, check_dtype=False, rtol=4
+        )
+
+    @pytest.mark.parametrize("pd_agg", ["nunique"])
+    def test_groupby_aggs_nunique(self, pd_agg):
+        pd_flights = self.pd_flights().filter(self.filter_data)
+        ed_flights = self.ed_flights().filter(self.filter_data)
+
+        pd_groupby = getattr(pd_flights.groupby("Cancelled"), pd_agg)()
+        ed_groupby = getattr(ed_flights.groupby("Cancelled"), pd_agg)()
+
+        # checking only values because dtypes are checked in other tests
+        assert_frame_equal(
+            pd_groupby, ed_groupby, check_exact=False, check_dtype=False, rtol=4
+        )
+
+    def test_groupby_dropna(self):
+        # TODO Add tests once dropna is implemeted
         pass

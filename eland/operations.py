@@ -17,7 +17,17 @@
 
 import copy
 import warnings
-from typing import Optional, Sequence, Tuple, List, Dict, Any
+from typing import (
+    Generator,
+    Optional,
+    Sequence,
+    Tuple,
+    List,
+    Dict,
+    Any,
+    TYPE_CHECKING,
+    Union,
+)
 
 import numpy as np
 import pandas as pd
@@ -435,8 +445,8 @@ class Operations:
         -------
             a dictionary on which agg caluculations are done.
         """
-
         results: Dict[str, Any] = {}
+
         for field in fields:
             values = []
             for es_agg, pd_agg in zip(es_aggs, pd_aggs):
@@ -452,73 +462,75 @@ class Operations:
                     elif is_dataframe_agg and numeric_only:
                         if pd_agg == "mad":
                             values.append(field.nan_value)
-                else:
-                    if isinstance(es_agg, tuple):
-                        agg_value = response["aggregations"][
+                    continue
+
+                if isinstance(es_agg, tuple):
+                    agg_value = response["aggregations"][
+                        f"{es_agg[0]}_{field.es_field_name}"
+                    ]
+
+                    # Pull multiple values from 'percentiles' result.
+                    if es_agg[0] == "percentiles":
+                        agg_value = agg_value["values"]
+
+                    agg_value = agg_value[es_agg[1]]
+
+                    # Need to convert 'Population' stddev and variance
+                    # from Elasticsearch into 'Sample' stddev and variance
+                    # which is what pandas uses.
+                    if es_agg[1] in ("std_deviation", "variance"):
+                        # Neither transformation works with count <=1
+                        count = response["aggregations"][
                             f"{es_agg[0]}_{field.es_field_name}"
-                        ]
+                        ]["count"]
 
-                        # Pull multiple values from 'percentiles' result.
-                        if es_agg[0] == "percentiles":
-                            agg_value = agg_value["values"]
-
-                        agg_value = agg_value[es_agg[1]]
-
-                        # Need to convert 'Population' stddev and variance
-                        # from Elasticsearch into 'Sample' stddev and variance
-                        # which is what pandas uses.
-                        if es_agg[1] in ("std_deviation", "variance"):
-                            # Neither transformation works with count <=1
-                            count = response["aggregations"][
-                                f"{es_agg[0]}_{field.es_field_name}"
-                            ]["count"]
-
-                            # All of the below calculations result in NaN if count<=1
-                            if count <= 1:
-                                agg_value = np.NaN
-
-                            elif es_agg[1] == "std_deviation":
-                                agg_value *= count / (count - 1.0)
-
-                            else:  # es_agg[1] == "variance"
-                                # sample_std=\sqrt{\frac{1}{N-1}\sum_{i=1}^N(x_i-\bar{x})^2}
-                                # population_std=\sqrt{\frac{1}{N}\sum_{i=1}^N(x_i-\bar{x})^2}
-                                # sample_std=\sqrt{\frac{N}{N-1}population_std}
-                                agg_value = np.sqrt(
-                                    (count / (count - 1.0)) * agg_value * agg_value
-                                )
-                    else:
-                        agg_value = response["aggregations"][
-                            f"{es_agg}_{field.es_field_name}"
-                        ]["value"]
-
-                    # Null usually means there were no results.
-                    if agg_value is None or np.isnan(agg_value):
-                        if is_dataframe_agg and not numeric_only:
-                            agg_value = np.NaN
-                        elif not is_dataframe_agg and numeric_only is False:
+                        # All of the below calculations result in NaN if count<=1
+                        if count <= 1:
                             agg_value = np.NaN
 
-                    # Cardinality is always either NaN or integer.
-                    elif pd_agg == "nunique":
-                        agg_value = int(agg_value)
+                        elif es_agg[1] == "std_deviation":
+                            agg_value *= count / (count - 1.0)
 
-                    # If this is a non-null timestamp field convert to a pd.Timestamp()
-                    elif field.is_timestamp:
-                        agg_value = elasticsearch_date_to_pandas_date(
-                            agg_value, field.es_date_format
-                        )
-                    # If numeric_only is False | None then maintain column datatype
-                    elif not numeric_only:
-                        # we're only converting to bool for lossless aggs like min, max, and median.
-                        if pd_agg in {"max", "min", "median", "sum"}:
-                            # 'sum' isn't representable with bool, use int64
-                            if pd_agg == "sum" and field.is_bool:
-                                agg_value = np.int64(agg_value)
-                            else:
-                                agg_value = field.np_dtype.type(agg_value)
+                        else:  # es_agg[1] == "variance"
+                            # sample_std=\sqrt{\frac{1}{N-1}\sum_{i=1}^N(x_i-\bar{x})^2}
+                            # population_std=\sqrt{\frac{1}{N}\sum_{i=1}^N(x_i-\bar{x})^2}
+                            # sample_std=\sqrt{\frac{N}{N-1}population_std}
+                            agg_value = np.sqrt(
+                                (count / (count - 1.0)) * agg_value * agg_value
+                            )
+                else:
+                    agg_value = response["aggregations"][
+                        f"{es_agg}_{field.es_field_name}"
+                    ]["value"]
 
-                    values.append(agg_value)
+                # Null usually means there were no results.
+                if agg_value is None or np.isnan(agg_value):
+                    if is_dataframe_agg and not numeric_only:
+                        agg_value = np.NaN
+                    elif not is_dataframe_agg and numeric_only is False:
+                        agg_value = np.NaN
+
+                # Cardinality is always either NaN or integer.
+                elif pd_agg == "nunique":
+                    agg_value = int(agg_value)
+
+                # If this is a non-null timestamp field convert to a pd.Timestamp()
+                elif field.is_timestamp:
+                    agg_value = elasticsearch_date_to_pandas_date(
+                        agg_value, field.es_date_format
+                    )
+                # If numeric_only is False | None then maintain column datatype
+                elif not numeric_only:
+                    # we're only converting to bool for lossless aggs like min, max, and median.
+                    if pd_agg in {"max", "min", "median", "sum"}:
+                        # 'sum' isn't representable with bool, use int64
+                        if pd_agg == "sum" and field.is_bool:
+                            agg_value = np.int64(agg_value)
+                        else:
+                            agg_value = field.np_dtype.type(agg_value)
+
+                values.append(agg_value)
+
             # If numeric_only is True and We only have a NaN type field then we check for empty.
             if values:
                 results[field.index] = values if len(values) > 1 else values[0]
@@ -565,7 +577,9 @@ class Operations:
             is_agg=is_agg,
             numeric_only=numeric_only,
         )
+
         agg_df = pd.DataFrame(results, columns=results.keys()).set_index(by)
+
         if is_agg:
             # Convert header columns to MultiIndex
             agg_df.columns = pd.MultiIndex.from_product([headers, pd_aggs])
@@ -628,7 +642,7 @@ class Operations:
 
         # Construct Query
         for b in by:
-            # groupby fields will be termed aggregations
+            # groupby fields will be term aggregations
             body.term_aggs(f"groupby_{b.index}", b.index)
 
         for field in fields:
@@ -673,7 +687,7 @@ class Operations:
             Returns
             -------
                 A generator which initially yields the bucket
-                If after_value if found use it to fetch the next set of buckets.
+                If after_key is found, use it to fetch the next set of buckets.
 
             """
             while True:
@@ -684,10 +698,13 @@ class Operations:
                 )
                 # Pagination Logic
                 if "after_key" in res["aggregations"]["groupby_buckets"]:
+
                     # yield the bucket which contains the result
                     yield res["aggregations"]["groupby_buckets"]["buckets"]
-                    body.composite_agg(
-                        after_key=res["aggregations"]["groupby_buckets"]["after_key"]
+
+                    body.composite_agg_after_key(
+                        name="groupby_buckets",
+                        after_key=res["aggregations"]["groupby_buckets"]["after_key"],
                     )
                 else:
                     return res["aggregations"]["groupby_buckets"]["buckets"]
@@ -697,13 +714,7 @@ class Operations:
             for bucket in buckets:
                 # groupby columns are added to result same way they are returned
                 for b in by:
-                    agg_value = bucket["key"][f"groupby_{b.index}"]
-                    # Convert to timestamp
-                    if b.is_timestamp:
-                        agg_value = elasticsearch_date_to_pandas_date(
-                            agg_value, b.es_date_format
-                        )
-                    response[b.index].append(agg_value)
+                    response[b.index].append(bucket["key"][f"groupby_{b.index}"])
 
                 agg_calculation = self._calculate_single_agg(
                     fields=fields,

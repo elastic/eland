@@ -140,14 +140,6 @@ class GroupByDataFrame(GroupBy):
 
     """
 
-    def __init__(
-        self,
-        by: Union[str, List[str], None] = None,
-        query_compiler: Optional["QueryCompiler"] = None,
-        dropna: bool = True,
-    ) -> None:
-        super().__init__(by=by, query_compiler=query_compiler, dropna=dropna)
-
     def aggregate(self, func: Union[str, List[str]], numeric_only: bool = False):
         """
         Used to groupby and aggregate
@@ -160,17 +152,19 @@ class GroupByDataFrame(GroupBy):
             Accepted combinations are:
             - function
             - list of functions
-            TODO Implement other functions present in pandas groupby
+            TODO Implement other combinations present in pandas groupby
         numeric_only: {True, False, None} Default is None
             Which datatype to be returned
             - True: returns all values with float64, NaN/NaT are ignored.
             - False: returns all values with float64.
             - None: returns all values with default datatype.
         """
+        if isinstance(func, str):
+            func = [func]
         # numeric_only is by default False because pandas does the same
         return self._query_compiler.groupby(
             by=self._by,
-            pd_aggs=([func] if isinstance(func, str) else func),
+            pd_aggs=func,
             dropna=self._dropna,
             numeric_only=numeric_only,
             is_agg=True,

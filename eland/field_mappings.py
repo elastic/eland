@@ -37,7 +37,6 @@ from typing import (
     TYPE_CHECKING,
     List,
     Set,
-    Union,
 )
 
 if TYPE_CHECKING:
@@ -728,7 +727,8 @@ class FieldMappings:
             a Tuple consisting of a list of field mappings for groupby and non-groupby fields
 
         """
-        groupby_fields: Union[List[Field], List[None]] = [None] * len(by)
+        groupby_fields: Dict[str, Field] = {}
+        # groupby_fields: Union[List[Field], List[None]] = [None] * len(by)
         aggregatable_fields: List[Field] = []
         for index_name, row in self._mappings_capabilities.iterrows():
             row = row.to_dict()
@@ -736,10 +736,10 @@ class FieldMappings:
             if index_name not in by:
                 aggregatable_fields.append(Field(**row))
             else:
-                # Maintain groupby order as given input
-                groupby_fields[by.index(index_name)] = Field(**row)
+                groupby_fields[index_name] = Field(**row)
 
-        return groupby_fields, aggregatable_fields
+        # Maintain groupby order as given input
+        return [groupby_fields[column] for column in by], aggregatable_fields
 
     def metric_source_fields(self, include_bool=False, include_timestamp=False):
         """

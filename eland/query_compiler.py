@@ -17,7 +17,7 @@
 
 import copy
 from datetime import datetime
-from typing import Optional, Sequence, TYPE_CHECKING, List
+from typing import Dict, Optional, Sequence, TYPE_CHECKING, List, Union
 
 import numpy as np
 import pandas as pd
@@ -553,7 +553,7 @@ class QueryCompiler:
     def groupby(
         self,
         by: Union[str, List[str], Dict[str, str]],
-        pd_aggs: List[str] = [],
+        pd_aggs: List[str],
         dropna: bool = True,
         is_agg: bool = False,
         numeric_only: bool = True,
