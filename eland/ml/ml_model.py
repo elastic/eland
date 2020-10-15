@@ -15,14 +15,17 @@
 #  specific language governing permissions and limitations
 #  under the License.
 
-from typing import List, Union, cast, Optional, Dict, TYPE_CHECKING, Any, Tuple
 import warnings
-import numpy as np  # type: ignore
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union, cast
+
 import elasticsearch  # type: ignore
-from .common import TYPE_REGRESSION, TYPE_CLASSIFICATION
-from .transformers import get_model_transformer
+import numpy as np  # type: ignore
+
 from eland.common import ensure_es_client, es_version
 from eland.utils import deprecated_api
+
+from .common import TYPE_CLASSIFICATION, TYPE_REGRESSION
+from .transformers import get_model_transformer
 
 if TYPE_CHECKING:
     from elasticsearch import Elasticsearch  # noqa: F401
@@ -30,16 +33,22 @@ if TYPE_CHECKING:
     # Try importing each ML lib separately so mypy users don't have to
     # have both installed to use type-checking.
     try:
-        from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor  # type: ignore # noqa: F401
-        from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor  # type: ignore # noqa: F401
+        from sklearn.ensemble import (  # type: ignore # noqa: F401
+            RandomForestClassifier,
+            RandomForestRegressor,
+        )
+        from sklearn.tree import (  # type: ignore # noqa: F401
+            DecisionTreeClassifier,
+            DecisionTreeRegressor,
+        )
     except ImportError:
         pass
     try:
-        from xgboost import XGBRegressor, XGBClassifier  # type: ignore # noqa: F401
+        from xgboost import XGBClassifier, XGBRegressor  # type: ignore # noqa: F401
     except ImportError:
         pass
     try:
-        from lightgbm import LGBMRegressor, LGBMClassifier  # type: ignore # noqa: F401
+        from lightgbm import LGBMClassifier, LGBMRegressor  # type: ignore # noqa: F401
     except ImportError:
         pass
 

@@ -18,9 +18,9 @@
 import os
 import subprocess
 from pathlib import Path
-import nox
-import elasticsearch
 
+import elasticsearch
+import nox
 
 BASE_DIR = Path(__file__).parent
 SOURCE_FILES = (
@@ -57,18 +57,20 @@ TYPED_FILES = (
 
 
 @nox.session(reuse_venv=True)
-def blacken(session):
-    session.install("black")
+def format(session):
+    session.install("black", "isort")
     session.run("python", "utils/license-headers.py", "fix", *SOURCE_FILES)
     session.run("black", "--target-version=py36", *SOURCE_FILES)
+    session.run("isort", *SOURCE_FILES)
     lint(session)
 
 
 @nox.session(reuse_venv=True)
 def lint(session):
-    session.install("black", "flake8", "mypy")
+    session.install("black", "flake8", "mypy", "isort")
     session.run("python", "utils/license-headers.py", "check", *SOURCE_FILES)
     session.run("black", "--check", "--target-version=py36", *SOURCE_FILES)
+    session.run("isort", "--check", *SOURCE_FILES)
     session.run("flake8", "--ignore=E501,W503,E402,E712,E203", *SOURCE_FILES)
 
     # TODO: When all files are typed we can change this to .run("mypy", "--strict", "eland/")

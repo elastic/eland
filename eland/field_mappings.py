@@ -16,31 +16,32 @@
 #  under the License.
 
 import warnings
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    List,
+    Mapping,
+    NamedTuple,
+    Optional,
+    Set,
+    Tuple,
+)
 
 import numpy as np
 import pandas as pd
 from pandas.core.dtypes.common import (
-    is_float_dtype,
     is_bool_dtype,
-    is_integer_dtype,
     is_datetime_or_timedelta_dtype,
+    is_float_dtype,
+    is_integer_dtype,
     is_string_dtype,
 )
 from pandas.core.dtypes.inference import is_list_like
-from typing import (
-    NamedTuple,
-    Optional,
-    Mapping,
-    Dict,
-    Any,
-    Tuple,
-    TYPE_CHECKING,
-    List,
-    Set,
-)
 
 if TYPE_CHECKING:
     from elasticsearch import Elasticsearch
+
     from eland import DataFrame
 
 

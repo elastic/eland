@@ -16,10 +16,12 @@
 #  under the License.
 
 from datetime import datetime, timedelta
-import pytest
+
 import pandas as pd
+import pytest
 from elasticsearch.helpers import BulkIndexError
-from eland import pandas_to_eland, DataFrame
+
+from eland import DataFrame, pandas_to_eland
 from eland.tests.common import (
     ES_TEST_CLIENT,
     assert_frame_equal,

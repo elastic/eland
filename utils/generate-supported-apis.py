@@ -17,12 +17,13 @@
 
 """Script that is used to create the compatibility matrix in the documentation"""
 
-import re
-import eland
-import pandas
 import inspect
+import re
 from pathlib import Path
 
+import pandas
+
+import eland
 
 api_docs_dir = Path(__file__).absolute().parent.parent / "docs/source/reference/api"
 is_supported = []

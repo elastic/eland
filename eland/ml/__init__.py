@@ -15,7 +15,7 @@
 #  specific language governing permissions and limitations
 #  under the License.
 
-from eland.ml.ml_model import MLModel, ImportedMLModel
+from eland.ml.ml_model import ImportedMLModel, MLModel
 
 __all__ = [
     "MLModel",

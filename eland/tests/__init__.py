@@ -19,6 +19,7 @@ import os
 
 import pandas as pd
 from elasticsearch import Elasticsearch
+
 from eland.common import es_version
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))

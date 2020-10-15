@@ -17,8 +17,8 @@
 
 import inspect
 from typing import Any, Dict, Type
-from .base import ModelTransformer
 
+from .base import ModelTransformer
 
 __all__ = ["get_model_transformer"]
 _MODEL_TRANSFORMERS: Dict[type, Type[ModelTransformer]] = {}
@@ -42,13 +42,13 @@ def get_model_transformer(model: Any, **kwargs: Any) -> ModelTransformer:
 
 
 try:
+    from .sklearn import _MODEL_TRANSFORMERS as _SKLEARN_MODEL_TRANSFORMERS
     from .sklearn import (
         SKLearnDecisionTreeTransformer,
         SKLearnForestClassifierTransformer,
         SKLearnForestRegressorTransformer,
         SKLearnForestTransformer,
         SKLearnTransformer,
-        _MODEL_TRANSFORMERS as _SKLEARN_MODEL_TRANSFORMERS,
     )
 
     __all__ += [
@@ -63,13 +63,13 @@ except ImportError:
     pass
 
 try:
+    from .xgboost import _MODEL_TRANSFORMERS as _XGBOOST_MODEL_TRANSFORMERS
     from .xgboost import (
-        XGBoostClassifierTransformer,
         XGBClassifier,
+        XGBoostClassifierTransformer,
         XGBoostForestTransformer,
         XGBoostRegressorTransformer,
         XGBRegressor,
-        _MODEL_TRANSFORMERS as _XGBOOST_MODEL_TRANSFORMERS,
     )
 
     __all__ += [
@@ -84,13 +84,13 @@ except ImportError:
     pass
 
 try:
+    from .lightgbm import _MODEL_TRANSFORMERS as _LIGHTGBM_MODEL_TRANSFORMERS
     from .lightgbm import (
-        LGBMRegressor,
         LGBMClassifier,
-        LGBMForestTransformer,
-        LGBMRegressorTransformer,
         LGBMClassifierTransformer,
-        _MODEL_TRANSFORMERS as _LIGHTGBM_MODEL_TRANSFORMERS,
+        LGBMForestTransformer,
+        LGBMRegressor,
+        LGBMRegressorTransformer,
     )
 
     __all__ += [

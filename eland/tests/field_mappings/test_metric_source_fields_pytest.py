@@ -20,7 +20,7 @@
 import numpy as np
 
 from eland.field_mappings import FieldMappings
-from eland.tests import ES_TEST_CLIENT, ECOMMERCE_INDEX_NAME, FLIGHTS_INDEX_NAME
+from eland.tests import ECOMMERCE_INDEX_NAME, ES_TEST_CLIENT, FLIGHTS_INDEX_NAME
 from eland.tests.common import TestData
 
 

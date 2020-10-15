@@ -15,7 +15,8 @@
 #  specific language governing permissions and limitations
 #  under the License.
 
-from typing import Optional, TextIO, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional, TextIO
+
 from eland.utils import deprecated_api
 
 if TYPE_CHECKING:

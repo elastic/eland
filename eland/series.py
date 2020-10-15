@@ -35,33 +35,34 @@ import sys
 import warnings
 from collections.abc import Collection
 from io import StringIO
-from typing import Optional, Union, Sequence, Any, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import pandas as pd
 from pandas.io.common import _expand_user, stringify_path
 
 import eland.plotting
-from eland import NDFrame
-from eland.arithmetics import ArithmeticSeries, ArithmeticString, ArithmeticNumber
+from eland.arithmetics import ArithmeticNumber, ArithmeticSeries, ArithmeticString
 from eland.common import DEFAULT_NUM_ROWS_DISPLAYED, docstring_parameter
 from eland.filter import (
     BooleanFilter,
-    NotFilter,
     Equal,
     Greater,
-    Less,
     GreaterEqual,
-    LessEqual,
-    ScriptFilter,
     IsIn,
     IsNull,
+    Less,
+    LessEqual,
+    NotFilter,
     NotNull,
+    ScriptFilter,
 )
+from eland.ndframe import NDFrame
 from eland.utils import deprecated_api, to_list
 
 if TYPE_CHECKING:  # type: ignore
     from elasticsearch import Elasticsearch  # noqa: F401
+
     from eland.query_compiler import QueryCompiler  # noqa: F401
 
 

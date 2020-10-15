@@ -19,8 +19,7 @@
 from datetime import datetime
 
 from eland.field_mappings import FieldMappings
-from eland.tests.common import ES_TEST_CLIENT
-from eland.tests.common import TestData
+from eland.tests.common import ES_TEST_CLIENT, TestData
 
 
 class TestDateTime(TestData):

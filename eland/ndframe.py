@@ -17,10 +17,11 @@
 
 import sys
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Tuple, Optional
-import pandas as pd
-from eland.query_compiler import QueryCompiler
+from typing import TYPE_CHECKING, Optional, Tuple
 
+import pandas as pd
+
+from eland.query_compiler import QueryCompiler
 
 if TYPE_CHECKING:
     from eland.index import Index

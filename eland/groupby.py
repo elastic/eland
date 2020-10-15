@@ -15,7 +15,8 @@
 #  specific language governing permissions and limitations
 #  under the License.
 
-from typing import List, TYPE_CHECKING
+from typing import TYPE_CHECKING, List
+
 from eland.query_compiler import QueryCompiler
 
 if TYPE_CHECKING:

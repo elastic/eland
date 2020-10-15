@@ -17,49 +17,49 @@
 
 import copy
 import warnings
+from collections import defaultdict
 from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
     Generator,
+    List,
     Optional,
     Sequence,
     Tuple,
-    List,
-    Dict,
-    Any,
-    TYPE_CHECKING,
     Union,
 )
 
 import numpy as np
 import pandas as pd
-from collections import defaultdict
 from elasticsearch.helpers import scan
 
-from eland.index import Index
+from eland.actions import PostProcessingAction, SortFieldAction
 from eland.common import (
-    SortOrder,
     DEFAULT_CSV_BATCH_OUTPUT_SIZE,
     DEFAULT_ES_MAX_RESULT_WINDOW,
-    elasticsearch_date_to_pandas_date,
-    build_pd_series,
     DEFAULT_PAGINATION_SIZE,
+    SortOrder,
+    build_pd_series,
+    elasticsearch_date_to_pandas_date,
 )
+from eland.index import Index
 from eland.query import Query
-from eland.actions import PostProcessingAction, SortFieldAction
 from eland.tasks import (
-    HeadTask,
     RESOLVED_TASK_TYPE,
-    TailTask,
-    SampleTask,
-    BooleanFilterTask,
     ArithmeticOpFieldsTask,
-    QueryTermsTask,
+    BooleanFilterTask,
+    HeadTask,
     QueryIdsTask,
+    QueryTermsTask,
+    SampleTask,
     SizeTask,
+    TailTask,
 )
 
 if TYPE_CHECKING:
-    from eland.query_compiler import QueryCompiler
     from eland.field_mappings import Field
+    from eland.query_compiler import QueryCompiler
 
 
 class QueryParams:

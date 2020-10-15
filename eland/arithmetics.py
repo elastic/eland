@@ -17,7 +17,7 @@
 
 from abc import ABC, abstractmethod
 from io import StringIO
-from typing import Union, List, TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, List, Union
 
 import numpy as np  # type: ignore
 

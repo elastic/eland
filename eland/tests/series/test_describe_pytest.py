@@ -16,6 +16,7 @@
 #  under the License.
 
 import pandas as pd
+
 from eland.tests.common import TestData, assert_series_equal
 
 

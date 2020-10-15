@@ -15,7 +15,8 @@
 #  specific language governing permissions and limitations
 #  under the License.
 
-from typing import Sequence, Optional, Any
+from typing import Any, Optional, Sequence
+
 from .._model_serializer import ModelSerializer
 
 

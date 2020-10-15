@@ -26,12 +26,12 @@ ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Create pandas and eland data frames
 from eland.tests import (
+    ECOMMERCE_DF_FILE_NAME,
+    ECOMMERCE_INDEX_NAME,
     ES_TEST_CLIENT,
     FLIGHTS_DF_FILE_NAME,
     FLIGHTS_INDEX_NAME,
     FLIGHTS_SMALL_INDEX_NAME,
-    ECOMMERCE_DF_FILE_NAME,
-    ECOMMERCE_INDEX_NAME,
 )
 
 _pd_flights = pd.read_json(FLIGHTS_DF_FILE_NAME).sort_index()

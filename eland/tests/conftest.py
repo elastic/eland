@@ -16,22 +16,25 @@
 #  under the License.
 
 import inspect
-import pytest
+
 import pandas as pd
+import pytest
+
+import eland as ed
+
 from .common import (
+    TestData,
+    _ed_ecommerce,
+    _ed_flights,
+    _ed_flights_small,
+    _pd_ecommerce,
+    _pd_flights,
+    _pd_flights_small,
+    assert_frame_equal,
     assert_pandas_eland_frame_equal,
     assert_pandas_eland_series_equal,
-    assert_frame_equal,
     assert_series_equal,
-    _ed_flights,
-    _pd_flights,
-    _ed_ecommerce,
-    _pd_ecommerce,
-    _ed_flights_small,
-    _pd_flights_small,
-    TestData,
 )
-import eland as ed
 
 
 class SymmetricAPIChecker:

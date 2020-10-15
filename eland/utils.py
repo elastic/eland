@@ -15,13 +15,13 @@
 #  specific language governing permissions and limitations
 #  under the License.
 
-import re
 import functools
+import re
 import warnings
-from typing import Callable, TypeVar, Any, Union, List, cast, Collection, Iterable
 from collections.abc import Collection as ABCCollection
-import pandas as pd  # type: ignore
+from typing import Any, Callable, Collection, Iterable, List, TypeVar, Union, cast
 
+import pandas as pd  # type: ignore
 
 RT = TypeVar("RT")
 

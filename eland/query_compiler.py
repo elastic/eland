@@ -17,20 +17,20 @@
 
 import copy
 from datetime import datetime
-from typing import Optional, Sequence, TYPE_CHECKING, List
+from typing import TYPE_CHECKING, List, Optional, Sequence
 
 import numpy as np  # type: ignore
 import pandas as pd  # type: ignore
 
-from eland.field_mappings import FieldMappings
-from eland.filter import QueryFilter
-from eland.operations import Operations
-from eland.index import Index
 from eland.common import (
-    ensure_es_client,
     DEFAULT_PROGRESS_REPORTING_NUM_ROWS,
     elasticsearch_date_to_pandas_date,
+    ensure_es_client,
 )
+from eland.field_mappings import FieldMappings
+from eland.filter import QueryFilter
+from eland.index import Index
+from eland.operations import Operations
 
 if TYPE_CHECKING:
     from .tasks import ArithmeticOpFieldsTask  # noqa: F401

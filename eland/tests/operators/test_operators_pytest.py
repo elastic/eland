@@ -16,18 +16,18 @@
 #  under the License.
 
 from eland.filter import (
+    Equal,
     Greater,
     GreaterEqual,
-    Less,
-    LessEqual,
-    Equal,
     IsIn,
     IsNull,
+    Less,
+    LessEqual,
     Like,
-    Rlike,
-    Startswith,
     NotNull,
+    Rlike,
     ScriptFilter,
+    Startswith,
 )
 
 

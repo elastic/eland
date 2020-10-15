@@ -18,8 +18,7 @@
 # File called _pytest for PyCharm compatability
 
 import eland as ed
-from eland.tests.common import ES_TEST_CLIENT
-from eland.tests.common import TestData
+from eland.tests.common import ES_TEST_CLIENT, TestData
 
 
 class TestDataFrameBigMapping(TestData):

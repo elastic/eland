@@ -15,10 +15,12 @@
 #  specific language governing permissions and limitations
 #  under the License.
 
+import warnings
+
 import numpy as np
 import pandas as pd
-import warnings
-from eland.common import build_pd_series, EMPTY_SERIES_DTYPE
+
+from eland.common import EMPTY_SERIES_DTYPE, build_pd_series
 from eland.tests.common import assert_series_equal
 
 

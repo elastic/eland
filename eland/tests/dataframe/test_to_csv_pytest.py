@@ -24,10 +24,8 @@ import pandas as pd
 from pandas.testing import assert_frame_equal
 
 import eland as ed
-from eland.tests import ES_TEST_CLIENT
-from eland.tests import FLIGHTS_INDEX_NAME
-from eland.tests.common import ROOT_DIR
-from eland.tests.common import TestData
+from eland.tests import ES_TEST_CLIENT, FLIGHTS_INDEX_NAME
+from eland.tests.common import ROOT_DIR, TestData
 
 
 class TestDataFrameToCSV(TestData):
