@@ -704,7 +704,8 @@ class FieldMappings:
 
         Returns
         -------
-            a list of Field Mappings
+        A list of Field Mappings
+
         """
         source_fields: List[Field] = []
         for index, row in self._mappings_capabilities.iterrows():
@@ -720,11 +721,11 @@ class FieldMappings:
         Parameters
         ----------
         by:
-            a list of groupby fields
+            A list of groupby fields
 
         Returns
         -------
-            a Tuple consisting of a list of field mappings for groupby and non-groupby fields
+        A Tuple consisting of a list of field mappings for groupby and non-groupby fields
 
         """
         groupby_fields: Dict[str, Field] = {}

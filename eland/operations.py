@@ -540,7 +540,7 @@ class Operations:
     def groupby(
         self,
         query_compiler: "QueryCompiler",
-        by: Union[str, List[str]],
+        by: List[str],
         pd_aggs: List[str],
         dropna: bool = True,
         is_agg: bool = False,
@@ -561,7 +561,7 @@ class Operations:
             Drop None values if True.
             TODO Not yet implemented
         is_agg:
-            Know if groupby aggregation or single agg is called.
+            Know if groupby with aggregation or single agg is called.
         numeric_only:
             return either numeric values or NaN/NaT
 
@@ -589,7 +589,7 @@ class Operations:
     def _groupby_aggs(
         self,
         query_compiler: "QueryCompiler",
-        by: Union[str, List[str]],
+        by: List[str],
         pd_aggs: List[str],
         dropna: bool = True,
         is_agg: bool = False,
@@ -616,8 +616,8 @@ class Operations:
 
         Returns
         -------
-            headers: columns on which MultiIndex has to be applied
-            response: dictionary of groupby aggregated values
+        headers: columns on which MultiIndex has to be applied
+        response: dictionary of groupby aggregated values
         """
         query_params, post_processing = self._resolve_tasks(query_compiler)
 
@@ -686,8 +686,8 @@ class Operations:
             }
             Returns
             -------
-                A generator which initially yields the bucket
-                If after_key is found, use it to fetch the next set of buckets.
+            A generator which initially yields the bucket
+            If after_key is found, use it to fetch the next set of buckets.
 
             """
             while True:

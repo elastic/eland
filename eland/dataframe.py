@@ -19,7 +19,7 @@ import sys
 import warnings
 from io import StringIO
 import re
-from typing import Dict, List, Optional, Sequence, Union, Tuple
+from typing import List, Optional, Sequence, Union, Tuple
 
 import numpy as np
 import pandas as pd
@@ -1432,23 +1432,35 @@ class DataFrame(NDFrame):
     hist = gfx.ed_hist_frame
 
     def groupby(
-        self, by: Union[List[str], Dict[str, str], None] = None, dropna: bool = True
+        self, by: Optional[Union[str, List[str]]] = None, dropna: bool = True
     ) -> "GroupByDataFrame":
         """
         Used to perform groupby operations
 
         Parameters
         ----------
-        by: List[str]
+        by:
+            column or list of columns used to groupby
+            Currently accepts column or list of columns
+            TODO Implement other combinations of by similar to pandas
 
+        dropna: default True
+            If True, and if group keys contain NA values, NA values together with row/column will be dropped.
+            TODO Implement False
+
+        TODO Implement remainder of pandas arguments
         Returns
         -------
         GroupByDataFrame
 
+        See Also
+        --------
+        :pandas_api_docs:`pandas.DataFrame.groupby`
+
         Examples
         --------
         >>> ed_flights = ed.DataFrame('localhost', 'flights', columns=["AvgTicketPrice", "Cancelled", "dayOfWeek", "timestamp", "DestCountry"])
-        >>> ed_flights.groupby(["DestCountry", "Cancelled"]).agg(["min", "max"], True)
+        >>> ed_flights.groupby(["DestCountry", "Cancelled"]).agg(["min", "max"], numeric_only=True) # doctest: +NORMALIZE_WHITESPACE
                               AvgTicketPrice              dayOfWeek
                                          min          max       min  max
         DestCountry Cancelled
@@ -1465,7 +1477,7 @@ class DataFrame(NDFrame):
                     True          121.280296  1175.709961       0.0  6.0
         <BLANKLINE>
         [63 rows x 4 columns]
-        >>> ed_flights.groupby(["DestCountry", "Cancelled"]).mean(True)
+        >>> ed_flights.groupby(["DestCountry", "Cancelled"]).mean(numeric_only=True) # doctest: +NORMALIZE_WHITESPACE
                                AvgTicketPrice  dayOfWeek
         DestCountry Cancelled
         AE          False          643.956793   2.717949
@@ -1485,12 +1497,13 @@ class DataFrame(NDFrame):
         if by is None:
             raise TypeError("by parameter should be specified to groupby")
         if isinstance(by, str):
-            if by not in self._query_compiler.columns:
-                raise KeyError(f"Requested column [{by}] is not in the DataFrame.")
             by = [by]
         if isinstance(by, (list, tuple)):
-            if set(by) - set(self._query_compiler.columns):
-                raise KeyError("Requested columns not in the DataFrame.")
+            remaining_columns = set(by) - set(self._query_compiler.columns)
+            if remaining_columns:
+                raise KeyError(
+                    f"Requested columns {remaining_columns} not in the DataFrame."
+                )
 
         return GroupByDataFrame(
             by=by, query_compiler=self._query_compiler, dropna=dropna

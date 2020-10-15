@@ -15,12 +15,14 @@
 #  specific language governing permissions and limitations
 #  under the License.
 
-from abc import ABC
-from typing import List, Optional, Union
+from typing import List, TYPE_CHECKING
 from eland.query_compiler import QueryCompiler
 
+if TYPE_CHECKING:
+    import pandas as pd  # type: ignore
 
-class GroupBy(ABC):
+
+class GroupBy:
     """
     This holds all the groupby base methods
 
@@ -32,20 +34,21 @@ class GroupBy(ABC):
         Query compiler object
     dropna:
         default is true, drop None/NaT/NaN values while grouping
+
     """
 
     def __init__(
         self,
-        by: Union[str, List[str], None] = None,
-        query_compiler: Optional["QueryCompiler"] = None,
+        by: List[str],
+        query_compiler: "QueryCompiler",
         dropna: bool = True,
     ) -> None:
         self._query_compiler: "QueryCompiler" = QueryCompiler(to_copy=query_compiler)
         self._dropna: bool = dropna
-        self._by: Union[str, List[str]] = by
+        self._by: List[str] = by
 
-    def mean(self, numeric_only: bool = True):
-        # numeric_only=True becuase pandas does the same
+    # numeric_only=True by default for all aggs because pandas does the same
+    def mean(self, numeric_only: bool = True) -> "pd.DataFrame":
         return self._query_compiler.groupby(
             by=self._by,
             pd_aggs=["mean"],
@@ -53,8 +56,7 @@ class GroupBy(ABC):
             numeric_only=numeric_only,
         )
 
-    def var(self, numeric_only: bool = True):
-        # numeric_only=True becuase pandas does the same
+    def var(self, numeric_only: bool = True) -> "pd.DataFrame":
         return self._query_compiler.groupby(
             by=self._by,
             pd_aggs=["var"],
@@ -62,8 +64,7 @@ class GroupBy(ABC):
             numeric_only=numeric_only,
         )
 
-    def std(self, numeric_only: bool = True):
-        # numeric_only=True becuase pandas does the same
+    def std(self, numeric_only: bool = True) -> "pd.DataFrame":
         return self._query_compiler.groupby(
             by=self._by,
             pd_aggs=["std"],
@@ -71,8 +72,7 @@ class GroupBy(ABC):
             numeric_only=numeric_only,
         )
 
-    def mad(self, numeric_only: bool = True):
-        # numeric_only=True becuase pandas does the same
+    def mad(self, numeric_only: bool = True) -> "pd.DataFrame":
         return self._query_compiler.groupby(
             by=self._by,
             pd_aggs=["mad"],
@@ -80,8 +80,7 @@ class GroupBy(ABC):
             numeric_only=numeric_only,
         )
 
-    def median(self, numeric_only: bool = True):
-        # numeric_only=True becuase pandas does the same
+    def median(self, numeric_only: bool = True) -> "pd.DataFrame":
         return self._query_compiler.groupby(
             by=self._by,
             pd_aggs=["median"],
@@ -89,8 +88,7 @@ class GroupBy(ABC):
             numeric_only=numeric_only,
         )
 
-    def sum(self, numeric_only: bool = True):
-        # numeric_only=True becuase pandas does the same
+    def sum(self, numeric_only: bool = True) -> "pd.DataFrame":
         return self._query_compiler.groupby(
             by=self._by,
             pd_aggs=["sum"],
@@ -98,8 +96,7 @@ class GroupBy(ABC):
             numeric_only=numeric_only,
         )
 
-    def min(self, numeric_only: bool = True):
-        # numeric_only=True becuase pandas does the same
+    def min(self, numeric_only: bool = True) -> "pd.DataFrame":
         return self._query_compiler.groupby(
             by=self._by,
             pd_aggs=["min"],
@@ -107,8 +104,7 @@ class GroupBy(ABC):
             numeric_only=numeric_only,
         )
 
-    def max(self, numeric_only: bool = True):
-        # numeric_only=True becuase pandas does the same
+    def max(self, numeric_only: bool = True) -> "pd.DataFrame":
         return self._query_compiler.groupby(
             by=self._by,
             pd_aggs=["max"],
@@ -116,7 +112,7 @@ class GroupBy(ABC):
             numeric_only=numeric_only,
         )
 
-    def nunique(self):
+    def nunique(self) -> "pd.DataFrame":
         return self._query_compiler.groupby(
             by=self._by,
             pd_aggs=["nunique"],
@@ -140,7 +136,7 @@ class GroupByDataFrame(GroupBy):
 
     """
 
-    def aggregate(self, func: Union[str, List[str]], numeric_only: bool = False):
+    def aggregate(self, func: List[str], numeric_only: bool = False) -> "pd.DataFrame":
         """
         Used to groupby and aggregate
 
@@ -152,7 +148,7 @@ class GroupByDataFrame(GroupBy):
             Accepted combinations are:
             - function
             - list of functions
-            TODO Implement other combinations present in pandas groupby
+
         numeric_only: {True, False, None} Default is None
             Which datatype to be returned
             - True: returns all values with float64, NaN/NaT are ignored.

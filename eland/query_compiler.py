@@ -17,10 +17,10 @@
 
 import copy
 from datetime import datetime
-from typing import Dict, Optional, Sequence, TYPE_CHECKING, List, Union
+from typing import Optional, Sequence, TYPE_CHECKING, List
 
-import numpy as np
-import pandas as pd
+import numpy as np  # type: ignore
+import pandas as pd  # type: ignore
 
 from eland.field_mappings import FieldMappings
 from eland.filter import QueryFilter
@@ -72,7 +72,7 @@ class QueryCompiler:
         display_names=None,
         index_field=None,
         to_copy=None,
-    ):
+    ) -> None:
         # Implement copy as we don't deep copy the client
         if to_copy is not None:
             self._client = to_copy._client
@@ -552,7 +552,7 @@ class QueryCompiler:
 
     def groupby(
         self,
-        by: Union[str, List[str], Dict[str, str]],
+        by: List[str],
         pd_aggs: List[str],
         dropna: bool = True,
         is_agg: bool = False,
