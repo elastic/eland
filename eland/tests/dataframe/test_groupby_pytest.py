@@ -25,13 +25,10 @@ import pandas as pd
 
 class TestGroupbyDataFrame(TestData):
     funcs = ["max", "min", "mean", "sum"]
-    extended_funcs = ["median", "mad", "var", "std"]
     filter_data = [
         "AvgTicketPrice",
         "Cancelled",
         "dayOfWeek",
-        "timestamp",
-        "DestCountry",
     ]
 
     @pytest.mark.parametrize("numeric_only", [True])
@@ -41,14 +38,29 @@ class TestGroupbyDataFrame(TestData):
         pd_flights = self.pd_flights().filter(self.filter_data)
         ed_flights = self.ed_flights().filter(self.filter_data)
 
-        pd_groupby = pd_flights.groupby("Cancelled").agg(self.funcs, numeric_only)
-        ed_groupby = ed_flights.groupby("Cancelled").agg(self.funcs, numeric_only)
+        pd_groupby = pd_flights.groupby("Cancelled").agg(
+            self.funcs, numeric_only=numeric_only
+        )
+        ed_groupby = ed_flights.groupby("Cancelled").agg(
+            self.funcs, numeric_only=numeric_only
+        )
+
+        # checking only values because dtypes are checked in aggs tests
+        assert_frame_equal(pd_groupby, ed_groupby, check_exact=False, check_dtype=False)
+
+    @pytest.mark.parametrize("pd_agg", funcs)
+    def test_groupby_aggregate_single_aggs(self, pd_agg):
+        pd_flights = self.pd_flights().filter(self.filter_data)
+        ed_flights = self.ed_flights().filter(self.filter_data)
+
+        pd_groupby = pd_flights.groupby("Cancelled").agg([pd_agg], numeric_only=True)
+        ed_groupby = ed_flights.groupby("Cancelled").agg([pd_agg], numeric_only=True)
 
         # checking only values because dtypes are checked in aggs tests
         assert_frame_equal(pd_groupby, ed_groupby, check_exact=False, check_dtype=False)
 
     @pytest.mark.parametrize("pd_agg", ["max", "min", "mean", "sum", "median"])
-    def test_groupby_aggs_true(self, pd_agg):
+    def test_groupby_aggs_numeric_only_true(self, pd_agg):
         # Pandas has numeric_only  applicable for the above aggs with groupby only.
 
         pd_flights = self.pd_flights().filter(self.filter_data)
@@ -59,7 +71,7 @@ class TestGroupbyDataFrame(TestData):
 
         # checking only values because dtypes are checked in aggs tests
         assert_frame_equal(
-            pd_groupby, ed_groupby, check_exact=False, check_dtype=False, rtol=4
+            pd_groupby, ed_groupby, check_exact=False, check_dtype=False, rtol=2
         )
 
     @pytest.mark.parametrize("pd_agg", ["mad", "var", "std"])
@@ -90,9 +102,9 @@ class TestGroupbyDataFrame(TestData):
         )
 
     @pytest.mark.parametrize("pd_agg", ["max", "min", "mean", "median"])
-    def test_groupby_aggs_false(self, pd_agg):
-        pd_flights = self.pd_flights().filter(self.filter_data)
-        ed_flights = self.ed_flights().filter(self.filter_data)
+    def test_groupby_aggs_numeric_only_false(self, pd_agg):
+        pd_flights = self.pd_flights().filter(self.filter_data + ["timestamp"])
+        ed_flights = self.ed_flights().filter(self.filter_data + ["timestamp"])
 
         # pandas numeric_only=False, matches with Eland numeric_only=None
         pd_groupby = getattr(pd_flights.groupby("Cancelled"), pd_agg)(
@@ -114,13 +126,29 @@ class TestGroupbyDataFrame(TestData):
         ed_flights = self.ed_flights().filter(self.filter_data)
 
         match = "by parameter should be specified to groupby"
-        with pytest.raises(TypeError, match=match):
+        with pytest.raises(ValueError, match=match):
             ed_flights.groupby(None).mean()
 
         by = ["ABC", "Cancelled"]
-        match = "Requested columns {'ABC'} not in the DataFrame."
+        match = "Requested columns 'ABC' not in the DataFrame"
         with pytest.raises(KeyError, match=match):
             ed_flights.groupby(by).mean()
+
+    @pytest.mark.parametrize(
+        "by",
+        ["timestamp", "dayOfWeek", "Carrier", "Cancelled", ["dayOfWeek", "Carrier"]],
+    )
+    def test_groupby_different_dtypes(self, by):
+        columns = ["dayOfWeek", "Carrier", "timestamp", "Cancelled"]
+        pd_flights = self.pd_flights_small().filter(columns)
+        ed_flights = self.ed_flights_small().filter(columns)
+
+        pd_groupby = pd_flights.groupby(by).nunique()
+        ed_groupby = ed_flights.groupby(by).nunique()
+
+        assert list(pd_groupby.index) == list(ed_groupby.index)
+        assert pd_groupby.index.dtype == ed_groupby.index.dtype
+        assert list(pd_groupby.columns) == list(ed_groupby.columns)
 
     def test_groupby_dropna(self):
         # TODO Add tests once dropna is implemeted

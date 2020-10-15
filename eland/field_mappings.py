@@ -64,7 +64,7 @@ ES_COMPATIBLE_TYPES: Dict[str, Set[str]] = {
 class Field(NamedTuple):
     """Holds all information on a particular field in the mapping"""
 
-    index: str
+    column: str
     es_field_name: str
     is_source: bool
     es_dtype: str
@@ -129,7 +129,7 @@ class FieldMappings:
     _mappings_capabilities: pandas.DataFrame
         A data frame summarising the capabilities of the index mapping
 
-        index                       - the eland display name
+        column (index)              - the eland display name
 
         es_field_name               - the Elasticsearch field name
         is_source                   - is top level field (i.e. not a multi-field sub-field)
@@ -537,13 +537,13 @@ class FieldMappings:
         """
 
         mapping_props = {}
-        for field_name_name, dtype in dataframe.dtypes.iteritems():
-            if es_type_overrides is not None and field_name_name in es_type_overrides:
-                es_dtype = es_type_overrides[field_name_name]
+        for column, dtype in dataframe.dtypes.iteritems():
+            if es_type_overrides is not None and column in es_type_overrides:
+                es_dtype = es_type_overrides[column]
             else:
                 es_dtype = FieldMappings._pd_dtype_to_es_dtype(dtype)
 
-            mapping_props[field_name_name] = {"type": es_dtype}
+            mapping_props[column] = {"type": es_dtype}
 
         return {"mappings": {"properties": mapping_props}}
 
@@ -708,9 +708,9 @@ class FieldMappings:
 
         """
         source_fields: List[Field] = []
-        for index, row in self._mappings_capabilities.iterrows():
+        for column, row in self._mappings_capabilities.iterrows():
             row = row.to_dict()
-            row["index"] = index
+            row["column"] = column
             source_fields.append(Field(**row))
         return source_fields
 
@@ -731,13 +731,13 @@ class FieldMappings:
         groupby_fields: Dict[str, Field] = {}
         # groupby_fields: Union[List[Field], List[None]] = [None] * len(by)
         aggregatable_fields: List[Field] = []
-        for index_name, row in self._mappings_capabilities.iterrows():
+        for column, row in self._mappings_capabilities.iterrows():
             row = row.to_dict()
-            row["index"] = index_name
-            if index_name not in by:
+            row["column"] = column
+            if column not in by:
                 aggregatable_fields.append(Field(**row))
             else:
-                groupby_fields[index_name] = Field(**row)
+                groupby_fields[column] = Field(**row)
 
         # Maintain groupby order as given input
         return [groupby_fields[column] for column in by], aggregatable_fields

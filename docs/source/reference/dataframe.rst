@@ -46,6 +46,7 @@ Function Application, GroupBy & Window
 
    DataFrame.agg
    DataFrame.aggregate
+   DataFrame.groupby
 
 .. _api.dataframe.stats:
 

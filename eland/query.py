@@ -38,14 +38,17 @@ class Query:
         # type defs
         self._query: BooleanFilter
         self._aggs: Dict[str, Any]
+        self._composite_aggs: Dict[str, Any]
 
         if query is None:
             self._query = BooleanFilter()
             self._aggs = {}
+            self._composite_aggs = {}
         else:
             # Deep copy the incoming query so we can change it
             self._query = deepcopy(query._query)
             self._aggs = deepcopy(query._aggs)
+            self._composite_aggs = deepcopy(query._composite_aggs)
 
     def exists(self, field: str, must: bool = True) -> None:
         """
@@ -136,9 +139,9 @@ class Query:
         agg = {func: {"field": field}}
         self._aggs[name] = agg
 
-    def term_aggs(self, name: str, field: str) -> None:
+    def composite_agg_bucket_terms(self, name: str, field: str) -> None:
         """
-        Add term agg e.g.
+        Add terms agg for composite aggregation
 
         "aggs": {
             "name": {
@@ -148,17 +151,36 @@ class Query:
             }
         }
         """
-        agg = {"terms": {"field": field}}
-        self._aggs[name] = agg
+        self._composite_aggs[name] = {"terms": {"field": field}}
 
-    def composite_agg(
+    def composite_agg_bucket_date_histogram(
+        self,
+        name: str,
+        field: str,
+        calendar_interval: Optional[str] = None,
+        fixed_interval: Optional[str] = None,
+    ) -> None:
+        if (calendar_interval is None) == (fixed_interval is None):
+            raise ValueError(
+                "calendar_interval and fixed_interval parmaeters are mutually exclusive"
+            )
+        agg = {"field": field}
+        if calendar_interval is not None:
+            agg["calendar_interval"] = calendar_interval
+        elif fixed_interval is not None:
+            agg["fixed_interval"] = fixed_interval
+        self._composite_aggs[name] = {"date_histogram": agg}
+
+    def composite_agg_start(
         self,
         name: str,
         size: int,
         dropna: bool = True,
     ) -> None:
         """
-        Add composite aggregation e.g.
+        Start a composite aggregation. This should be called
+        after calls to composite_agg_bucket_*(), etc.
+
         https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-composite-aggregation.html
 
         "aggs": {
@@ -190,22 +212,22 @@ class Query:
 
         """
         sources: List[Dict[str, Dict[str, str]]] = []
-        aggregations: Dict[str, Dict[str, str]] = {}
 
-        for _name, agg in self._aggs.items():
-            if agg.get("terms"):
-                if not dropna:
-                    agg["terms"]["missing_bucket"] = "true"
-                sources.append({_name: agg})
-            else:
-                aggregations[_name] = agg
+        # Go through all composite source aggregations
+        # and apply dropna if needed.
+        for bucket_agg_name, bucket_agg in self._composite_aggs.items():
+            if bucket_agg.get("terms") and not dropna:
+                bucket_agg = bucket_agg.copy()
+                bucket_agg["terms"]["missing_bucket"] = "true"
+            sources.append({bucket_agg_name: bucket_agg})
+        self._composite_aggs.clear()
 
-        agg = {
+        aggs = {
             "composite": {"size": size, "sources": sources},
-            "aggregations": aggregations,
+            "aggregations": self._aggs.copy(),
         }
         self._aggs.clear()
-        self._aggs[name] = agg
+        self._aggs[name] = aggs
 
     def composite_agg_after_key(self, name: str, after_key: Dict[str, Any]) -> None:
         """

@@ -271,7 +271,7 @@ class Operations:
         min    1.000205e+02        0.000000e+00   0.000000e+00               0
         """
 
-        return self._calculate_single_agg(
+        return self._unpack_metric_aggs(
             fields=fields,
             es_aggs=es_aggs,
             pd_aggs=pd_aggs,
@@ -415,7 +415,7 @@ class Operations:
         df_weights = pd.DataFrame(data=weights)
         return df_bins, df_weights
 
-    def _calculate_single_agg(
+    def _unpack_metric_aggs(
         self,
         fields: List["Field"],
         es_aggs: Union[List[str], List[Tuple[str, str]]],
@@ -425,8 +425,9 @@ class Operations:
         is_dataframe_agg: bool = False,
     ):
         """
-        This method is used to calculate single agg calculations.
-        Common for both metric aggs and groupby aggs
+        This method unpacks metric aggregations JSON response.
+        This can be called either directly on an aggs query
+        or on an individual bucket within a composite aggregation.
 
         Parameters
         ----------
@@ -533,21 +534,21 @@ class Operations:
 
             # If numeric_only is True and We only have a NaN type field then we check for empty.
             if values:
-                results[field.index] = values if len(values) > 1 else values[0]
+                results[field.column] = values if len(values) > 1 else values[0]
 
         return results
 
-    def groupby(
+    def aggs_groupby(
         self,
         query_compiler: "QueryCompiler",
         by: List[str],
         pd_aggs: List[str],
         dropna: bool = True,
-        is_agg: bool = False,
+        is_dataframe_agg: bool = False,
         numeric_only: bool = True,
     ) -> pd.DataFrame:
         """
-        This method is used to construct groupby dataframe
+        This method is used to construct groupby aggregation dataframe
 
         Parameters
         ----------
@@ -560,7 +561,7 @@ class Operations:
         dropna:
             Drop None values if True.
             TODO Not yet implemented
-        is_agg:
+        is_dataframe_agg:
             Know if groupby with aggregation or single agg is called.
         numeric_only:
             return either numeric values or NaN/NaT
@@ -574,13 +575,13 @@ class Operations:
             by=by,
             pd_aggs=pd_aggs,
             dropna=dropna,
-            is_agg=is_agg,
+            is_dataframe_agg=is_dataframe_agg,
             numeric_only=numeric_only,
         )
 
         agg_df = pd.DataFrame(results, columns=results.keys()).set_index(by)
 
-        if is_agg:
+        if is_dataframe_agg:
             # Convert header columns to MultiIndex
             agg_df.columns = pd.MultiIndex.from_product([headers, pd_aggs])
 
@@ -592,7 +593,7 @@ class Operations:
         by: List[str],
         pd_aggs: List[str],
         dropna: bool = True,
-        is_agg: bool = False,
+        is_dataframe_agg: bool = False,
         numeric_only: bool = True,
     ) -> Tuple[List[str], Dict[str, Any]]:
         """
@@ -609,8 +610,8 @@ class Operations:
         dropna:
             Drop None values if True.
             TODO Not yet implemented
-        is_agg:
-            Know if groupby aggregation or single agg is called.
+        is_dataframe_agg:
+            Know if multi aggregation or single agg is called.
         numeric_only:
             return either numeric values or NaN/NaT
 
@@ -627,13 +628,15 @@ class Operations:
                 f"Can not count field matches if size is set {size}"
             )
 
-        by, fields = query_compiler._mappings.groupby_source_fields(by=by)
+        by_fields, agg_fields = query_compiler._mappings.groupby_source_fields(by=by)
 
         # Used defaultdict to avoid initialization of columns with lists
         response: Dict[str, List[Any]] = defaultdict(list)
 
         if numeric_only:
-            fields = [field for field in fields if (field.is_numeric or field.is_bool)]
+            agg_fields = [
+                field for field in agg_fields if (field.is_numeric or field.is_bool)
+            ]
 
         body = Query(query_params.query)
 
@@ -641,11 +644,13 @@ class Operations:
         es_aggs = self._map_pd_aggs_to_es_aggs(pd_aggs)
 
         # Construct Query
-        for b in by:
+        for by_field in by_fields:
             # groupby fields will be term aggregations
-            body.term_aggs(f"groupby_{b.index}", b.index)
+            body.composite_agg_bucket_terms(
+                name=f"groupby_{by_field.column}", field=by_field.es_field_name
+            )
 
-        for field in fields:
+        for field in agg_fields:
             for es_agg in es_aggs:
                 if not field.is_es_agg_compatible(es_agg):
                     continue
@@ -665,11 +670,11 @@ class Operations:
                     )
 
         # Composite aggregation
-        body.composite_agg(
+        body.composite_agg_start(
             size=DEFAULT_PAGINATION_SIZE, name="groupby_buckets", dropna=dropna
         )
 
-        def response_generator() -> Generator[List[str], None, List[str]]:
+        def bucket_generator() -> Generator[List[str], None, List[str]]:
             """
             e.g.
             "aggregations": {
@@ -696,43 +701,51 @@ class Operations:
                     size=0,
                     body=body.to_search_body(),
                 )
+
                 # Pagination Logic
-                if "after_key" in res["aggregations"]["groupby_buckets"]:
+                composite_buckets = res["aggregations"]["groupby_buckets"]
+                if "after_key" in composite_buckets:
 
                     # yield the bucket which contains the result
-                    yield res["aggregations"]["groupby_buckets"]["buckets"]
+                    yield composite_buckets["buckets"]
 
                     body.composite_agg_after_key(
                         name="groupby_buckets",
-                        after_key=res["aggregations"]["groupby_buckets"]["after_key"],
+                        after_key=composite_buckets["after_key"],
                     )
                 else:
-                    return res["aggregations"]["groupby_buckets"]["buckets"]
+                    return composite_buckets["buckets"]
 
-        for buckets in response_generator():
+        for buckets in bucket_generator():
             # We recieve response row-wise
             for bucket in buckets:
                 # groupby columns are added to result same way they are returned
-                for b in by:
-                    response[b.index].append(bucket["key"][f"groupby_{b.index}"])
+                for by_field in by_fields:
+                    bucket_key = bucket["key"][f"groupby_{by_field.column}"]
 
-                agg_calculation = self._calculate_single_agg(
-                    fields=fields,
+                    # Datetimes always come back as integers, convert to pd.Timestamp()
+                    if by_field.is_timestamp and isinstance(bucket_key, int):
+                        bucket_key = pd.to_datetime(bucket_key, unit="ms")
+
+                    response[by_field.column].append(bucket_key)
+
+                agg_calculation = self._unpack_metric_aggs(
+                    fields=agg_fields,
                     es_aggs=es_aggs,
                     pd_aggs=pd_aggs,
                     response={"aggregations": bucket},
                     numeric_only=numeric_only,
-                    is_dataframe_agg=is_agg,
+                    is_dataframe_agg=is_dataframe_agg,
                 )
                 # Process the calculated agg values to response
                 for key, value in agg_calculation.items():
-                    if not is_agg:
-                        response[key].append(value)
+                    if isinstance(value, list):
+                        for pd_agg, val in zip(pd_aggs, value):
+                            response[f"{key}_{pd_agg}"].append(val)
                     else:
-                        for i in range(0, len(pd_aggs)):
-                            response[f"{key}_{pd_aggs[i]}"].append(value[i])
+                        response[key].append(value)
 
-        return [field.index for field in fields], response
+        return [field.column for field in agg_fields], response
 
     @staticmethod
     def _map_pd_aggs_to_es_aggs(pd_aggs):

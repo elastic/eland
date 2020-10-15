@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 
 class GroupBy:
     """
-    This holds all the groupby base methods
+    Base class for calls to X.groupby([...])
 
     Parameters
     ----------
@@ -34,7 +34,6 @@ class GroupBy:
         Query compiler object
     dropna:
         default is true, drop None/NaT/NaN values while grouping
-
     """
 
     def __init__(
@@ -47,9 +46,8 @@ class GroupBy:
         self._dropna: bool = dropna
         self._by: List[str] = by
 
-    # numeric_only=True by default for all aggs because pandas does the same
     def mean(self, numeric_only: bool = True) -> "pd.DataFrame":
-        return self._query_compiler.groupby(
+        return self._query_compiler.aggs_groupby(
             by=self._by,
             pd_aggs=["mean"],
             dropna=self._dropna,
@@ -57,7 +55,7 @@ class GroupBy:
         )
 
     def var(self, numeric_only: bool = True) -> "pd.DataFrame":
-        return self._query_compiler.groupby(
+        return self._query_compiler.aggs_groupby(
             by=self._by,
             pd_aggs=["var"],
             dropna=self._dropna,
@@ -65,7 +63,7 @@ class GroupBy:
         )
 
     def std(self, numeric_only: bool = True) -> "pd.DataFrame":
-        return self._query_compiler.groupby(
+        return self._query_compiler.aggs_groupby(
             by=self._by,
             pd_aggs=["std"],
             dropna=self._dropna,
@@ -73,7 +71,7 @@ class GroupBy:
         )
 
     def mad(self, numeric_only: bool = True) -> "pd.DataFrame":
-        return self._query_compiler.groupby(
+        return self._query_compiler.aggs_groupby(
             by=self._by,
             pd_aggs=["mad"],
             dropna=self._dropna,
@@ -81,7 +79,7 @@ class GroupBy:
         )
 
     def median(self, numeric_only: bool = True) -> "pd.DataFrame":
-        return self._query_compiler.groupby(
+        return self._query_compiler.aggs_groupby(
             by=self._by,
             pd_aggs=["median"],
             dropna=self._dropna,
@@ -89,7 +87,7 @@ class GroupBy:
         )
 
     def sum(self, numeric_only: bool = True) -> "pd.DataFrame":
-        return self._query_compiler.groupby(
+        return self._query_compiler.aggs_groupby(
             by=self._by,
             pd_aggs=["sum"],
             dropna=self._dropna,
@@ -97,7 +95,7 @@ class GroupBy:
         )
 
     def min(self, numeric_only: bool = True) -> "pd.DataFrame":
-        return self._query_compiler.groupby(
+        return self._query_compiler.aggs_groupby(
             by=self._by,
             pd_aggs=["min"],
             dropna=self._dropna,
@@ -105,7 +103,7 @@ class GroupBy:
         )
 
     def max(self, numeric_only: bool = True) -> "pd.DataFrame":
-        return self._query_compiler.groupby(
+        return self._query_compiler.aggs_groupby(
             by=self._by,
             pd_aggs=["max"],
             dropna=self._dropna,
@@ -113,7 +111,7 @@ class GroupBy:
         )
 
     def nunique(self) -> "pd.DataFrame":
-        return self._query_compiler.groupby(
+        return self._query_compiler.aggs_groupby(
             by=self._by,
             pd_aggs=["nunique"],
             dropna=self._dropna,
@@ -133,7 +131,6 @@ class GroupByDataFrame(GroupBy):
         Query compiler object
     dropna:
         default is true, drop None/NaT/NaN values while grouping
-
     """
 
     def aggregate(self, func: List[str], numeric_only: bool = False) -> "pd.DataFrame":
@@ -157,13 +154,12 @@ class GroupByDataFrame(GroupBy):
         """
         if isinstance(func, str):
             func = [func]
-        # numeric_only is by default False because pandas does the same
-        return self._query_compiler.groupby(
+        return self._query_compiler.aggs_groupby(
             by=self._by,
             pd_aggs=func,
             dropna=self._dropna,
             numeric_only=numeric_only,
-            is_agg=True,
+            is_dataframe_agg=True,
         )
 
     agg = aggregate
