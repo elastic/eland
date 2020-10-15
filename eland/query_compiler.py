@@ -19,8 +19,8 @@ import copy
 from datetime import datetime
 from typing import Optional, Sequence, TYPE_CHECKING, List
 
-import numpy as np
-import pandas as pd
+import numpy as np  # type: ignore
+import pandas as pd  # type: ignore
 
 from eland.field_mappings import FieldMappings
 from eland.filter import QueryFilter
@@ -72,7 +72,7 @@ class QueryCompiler:
         display_names=None,
         index_field=None,
         to_copy=None,
-    ):
+    ) -> None:
         # Implement copy as we don't deep copy the client
         if to_copy is not None:
             self._client = to_copy._client
@@ -549,6 +549,16 @@ class QueryCompiler:
         return self._operations._metric_agg_series(
             self, ["nunique"], numeric_only=False
         )
+
+    def groupby(
+        self,
+        by: List[str],
+        pd_aggs: List[str],
+        dropna: bool = True,
+        is_agg: bool = False,
+        numeric_only: bool = True,
+    ) -> pd.DataFrame:
+        return self._operations.groupby(self, by, pd_aggs, dropna, is_agg, numeric_only)
 
     def value_counts(self, es_size):
         return self._operations.value_counts(self, es_size)

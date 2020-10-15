@@ -44,6 +44,7 @@ TYPED_FILES = (
     "eland/query.py",
     "eland/tasks.py",
     "eland/utils.py",
+    "eland/groupby.py",
     "eland/ml/__init__.py",
     "eland/ml/_model_serializer.py",
     "eland/ml/ml_model.py",

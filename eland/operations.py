@@ -16,12 +16,22 @@
 #  under the License.
 
 import copy
-import typing
 import warnings
-from typing import Optional, Sequence, Tuple, List, Dict, Any
+from typing import (
+    Generator,
+    Optional,
+    Sequence,
+    Tuple,
+    List,
+    Dict,
+    Any,
+    TYPE_CHECKING,
+    Union,
+)
 
 import numpy as np
 import pandas as pd
+from collections import defaultdict
 from elasticsearch.helpers import scan
 
 from eland.index import Index
@@ -31,6 +41,7 @@ from eland.common import (
     DEFAULT_ES_MAX_RESULT_WINDOW,
     elasticsearch_date_to_pandas_date,
     build_pd_series,
+    DEFAULT_PAGINATION_SIZE,
 )
 from eland.query import Query
 from eland.actions import PostProcessingAction, SortFieldAction
@@ -46,8 +57,9 @@ from eland.tasks import (
     SizeTask,
 )
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from eland.query_compiler import QueryCompiler
+    from eland.field_mappings import Field
 
 
 class QueryParams:
@@ -186,10 +198,29 @@ class Operations:
     def _metric_aggs(
         self,
         query_compiler: "QueryCompiler",
-        pd_aggs,
+        pd_aggs: List[str],
         numeric_only: Optional[bool] = None,
         is_dataframe_agg: bool = False,
-    ) -> Dict:
+    ) -> Dict[str, Any]:
+        """
+        Used to calculate metric aggregations
+        https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-metrics.html
+
+        Parameters
+        ----------
+        query_compiler:
+            Query Compiler object
+        pd_aggs:
+            aggregations that are to be performed on dataframe or series
+        numeric_only:
+            return either all numeric values or NaN/NaT
+        is_dataframe_agg:
+            know if this method is called from single-agg or aggreagation method
+
+        Returns
+        -------
+            A dictionary which contains all aggregations calculated.
+        """
         query_params, post_processing = self._resolve_tasks(query_compiler)
 
         size = self._size(query_params, post_processing)
@@ -198,7 +229,6 @@ class Operations:
                 f"Can not count field matches if size is set {size}"
             )
 
-        results = {}
         fields = query_compiler._mappings.all_source_fields()
         if numeric_only:
             # Consider if field is Int/Float/Bool
@@ -240,95 +270,15 @@ class Operations:
         sum    8.204365e+06        9.261629e+07   5.754909e+07          618150
         min    1.000205e+02        0.000000e+00   0.000000e+00               0
         """
-        for field in fields:
-            values = []
-            for es_agg, pd_agg in zip(es_aggs, pd_aggs):
-                # is_dataframe_agg is used to differentiate agg() and an aggregation called through .mean()
-                # If the field and agg aren't compatible we add a NaN/NaT for agg
-                # If the field and agg aren't compatible we don't add NaN/NaT for an aggregation called through .mean()
-                if not field.is_es_agg_compatible(es_agg):
-                    if is_dataframe_agg and not numeric_only:
-                        values.append(field.nan_value)
-                    elif not is_dataframe_agg and numeric_only is False:
-                        values.append(field.nan_value)
-                    # Explicit condition for mad to add NaN because it doesn't support bool
-                    elif is_dataframe_agg and numeric_only:
-                        if pd_agg == "mad":
-                            values.append(field.nan_value)
-                    continue
 
-                if isinstance(es_agg, tuple):
-                    agg_value = response["aggregations"][
-                        f"{es_agg[0]}_{field.es_field_name}"
-                    ]
-
-                    # Pull multiple values from 'percentiles' result.
-                    if es_agg[0] == "percentiles":
-                        agg_value = agg_value["values"]
-
-                    agg_value = agg_value[es_agg[1]]
-
-                    # Need to convert 'Population' stddev and variance
-                    # from Elasticsearch into 'Sample' stddev and variance
-                    # which is what pandas uses.
-                    if es_agg[1] in ("std_deviation", "variance"):
-                        # Neither transformation works with count <=1
-                        count = response["aggregations"][
-                            f"{es_agg[0]}_{field.es_field_name}"
-                        ]["count"]
-
-                        # All of the below calculations result in NaN if count<=1
-                        if count <= 1:
-                            agg_value = np.NaN
-
-                        elif es_agg[1] == "std_deviation":
-                            agg_value *= count / (count - 1.0)
-
-                        else:  # es_agg[1] == "variance"
-                            # sample_std=\sqrt{\frac{1}{N-1}\sum_{i=1}^N(x_i-\bar{x})^2}
-                            # population_std=\sqrt{\frac{1}{N}\sum_{i=1}^N(x_i-\bar{x})^2}
-                            # sample_std=\sqrt{\frac{N}{N-1}population_std}
-                            agg_value = np.sqrt(
-                                (count / (count - 1.0)) * agg_value * agg_value
-                            )
-                else:
-                    agg_value = response["aggregations"][
-                        f"{es_agg}_{field.es_field_name}"
-                    ]["value"]
-
-                # Null usually means there were no results.
-                if agg_value is None or np.isnan(agg_value):
-                    if is_dataframe_agg and not numeric_only:
-                        agg_value = np.NaN
-                    elif not is_dataframe_agg and numeric_only is False:
-                        agg_value = np.NaN
-
-                # Cardinality is always either NaN or integer.
-                elif pd_agg == "nunique":
-                    agg_value = int(agg_value)
-
-                # If this is a non-null timestamp field convert to a pd.Timestamp()
-                elif field.is_timestamp:
-                    agg_value = elasticsearch_date_to_pandas_date(
-                        agg_value, field.es_date_format
-                    )
-                # If numeric_only is False | None then maintain column datatype
-                elif not numeric_only:
-                    # we're only converting to bool for lossless aggs like min, max, and median.
-                    if pd_agg in {"max", "min", "median", "sum"}:
-                        # 'sum' isn't representable with bool, use int64
-                        if pd_agg == "sum" and field.is_bool:
-                            agg_value = np.int64(agg_value)
-                        else:
-                            agg_value = field.np_dtype.type(agg_value)
-
-                values.append(agg_value)
-
-            # If numeric_only is True and We only have a NaN type field then we check for empty.
-            if values:
-                results[field.index] = values if len(values) > 1 else values[0]
-
-        return results
+        return self._calculate_single_agg(
+            fields=fields,
+            es_aggs=es_aggs,
+            pd_aggs=pd_aggs,
+            response=response,
+            numeric_only=numeric_only,
+            is_dataframe_agg=is_dataframe_agg,
+        )
 
     def _terms_aggs(self, query_compiler, func, es_size=None):
         """
@@ -464,6 +414,325 @@ class Operations:
         df_bins = pd.DataFrame(data=bins)
         df_weights = pd.DataFrame(data=weights)
         return df_bins, df_weights
+
+    def _calculate_single_agg(
+        self,
+        fields: List["Field"],
+        es_aggs: Union[List[str], List[Tuple[str, str]]],
+        pd_aggs: List[str],
+        response: Dict[str, Any],
+        numeric_only: Optional[bool],
+        is_dataframe_agg: bool = False,
+    ):
+        """
+        This method is used to calculate single agg calculations.
+        Common for both metric aggs and groupby aggs
+
+        Parameters
+        ----------
+        fields:
+            a list of Field Mappings
+        es_aggs:
+            Eland Equivalent of aggs
+        pd_aggs:
+            a list of aggs
+        response:
+            a dict containing response from Elastic Search
+        numeric_only:
+            return either numeric values or NaN/NaT
+
+        Returns
+        -------
+            a dictionary on which agg caluculations are done.
+        """
+        results: Dict[str, Any] = {}
+
+        for field in fields:
+            values = []
+            for es_agg, pd_agg in zip(es_aggs, pd_aggs):
+                # is_dataframe_agg is used to differentiate agg() and an aggregation called through .mean()
+                # If the field and agg aren't compatible we add a NaN/NaT for agg
+                # If the field and agg aren't compatible we don't add NaN/NaT for an aggregation called through .mean()
+                if not field.is_es_agg_compatible(es_agg):
+                    if is_dataframe_agg and not numeric_only:
+                        values.append(field.nan_value)
+                    elif not is_dataframe_agg and numeric_only is False:
+                        values.append(field.nan_value)
+                    # Explicit condition for mad to add NaN because it doesn't support bool
+                    elif is_dataframe_agg and numeric_only:
+                        if pd_agg == "mad":
+                            values.append(field.nan_value)
+                    continue
+
+                if isinstance(es_agg, tuple):
+                    agg_value = response["aggregations"][
+                        f"{es_agg[0]}_{field.es_field_name}"
+                    ]
+
+                    # Pull multiple values from 'percentiles' result.
+                    if es_agg[0] == "percentiles":
+                        agg_value = agg_value["values"]
+
+                    agg_value = agg_value[es_agg[1]]
+
+                    # Need to convert 'Population' stddev and variance
+                    # from Elasticsearch into 'Sample' stddev and variance
+                    # which is what pandas uses.
+                    if es_agg[1] in ("std_deviation", "variance"):
+                        # Neither transformation works with count <=1
+                        count = response["aggregations"][
+                            f"{es_agg[0]}_{field.es_field_name}"
+                        ]["count"]
+
+                        # All of the below calculations result in NaN if count<=1
+                        if count <= 1:
+                            agg_value = np.NaN
+
+                        elif es_agg[1] == "std_deviation":
+                            agg_value *= count / (count - 1.0)
+
+                        else:  # es_agg[1] == "variance"
+                            # sample_std=\sqrt{\frac{1}{N-1}\sum_{i=1}^N(x_i-\bar{x})^2}
+                            # population_std=\sqrt{\frac{1}{N}\sum_{i=1}^N(x_i-\bar{x})^2}
+                            # sample_std=\sqrt{\frac{N}{N-1}population_std}
+                            agg_value = np.sqrt(
+                                (count / (count - 1.0)) * agg_value * agg_value
+                            )
+                else:
+                    agg_value = response["aggregations"][
+                        f"{es_agg}_{field.es_field_name}"
+                    ]["value"]
+
+                # Null usually means there were no results.
+                if agg_value is None or np.isnan(agg_value):
+                    if is_dataframe_agg and not numeric_only:
+                        agg_value = np.NaN
+                    elif not is_dataframe_agg and numeric_only is False:
+                        agg_value = np.NaN
+
+                # Cardinality is always either NaN or integer.
+                elif pd_agg == "nunique":
+                    agg_value = int(agg_value)
+
+                # If this is a non-null timestamp field convert to a pd.Timestamp()
+                elif field.is_timestamp:
+                    agg_value = elasticsearch_date_to_pandas_date(
+                        agg_value, field.es_date_format
+                    )
+                # If numeric_only is False | None then maintain column datatype
+                elif not numeric_only:
+                    # we're only converting to bool for lossless aggs like min, max, and median.
+                    if pd_agg in {"max", "min", "median", "sum"}:
+                        # 'sum' isn't representable with bool, use int64
+                        if pd_agg == "sum" and field.is_bool:
+                            agg_value = np.int64(agg_value)
+                        else:
+                            agg_value = field.np_dtype.type(agg_value)
+
+                values.append(agg_value)
+
+            # If numeric_only is True and We only have a NaN type field then we check for empty.
+            if values:
+                results[field.index] = values if len(values) > 1 else values[0]
+
+        return results
+
+    def groupby(
+        self,
+        query_compiler: "QueryCompiler",
+        by: List[str],
+        pd_aggs: List[str],
+        dropna: bool = True,
+        is_agg: bool = False,
+        numeric_only: bool = True,
+    ) -> pd.DataFrame:
+        """
+        This method is used to construct groupby dataframe
+
+        Parameters
+        ----------
+        query_compiler:
+            A Query compiler
+        by:
+            a list of columns on which groupby operations have to be performed
+        pd_aggs:
+            a list of aggregations to be performed
+        dropna:
+            Drop None values if True.
+            TODO Not yet implemented
+        is_agg:
+            Know if groupby with aggregation or single agg is called.
+        numeric_only:
+            return either numeric values or NaN/NaT
+
+        Returns
+        -------
+            A dataframe which consists groupby data
+        """
+        headers, results = self._groupby_aggs(
+            query_compiler,
+            by=by,
+            pd_aggs=pd_aggs,
+            dropna=dropna,
+            is_agg=is_agg,
+            numeric_only=numeric_only,
+        )
+
+        agg_df = pd.DataFrame(results, columns=results.keys()).set_index(by)
+
+        if is_agg:
+            # Convert header columns to MultiIndex
+            agg_df.columns = pd.MultiIndex.from_product([headers, pd_aggs])
+
+        return agg_df
+
+    def _groupby_aggs(
+        self,
+        query_compiler: "QueryCompiler",
+        by: List[str],
+        pd_aggs: List[str],
+        dropna: bool = True,
+        is_agg: bool = False,
+        numeric_only: bool = True,
+    ) -> Tuple[List[str], Dict[str, Any]]:
+        """
+        This method is used to calculate groupby aggregations
+
+        Parameters
+        ----------
+        query_compiler:
+            A Query compiler
+        by:
+            a list of columns on which groupby operations have to be performed
+        pd_aggs:
+            a list of aggregations to be performed
+        dropna:
+            Drop None values if True.
+            TODO Not yet implemented
+        is_agg:
+            Know if groupby aggregation or single agg is called.
+        numeric_only:
+            return either numeric values or NaN/NaT
+
+        Returns
+        -------
+        headers: columns on which MultiIndex has to be applied
+        response: dictionary of groupby aggregated values
+        """
+        query_params, post_processing = self._resolve_tasks(query_compiler)
+
+        size = self._size(query_params, post_processing)
+        if size is not None:
+            raise NotImplementedError(
+                f"Can not count field matches if size is set {size}"
+            )
+
+        by, fields = query_compiler._mappings.groupby_source_fields(by=by)
+
+        # Used defaultdict to avoid initialization of columns with lists
+        response: Dict[str, List[Any]] = defaultdict(list)
+
+        if numeric_only:
+            fields = [field for field in fields if (field.is_numeric or field.is_bool)]
+
+        body = Query(query_params.query)
+
+        # Convert pandas aggs to ES equivalent
+        es_aggs = self._map_pd_aggs_to_es_aggs(pd_aggs)
+
+        # Construct Query
+        for b in by:
+            # groupby fields will be term aggregations
+            body.term_aggs(f"groupby_{b.index}", b.index)
+
+        for field in fields:
+            for es_agg in es_aggs:
+                if not field.is_es_agg_compatible(es_agg):
+                    continue
+
+                # If we have multiple 'extended_stats' etc. here we simply NOOP on 2nd call
+                if isinstance(es_agg, tuple):
+                    body.metric_aggs(
+                        f"{es_agg[0]}_{field.es_field_name}",
+                        es_agg[0],
+                        field.aggregatable_es_field_name,
+                    )
+                else:
+                    body.metric_aggs(
+                        f"{es_agg}_{field.es_field_name}",
+                        es_agg,
+                        field.aggregatable_es_field_name,
+                    )
+
+        # Composite aggregation
+        body.composite_agg(
+            size=DEFAULT_PAGINATION_SIZE, name="groupby_buckets", dropna=dropna
+        )
+
+        def response_generator() -> Generator[List[str], None, List[str]]:
+            """
+            e.g.
+            "aggregations": {
+                "groupby_buckets": {
+                    "after_key": {"total_quantity": 8},
+                    "buckets": [
+                        {
+                            "key": {"total_quantity": 1},
+                            "doc_count": 87,
+                            "taxful_total_price_avg": {"value": 48.035978536496216},
+                        }
+                    ],
+                }
+            }
+            Returns
+            -------
+            A generator which initially yields the bucket
+            If after_key is found, use it to fetch the next set of buckets.
+
+            """
+            while True:
+                res = query_compiler._client.search(
+                    index=query_compiler._index_pattern,
+                    size=0,
+                    body=body.to_search_body(),
+                )
+                # Pagination Logic
+                if "after_key" in res["aggregations"]["groupby_buckets"]:
+
+                    # yield the bucket which contains the result
+                    yield res["aggregations"]["groupby_buckets"]["buckets"]
+
+                    body.composite_agg_after_key(
+                        name="groupby_buckets",
+                        after_key=res["aggregations"]["groupby_buckets"]["after_key"],
+                    )
+                else:
+                    return res["aggregations"]["groupby_buckets"]["buckets"]
+
+        for buckets in response_generator():
+            # We recieve response row-wise
+            for bucket in buckets:
+                # groupby columns are added to result same way they are returned
+                for b in by:
+                    response[b.index].append(bucket["key"][f"groupby_{b.index}"])
+
+                agg_calculation = self._calculate_single_agg(
+                    fields=fields,
+                    es_aggs=es_aggs,
+                    pd_aggs=pd_aggs,
+                    response={"aggregations": bucket},
+                    numeric_only=numeric_only,
+                    is_dataframe_agg=is_agg,
+                )
+                # Process the calculated agg values to response
+                for key, value in agg_calculation.items():
+                    if not is_agg:
+                        response[key].append(value)
+                    else:
+                        for i in range(0, len(pd_aggs)):
+                            response[f"{key}_{pd_aggs[i]}"].append(value[i])
+
+        return [field.index for field in fields], response
 
     @staticmethod
     def _map_pd_aggs_to_es_aggs(pd_aggs):

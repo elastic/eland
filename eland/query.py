@@ -136,6 +136,90 @@ class Query:
         agg = {func: {"field": field}}
         self._aggs[name] = agg
 
+    def term_aggs(self, name: str, field: str) -> None:
+        """
+        Add term agg e.g.
+
+        "aggs": {
+            "name": {
+                "terms": {
+                    "field": "AvgTicketPrice"
+                }
+            }
+        }
+        """
+        agg = {"terms": {"field": field}}
+        self._aggs[name] = agg
+
+    def composite_agg(
+        self,
+        name: str,
+        size: int,
+        dropna: bool = True,
+    ) -> None:
+        """
+        Add composite aggregation e.g.
+        https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-composite-aggregation.html
+
+        "aggs": {
+            "groupby_buckets": {
+                "composite": {
+                    "size": 10,
+                    "sources": [
+                        {"total_quantity": {"terms": {"field": "total_quantity"}}}
+                    ],
+                    "after": {"total_quantity": 8},
+                },
+                "aggregations": {
+                    "taxful_total_price_avg": {
+                        "avg": {"field": "taxful_total_price"}
+                    }
+                },
+            }
+        }
+
+        Parameters
+        ----------
+        size: int
+            Pagination size.
+        name: str
+            Name of the buckets
+        dropna: bool
+            Drop None values if True.
+            TODO Not yet implemented
+
+        """
+        sources: List[Dict[str, Dict[str, str]]] = []
+        aggregations: Dict[str, Dict[str, str]] = {}
+
+        for _name, agg in self._aggs.items():
+            if agg.get("terms"):
+                if not dropna:
+                    agg["terms"]["missing_bucket"] = "true"
+                sources.append({_name: agg})
+            else:
+                aggregations[_name] = agg
+
+        agg = {
+            "composite": {"size": size, "sources": sources},
+            "aggregations": aggregations,
+        }
+        self._aggs.clear()
+        self._aggs[name] = agg
+
+    def composite_agg_after_key(self, name: str, after_key: Dict[str, Any]) -> None:
+        """
+        Add's after_key to existing query to fetch next bunch of results
+
+        PARAMETERS
+        ----------
+        name: str
+            Name of the buckets
+        after_key: Dict[str, Any]
+            Dictionary returned from previous query results
+        """
+        self._aggs[name]["composite"]["after"] = after_key
+
     def hist_aggs(
         self,
         name: str,
