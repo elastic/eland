@@ -17,10 +17,11 @@
 
 # File called _pytest for PyCharm compatability
 
+import pandas as pd
 import pytest
 from pandas.testing import assert_frame_equal, assert_series_equal
+
 from eland.tests.common import TestData
-import pandas as pd
 
 
 class TestGroupbyDataFrame(TestData):

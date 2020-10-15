@@ -15,16 +15,15 @@
 #  specific language governing permissions and limitations
 #  under the License.
 
-import pytest
 import numpy as np
+import pytest
 
 from eland.ml import MLModel
 from eland.tests import ES_TEST_CLIENT, ES_VERSION
 
-
 try:
     from sklearn import datasets
-    from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
+    from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
     from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 
     HAS_SKLEARN = True
@@ -32,14 +31,14 @@ except ImportError:
     HAS_SKLEARN = False
 
 try:
-    from xgboost import XGBRegressor, XGBClassifier
+    from xgboost import XGBClassifier, XGBRegressor
 
     HAS_XGBOOST = True
 except ImportError:
     HAS_XGBOOST = False
 
 try:
-    from lightgbm import LGBMRegressor, LGBMClassifier
+    from lightgbm import LGBMClassifier, LGBMRegressor
 
     HAS_LIGHTGBM = True
 except ImportError:

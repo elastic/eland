@@ -18,7 +18,7 @@
 import re
 import warnings
 from enum import Enum
-from typing import Union, List, Tuple, cast, Callable, Any, Optional, Dict
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union, cast
 
 import numpy as np  # type: ignore
 import pandas as pd  # type: ignore

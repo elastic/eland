@@ -21,8 +21,7 @@ from pandas.testing import assert_series_equal
 
 from eland.field_mappings import FieldMappings
 from eland.tests import FLIGHTS_INDEX_NAME, FLIGHTS_MAPPING
-from eland.tests.common import ES_TEST_CLIENT
-from eland.tests.common import TestData
+from eland.tests.common import ES_TEST_CLIENT, TestData
 
 
 class TestFieldNamePDDType(TestData):

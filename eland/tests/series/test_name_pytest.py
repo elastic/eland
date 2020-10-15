@@ -17,10 +17,8 @@
 
 # File called _pytest for PyCharm compatability
 import eland as ed
-from eland.tests import ES_TEST_CLIENT
-from eland.tests import FLIGHTS_INDEX_NAME
-from eland.tests.common import TestData
-from eland.tests.common import assert_pandas_eland_series_equal
+from eland.tests import ES_TEST_CLIENT, FLIGHTS_INDEX_NAME
+from eland.tests.common import TestData, assert_pandas_eland_series_equal
 
 
 class TestSeriesName(TestData):

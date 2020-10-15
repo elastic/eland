@@ -15,11 +15,11 @@
 #  specific language governing permissions and limitations
 #  under the License.
 
+import re
 import sys
 import warnings
 from io import StringIO
-import re
-from typing import List, Optional, Sequence, Union, Tuple
+from typing import List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -34,12 +34,12 @@ from pandas.io.formats.printing import pprint_thing
 from pandas.util._validators import validate_bool_kwarg
 
 import eland.plotting as gfx
-from eland.ndframe import NDFrame
-from eland.series import Series
 from eland.common import DEFAULT_NUM_ROWS_DISPLAYED, docstring_parameter
 from eland.filter import BooleanFilter
-from eland.utils import deprecated_api, is_valid_attr_name
 from eland.groupby import GroupByDataFrame
+from eland.ndframe import NDFrame
+from eland.series import Series
+from eland.utils import deprecated_api, is_valid_attr_name
 
 
 class DataFrame(NDFrame):

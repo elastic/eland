@@ -19,7 +19,7 @@ import base64
 import gzip
 import json
 from abc import ABC
-from typing import Sequence, Dict, Any, Optional, List
+from typing import Any, Dict, List, Optional, Sequence
 
 
 def add_if_exists(d: Dict[str, Any], k: str, v: Any) -> None:

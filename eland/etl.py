@@ -16,17 +16,18 @@
 #  under the License.
 
 import csv
-from typing import Generator, Union, List, Tuple, Optional, Mapping, Dict, Any
 from collections import deque
+from typing import Any, Dict, Generator, List, Mapping, Optional, Tuple, Union
+
 import pandas as pd  # type: ignore
+from elasticsearch import Elasticsearch  # type: ignore
+from elasticsearch.helpers import parallel_bulk  # type: ignore
 from pandas.io.parsers import _c_parser_defaults  # type: ignore
 
 from eland import DataFrame
+from eland.common import DEFAULT_CHUNK_SIZE, ensure_es_client
 from eland.field_mappings import FieldMappings, verify_mapping_compatibility
-from eland.common import ensure_es_client, DEFAULT_CHUNK_SIZE
 from eland.utils import deprecated_api
-from elasticsearch import Elasticsearch  # type: ignore
-from elasticsearch.helpers import parallel_bulk  # type: ignore
 
 
 @deprecated_api("eland.DataFrame()")

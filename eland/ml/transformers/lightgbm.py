@@ -15,15 +15,16 @@
 #  specific language governing permissions and limitations
 #  under the License.
 
-from typing import Optional, List, Dict, Any, Type
-from .base import ModelTransformer
+from typing import Any, Dict, List, Optional, Type
+
 from .._model_serializer import Ensemble, Tree, TreeNode
-from ..common import TYPE_CLASSIFICATION, TYPE_REGRESSION
 from .._optional import import_optional_dependency
+from ..common import TYPE_CLASSIFICATION, TYPE_REGRESSION
+from .base import ModelTransformer
 
 import_optional_dependency("lightgbm", on_version="warn")
 
-from lightgbm import Booster, LGBMRegressor, LGBMClassifier  # type: ignore
+from lightgbm import Booster, LGBMClassifier, LGBMRegressor  # type: ignore
 
 
 def transform_decider(decider: str) -> str:

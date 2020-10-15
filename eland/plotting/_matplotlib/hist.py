@@ -19,6 +19,7 @@ import numpy as np
 from pandas.core.dtypes.generic import ABCIndexClass
 from pandas.plotting._matplotlib import converter
 from pandas.plotting._matplotlib.tools import _flatten, _set_ticks_props, _subplots
+
 from eland.utils import try_sort
 
 

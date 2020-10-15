@@ -15,22 +15,22 @@
 #  specific language governing permissions and limitations
 #  under the License.
 
-from eland._version import (  # noqa: F401
-    __title__,
-    __description__,
-    __url__,
-    __version__,
+from ._version import (  # noqa: F401
     __author__,
     __author_email__,
+    __description__,
     __maintainer__,
     __maintainer_email__,
+    __title__,
+    __url__,
+    __version__,
 )
-from eland.common import SortOrder
-from eland.index import Index
-from eland.ndframe import NDFrame
-from eland.series import Series
-from eland.dataframe import DataFrame
-from eland.etl import pandas_to_eland, eland_to_pandas, read_es, read_csv, csv_to_eland
+from .common import SortOrder
+from .dataframe import DataFrame
+from .etl import csv_to_eland, eland_to_pandas, pandas_to_eland, read_csv, read_es
+from .index import Index
+from .ndframe import NDFrame
+from .series import Series
 
 __all__ = [
     "DataFrame",

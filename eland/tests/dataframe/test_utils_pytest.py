@@ -22,8 +22,7 @@ import pandas as pd
 
 import eland as ed
 from eland.field_mappings import FieldMappings
-from eland.tests.common import ES_TEST_CLIENT, assert_pandas_eland_frame_equal
-from eland.tests.common import TestData
+from eland.tests.common import ES_TEST_CLIENT, TestData, assert_pandas_eland_frame_equal
 
 
 class TestDataFrameUtils(TestData):

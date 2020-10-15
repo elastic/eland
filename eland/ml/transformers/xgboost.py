@@ -16,16 +16,18 @@
 #  under the License.
 
 import re
-from typing import Optional, List, Dict, Any, Type
-from .base import ModelTransformer
+from typing import Any, Dict, List, Optional, Type
+
 import pandas as pd  # type: ignore
+
 from .._model_serializer import Ensemble, Tree, TreeNode
-from ..common import TYPE_CLASSIFICATION, TYPE_REGRESSION
 from .._optional import import_optional_dependency
+from ..common import TYPE_CLASSIFICATION, TYPE_REGRESSION
+from .base import ModelTransformer
 
 import_optional_dependency("xgboost", on_version="warn")
 
-from xgboost import Booster, XGBRegressor, XGBClassifier  # type: ignore
+from xgboost import Booster, XGBClassifier, XGBRegressor  # type: ignore
 
 
 class XGBoostForestTransformer(ModelTransformer):

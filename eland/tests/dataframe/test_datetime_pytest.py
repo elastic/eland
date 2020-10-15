@@ -24,10 +24,12 @@ from pandas.testing import assert_series_equal
 
 import eland as ed
 from eland.field_mappings import FieldMappings
-from eland.tests.common import ES_TEST_CLIENT
-from eland.tests.common import TestData
-from eland.tests.common import assert_pandas_eland_frame_equal
-from eland.tests.common import assert_pandas_eland_series_equal
+from eland.tests.common import (
+    ES_TEST_CLIENT,
+    TestData,
+    assert_pandas_eland_frame_equal,
+    assert_pandas_eland_series_equal,
+)
 
 
 class TestDataFrameDateTime(TestData):

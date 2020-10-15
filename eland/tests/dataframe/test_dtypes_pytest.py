@@ -19,6 +19,7 @@
 
 import numpy as np
 import pandas as pd
+
 from eland.tests.common import assert_series_equal
 
 

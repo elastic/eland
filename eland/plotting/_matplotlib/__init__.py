@@ -22,10 +22,7 @@ Based from https://github.com/pandas-dev/pandas/blob/v0.25.3/pandas/plotting/__i
 but only supporting a subset of plotting methods (for now).
 """
 
-from eland.plotting._matplotlib.hist import (
-    hist_frame,
-    hist_series,
-)
+from eland.plotting._matplotlib.hist import hist_frame, hist_series
 
 __all__ = [
     "hist_frame",

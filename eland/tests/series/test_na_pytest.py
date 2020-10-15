@@ -16,8 +16,7 @@
 #  under the License.
 
 from eland import eland_to_pandas
-from eland.tests.common import TestData
-from eland.tests.common import assert_pandas_eland_frame_equal
+from eland.tests.common import TestData, assert_pandas_eland_frame_equal
 
 
 class TestSeriesNA(TestData):

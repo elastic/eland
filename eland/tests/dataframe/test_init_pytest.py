@@ -21,8 +21,7 @@ import pytest
 
 import eland as ed
 from eland.query_compiler import QueryCompiler
-from eland.tests import ES_TEST_CLIENT
-from eland.tests import FLIGHTS_INDEX_NAME
+from eland.tests import ES_TEST_CLIENT, FLIGHTS_INDEX_NAME
 
 
 class TestDataFrameInit:

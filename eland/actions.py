@@ -16,9 +16,9 @@
 #  under the License.
 
 from abc import ABC, abstractmethod
-from typing import List, Optional, TYPE_CHECKING, Union
-from eland import SortOrder
+from typing import TYPE_CHECKING, List, Optional, Union
 
+from eland import SortOrder
 
 if TYPE_CHECKING:
     import pandas as pd  # type: ignore

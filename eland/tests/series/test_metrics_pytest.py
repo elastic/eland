@@ -17,10 +17,11 @@
 
 # File called _pytest for PyCharm compatability
 
-import pytest
-import pandas as pd
-import numpy as np
 from datetime import timedelta
+
+import numpy as np
+import pandas as pd
+import pytest
 
 from eland.tests.common import TestData
 

@@ -19,9 +19,7 @@
 from io import StringIO
 
 import eland as ed
-
 from eland.tests import ES_TEST_CLIENT
-
 from eland.tests.common import TestData
 
 

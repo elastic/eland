@@ -18,8 +18,8 @@
 # File called _pytest for PyCharm compatability
 
 import pytest
-from eland.tests.common import TestData
-from eland.tests.common import assert_eland_frame_equal
+
+from eland.tests.common import TestData, assert_eland_frame_equal
 
 
 class TestDataEsQuery(TestData):
