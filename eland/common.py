@@ -86,24 +86,6 @@ class SortOrder(Enum):
         return SortOrder.DESC
 
 
-def datetime_to_elasticsearch_date(value: datetime) -> str:
-    """
-    Given an object of type datetime format the datetime to ElasticSearch's
-    default datetime format "strict_date_optional_time"
-    (see `elasticsearch_date_to_pandas_data(...)` in eland/common.py)
-
-    Parameters
-    ----------
-    value: datetime
-        The datetime object
-
-    Returns
-    -------
-    datetime_str: str
-        A string in the "strict_date_optional_time" format
-    """
-    return value.strftime("%Y-%m-%dT%H:%M:%S.%f%z")
-
 def elasticsearch_date_to_pandas_date(
     value: Union[int, str], date_format: str
 ) -> pd.Timestamp:
