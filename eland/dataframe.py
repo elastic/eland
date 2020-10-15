@@ -1442,13 +1442,10 @@ class DataFrame(NDFrame):
         by:
             column or list of columns used to groupby
             Currently accepts column or list of columns
-            TODO Implement other combinations of by similar to pandas
 
         dropna: default True
             If True, and if group keys contain NA values, NA values together with row/column will be dropped.
-            TODO Implement False
 
-        TODO Implement remainder of pandas arguments
         Returns
         -------
         GroupByDataFrame
@@ -1495,18 +1492,18 @@ class DataFrame(NDFrame):
         [63 rows x 2 columns]
         """
         if by is None:
-            raise TypeError("by parameter should be specified to groupby")
+            raise ValueError("by parameter should be specified to groupby")
         if isinstance(by, str):
             by = [by]
         if isinstance(by, (list, tuple)):
-            remaining_columns = set(by) - set(self._query_compiler.columns)
+            remaining_columns = sorted(set(by) - set(self._query_compiler.columns))
             if remaining_columns:
                 raise KeyError(
-                    f"Requested columns {remaining_columns} not in the DataFrame."
+                    f"Requested columns {repr(remaining_columns)[1:-1]} not in the DataFrame"
                 )
 
         return GroupByDataFrame(
-            by=by, query_compiler=self._query_compiler, dropna=dropna
+            by=by, query_compiler=self._query_compiler.copy(), dropna=dropna
         )
 
     def query(self, expr) -> "DataFrame":

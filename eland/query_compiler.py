@@ -550,15 +550,22 @@ class QueryCompiler:
             self, ["nunique"], numeric_only=False
         )
 
-    def groupby(
+    def aggs_groupby(
         self,
         by: List[str],
         pd_aggs: List[str],
         dropna: bool = True,
-        is_agg: bool = False,
+        is_dataframe_agg: bool = False,
         numeric_only: bool = True,
     ) -> pd.DataFrame:
-        return self._operations.groupby(self, by, pd_aggs, dropna, is_agg, numeric_only)
+        return self._operations.aggs_groupby(
+            self,
+            by=by,
+            pd_aggs=pd_aggs,
+            dropna=dropna,
+            is_dataframe_agg=is_dataframe_agg,
+            numeric_only=numeric_only,
+        )
 
     def value_counts(self, es_size):
         return self._operations.value_counts(self, es_size)
