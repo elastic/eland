@@ -46,7 +46,7 @@ from pandas.io.common import _expand_user, stringify_path
 import eland.plotting
 from eland import NDFrame
 from eland.arithmetics import ArithmeticSeries, ArithmeticString, ArithmeticNumber
-from eland.common import DEFAULT_NUM_ROWS_DISPLAYED, docstring_parameter, datetime_to_elasticsearch_date
+from eland.common import DEFAULT_NUM_ROWS_DISPLAYED, docstring_parameter
 from eland.filter import (
     BooleanFilter,
     NotFilter,
