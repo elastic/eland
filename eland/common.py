@@ -20,8 +20,6 @@ import warnings
 from enum import Enum
 from typing import Union, List, Tuple, cast, Callable, Any, Optional, Dict
 
-from datetime import datetime
-
 import numpy as np  # type: ignore
 import pandas as pd  # type: ignore
 from elasticsearch import Elasticsearch  # type: ignore
