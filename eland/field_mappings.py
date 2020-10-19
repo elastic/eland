@@ -100,6 +100,8 @@ class Field(NamedTuple):
             elif es_agg[0] == "percentiles":
                 es_agg = "percentiles"
 
+        if es_agg == "value_count":
+            return True
         # Cardinality works for all types
         # Numerics and bools work for all aggs
         # Except "median_absolute_deviation" which doesn't support bool
@@ -730,7 +732,6 @@ class FieldMappings:
 
         """
         groupby_fields: Dict[str, Field] = {}
-        # groupby_fields: Union[List[Field], List[None]] = [None] * len(by)
         aggregatable_fields: List[Field] = []
         for column, row in self._mappings_capabilities.iterrows():
             row = row.to_dict()

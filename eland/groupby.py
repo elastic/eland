@@ -152,6 +152,11 @@ class GroupByDataFrame(GroupBy):
             - True: returns all values with float64, NaN/NaT are ignored.
             - False: returns all values with float64.
             - None: returns all values with default datatype.
+
+        Returns
+        -------
+            A Pandas DataFrame
+
         """
         if isinstance(func, str):
             func = [func]
@@ -164,3 +169,14 @@ class GroupByDataFrame(GroupBy):
         )
 
     agg = aggregate
+
+    def count(self) -> "pd.DataFrame":
+        """
+        Used to groupby and count
+
+        Returns
+        -------
+            A Pandas DataFrame
+
+        """
+        return self._query_compiler.count_groupby(by=self._by, is_dataframe_agg=False)

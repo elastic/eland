@@ -16,9 +16,30 @@
 #  under the License.
 
 # File called _pytest for PyCharm compatability
+from pandas.testing import assert_series_equal
+
+from eland.tests.common import TestData
 
 
-class TestDataFrameCount:
+class TestDataFrameCount(TestData):
+    filter_data = [
+        "AvgTicketPrice",
+        "Cancelled",
+        "dayOfWeek",
+        "timestamp",
+        "DestCountry",
+    ]
+
     def test_count(self, df):
         df.load_dataset("ecommerce")
         df.count()
+
+    def test_count_flights(self):
+
+        pd_flights = self.pd_flights().filter(self.filter_data)
+        ed_flights = self.ed_flights().filter(self.filter_data)
+
+        pd_count = pd_flights.count()
+        ed_count = ed_flights.count()
+
+        assert_series_equal(pd_count, ed_count)

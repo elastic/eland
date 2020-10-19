@@ -154,3 +154,17 @@ class TestGroupbyDataFrame(TestData):
     def test_groupby_dropna(self):
         # TODO Add tests once dropna is implemeted
         pass
+
+    def test_groupByDataFrame_count(self):
+        pd_flights = self.pd_flights().filter(self.filter_data)
+        ed_flights = self.ed_flights().filter(self.filter_data)
+
+        pd_count = pd_flights.groupby("dayOfWeek").count()
+        ed_count = ed_flights.groupby("dayOfWeek").count()
+
+        assert_frame_equal(pd_count, ed_count)
+
+        pd_agg_count = pd_flights.groupby("Cancelled").agg(["count"])
+        ed_agg_count = ed_flights.groupby("Cancelled").agg(["count"])
+
+        assert_frame_equal(pd_agg_count, ed_agg_count)

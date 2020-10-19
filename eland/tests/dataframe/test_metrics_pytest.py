@@ -20,7 +20,7 @@ import pandas as pd
 
 # File called _pytest for PyCharm compatibility
 import pytest
-from pandas.testing import assert_series_equal
+from pandas.testing import assert_frame_equal, assert_series_equal
 
 from eland.tests.common import TestData
 
@@ -414,3 +414,13 @@ class TestDataFrameMetrics(TestData):
             assert isinstance(calculated_values["AvgTicketPrice"], float)
             assert isinstance(calculated_values["dayOfWeek"], float)
             assert calculated_values.shape == (2,)
+
+    def test_aggs_count(self):
+
+        pd_flights = self.pd_flights().filter(self.filter_data)
+        ed_flights = self.ed_flights().filter(self.filter_data)
+
+        pd_count = pd_flights.agg(["count"])
+        ed_count = ed_flights.agg(["count"])
+
+        assert_frame_equal(pd_count, ed_count)

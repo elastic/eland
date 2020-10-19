@@ -567,6 +567,17 @@ class QueryCompiler:
             numeric_only=numeric_only,
         )
 
+    def count_groupby(
+        self, by: List[str], is_dataframe_agg: bool = False
+    ) -> pd.DataFrame:
+        return self._operations.aggs_groupby(
+            self,
+            by=by,
+            pd_aggs=["count"],
+            is_dataframe_agg=is_dataframe_agg,
+            numeric_only=False,
+        )
+
     def value_counts(self, es_size):
         return self._operations.value_counts(self, es_size)
 
