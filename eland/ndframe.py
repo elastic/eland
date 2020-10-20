@@ -17,13 +17,15 @@
 
 import sys
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Optional, Tuple
+from typing import TYPE_CHECKING, List, Optional, Tuple, Union
 
-import pandas as pd
+import pandas as pd  # type: ignore
 
 from eland.query_compiler import QueryCompiler
 
 if TYPE_CHECKING:
+    from elasticsearch import Elasticsearch
+
     from eland.index import Index
 
 """
@@ -55,12 +57,14 @@ only Elasticsearch aggregatable fields can be aggregated or grouped.
 class NDFrame(ABC):
     def __init__(
         self,
-        es_client=None,
-        es_index_pattern=None,
-        columns=None,
-        es_index_field=None,
-        _query_compiler=None,
-    ):
+        es_client: Optional[
+            Union[str, List[str], Tuple[str, ...], "Elasticsearch"]
+        ] = None,
+        es_index_pattern: Optional[str] = None,
+        columns: Optional[List[str]] = None,
+        es_index_field: Optional[str] = None,
+        _query_compiler: Optional[QueryCompiler] = None,
+    ) -> None:
         """
         pandas.DataFrame/Series like API that proxies into Elasticsearch index(es).
 
@@ -134,7 +138,7 @@ class NDFrame(ABC):
         return self._query_compiler.dtypes
 
     @property
-    def es_dtypes(self):
+    def es_dtypes(self) -> pd.Series:
         """
         Return the Elasticsearch dtypes in the index
 
@@ -155,7 +159,7 @@ class NDFrame(ABC):
         """
         return self._query_compiler.es_dtypes
 
-    def _build_repr(self, num_rows) -> pd.DataFrame:
+    def _build_repr(self, num_rows: int) -> pd.DataFrame:
         # self could be Series or DataFrame
         if len(self.index) <= num_rows:
             return self.to_pandas()
@@ -639,20 +643,25 @@ class NDFrame(ABC):
         return self._query_compiler.describe()
 
     @abstractmethod
-    def to_pandas(self, show_progress=False):
-        pass
+    def to_pandas(self, show_progress: bool = False) -> pd.DataFrame:
+        raise NotImplementedError
 
     @abstractmethod
-    def head(self, n=5):
-        pass
+    def head(self, n: int = 5) -> "NDFrame":
+        raise NotImplementedError
 
     @abstractmethod
-    def tail(self, n=5):
-        pass
+    def tail(self, n: int = 5) -> "NDFrame":
+        raise NotImplementedError
 
     @abstractmethod
-    def sample(self, n=None, frac=None, random_state=None):
-        pass
+    def sample(
+        self,
+        n: Optional[int] = None,
+        frac: Optional[float] = None,
+        random_state: Optional[int] = None,
+    ) -> "NDFrame":
+        raise NotImplementedError
 
     @property
     def shape(self) -> Tuple[int, ...]:

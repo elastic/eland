@@ -22,7 +22,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union, cast
 
 import numpy as np  # type: ignore
 import pandas as pd  # type: ignore
-from elasticsearch import Elasticsearch  # type: ignore
+from elasticsearch import Elasticsearch
 
 # Default number of rows displayed (different to pandas where ALL could be displayed)
 DEFAULT_NUM_ROWS_DISPLAYED = 60
@@ -86,7 +86,7 @@ class SortOrder(Enum):
 
 
 def elasticsearch_date_to_pandas_date(
-    value: Union[int, str], date_format: str
+    value: Union[int, str], date_format: Optional[str]
 ) -> pd.Timestamp:
     """
     Given a specific Elasticsearch format for a date datatype, returns the
@@ -298,6 +298,7 @@ def es_version(es_client: Elasticsearch) -> Tuple[int, int, int]:
     """Tags the current ES client with a cached '_eland_es_version'
     property if one doesn't exist yet for the current Elasticsearch version.
     """
+    eland_es_version: Tuple[int, int, int]
     if not hasattr(es_client, "_eland_es_version"):
         version_info = es_client.info()["version"]["number"]
         match = re.match(r"^(\d+)\.(\d+)\.(\d+)", version_info)
@@ -306,6 +307,10 @@ def es_version(es_client: Elasticsearch) -> Tuple[int, int, int]:
                 f"Unable to determine Elasticsearch version. "
                 f"Received: {version_info}"
             )
-        major, minor, patch = [int(x) for x in match.groups()]
-        es_client._eland_es_version = (major, minor, patch)
-    return cast(Tuple[int, int, int], es_client._eland_es_version)
+        eland_es_version = cast(
+            Tuple[int, int, int], tuple([int(x) for x in match.groups()])
+        )
+        es_client._eland_es_version = eland_es_version  # type: ignore
+    else:
+        eland_es_version = es_client._eland_es_version  # type: ignore
+    return eland_es_version

@@ -68,6 +68,7 @@ def format(session):
 @nox.session(reuse_venv=True)
 def lint(session):
     session.install("black", "flake8", "mypy", "isort")
+    session.install("--pre", "elasticsearch")
     session.run("python", "utils/license-headers.py", "check", *SOURCE_FILES)
     session.run("black", "--check", "--target-version=py36", *SOURCE_FILES)
     session.run("isort", "--check", *SOURCE_FILES)
