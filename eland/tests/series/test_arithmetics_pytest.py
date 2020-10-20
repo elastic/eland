@@ -17,12 +17,40 @@
 
 # File called _pytest for PyCharm compatability
 import numpy as np
+import pandas as pd
 import pytest
+
+from pytz import timezone
+from datetime import datetime
 
 from eland.tests.common import TestData, assert_pandas_eland_series_equal
 
 
 class TestSeriesArithmetics(TestData):
+    def test_ecommerce_datetime_comparisons(self):
+        pd_df = self.pd_ecommerce().head(10)
+        ed_df = self.ed_ecommerce().head(10)
+
+        ops = [
+            "__le__",
+            "__lt__",
+            "__gt__",
+            "__ge__",
+            "__eq__",
+            "__ne__"
+        ]
+
+        datetime_obj = datetime(2015, 12, 20)
+
+        print(pd_df["order_date"])
+        
+        for op in ops:
+            pd_series = pd_df[getattr(pd_df["order_date"], op)(datetime_obj)]["order_date"]
+            ed_series = ed_df[getattr(ed_df["order_date"], op)(datetime_obj)]["order_date"]
+
+            assert_pandas_eland_series_equal(pd_series, ed_series, check_less_precise=True)
+
+
     def test_ecommerce_series_invalid_div(self):
         pd_df = self.pd_ecommerce()
         ed_df = self.ed_ecommerce()
