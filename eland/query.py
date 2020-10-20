@@ -167,7 +167,7 @@ class Query:
     def composite_agg_start(
         self,
         name: str,
-        size: Optional[int] = None,
+        size: int,
         dropna: bool = True,
     ) -> None:
         """
@@ -196,7 +196,7 @@ class Query:
         Parameters
         ----------
         size: int or None
-            Use composite aggregation with pagination if size is Not None
+            Use composite aggregation with pagination if size is not None
         name: str
             Name of the buckets
         dropna: bool
@@ -215,10 +215,9 @@ class Query:
             sources.append({bucket_agg_name: bucket_agg})
         self._composite_aggs.clear()
 
-        aggs: Dict[str, Dict[str, Any]] = {"composite": {"sources": sources}}
-
-        if size is not None:
-            aggs["composite"]["size"] = size
+        aggs: Dict[str, Dict[str, Any]] = {
+            "composite": {"size": size, "sources": sources}
+        }
 
         if self._aggs:
             aggs["aggregations"] = self._aggs.copy()

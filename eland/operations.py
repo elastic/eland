@@ -512,11 +512,11 @@ class Operations:
                         agg_value = np.NaN
 
                 # Cardinality is always either NaN or integer.
-                elif pd_agg == "nunique":
+                elif pd_agg in ("nunique", "count"):
                     agg_value = int(agg_value)
 
                 # If this is a non-null timestamp field convert to a pd.Timestamp()
-                elif field.is_timestamp and pd_agg != "count":
+                elif field.is_timestamp:
                     agg_value = elasticsearch_date_to_pandas_date(
                         agg_value, field.es_date_format
                     )

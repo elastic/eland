@@ -179,4 +179,10 @@ class GroupByDataFrame(GroupBy):
             A Pandas DataFrame
 
         """
-        return self._query_compiler.count_groupby(by=self._by, is_dataframe_agg=False)
+        return self._query_compiler.aggs_groupby(
+            by=self._by,
+            pd_aggs=["count"],
+            dropna=self._dropna,
+            numeric_only=False,
+            is_dataframe_agg=False,
+        )
