@@ -20,8 +20,8 @@ from collections import deque
 from typing import Any, Dict, Generator, List, Mapping, Optional, Tuple, Union
 
 import pandas as pd  # type: ignore
-from elasticsearch import Elasticsearch  # type: ignore
-from elasticsearch.helpers import parallel_bulk  # type: ignore
+from elasticsearch import Elasticsearch
+from elasticsearch.helpers import parallel_bulk
 from pandas.io.parsers import _c_parser_defaults  # type: ignore
 
 from eland import DataFrame
@@ -240,7 +240,7 @@ def pandas_to_eland(
                 pd_df, es_dropna, use_pandas_index_for_es_ids, es_dest_index
             ),
             thread_count=thread_count,
-            chunk_size=chunksize / thread_count,
+            chunk_size=int(chunksize / thread_count),
         ),
         maxlen=0,
     )

@@ -18,7 +18,7 @@
 import warnings
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union, cast
 
-import elasticsearch  # type: ignore
+import elasticsearch
 import numpy as np  # type: ignore
 
 from eland.common import ensure_es_client, es_version
@@ -447,11 +447,13 @@ class MLModel:
             # In Elasticsearch 7.7 and earlier you can't get
             # target type without pulling the model definition
             # so we check the version first.
-            kwargs = {}
             if es_version(self._client) < (7, 8):
-                kwargs["include_model_definition"] = True
+                resp = self._client.ml.get_trained_models(
+                    model_id=self._model_id, include_model_definition=True
+                )
+            else:
+                resp = self._client.ml.get_trained_models(model_id=self._model_id)
 
-            resp = self._client.ml.get_trained_models(model_id=self._model_id, **kwargs)
             if resp["count"] > 1:
                 raise ValueError(f"Model ID {self._model_id!r} wasn't unambiguous")
             elif resp["count"] == 0:

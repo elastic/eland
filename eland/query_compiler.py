@@ -94,11 +94,11 @@ class QueryCompiler:
             self._operations = Operations()
 
     @property
-    def index(self):
+    def index(self) -> Index:
         return self._index
 
     @property
-    def columns(self):
+    def columns(self) -> pd.Index:
         columns = self._mappings.display_names
 
         return pd.Index(columns)
@@ -120,11 +120,11 @@ class QueryCompiler:
         return result
 
     @property
-    def dtypes(self):
+    def dtypes(self) -> pd.Series:
         return self._mappings.dtypes()
 
     @property
-    def es_dtypes(self):
+    def es_dtypes(self) -> pd.Series:
         return self._mappings.es_dtypes()
 
     # END Index, columns, and dtypes objects
