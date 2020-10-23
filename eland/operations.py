@@ -512,7 +512,7 @@ class Operations:
                         agg_value = np.NaN
 
                 # Cardinality is always either NaN or integer.
-                elif pd_agg == "nunique":
+                elif pd_agg in ("nunique", "count"):
                     agg_value = int(agg_value)
 
                 # If this is a non-null timestamp field convert to a pd.Timestamp()
@@ -579,13 +579,62 @@ class Operations:
             numeric_only=numeric_only,
         )
 
-        agg_df = pd.DataFrame(results, columns=results.keys()).set_index(by)
+        agg_df = pd.DataFrame(results).set_index(by)
 
         if is_dataframe_agg:
             # Convert header columns to MultiIndex
             agg_df.columns = pd.MultiIndex.from_product([headers, pd_aggs])
+        else:
+            # Convert header columns to Index
+            agg_df.columns = pd.Index(headers)
 
         return agg_df
+
+    @staticmethod
+    def bucket_generator(
+        query_compiler: "QueryCompiler", body: "Query"
+    ) -> Generator[List[str], None, List[str]]:
+        """
+            This can be used for all groupby operations.
+        e.g.
+        "aggregations": {
+            "groupby_buckets": {
+                "after_key": {"total_quantity": 8},
+                "buckets": [
+                    {
+                        "key": {"total_quantity": 1},
+                        "doc_count": 87,
+                        "taxful_total_price_avg": {"value": 48.035978536496216},
+                    }
+                ],
+            }
+        }
+        Returns
+        -------
+        A generator which initially yields the bucket
+        If after_key is found, use it to fetch the next set of buckets.
+
+        """
+        while True:
+            res = query_compiler._client.search(
+                index=query_compiler._index_pattern,
+                size=0,
+                body=body.to_search_body(),
+            )
+
+            # Pagination Logic
+            composite_buckets = res["aggregations"]["groupby_buckets"]
+            if "after_key" in composite_buckets:
+
+                # yield the bucket which contains the result
+                yield composite_buckets["buckets"]
+
+                body.composite_agg_after_key(
+                    name="groupby_buckets",
+                    after_key=composite_buckets["after_key"],
+                )
+            else:
+                return composite_buckets["buckets"]
 
     def _groupby_aggs(
         self,
@@ -640,33 +689,45 @@ class Operations:
 
         body = Query(query_params.query)
 
+        # To return for creating multi-index on columns
+        headers = [field.column for field in agg_fields]
+
         # Convert pandas aggs to ES equivalent
         es_aggs = self._map_pd_aggs_to_es_aggs(pd_aggs)
+
+        # pd_agg 'count' is handled via 'doc_count' from buckets
+        using_pd_agg_count = "count" in pd_aggs
 
         # Construct Query
         for by_field in by_fields:
             # groupby fields will be term aggregations
             body.composite_agg_bucket_terms(
-                name=f"groupby_{by_field.column}", field=by_field.es_field_name
+                name=f"groupby_{by_field.column}",
+                field=by_field.aggregatable_es_field_name,
             )
 
-        for field in agg_fields:
+        for agg_field in agg_fields:
             for es_agg in es_aggs:
-                if not field.is_es_agg_compatible(es_agg):
+                # Skip if the field isn't compatible or if the agg is
+                # 'value_count' as this value is pulled from bucket.doc_count.
+                if (
+                    not agg_field.is_es_agg_compatible(es_agg)
+                    or es_agg == "value_count"
+                ):
                     continue
 
                 # If we have multiple 'extended_stats' etc. here we simply NOOP on 2nd call
                 if isinstance(es_agg, tuple):
                     body.metric_aggs(
-                        f"{es_agg[0]}_{field.es_field_name}",
+                        f"{es_agg[0]}_{agg_field.es_field_name}",
                         es_agg[0],
-                        field.aggregatable_es_field_name,
+                        agg_field.aggregatable_es_field_name,
                     )
                 else:
                     body.metric_aggs(
-                        f"{es_agg}_{field.es_field_name}",
+                        f"{es_agg}_{agg_field.es_field_name}",
                         es_agg,
-                        field.aggregatable_es_field_name,
+                        agg_field.aggregatable_es_field_name,
                     )
 
         # Composite aggregation
@@ -674,49 +735,7 @@ class Operations:
             size=DEFAULT_PAGINATION_SIZE, name="groupby_buckets", dropna=dropna
         )
 
-        def bucket_generator() -> Generator[List[str], None, List[str]]:
-            """
-            e.g.
-            "aggregations": {
-                "groupby_buckets": {
-                    "after_key": {"total_quantity": 8},
-                    "buckets": [
-                        {
-                            "key": {"total_quantity": 1},
-                            "doc_count": 87,
-                            "taxful_total_price_avg": {"value": 48.035978536496216},
-                        }
-                    ],
-                }
-            }
-            Returns
-            -------
-            A generator which initially yields the bucket
-            If after_key is found, use it to fetch the next set of buckets.
-
-            """
-            while True:
-                res = query_compiler._client.search(
-                    index=query_compiler._index_pattern,
-                    size=0,
-                    body=body.to_search_body(),
-                )
-
-                # Pagination Logic
-                composite_buckets = res["aggregations"]["groupby_buckets"]
-                if "after_key" in composite_buckets:
-
-                    # yield the bucket which contains the result
-                    yield composite_buckets["buckets"]
-
-                    body.composite_agg_after_key(
-                        name="groupby_buckets",
-                        after_key=composite_buckets["after_key"],
-                    )
-                else:
-                    return composite_buckets["buckets"]
-
-        for buckets in bucket_generator():
+        for buckets in self.bucket_generator(query_compiler, body):
             # We recieve response row-wise
             for bucket in buckets:
                 # groupby columns are added to result same way they are returned
@@ -729,6 +748,15 @@ class Operations:
 
                     response[by_field.column].append(bucket_key)
 
+                # Put 'doc_count' from bucket into each 'agg_field'
+                # to be extracted from _unpack_metric_aggs()
+                if using_pd_agg_count:
+                    doc_count = bucket["doc_count"]
+                    for agg_field in agg_fields:
+                        bucket[f"value_count_{agg_field.es_field_name}"] = {
+                            "value": doc_count
+                        }
+
                 agg_calculation = self._unpack_metric_aggs(
                     fields=agg_fields,
                     es_aggs=es_aggs,
@@ -737,15 +765,16 @@ class Operations:
                     numeric_only=numeric_only,
                     is_dataframe_agg=is_dataframe_agg,
                 )
+
                 # Process the calculated agg values to response
                 for key, value in agg_calculation.items():
-                    if isinstance(value, list):
-                        for pd_agg, val in zip(pd_aggs, value):
-                            response[f"{key}_{pd_agg}"].append(val)
-                    else:
+                    if not isinstance(value, list):
                         response[key].append(value)
+                        continue
+                    for pd_agg, val in zip(pd_aggs, value):
+                        response[f"{key}_{pd_agg}"].append(val)
 
-        return [field.column for field in agg_fields], response
+        return headers, response
 
     @staticmethod
     def _map_pd_aggs_to_es_aggs(pd_aggs):
@@ -781,8 +810,8 @@ class Operations:
         """
         # pd aggs that will be mapped to es aggs
         # that can use 'extended_stats'.
-        extended_stats_pd_aggs = {"mean", "min", "max", "count", "sum", "var", "std"}
-        extended_stats_es_aggs = {"avg", "min", "max", "count", "sum"}
+        extended_stats_pd_aggs = {"mean", "min", "max", "sum", "var", "std"}
+        extended_stats_es_aggs = {"avg", "min", "max", "sum"}
         extended_stats_calls = 0
 
         es_aggs = []
@@ -792,7 +821,7 @@ class Operations:
 
             # Aggs that are 'extended_stats' compatible
             if pd_agg == "count":
-                es_aggs.append("count")
+                es_aggs.append("value_count")
             elif pd_agg == "max":
                 es_aggs.append("max")
             elif pd_agg == "min":

@@ -19,7 +19,7 @@
 
 import pandas as pd
 import pytest
-from pandas.testing import assert_frame_equal, assert_series_equal
+from pandas.testing import assert_frame_equal, assert_index_equal, assert_series_equal
 
 from eland.tests.common import TestData
 
@@ -154,3 +154,25 @@ class TestGroupbyDataFrame(TestData):
     def test_groupby_dropna(self):
         # TODO Add tests once dropna is implemeted
         pass
+
+    @pytest.mark.parametrize("groupby", ["dayOfWeek", ["dayOfWeek", "Cancelled"]])
+    @pytest.mark.parametrize(
+        ["func", "func_args"],
+        [
+            ("count", ()),
+            ("agg", ("count",)),
+            ("agg", (["count"],)),
+            ("agg", (["max", "count", "min"],)),
+        ],
+    )
+    def test_groupby_dataframe_count(self, groupby, func, func_args):
+        pd_flights = self.pd_flights().filter(self.filter_data)
+        ed_flights = self.ed_flights().filter(self.filter_data)
+
+        pd_count = getattr(pd_flights.groupby(groupby), func)(*func_args)
+        ed_count = getattr(ed_flights.groupby(groupby), func)(*func_args)
+
+        assert_index_equal(pd_count.columns, ed_count.columns)
+        assert_index_equal(pd_count.index, ed_count.index)
+        assert_frame_equal(pd_count, ed_count)
+        assert_series_equal(pd_count.dtypes, ed_count.dtypes)

@@ -1474,6 +1474,7 @@ class DataFrame(NDFrame):
                     True          121.280296  1175.709961       0.0  6.0
         <BLANKLINE>
         [63 rows x 4 columns]
+
         >>> ed_flights.groupby(["DestCountry", "Cancelled"]).mean(numeric_only=True) # doctest: +NORMALIZE_WHITESPACE
                                AvgTicketPrice  dayOfWeek
         DestCountry Cancelled
@@ -1490,6 +1491,23 @@ class DataFrame(NDFrame):
                     True           677.794078   2.928571
         <BLANKLINE>
         [63 rows x 2 columns]
+
+        >>> ed_flights.groupby(["DestCountry", "Cancelled"]).min(numeric_only=False) # doctest: +NORMALIZE_WHITESPACE
+                               AvgTicketPrice  dayOfWeek           timestamp
+        DestCountry Cancelled
+        AE          False          110.799911          0 2018-01-01 19:31:30
+                    True           132.443756          0 2018-01-06 13:03:25
+        AR          False          125.589394          0 2018-01-01 01:30:47
+                    True           251.389603          0 2018-01-01 02:13:17
+        AT          False          100.020531          0 2018-01-01 05:24:19
+        ...                               ...        ...                 ...
+        TR          True           307.915649          0 2018-01-08 04:35:10
+        US          False          100.145966          0 2018-01-01 00:06:27
+                    True           102.153069          0 2018-01-01 09:02:36
+        ZA          False          102.002663          0 2018-01-01 06:44:44
+                    True           121.280296          0 2018-01-04 00:37:01
+        <BLANKLINE>
+        [63 rows x 3 columns]
         """
         if by is None:
             raise ValueError("by parameter should be specified to groupby")

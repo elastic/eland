@@ -100,12 +100,12 @@ class Field(NamedTuple):
             elif es_agg[0] == "percentiles":
                 es_agg = "percentiles"
 
-        # Cardinality works for all types
-        # Numerics and bools work for all aggs
         # Except "median_absolute_deviation" which doesn't support bool
         if es_agg == "median_absolute_deviation" and self.is_bool:
             return False
-        if es_agg == "cardinality" or self.is_numeric or self.is_bool:
+        # Cardinality and Count work for all types
+        # Numerics and bools work for all aggs
+        if es_agg in ("cardinality", "value_count") or self.is_numeric or self.is_bool:
             return True
         # Timestamps also work for 'min', 'max' and 'avg'
         if es_agg in {"min", "max", "avg", "percentiles"} and self.is_timestamp:
@@ -730,7 +730,6 @@ class FieldMappings:
 
         """
         groupby_fields: Dict[str, Field] = {}
-        # groupby_fields: Union[List[Field], List[None]] = [None] * len(by)
         aggregatable_fields: List[Field] = []
         for column, row in self._mappings_capabilities.iterrows():
             row = row.to_dict()

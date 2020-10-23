@@ -152,15 +152,42 @@ class GroupByDataFrame(GroupBy):
             - True: returns all values with float64, NaN/NaT are ignored.
             - False: returns all values with float64.
             - None: returns all values with default datatype.
+
+        Returns
+        -------
+            A Pandas DataFrame
+
         """
+        # Controls whether a MultiIndex is used for the
+        # columns of the result DataFrame.
+        is_dataframe_agg = True
         if isinstance(func, str):
             func = [func]
+            is_dataframe_agg = False
+
         return self._query_compiler.aggs_groupby(
             by=self._by,
             pd_aggs=func,
             dropna=self._dropna,
             numeric_only=numeric_only,
-            is_dataframe_agg=True,
+            is_dataframe_agg=is_dataframe_agg,
         )
 
     agg = aggregate
+
+    def count(self) -> "pd.DataFrame":
+        """
+        Used to groupby and count
+
+        Returns
+        -------
+            A Pandas DataFrame
+
+        """
+        return self._query_compiler.aggs_groupby(
+            by=self._by,
+            pd_aggs=["count"],
+            dropna=self._dropna,
+            numeric_only=False,
+            is_dataframe_agg=False,
+        )
