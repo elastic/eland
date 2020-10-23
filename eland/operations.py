@@ -579,7 +579,7 @@ class Operations:
             numeric_only=numeric_only,
         )
 
-        agg_df = pd.DataFrame(results, columns=results.keys()).set_index(by)
+        agg_df = pd.DataFrame(results).set_index(by)
 
         if is_dataframe_agg:
             # Convert header columns to MultiIndex
@@ -692,41 +692,42 @@ class Operations:
         # To return for creating multi-index on columns
         headers = [field.column for field in agg_fields]
 
-        pd_aggs_copy = pd_aggs.copy()
-        # Required to maintain order of 'count' if multiple aggs are given
-        count_pos: Optional[int] = None
-
-        if "count" in pd_aggs:
-            count_pos = pd_aggs.index("count")
-            pd_aggs_copy.remove("count")
-
         # Convert pandas aggs to ES equivalent
-        es_aggs = self._map_pd_aggs_to_es_aggs(pd_aggs_copy)
+        es_aggs = self._map_pd_aggs_to_es_aggs(pd_aggs)
+
+        # pd_agg 'count' is handled via 'doc_count' from buckets
+        using_pd_agg_count = "count" in pd_aggs
 
         # Construct Query
         for by_field in by_fields:
             # groupby fields will be term aggregations
             body.composite_agg_bucket_terms(
-                name=f"groupby_{by_field.column}", field=by_field.es_field_name
+                name=f"groupby_{by_field.column}",
+                field=by_field.aggregatable_es_field_name,
             )
 
-        for field in agg_fields:
+        for agg_field in agg_fields:
             for es_agg in es_aggs:
-                if not field.is_es_agg_compatible(es_agg):
+                # Skip if the field isn't compatible or if the agg is
+                # 'value_count' as this value is pulled from bucket.doc_count.
+                if (
+                    not agg_field.is_es_agg_compatible(es_agg)
+                    or es_agg == "value_count"
+                ):
                     continue
 
                 # If we have multiple 'extended_stats' etc. here we simply NOOP on 2nd call
                 if isinstance(es_agg, tuple):
                     body.metric_aggs(
-                        f"{es_agg[0]}_{field.es_field_name}",
+                        f"{es_agg[0]}_{agg_field.es_field_name}",
                         es_agg[0],
-                        field.aggregatable_es_field_name,
+                        agg_field.aggregatable_es_field_name,
                     )
                 else:
                     body.metric_aggs(
-                        f"{es_agg}_{field.es_field_name}",
+                        f"{es_agg}_{agg_field.es_field_name}",
                         es_agg,
-                        field.aggregatable_es_field_name,
+                        agg_field.aggregatable_es_field_name,
                     )
 
         # Composite aggregation
@@ -747,35 +748,29 @@ class Operations:
 
                     response[by_field.column].append(bucket_key)
 
+                # Put 'doc_count' from bucket into each 'agg_field'
+                # to be extracted from _unpack_metric_aggs()
+                if using_pd_agg_count:
+                    doc_count = bucket["doc_count"]
+                    for agg_field in agg_fields:
+                        bucket[f"value_count_{agg_field.es_field_name}"] = {
+                            "value": doc_count
+                        }
+
                 agg_calculation = self._unpack_metric_aggs(
                     fields=agg_fields,
                     es_aggs=es_aggs,
-                    pd_aggs=pd_aggs_copy,
+                    pd_aggs=pd_aggs,
                     response={"aggregations": bucket},
                     numeric_only=numeric_only,
                     is_dataframe_agg=is_dataframe_agg,
                 )
 
-                doc_count = bucket["doc_count"]
-                # This will be called only once required when ed_df.groupby([...])agg('count') is called.
-                if not agg_calculation and count_pos is not None:
-                    for header in headers:
-                        response[f"{header}_count"].append(doc_count)
-
                 # Process the calculated agg values to response
                 for key, value in agg_calculation.items():
                     if not isinstance(value, list):
-                        if count_pos is not None:
-                            value = [value]
-                            value.insert(count_pos, doc_count)
-                        else:
-                            response[key].append(value)
-                            continue
-
-                    # If value is list
-                    if count_pos is not None:
-                        value.insert(count_pos, doc_count)
-
+                        response[key].append(value)
+                        continue
                     for pd_agg, val in zip(pd_aggs, value):
                         response[f"{key}_{pd_agg}"].append(val)
 
@@ -815,8 +810,8 @@ class Operations:
         """
         # pd aggs that will be mapped to es aggs
         # that can use 'extended_stats'.
-        extended_stats_pd_aggs = {"mean", "min", "max", "count", "sum", "var", "std"}
-        extended_stats_es_aggs = {"avg", "min", "max", "count", "sum"}
+        extended_stats_pd_aggs = {"mean", "min", "max", "sum", "var", "std"}
+        extended_stats_es_aggs = {"avg", "min", "max", "sum"}
         extended_stats_calls = 0
 
         es_aggs = []

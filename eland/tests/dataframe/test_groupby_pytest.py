@@ -155,20 +155,24 @@ class TestGroupbyDataFrame(TestData):
         # TODO Add tests once dropna is implemeted
         pass
 
-    def test_groupby_dataframe_count(self):
+    @pytest.mark.parametrize("groupby", ["dayOfWeek", ["dayOfWeek", "Cancelled"]])
+    @pytest.mark.parametrize(
+        ["func", "func_args"],
+        [
+            ("count", ()),
+            ("agg", ("count",)),
+            ("agg", (["count"],)),
+            ("agg", (["max", "count", "min"],)),
+        ],
+    )
+    def test_groupby_dataframe_count(self, groupby, func, func_args):
         pd_flights = self.pd_flights().filter(self.filter_data)
         ed_flights = self.ed_flights().filter(self.filter_data)
 
-        pd_count = pd_flights.groupby("dayOfWeek").count()
-        ed_count = ed_flights.groupby("dayOfWeek").count()
+        pd_count = getattr(pd_flights.groupby(groupby), func)(*func_args)
+        ed_count = getattr(ed_flights.groupby(groupby), func)(*func_args)
 
         assert_index_equal(pd_count.columns, ed_count.columns)
         assert_index_equal(pd_count.index, ed_count.index)
         assert_frame_equal(pd_count, ed_count)
-
-        pd_agg_count = pd_flights.groupby("Cancelled").agg(["count"])
-        ed_agg_count = ed_flights.groupby("Cancelled").agg(["count"])
-
-        assert_index_equal(pd_agg_count.columns, ed_agg_count.columns)
-        assert_index_equal(pd_agg_count.index, ed_agg_count.index)
-        assert_frame_equal(pd_agg_count, ed_agg_count)
+        assert_series_equal(pd_count.dtypes, ed_count.dtypes)

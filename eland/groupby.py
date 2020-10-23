@@ -158,14 +158,19 @@ class GroupByDataFrame(GroupBy):
             A Pandas DataFrame
 
         """
+        # Controls whether a MultiIndex is used for the
+        # columns of the result DataFrame.
+        is_dataframe_agg = True
         if isinstance(func, str):
             func = [func]
+            is_dataframe_agg = False
+
         return self._query_compiler.aggs_groupby(
             by=self._by,
             pd_aggs=func,
             dropna=self._dropna,
             numeric_only=numeric_only,
-            is_dataframe_agg=True,
+            is_dataframe_agg=is_dataframe_agg,
         )
 
     agg = aggregate
