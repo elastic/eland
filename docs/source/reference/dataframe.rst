@@ -48,6 +48,28 @@ Function Application, GroupBy & Window
    DataFrame.aggregate
    DataFrame.groupby
 
+.. currentmodule:: eland.groupby
+
+.. autosummary::
+   :toctree: api/
+
+   DataFrameGroupBy
+   DataFrameGroupBy.agg
+   DataFrameGroupBy.aggregate
+   DataFrameGroupBy.count
+   DataFrameGroupByGroupBy.mad
+   DataFrameGroupByGroupBy.max
+   DataFrameGroupByGroupBy.mean
+   DataFrameGroupByGroupBy.median
+   DataFrameGroupByGroupBy.min
+   DataFrameGroupByGroupBy.nunique
+   DataFrameGroupByGroupBy.std
+   DataFrameGroupByGroupBy.sum
+   DataFrameGroupByGroupBy.var
+   GroupBy
+
+.. currentmodule:: eland
+
 .. _api.dataframe.stats:
 
 Computations / Descriptive Stats

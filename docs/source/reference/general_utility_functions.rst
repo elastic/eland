@@ -1,7 +1,7 @@
 .. _api.general_utility_functions:
 
 =========================
-General utility functions
+General Utility Functions
 =========================
 .. currentmodule:: eland
 

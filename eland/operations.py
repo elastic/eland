@@ -545,7 +545,7 @@ class Operations:
         pd_aggs: List[str],
         dropna: bool = True,
         is_dataframe_agg: bool = False,
-        numeric_only: bool = True,
+        numeric_only: Optional[bool] = True,
     ) -> pd.DataFrame:
         """
         This method is used to construct groupby aggregation dataframe
@@ -570,14 +570,97 @@ class Operations:
         -------
             A dataframe which consists groupby data
         """
-        headers, results = self._groupby_aggs(
-            query_compiler,
-            by=by,
-            pd_aggs=pd_aggs,
-            dropna=dropna,
-            is_dataframe_agg=is_dataframe_agg,
-            numeric_only=numeric_only,
+        query_params, post_processing = self._resolve_tasks(query_compiler)
+
+        size = self._size(query_params, post_processing)
+        if size is not None:
+            raise NotImplementedError(
+                f"Can not count field matches if size is set {size}"
+            )
+
+        by_fields, agg_fields = query_compiler._mappings.groupby_source_fields(by=by)
+
+        # Used defaultdict to avoid initialization of columns with lists
+        results: Dict[str, List[Any]] = defaultdict(list)
+
+        if numeric_only:
+            agg_fields = [
+                field for field in agg_fields if (field.is_numeric or field.is_bool)
+            ]
+
+        body = Query(query_params.query)
+
+        # To return for creating multi-index on columns
+        headers = [agg_field.column for agg_field in agg_fields]
+
+        # Convert pandas aggs to ES equivalent
+        es_aggs = self._map_pd_aggs_to_es_aggs(pd_aggs)
+
+        # Construct Query
+        for by_field in by_fields:
+            # groupby fields will be term aggregations
+            body.composite_agg_bucket_terms(
+                name=f"groupby_{by_field.column}",
+                field=by_field.aggregatable_es_field_name,
+            )
+
+        for agg_field in agg_fields:
+            for es_agg in es_aggs:
+                # Skip if the field isn't compatible or if the agg is
+                # 'value_count' as this value is pulled from bucket.doc_count.
+                if not agg_field.is_es_agg_compatible(es_agg):
+                    continue
+
+                # If we have multiple 'extended_stats' etc. here we simply NOOP on 2nd call
+                if isinstance(es_agg, tuple):
+                    body.metric_aggs(
+                        f"{es_agg[0]}_{agg_field.es_field_name}",
+                        es_agg[0],
+                        agg_field.aggregatable_es_field_name,
+                    )
+                else:
+                    body.metric_aggs(
+                        f"{es_agg}_{agg_field.es_field_name}",
+                        es_agg,
+                        agg_field.aggregatable_es_field_name,
+                    )
+
+        # Composite aggregation
+        body.composite_agg_start(
+            size=DEFAULT_PAGINATION_SIZE, name="groupby_buckets", dropna=dropna
         )
+
+        for buckets in self.bucket_generator(query_compiler, body):
+            # We recieve response row-wise
+            for bucket in buckets:
+                # groupby columns are added to result same way they are returned
+                for by_field in by_fields:
+                    bucket_key = bucket["key"][f"groupby_{by_field.column}"]
+
+                    # Datetimes always come back as integers, convert to pd.Timestamp()
+                    if by_field.is_timestamp and isinstance(bucket_key, int):
+                        bucket_key = pd.to_datetime(bucket_key, unit="ms")
+
+                    results[by_field.column].append(bucket_key)
+
+                agg_calculation = self._unpack_metric_aggs(
+                    fields=agg_fields,
+                    es_aggs=es_aggs,
+                    pd_aggs=pd_aggs,
+                    response={"aggregations": bucket},
+                    numeric_only=numeric_only,
+                    # We set 'True' here because we want the value
+                    # unpacking to always be in 'dataframe' mode.
+                    is_dataframe_agg=True,
+                )
+
+                # Process the calculated agg values to response
+                for key, value in agg_calculation.items():
+                    if not isinstance(value, list):
+                        results[key].append(value)
+                        continue
+                    for pd_agg, val in zip(pd_aggs, value):
+                        results[f"{key}_{pd_agg}"].append(val)
 
         agg_df = pd.DataFrame(results).set_index(by)
 
@@ -635,146 +718,6 @@ class Operations:
                 )
             else:
                 return composite_buckets["buckets"]
-
-    def _groupby_aggs(
-        self,
-        query_compiler: "QueryCompiler",
-        by: List[str],
-        pd_aggs: List[str],
-        dropna: bool = True,
-        is_dataframe_agg: bool = False,
-        numeric_only: bool = True,
-    ) -> Tuple[List[str], Dict[str, Any]]:
-        """
-        This method is used to calculate groupby aggregations
-
-        Parameters
-        ----------
-        query_compiler:
-            A Query compiler
-        by:
-            a list of columns on which groupby operations have to be performed
-        pd_aggs:
-            a list of aggregations to be performed
-        dropna:
-            Drop None values if True.
-            TODO Not yet implemented
-        is_dataframe_agg:
-            Know if multi aggregation or single agg is called.
-        numeric_only:
-            return either numeric values or NaN/NaT
-
-        Returns
-        -------
-        headers: columns on which MultiIndex has to be applied
-        response: dictionary of groupby aggregated values
-        """
-        query_params, post_processing = self._resolve_tasks(query_compiler)
-
-        size = self._size(query_params, post_processing)
-        if size is not None:
-            raise NotImplementedError(
-                f"Can not count field matches if size is set {size}"
-            )
-
-        by_fields, agg_fields = query_compiler._mappings.groupby_source_fields(by=by)
-
-        # Used defaultdict to avoid initialization of columns with lists
-        response: Dict[str, List[Any]] = defaultdict(list)
-
-        if numeric_only:
-            agg_fields = [
-                field for field in agg_fields if (field.is_numeric or field.is_bool)
-            ]
-
-        body = Query(query_params.query)
-
-        # To return for creating multi-index on columns
-        headers = [field.column for field in agg_fields]
-
-        # Convert pandas aggs to ES equivalent
-        es_aggs = self._map_pd_aggs_to_es_aggs(pd_aggs)
-
-        # pd_agg 'count' is handled via 'doc_count' from buckets
-        using_pd_agg_count = "count" in pd_aggs
-
-        # Construct Query
-        for by_field in by_fields:
-            # groupby fields will be term aggregations
-            body.composite_agg_bucket_terms(
-                name=f"groupby_{by_field.column}",
-                field=by_field.aggregatable_es_field_name,
-            )
-
-        for agg_field in agg_fields:
-            for es_agg in es_aggs:
-                # Skip if the field isn't compatible or if the agg is
-                # 'value_count' as this value is pulled from bucket.doc_count.
-                if (
-                    not agg_field.is_es_agg_compatible(es_agg)
-                    or es_agg == "value_count"
-                ):
-                    continue
-
-                # If we have multiple 'extended_stats' etc. here we simply NOOP on 2nd call
-                if isinstance(es_agg, tuple):
-                    body.metric_aggs(
-                        f"{es_agg[0]}_{agg_field.es_field_name}",
-                        es_agg[0],
-                        agg_field.aggregatable_es_field_name,
-                    )
-                else:
-                    body.metric_aggs(
-                        f"{es_agg}_{agg_field.es_field_name}",
-                        es_agg,
-                        agg_field.aggregatable_es_field_name,
-                    )
-
-        # Composite aggregation
-        body.composite_agg_start(
-            size=DEFAULT_PAGINATION_SIZE, name="groupby_buckets", dropna=dropna
-        )
-
-        for buckets in self.bucket_generator(query_compiler, body):
-            # We recieve response row-wise
-            for bucket in buckets:
-                # groupby columns are added to result same way they are returned
-                for by_field in by_fields:
-                    bucket_key = bucket["key"][f"groupby_{by_field.column}"]
-
-                    # Datetimes always come back as integers, convert to pd.Timestamp()
-                    if by_field.is_timestamp and isinstance(bucket_key, int):
-                        bucket_key = pd.to_datetime(bucket_key, unit="ms")
-
-                    response[by_field.column].append(bucket_key)
-
-                # Put 'doc_count' from bucket into each 'agg_field'
-                # to be extracted from _unpack_metric_aggs()
-                if using_pd_agg_count:
-                    doc_count = bucket["doc_count"]
-                    for agg_field in agg_fields:
-                        bucket[f"value_count_{agg_field.es_field_name}"] = {
-                            "value": doc_count
-                        }
-
-                agg_calculation = self._unpack_metric_aggs(
-                    fields=agg_fields,
-                    es_aggs=es_aggs,
-                    pd_aggs=pd_aggs,
-                    response={"aggregations": bucket},
-                    numeric_only=numeric_only,
-                    is_dataframe_agg=is_dataframe_agg,
-                )
-
-                # Process the calculated agg values to response
-                for key, value in agg_calculation.items():
-                    if not isinstance(value, list):
-                        response[key].append(value)
-                        continue
-                    for pd_agg, val in zip(pd_aggs, value):
-                        response[f"{key}_{pd_agg}"].append(val)
-
-        return headers, response
 
     @staticmethod
     def _map_pd_aggs_to_es_aggs(pd_aggs):
