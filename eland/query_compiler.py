@@ -17,7 +17,7 @@
 
 import copy
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional, Sequence
+from typing import TYPE_CHECKING, Any, List, Optional, Sequence, Union
 
 import numpy as np  # type: ignore
 import pandas as pd  # type: ignore
@@ -429,6 +429,77 @@ class QueryCompiler:
         result._operations.sample(self._index, n, random_state)
 
         return result
+
+    def es_match(
+        self,
+        text: str,
+        columns: Sequence[str],
+        *,
+        match_phrase: bool = False,
+        match_only_text_fields: bool = True,
+        multi_match_type: Optional[str] = None,
+        analyzer: Optional[str] = None,
+        fuzziness: Optional[Union[int, str]] = None,
+        **kwargs: Any,
+    ) -> QueryFilter:
+        if len(columns) < 1:
+            raise ValueError("columns can't be empty")
+
+        es_dtypes = self.es_dtypes.to_dict()
+
+        # Build the base options for the 'match_*' query
+        options = {"query": text}
+        if analyzer is not None:
+            options["analyzer"] = analyzer
+        if fuzziness is not None:
+            options["fuzziness"] = fuzziness
+        options.update(kwargs)
+
+        # Warn the user if they're not querying text columns
+        if match_only_text_fields:
+            non_text_columns = {}
+            for column in columns:
+                # Don't worry about wildcards
+                if "*" in column:
+                    continue
+
+                es_dtype = es_dtypes[column]
+                if es_dtype != "text":
+                    non_text_columns[column] = es_dtype
+            if non_text_columns:
+                raise ValueError(
+                    f"Attempting to run es_match() on non-text fields "
+                    f"({', '.join([k + '=' + v for k, v in non_text_columns.items()])}) "
+                    f"means that these fields may not be analyzed properly. "
+                    f"Consider reindexing these fields as text or use 'match_only_text_es_dtypes=False' "
+                    f"to use match anyways"
+                )
+        else:
+            options.setdefault("lenient", True)
+
+        # If only one column use 'match'
+        # otherwise use 'multi_match' with 'fields'
+        if len(columns) == 1:
+            if multi_match_type is not None:
+                raise ValueError(
+                    "multi_match_type parameter only valid "
+                    "when searching more than one column"
+                )
+            query = {"match_phrase" if match_phrase else "match": {columns[0]: options}}
+        else:
+            options["fields"] = columns
+            if match_phrase:
+                if multi_match_type not in ("phrase", None):
+                    raise ValueError(
+                        f"match_phrase=True and multi_match_type={multi_match_type!r} "
+                        f"are not compatible. Must be multi_match_type='phrase'"
+                    )
+                multi_match_type = "phrase"
+            if multi_match_type is not None:
+                options["type"] = multi_match_type
+
+            query = {"multi_match": options}
+        return QueryFilter(query)
 
     def es_query(self, query):
         return self._update_query(QueryFilter(query))

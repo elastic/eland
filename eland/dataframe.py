@@ -19,7 +19,7 @@ import re
 import sys
 import warnings
 from io import StringIO
-from typing import List, Optional, Sequence, Tuple, Union
+from typing import Any, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -631,6 +631,103 @@ class DataFrame(NDFrame):
     @deprecated_api("eland.DataFrame.es_info()")
     def info_es(self):
         return self.es_info()
+
+    def es_match(
+        self,
+        text: str,
+        *,
+        columns: Optional[Union[str, Sequence[str]]] = None,
+        match_phrase: bool = False,
+        must_not_match: bool = False,
+        multi_match_type: Optional[str] = None,
+        match_only_text_fields: bool = True,
+        analyzer: Optional[str] = None,
+        fuzziness: Optional[Union[int, str]] = None,
+        **kwargs: Any,
+    ) -> "DataFrame":
+        """Filters data with an Elasticsearch ``match``, ``match_phrase``, or
+        ``multi_match`` query depending on the given parameters and columns.
+
+        Read more about `Full-Text Queries in Elasticsearch <https://www.elastic.co/guide/en/elasticsearch/reference/current/full-text-queries.html>`_
+
+        By default all fields of type 'text' within Elasticsearch are queried
+        otherwise specific columns can be specified via the ``columns`` parameter
+        or a single column can be filtered on with :py:meth:`eland.Series.es_match`
+
+        All additional keyword arguments are passed in the body of the match query.
+
+        Parameters
+        ----------
+        text: str
+            String of text to search for
+        columns: str, List[str], optional
+            List of columns to search over. Defaults to all 'text' fields in Elasticsearch
+        match_phrase: bool, default False
+            If True will use ``match_phrase`` instead of ``match`` query which takes into account
+            the order of the ``text`` parameter.
+        must_not_match: bool, default False
+            If True will apply a boolean NOT (~) to the
+            query. Instead of requiring a match the query
+            will require text to not match.
+        multi_match_type: str, optional
+            If given and matching against multiple columns will set the ``multi_match.type`` setting
+        match_only_text_fields: bool, default True
+            When True this function will raise an error if any non-text fields
+            are queried to prevent fields that aren't analyzed from not working properly.
+            Set to False to ignore this preventative check.
+        analyzer: str, optional
+            Specify which analyzer to use for the match query
+        fuzziness: int, str, optional
+            Specify the fuzziness option for the match query
+
+        Returns
+        -------
+        DataFrame
+            A filtered :py:class:`eland.DataFrame` with the given match query
+
+        Examples
+        --------
+        >>> df = ed.DataFrame("localhost:9200", "ecommerce")
+        >>> df.es_match("Men's", columns=["category"])
+                                                      category currency  ...   type     user
+        0                                     [Men's Clothing]      EUR  ...  order    eddie
+        4                  [Men's Clothing, Men's Accessories]      EUR  ...  order    eddie
+        6                                     [Men's Clothing]      EUR  ...  order   oliver
+        7     [Men's Clothing, Men's Accessories, Men's Shoes]      EUR  ...  order      abd
+        11                 [Men's Accessories, Men's Clothing]      EUR  ...  order    eddie
+        ...                                                ...      ...  ...    ...      ...
+        4663                     [Men's Shoes, Men's Clothing]      EUR  ...  order    samir
+        4667                     [Men's Clothing, Men's Shoes]      EUR  ...  order   sultan
+        4671                                  [Men's Clothing]      EUR  ...  order      jim
+        4672                                  [Men's Clothing]      EUR  ...  order    yahya
+        4674             [Women's Accessories, Men's Clothing]      EUR  ...  order  jackson
+        <BLANKLINE>
+        [2310 rows x 45 columns]
+        """
+        # Determine which columns will be used
+        es_dtypes = self.es_dtypes.to_dict()
+        if columns is None:
+            columns = [
+                column for column, es_dtype in es_dtypes.items() if es_dtype == "text"
+            ]
+        elif isinstance(columns, str):
+            columns = [columns]
+        columns = list(columns)
+
+        qc = self._query_compiler
+        filter = qc.es_match(
+            text,
+            columns,
+            match_phrase=match_phrase,
+            match_only_text_fields=match_only_text_fields,
+            multi_match_type=multi_match_type,
+            analyzer=analyzer,
+            fuzziness=fuzziness,
+            **kwargs,
+        )
+        if must_not_match:
+            filter = ~filter
+        return DataFrame(_query_compiler=qc._update_query(filter))
 
     def es_query(self, query) -> "DataFrame":
         """Applies an Elasticsearch DSL query to the current DataFrame.

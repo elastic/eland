@@ -995,24 +995,12 @@ class Operations:
         is_scan = False
         if size is not None and size <= DEFAULT_ES_MAX_RESULT_WINDOW:
             if size > 0:
-                try:
-
-                    es_results = query_compiler._client.search(
-                        index=query_compiler._index_pattern,
-                        size=size,
-                        sort=sort_params,
-                        body=body,
-                    )
-                except Exception:
-                    # Catch all ES errors and print debug (currently to stdout)
-                    error = {
-                        "index": query_compiler._index_pattern,
-                        "size": size,
-                        "sort": sort_params,
-                        "body": body,
-                    }
-                    print("Elasticsearch error:", error)
-                    raise
+                es_results = query_compiler._client.search(
+                    index=query_compiler._index_pattern,
+                    size=size,
+                    sort=sort_params,
+                    body=body,
+                )
         else:
             is_scan = True
             es_results = scan(
