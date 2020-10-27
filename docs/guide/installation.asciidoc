@@ -1,0 +1,16 @@
+[[installation]]
+== Installation
+
+Eland can be installed with https://pip.pypa.io[pip] from https://pypi.org/project/eland[PyPI]:
+
+[source,sh]
+-----------------------------
+$ python -m pip install eland
+-----------------------------
+
+and can also be installed with https://docs.conda.io[Conda] from https://anaconda.org/conda-forge/eland[Conda Forge]:
+
+[source,sh]
+------------------------------------
+$ conda install -c conda-forge eland
+------------------------------------
