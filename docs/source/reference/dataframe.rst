@@ -57,15 +57,15 @@ Function Application, GroupBy & Window
    DataFrameGroupBy.agg
    DataFrameGroupBy.aggregate
    DataFrameGroupBy.count
-   DataFrameGroupByGroupBy.mad
-   DataFrameGroupByGroupBy.max
-   DataFrameGroupByGroupBy.mean
-   DataFrameGroupByGroupBy.median
-   DataFrameGroupByGroupBy.min
-   DataFrameGroupByGroupBy.nunique
-   DataFrameGroupByGroupBy.std
-   DataFrameGroupByGroupBy.sum
-   DataFrameGroupByGroupBy.var
+   DataFrameGroupBy.mad
+   DataFrameGroupBy.max
+   DataFrameGroupBy.mean
+   DataFrameGroupBy.median
+   DataFrameGroupBy.min
+   DataFrameGroupBy.nunique
+   DataFrameGroupBy.std
+   DataFrameGroupBy.sum
+   DataFrameGroupBy.var
    GroupBy
 
 .. currentmodule:: eland
