@@ -42,8 +42,6 @@ from pandas.core.dtypes.inference import is_list_like
 if TYPE_CHECKING:
     from elasticsearch import Elasticsearch
 
-    from eland import DataFrame
-
 
 ES_FLOAT_TYPES: Set[str] = {"double", "float", "half_float", "scaled_float"}
 ES_INTEGER_TYPES: Set[str] = {"long", "integer", "short", "byte"}
@@ -463,7 +461,7 @@ class FieldMappings:
         return cls.ES_DTYPE_TO_PD_DTYPE.get(es_dtype, "object")
 
     @staticmethod
-    def _pd_dtype_to_es_dtype(pd_dtype):
+    def _pd_dtype_to_es_dtype(pd_dtype) -> Optional[str]:
         """
         Mapping pandas dtypes to Elasticsearch dtype
         --------------------------------------------
@@ -479,7 +477,7 @@ class FieldMappings:
         category NA NA Finite list of text values
         ```
         """
-        es_dtype = None
+        es_dtype: Optional[str] = None
 
         # Map all to 64-bit - TODO map to specifics: int32 -> int etc.
         if is_float_dtype(pd_dtype):
@@ -501,7 +499,7 @@ class FieldMappings:
 
     @staticmethod
     def _generate_es_mappings(
-        dataframe: "DataFrame", es_type_overrides: Optional[Mapping[str, str]] = None
+        dataframe: "pd.DataFrame", es_type_overrides: Optional[Mapping[str, str]] = None
     ) -> Dict[str, Dict[str, Dict[str, Any]]]:
         """Given a pandas dataframe, generate the associated Elasticsearch mapping
 
@@ -536,8 +534,19 @@ class FieldMappings:
           }
         }
         """
+        es_dtype: str
 
-        mapping_props = {}
+        mapping_props: Dict[str, Any] = {}
+
+        if es_type_overrides is not None:
+            non_existing_columns: List[str] = [
+                key for key in es_type_overrides.keys() if key not in dataframe.columns
+            ]
+            if non_existing_columns:
+                raise KeyError(
+                    f"{repr(non_existing_columns)[1:-1]} column(s) not in given dataframe"
+                )
+
         for column, dtype in dataframe.dtypes.iteritems():
             if es_type_overrides is not None and column in es_type_overrides:
                 es_dtype = es_type_overrides[column]

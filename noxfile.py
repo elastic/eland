@@ -126,6 +126,7 @@ def docs(session):
     # to rebuild the Jupyter notebooks with.
     try:
         import elasticsearch
+
         es = elasticsearch.Elasticsearch("localhost:9200")
         es.info()
         if not es.indices.exists("flights"):
