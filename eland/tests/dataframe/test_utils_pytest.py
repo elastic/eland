@@ -149,7 +149,7 @@ class TestDataFrameUtils(TestData):
 
         index_name = "test_es_type_override"
 
-        match = "'DistanceKilometers', 'DistanceMiles' column/s not in given dataframe"
+        match = "'DistanceKilometers', 'DistanceMiles' column(s) not in given dataframe"
         with pytest.raises(KeyError, match=match):
             ed.pandas_to_eland(
                 df,

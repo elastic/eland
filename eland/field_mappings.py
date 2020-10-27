@@ -461,7 +461,7 @@ class FieldMappings:
         return cls.ES_DTYPE_TO_PD_DTYPE.get(es_dtype, "object")
 
     @staticmethod
-    def _pd_dtype_to_es_dtype(pd_dtype) -> str:
+    def _pd_dtype_to_es_dtype(pd_dtype) -> Optional[str]:
         """
         Mapping pandas dtypes to Elasticsearch dtype
         --------------------------------------------
@@ -477,7 +477,7 @@ class FieldMappings:
         category NA NA Finite list of text values
         ```
         """
-        es_dtype: str = None
+        es_dtype: Optional[str] = None
 
         # Map all to 64-bit - TODO map to specifics: int32 -> int etc.
         if is_float_dtype(pd_dtype):
@@ -534,16 +534,17 @@ class FieldMappings:
           }
         }
         """
+        es_dtype: str
 
         mapping_props: Dict[str, Any] = {}
-        es_dtype: str
+
         if es_type_overrides is not None:
             non_existing_columns: List[str] = [
                 key for key in es_type_overrides.keys() if key not in dataframe.columns
             ]
             if non_existing_columns:
                 raise KeyError(
-                    f"{repr(non_existing_columns)[1:-1]} column/s not in given dataframe"
+                    f"{repr(non_existing_columns)[1:-1]} column(s) not in given dataframe"
                 )
 
         for column, dtype in dataframe.dtypes.iteritems():
