@@ -556,7 +556,7 @@ class QueryCompiler:
         pd_aggs: List[str],
         dropna: bool = True,
         is_dataframe_agg: bool = False,
-        numeric_only: bool = True,
+        numeric_only: Optional[bool] = True,
     ) -> pd.DataFrame:
         return self._operations.aggs_groupby(
             self,

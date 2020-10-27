@@ -176,3 +176,21 @@ class TestGroupbyDataFrame(TestData):
         assert_index_equal(pd_count.index, ed_count.index)
         assert_frame_equal(pd_count, ed_count)
         assert_series_equal(pd_count.dtypes, ed_count.dtypes)
+
+    def test_groupby_dataframe_mad(self):
+        pd_flights = self.pd_flights().filter(self.filter_data + ["DestCountry"])
+        ed_flights = self.ed_flights().filter(self.filter_data + ["DestCountry"])
+
+        pd_mad = pd_flights.groupby("DestCountry").mad()
+        ed_mad = ed_flights.groupby("DestCountry").mad()
+
+        assert_index_equal(pd_mad.columns, ed_mad.columns)
+        assert_index_equal(pd_mad.index, ed_mad.index)
+        assert_series_equal(pd_mad.dtypes, ed_mad.dtypes)
+
+        pd_min_mad = pd_flights.groupby("DestCountry").aggregate(["min", "mad"])
+        ed_min_mad = ed_flights.groupby("DestCountry").aggregate(["min", "mad"])
+
+        assert_index_equal(pd_min_mad.columns, ed_min_mad.columns)
+        assert_index_equal(pd_min_mad.index, ed_min_mad.index)
+        assert_series_equal(pd_min_mad.dtypes, ed_min_mad.dtypes)

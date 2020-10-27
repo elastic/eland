@@ -36,7 +36,7 @@ from pandas.util._validators import validate_bool_kwarg
 import eland.plotting as gfx
 from eland.common import DEFAULT_NUM_ROWS_DISPLAYED, docstring_parameter
 from eland.filter import BooleanFilter
-from eland.groupby import GroupByDataFrame
+from eland.groupby import DataFrameGroupBy
 from eland.ndframe import NDFrame
 from eland.series import Series
 from eland.utils import deprecated_api, is_valid_attr_name
@@ -1433,7 +1433,7 @@ class DataFrame(NDFrame):
 
     def groupby(
         self, by: Optional[Union[str, List[str]]] = None, dropna: bool = True
-    ) -> "GroupByDataFrame":
+    ) -> "DataFrameGroupBy":
         """
         Used to perform groupby operations
 
@@ -1448,7 +1448,7 @@ class DataFrame(NDFrame):
 
         Returns
         -------
-        GroupByDataFrame
+        eland.groupby.DataFrameGroupBy
 
         See Also
         --------
@@ -1520,7 +1520,7 @@ class DataFrame(NDFrame):
                     f"Requested columns {repr(remaining_columns)[1:-1]} not in the DataFrame"
                 )
 
-        return GroupByDataFrame(
+        return DataFrameGroupBy(
             by=by, query_compiler=self._query_compiler.copy(), dropna=dropna
         )
 
