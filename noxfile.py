@@ -99,11 +99,9 @@ def lint(session):
 def test(session):
     session.install("-r", "requirements-dev.txt")
     session.run("python", "-m", "eland.tests.setup_tests")
-    session.run("python", "setup.py", "install")
+    session.install(".")
     session.run("pytest", "--doctest-modules", *(session.posargs or ("eland/",)))
-    session.run(
-        "pytest", "--nbval", *(session.posargs or ("eland/tests/tests_notebook/",))
-    )
+    session.run("pytest", "--nbval", "eland/tests/tests_notebook/")
 
     session.run(
         "python",
