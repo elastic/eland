@@ -39,3 +39,8 @@ class TestSeriesRepr(TestData):
         ed_repr = repr(ed_s)
 
         assert pd_repr == ed_repr
+
+    def test_repr_empty_series(self):
+        pd_s = self.pd_flights()["Carrier"].head(0)
+        ed_s = ed.Series(ES_TEST_CLIENT, FLIGHTS_INDEX_NAME, "Carrier").head(0)
+        assert repr(pd_s) == repr(ed_s)

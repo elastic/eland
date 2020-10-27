@@ -327,7 +327,7 @@ class Series(NDFrame):
 
         self.to_string(
             buf=buf,
-            name=self.name,
+            name=True,
             dtype=True,
             min_rows=min_rows,
             max_rows=max_rows,
@@ -393,30 +393,46 @@ class Series(NDFrame):
         else:
             _buf = StringIO()
 
-        # Create repr of fake series without name, length, dtype summary
-        temp_series.to_string(
-            buf=_buf,
-            na_rep=na_rep,
-            float_format=float_format,
-            header=header,
-            index=index,
-            length=False,
-            dtype=False,
-            name=False,
-            max_rows=max_rows,
-        )
+        if num_rows == 0:
+            # Empty series are rendered differently than
+            # series with items. We can luckily use our
+            # example series in this case.
+            temp_series.head(0).to_string(
+                buf=_buf,
+                na_rep=na_rep,
+                float_format=float_format,
+                header=header,
+                index=index,
+                length=length,
+                dtype=dtype,
+                name=name,
+                max_rows=max_rows,
+            )
+        else:
+            # Create repr of fake series without name, length, dtype summary
+            temp_series.to_string(
+                buf=_buf,
+                na_rep=na_rep,
+                float_format=float_format,
+                header=header,
+                index=index,
+                length=False,
+                dtype=False,
+                name=False,
+                max_rows=max_rows,
+            )
 
-        # Create the summary
-        footer = []
-        if name and self.name is not None:
-            footer.append(f"Name: {self.name}")
-        if length and len(self) > max_rows:
-            footer.append(f"Length: {len(self.index)}")
-        if dtype:
-            footer.append(f"dtype: {temp_series.dtype}")
+            # Create the summary
+            footer = []
+            if name and self.name is not None:
+                footer.append(f"Name: {self.name}")
+            if length and len(self) > max_rows:
+                footer.append(f"Length: {len(self.index)}")
+            if dtype:
+                footer.append(f"dtype: {temp_series.dtype}")
 
-        if footer:
-            _buf.write(f"\n{', '.join(footer)}")
+            if footer:
+                _buf.write(f"\n{', '.join(footer)}")
 
         if buf is None:
             result = _buf.getvalue()
