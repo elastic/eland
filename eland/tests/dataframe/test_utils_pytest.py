@@ -150,7 +150,7 @@ class TestDataFrameUtils(TestData):
         index_name = "test_es_type_override"
 
         match = "'DistanceKilometers', 'DistanceMiles' column(s) not in given dataframe"
-        with pytest.raises(KeyError, match=match):
+        with pytest.raises(KeyError) as e:
             ed.pandas_to_eland(
                 df,
                 ES_TEST_CLIENT,
@@ -164,4 +164,5 @@ class TestDataFrameUtils(TestData):
                     "DistanceMiles": "text",
                 },
             )
+            assert str(e.value) == match
             ES_TEST_CLIENT.indices.delete(index=index_name)
