@@ -19,7 +19,6 @@ import os
 import subprocess
 from pathlib import Path
 
-import elasticsearch
 import nox
 
 BASE_DIR = Path(__file__).parent
@@ -126,6 +125,8 @@ def docs(session):
     # See if we have an Elasticsearch cluster active
     # to rebuild the Jupyter notebooks with.
     try:
+        import elasticsearch
+
         es = elasticsearch.Elasticsearch("localhost:9200")
         es.info()
         if not es.indices.exists("flights"):

@@ -19,6 +19,7 @@
 
 import numpy as np
 import pandas as pd
+import pytest
 
 import eland as ed
 from eland.field_mappings import FieldMappings
@@ -139,3 +140,28 @@ class TestDataFrameUtils(TestData):
 
         # This test calls the same method so is redundant
         # assert_pandas_eland_frame_equal(pd_df, self.ed_flights())
+
+    def test_es_type_override_error(self):
+
+        df = self.pd_flights().filter(
+            ["AvgTicketPrice", "Cancelled", "dayOfWeek", "timestamp", "DestCountry"]
+        )
+
+        index_name = "test_es_type_override"
+
+        match = "'DistanceKilometers', 'DistanceMiles' column(s) not in given dataframe"
+        with pytest.raises(KeyError, match=match):
+            ed.pandas_to_eland(
+                df,
+                ES_TEST_CLIENT,
+                index_name,
+                es_if_exists="replace",
+                es_refresh=True,
+                use_pandas_index_for_es_ids=False,
+                es_type_overrides={
+                    "AvgTicketPrice": "long",
+                    "DistanceKilometers": "text",
+                    "DistanceMiles": "text",
+                },
+            )
+            ES_TEST_CLIENT.indices.delete(index=index_name)
