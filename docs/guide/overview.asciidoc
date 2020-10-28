@@ -8,7 +8,7 @@ Source code is available on https://github.com/elastic/eland[GitHub].
 [discrete]
 === Compatibility
 
-The library is compatible with all Elasticsearch versions since `7.6.x` but you
+The library is compatible with all {es} versions since `7.6.x` but you
 **have to use a matching major version**:
 
 The recommended way to set your requirements in your `setup.py` or
