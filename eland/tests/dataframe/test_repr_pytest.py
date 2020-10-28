@@ -270,7 +270,7 @@ class TestDataFrameRepr(TestData):
 
         assert ed_ecom_rh == pd_ecom_rh
 
-    def test_dataframe_repr_pd_get_option_None(self):
+    def test_dataframe_repr_pd_get_option_none(self):
         show_dimensions = pd.get_option("display.show_dimensions")
         show_rows = pd.get_option("display.max_rows")
 

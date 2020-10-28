@@ -47,7 +47,7 @@ class TestSeriesRepr(TestData):
         ed_s = ed.Series(ES_TEST_CLIENT, FLIGHTS_INDEX_NAME, "Carrier").head(0)
         assert repr(pd_s) == repr(ed_s)
 
-    def test_series_repr_pd_get_option_None(self):
+    def test_series_repr_pd_get_option_none(self):
         show_dimensions = pd.get_option("display.show_dimensions")
         show_rows = pd.get_option("display.max_rows")
 
