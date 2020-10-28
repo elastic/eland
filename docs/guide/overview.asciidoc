@@ -27,7 +27,7 @@ like so::
 [discrete]
 === Getting Started
 
-Create a `DataFrame` object connected to an Elasticsearch cluster running on `localhost:9200`:
+Create a `DataFrame` object connected to an {es} cluster running on `localhost:9200`:
 
 [source,python]
 ------------------------------------
