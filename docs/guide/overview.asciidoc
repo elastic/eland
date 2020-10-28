@@ -1,7 +1,7 @@
 [[overview]]
 == Overview
 
-Eland is a Python client and toolkit for DataFrames and Machine Learning in {es}.
+Eland is a Python client and toolkit for DataFrames and {ml} in {es}.
 Full documentation is available on https://eland.readthedocs.io[Read the Docs].
 Source code is available on https://github.com/elastic/eland[GitHub].
 
