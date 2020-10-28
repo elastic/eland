@@ -17,7 +17,7 @@ The recommended way to set your requirements in your `setup.py` or
     # Elasticsearch 7.x
     eland>=7,<8
 
-Because Eland uses some experimental APIs for Machine Learning it
+Because Eland uses some experimental APIs for {ml} it
 is also recommended to install the same major and minor for `elasticsearch-py`
 as your cluster. For example if your cluster is v7.8.1 you would install
 like so::
