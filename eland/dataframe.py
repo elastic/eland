@@ -482,7 +482,7 @@ class DataFrame(NDFrame):
         max_cols = pd.get_option("display.max_columns")
         min_rows = pd.get_option("display.min_rows")
 
-        if len(self) > max_rows:
+        if max_rows and len(self) > max_rows:
             max_rows = min_rows
 
         show_dimensions = pd.get_option("display.show_dimensions")
@@ -528,7 +528,7 @@ class DataFrame(NDFrame):
             min_rows = pd.get_option("display.min_rows")
             show_dimensions = pd.get_option("display.show_dimensions")
 
-            if len(self) > max_rows:
+            if max_rows and len(self) > max_rows:
                 max_rows = min_rows
 
             return self.to_html(

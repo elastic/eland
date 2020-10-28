@@ -75,7 +75,7 @@ class TestData:
         return _ed_ecommerce
 
 
-def assert_pandas_eland_frame_equal(left, right):
+def assert_pandas_eland_frame_equal(left, right, **kwargs):
     if not isinstance(left, pd.DataFrame):
         raise AssertionError(f"Expected type pd.DataFrame, found {type(left)} instead")
 
@@ -83,10 +83,10 @@ def assert_pandas_eland_frame_equal(left, right):
         raise AssertionError(f"Expected type ed.DataFrame, found {type(right)} instead")
 
     # Use pandas tests to check similarity
-    assert_frame_equal(left, right.to_pandas())
+    assert_frame_equal(left, right.to_pandas(), **kwargs)
 
 
-def assert_eland_frame_equal(left, right):
+def assert_eland_frame_equal(left, right, **kwargs):
     if not isinstance(left, ed.DataFrame):
         raise AssertionError(f"Expected type ed.DataFrame, found {type(left)} instead")
 
@@ -94,10 +94,10 @@ def assert_eland_frame_equal(left, right):
         raise AssertionError(f"Expected type ed.DataFrame, found {type(right)} instead")
 
     # Use pandas tests to check similarity
-    assert_frame_equal(left.to_pandas(), right.to_pandas())
+    assert_frame_equal(left.to_pandas(), right.to_pandas(), **kwargs)
 
 
-def assert_pandas_eland_series_equal(left, right, check_less_precise=False):
+def assert_pandas_eland_series_equal(left, right, **kwargs):
     if not isinstance(left, pd.Series):
         raise AssertionError(f"Expected type pd.Series, found {type(left)} instead")
 
@@ -105,4 +105,4 @@ def assert_pandas_eland_series_equal(left, right, check_less_precise=False):
         raise AssertionError(f"Expected type ed.Series, found {type(right)} instead")
 
     # Use pandas tests to check similarity
-    assert_series_equal(left, right.to_pandas(), check_less_precise=check_less_precise)
+    assert_series_equal(left, right.to_pandas(), **kwargs)
