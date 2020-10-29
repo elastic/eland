@@ -115,5 +115,6 @@ Elasticsearch Functions
    :toctree: api/
 
    Series.es_info
+   Series.es_match
    Series.es_dtype
    Series.es_dtypes

@@ -55,6 +55,7 @@ from eland.filter import (
     LessEqual,
     NotFilter,
     NotNull,
+    QueryFilter,
     ScriptFilter,
 )
 from eland.ndframe import NDFrame
@@ -635,6 +636,74 @@ class Series(NDFrame):
             items=items, like=like, regex=regex
         )
         return Series(_query_compiler=new_query_compiler)
+
+    def es_match(
+        self,
+        text: str,
+        *,
+        match_phrase: bool = False,
+        match_only_text_fields: bool = True,
+        analyzer: Optional[str] = None,
+        fuzziness: Optional[Union[int, str]] = None,
+        **kwargs: Any,
+    ) -> QueryFilter:
+        """Filters data with an Elasticsearch ``match`` or ``match_phrase``
+        query depending on the given parameters.
+
+        Read more about `Full-Text Queries in Elasticsearch <https://www.elastic.co/guide/en/elasticsearch/reference/current/full-text-queries.html>`_
+
+        All additional keyword arguments are passed in the body of the match query.
+
+        Parameters
+        ----------
+        text: str
+            String of text to search for
+        match_phrase: bool, default False
+            If True will use ``match_phrase`` instead of ``match`` query which takes into account
+            the order of the ``text`` parameter.
+        match_only_text_fields: bool, default True
+            When True this function will raise an error if any non-text fields
+            are queried to prevent fields that aren't analyzed from not working properly.
+            Set to False to ignore this preventative check.
+        analyzer: str, optional
+            Specify which analyzer to use for the match query
+        fuzziness: int, str, optional
+            Specify the fuzziness option for the match query
+
+        Returns
+        -------
+        QueryFilter
+            Boolean filter to be combined with other filters and
+            then passed to DataFrame[...].
+
+        Examples
+        --------
+        >>> df = ed.DataFrame(
+        ...   "localhost:9200", "ecommerce",
+        ...   columns=["category", "taxful_total_price"]
+        ... )
+        >>> df[
+        ...     df.category.es_match("Men's")
+        ...     & (df.taxful_total_price > 200.0)
+        ... ].head(5)
+                                       category  taxful_total_price
+        13                     [Men's Clothing]              266.96
+        33                     [Men's Clothing]              221.98
+        54                     [Men's Clothing]              234.98
+        93   [Men's Shoes, Women's Accessories]              239.98
+        273                       [Men's Shoes]              214.98
+        <BLANKLINE>
+        [5 rows x 2 columns]
+        """
+        return self._query_compiler.es_match(
+            text,
+            columns=[self.name],
+            match_phrase=match_phrase,
+            match_only_text_fields=match_only_text_fields,
+            analyzer=analyzer,
+            fuzziness=fuzziness,
+            **kwargs,
+        )
 
     def es_info(self) -> str:
         buf = StringIO()

@@ -111,6 +111,7 @@ Elasticsearch Functions
    :toctree: api/
 
    DataFrame.es_info
+   DataFrame.es_match
    DataFrame.es_query
    DataFrame.es_dtypes
 
