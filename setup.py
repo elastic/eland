@@ -28,7 +28,7 @@ with open(path.join(here, "eland", "_version.py"), "r", "utf-8") as f:
     exec(f.read(), about)
 
 CLASSIFIERS = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "License :: OSI Approved :: Apache Software License",
     "Environment :: Console",
     "Operating System :: OS Independent",
