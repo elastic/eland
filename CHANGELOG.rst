@@ -2,6 +2,62 @@
 Changelog
 =========
 
+7.10.0b1 (2020-10-29)
+---------------------
+
+Added
+^^^^^
+
+* Added ``DataFrame.groupby()`` method with all aggregations
+  (`#278`_, `#291`_, `#292`_, `#300`_ contributed by `@V1NAY8`_)
+
+* Added ``es_match()`` method to ``DataFrame`` and ``Series`` for
+  filtering rows with full-text search (`#301`_)
+
+* Added support for type hints of the ``elasticsearch-py`` package (`#295`_)
+
+* Added support for passing dictionaries to ``es_type_overrides`` parameter
+  in the ``pandas_to_eland()`` function to directly control the field mapping
+  generated in Elasticsearch (`#310`_)
+
+* Added ``es_dtypes`` property to ``DataFrame`` and ``Series`` (`#285`_) 
+
+Changed
+^^^^^^^
+
+* Changed ``pandas_to_eland()`` to use the ``parallel_bulk()``
+  helper instead of single-threaded ``bulk()`` helper to improve
+  performance (`#279`_, contributed by `@V1NAY8`_)
+
+* Changed the ``es_type_overrides`` parameter in ``pandas_to_eland()``
+  to raise ``ValueError`` if an unknown column is given (`#302`_)
+
+* Changed ``DataFrame.filter()`` to preserve the order of items
+  (`#283`_, contributed by `@V1NAY8`_)
+
+* Changed when setting ``es_type_overrides={"column": "text"}`` in
+  ``pandas_to_eland()`` will automatically add the ``column.keyword``
+  sub-field so that aggregations are available for the field as well (`#310`_)
+
+Fixed
+^^^^^
+
+* Fixed ``Series.__repr__`` when the series is empty (`#306`_)
+
+ .. _#278: https://github.com/elastic/eland/pull/278
+ .. _#279: https://github.com/elastic/eland/pull/279
+ .. _#283: https://github.com/elastic/eland/pull/283
+ .. _#285: https://github.com/elastic/eland/pull/285
+ .. _#291: https://github.com/elastic/eland/pull/291
+ .. _#292: https://github.com/elastic/eland/pull/292
+ .. _#295: https://github.com/elastic/eland/pull/295
+ .. _#300: https://github.com/elastic/eland/pull/300
+ .. _#301: https://github.com/elastic/eland/pull/301
+ .. _#302: https://github.com/elastic/eland/pull/302
+ .. _#306: https://github.com/elastic/eland/pull/306
+ .. _#310: https://github.com/elastic/eland/pull/310
+
+
 7.9.1a1 (2020-09-29)
 --------------------
 
