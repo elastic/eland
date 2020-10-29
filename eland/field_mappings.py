@@ -26,6 +26,7 @@ from typing import (
     Optional,
     Set,
     Tuple,
+    Union,
 )
 
 import numpy as np
@@ -515,26 +516,7 @@ class FieldMappings:
         -------
             mapping : str
         """
-
-        """
-        "mappings" : {
-          "properties" : {
-            "AvgTicketPrice" : {
-              "type" : "float"
-            },
-            "Cancelled" : {
-              "type" : "boolean"
-            },
-            "Carrier" : {
-              "type" : "keyword"
-            },
-            "Dest" : {
-              "type" : "keyword"
-            }
-          }
-        }
-        """
-        es_dtype: str
+        es_dtype: Union[str, Dict[str, Any]]
 
         mapping_props: Dict[str, Any] = {}
 
@@ -550,10 +532,18 @@ class FieldMappings:
         for column, dtype in dataframe.dtypes.iteritems():
             if es_type_overrides is not None and column in es_type_overrides:
                 es_dtype = es_type_overrides[column]
+                if es_dtype == "text":
+                    es_dtype = {
+                        "type": "text",
+                        "fields": {"keyword": {"type": "keyword"}},
+                    }
             else:
                 es_dtype = FieldMappings._pd_dtype_to_es_dtype(dtype)
 
-            mapping_props[column] = {"type": es_dtype}
+            if isinstance(es_dtype, str):
+                mapping_props[column] = {"type": es_dtype}
+            else:
+                mapping_props[column] = es_dtype
 
         return {"mappings": {"properties": mapping_props}}
 
