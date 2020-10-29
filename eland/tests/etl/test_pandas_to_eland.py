@@ -196,3 +196,47 @@ class TestPandasToEland:
 
         # Assert that the value 128 caused the index error
         assert "Value [128] is out of range for a byte" in str(e.value)
+
+    def test_pandas_to_eland_text_inserts_keyword(self):
+        es = ES_TEST_CLIENT
+        df1 = pandas_to_eland(
+            pd_df,
+            es_client=es,
+            es_dest_index="test-index",
+            es_if_exists="append",
+            es_refresh=True,
+            es_type_overrides={
+                "c": "text",
+                "b": {"type": "float"},
+                "d": {"type": "text"},
+            },
+        )
+        assert es.indices.get_mapping(index="test-index") == {
+            "test-index": {
+                "mappings": {
+                    "properties": {
+                        "a": {"type": "long"},
+                        "b": {"type": "float"},
+                        "c": {
+                            "fields": {"keyword": {"type": "keyword"}},
+                            "type": "text",
+                        },
+                        "d": {"type": "text"},
+                    }
+                }
+            }
+        }
+
+        # 'c' is aggregatable on 'keyword'
+        assert df1.groupby("c").mean().to_dict() == {
+            "a": {"A": 1.0, "B": 2.0, "C": 3.0},
+            "b": {"A": 1.0, "B": 2.0, "C": 3.0},
+        }
+
+        # 'd' isn't aggregatable because it's missing the 'keyword'
+        with pytest.raises(ValueError) as e:
+            df1.groupby("d").mean()
+        assert str(e.value) == (
+            "Cannot use 'd' with groupby() because it has "
+            "no aggregatable fields in Elasticsearch"
+        )

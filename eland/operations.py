@@ -598,6 +598,11 @@ class Operations:
 
         # Construct Query
         for by_field in by_fields:
+            if by_field.aggregatable_es_field_name is None:
+                raise ValueError(
+                    f"Cannot use {by_field.column!r} with groupby() because "
+                    f"it has no aggregatable fields in Elasticsearch"
+                )
             # groupby fields will be term aggregations
             body.composite_agg_bucket_terms(
                 name=f"groupby_{by_field.column}",

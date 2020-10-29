@@ -112,7 +112,10 @@ class TestDataFrameUtils(TestData):
                         "E": {"type": "double"},
                         "F": {"type": "boolean"},
                         "G": {"type": "long"},
-                        "H": {"type": "text"},
+                        "H": {
+                            "type": "text",
+                            "fields": {"keyword": {"type": "keyword"}},
+                        },
                         "I": {"type": "geo_point"},
                     }
                 }
