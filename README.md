@@ -1,16 +1,26 @@
-<p align="center">
+<div align="center">
   <a href="https://github.com/elastic/eland">
-    <img src="https://raw.githubusercontent.com/elastic/eland/master/docs/source/logo/eland.png" width="30%" alt="Eland" />
+    <img src="https://raw.githubusercontent.com/elastic/eland/master/docs/sphinx/logo/eland.png" width="30%"
+      alt="Eland" />
   </a>
-</p>
-<p align="center">
-<a href="https://pypi.org/project/eland"><img src="https://img.shields.io/pypi/v/eland.svg" alt="PyPI Version"></a>
-<a href="https://anaconda.org/conda-forge/eland"><img src="https://img.shields.io/conda/vn/conda-forge/eland" alt="Conda Version"></a>
-<a href="https://pepy.tech/project/eland"><img src="https://pepy.tech/badge/eland" alt="Downloads"></a>
-<a href="https://pypi.org/project/eland"><img src="https://img.shields.io/pypi/status/eland.svg" alt="Package Status"></a>
-<a href="https://clients-ci.elastic.co/job/elastic+eland+master"><img src="https://clients-ci.elastic.co/buildStatus/icon?job=elastic%2Beland%2Bmaster" alt="Build Status"></a>
-<a href="https://github.com/elastic/eland/blob/master/LICENSE.txt"><img src="https://img.shields.io/pypi/l/eland.svg" alt="License"></a>
-</p>
+</div>
+<br />
+<div align="center">
+  <a href="https://pypi.org/project/eland"><img src="https://img.shields.io/pypi/v/eland.svg" alt="PyPI Version"></a>
+  <a href="https://anaconda.org/conda-forge/eland"><img src="https://img.shields.io/conda/vn/conda-forge/eland"
+      alt="Conda Version"></a>
+  <a href="https://pepy.tech/project/eland"><img src="https://pepy.tech/badge/eland" alt="Downloads"></a>
+  <a href="https://pypi.org/project/eland"><img src="https://img.shields.io/pypi/status/eland.svg"
+      alt="Package Status"></a>
+  <a href="https://clients-ci.elastic.co/job/elastic+eland+master"><img
+      src="https://clients-ci.elastic.co/buildStatus/icon?job=elastic%2Beland%2Bmaster" alt="Build Status"></a>
+  <a href="https://github.com/elastic/eland/blob/master/LICENSE.txt"><img src="https://img.shields.io/pypi/l/eland.svg"
+      alt="License"></a>
+  <a href="https://eland.readthedocs.io/en/7.10.0b1/?badge=7.10.0b1"><img
+      src="https://readthedocs.org/projects/eland/badge/?version=7.10.0b1" alt="Documentation Status"></a>
+</div>
+
+## About
 
 Eland is a Python Elasticsearch client for exploring and
 analyzing data in Elasticsearch with a familiar Pandas-compatible API.
