@@ -32,14 +32,7 @@ class TestSeriesArithmetics(TestData):
         pd_df = self.pd_ecommerce()
         ed_df = self.ed_ecommerce()
 
-        ops = [
-            "__le__",
-            "__lt__",
-            "__gt__",
-            "__ge__",
-            "__eq__",
-            "__ne__"
-        ]
+        ops = ["__le__", "__lt__", "__gt__", "__ge__", "__eq__", "__ne__"]
 
         # this datetime object is timezone naive
         datetime_obj = datetime(2016, 12, 18)
@@ -72,13 +65,19 @@ class TestSeriesArithmetics(TestData):
                 return series
 
         for op in ops:
-            pd_series = pd_df[getattr(pd_df["order_date"], op)(datetime_obj)]["order_date"]
-            ed_series = ed_df[getattr(ed_df["order_date"], op)(datetime_obj)]["order_date"]
+            pd_series = pd_df[getattr(pd_df["order_date"], op)(datetime_obj)][
+                "order_date"
+            ]
+            ed_series = ed_df[getattr(ed_df["order_date"], op)(datetime_obj)][
+                "order_date"
+            ]
 
             # "type cast" to modified class (inherits from ed.Series) that overrides the `to_pandas` function
             ed_series.__class__ = ModifiedElandSeries
 
-            assert_pandas_eland_series_equal(pd_series, ed_series, check_less_precise=True)
+            assert_pandas_eland_series_equal(
+                pd_series, ed_series, check_less_precise=True
+            )
 
     def test_ecommerce_series_invalid_div(self):
         pd_df = self.pd_ecommerce()
