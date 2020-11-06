@@ -16,6 +16,8 @@
 #  under the License.
 
 # File called _pytest for PyCharm compatability
+import pandas as pd
+
 import eland as ed
 from eland.tests import ES_TEST_CLIENT, FLIGHTS_INDEX_NAME
 from eland.tests.common import TestData
@@ -44,3 +46,18 @@ class TestSeriesRepr(TestData):
         pd_s = self.pd_flights()["Carrier"].head(0)
         ed_s = ed.Series(ES_TEST_CLIENT, FLIGHTS_INDEX_NAME, "Carrier").head(0)
         assert repr(pd_s) == repr(ed_s)
+
+    def test_series_repr_pd_get_option_none(self):
+        show_dimensions = pd.get_option("display.show_dimensions")
+        show_rows = pd.get_option("display.max_rows")
+        try:
+            pd.set_option("display.show_dimensions", False)
+            pd.set_option("display.max_rows", None)
+
+            ed_flights = self.ed_flights()["Cancelled"].head(40).__repr__()
+            pd_flights = self.pd_flights()["Cancelled"].head(40).__repr__()
+
+            assert ed_flights == pd_flights
+        finally:
+            pd.set_option("display.max_rows", show_rows)
+            pd.set_option("display.show_dimensions", show_dimensions)
