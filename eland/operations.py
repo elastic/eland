@@ -243,6 +243,7 @@ class Operations:
         is_dataframe_agg: bool = False,
         es_mode_size: Optional[int] = None,
         dropna: bool = True,
+        percentiles: Optional[List[float]] = None,
     ) -> Dict[str, Any]:
         """
         Used to calculate metric aggregations
@@ -262,6 +263,8 @@ class Operations:
             number of rows to return when multiple mode values are present.
         dropna:
             drop NaN/NaT for a dataframe
+        percentiles:
+            List of percentiles when 'quantile' agg is called. Otherwise it is None
 
         Returns
         -------
@@ -279,11 +282,18 @@ class Operations:
         if numeric_only:
             # Consider if field is Int/Float/Bool
             fields = [field for field in fields if (field.is_numeric or field.is_bool)]
+        elif not numeric_only and (pd_aggs == ["quantile"]):
+            # quantile doesn't accept text fields
+            fields = [
+                field
+                for field in fields
+                if (field.is_numeric or field.is_bool or field.is_timestamp)
+            ]
 
         body = Query(query_params.query)
 
         # Convert pandas aggs to ES equivalent
-        es_aggs = self._map_pd_aggs_to_es_aggs(pd_aggs)
+        es_aggs = self._map_pd_aggs_to_es_aggs(pd_aggs, percentiles)
 
         for field in fields:
             for es_agg in es_aggs:
@@ -293,11 +303,18 @@ class Operations:
 
                 # If we have multiple 'extended_stats' etc. here we simply NOOP on 2nd call
                 if isinstance(es_agg, tuple):
-                    body.metric_aggs(
-                        f"{es_agg[0]}_{field.es_field_name}",
-                        es_agg[0],
-                        field.aggregatable_es_field_name,
-                    )
+                    if es_agg[0] == "percentiles":
+                        body.percentile_agg(
+                            f"{es_agg[0]}_{field.es_field_name}",
+                            field.es_field_name,
+                            es_agg[1],
+                        )
+                    else:
+                        body.metric_aggs(
+                            f"{es_agg[0]}_{field.es_field_name}",
+                            es_agg[0],
+                            field.aggregatable_es_field_name,
+                        )
                 elif es_agg == "mode":
                     # TODO for dropna=False, Check If field is timestamp or boolean or numeric,
                     # then use missing parameter for terms aggregation.
@@ -307,6 +324,7 @@ class Operations:
                         field.aggregatable_es_field_name,
                         es_mode_size,
                     )
+
                 else:
                     body.metric_aggs(
                         f"{es_agg}_{field.es_field_name}",
@@ -495,15 +513,20 @@ class Operations:
         pd_aggs:
             a list of aggs
         response:
-            a dict containing response from Elastic Search
+            a dict containing response from ElasticSearch
         numeric_only:
             return either numeric values or NaN/NaT
+        is_dataframe_agg:
+            - True then aggregation is called from dataframe
+            - False then aggregation is called from series
 
         Returns
         -------
             a dictionary on which agg caluculations are done.
         """
         results: Dict[str, Any] = {}
+        percentile_values: List[float] = []
+        agg_value: Union[int, float]
 
         for field in fields:
             values = []
@@ -529,13 +552,26 @@ class Operations:
 
                     # Pull multiple values from 'percentiles' result.
                     if es_agg[0] == "percentiles":
-                        agg_value = agg_value["values"]
+                        agg_value = agg_value["values"]  # Returns dictionary
+                        if pd_agg == "median":
+                            agg_value = agg_value["50.0"]
+                        # Currently Pandas does the same
+                        # If we call quantile it returns the same result as of median.
+                        elif pd_agg == "quantile" and is_dataframe_agg:
+                            agg_value = agg_value["50.0"]
+                        else:
+                            # We have to filter out the `_as_string` from results
+                            # e.g. 'Cancelled_50.0': 0.0, 'Cancelled_50.0_as_string': 'false'
+                            percentile_values = [
+                                value
+                                for key, value in agg_value.items()
+                                if not key.endswith("as_string")
+                            ]
 
-                    agg_value = agg_value[es_agg[1]]
-
+                    if not percentile_values and pd_agg not in ("quantile", "median"):
+                        agg_value = agg_value[es_agg[1]]
                     # Need to convert 'Population' stddev and variance
-                    # from Elasticsearch into 'Sample' stddev and variance
-                    # which is what pandas uses.
+                    # from Elasticsearch into 'Sample' stddev and variance which is what pandas uses.
                     if es_agg[1] in ("std_deviation", "variance"):
                         # Neither transformation works with count <=1
                         count = response["aggregations"][
@@ -590,7 +626,7 @@ class Operations:
                             ]
 
                 # Null usually means there were no results.
-                if not isinstance(agg_value, list) and (
+                if not isinstance(agg_value, (list, dict)) and (
                     agg_value is None or np.isnan(agg_value)
                 ):
                     if is_dataframe_agg and not numeric_only:
@@ -612,12 +648,18 @@ class Operations:
                             )
                             for value in agg_value
                         ]
+                    elif percentile_values:
+                        percentile_values = [
+                            elasticsearch_date_to_pandas_date(value, field.es_date_format)
+                            for value in percentile_values
+                        ]
                     else:
                         agg_value = elasticsearch_date_to_pandas_date(
                             agg_value, field.es_date_format
                         )
+                    func = elasticsearch_date_to_pandas_date
                 # If numeric_only is False | None then maintain column datatype
-                elif not numeric_only:
+                elif not numeric_only and pd_agg != "quantile":
                     # we're only converting to bool for lossless aggs like min, max, and median.
                     if pd_agg in {"max", "min", "median", "sum", "mode"}:
                         # 'sum' isn't representable with bool, use int64
@@ -626,13 +668,66 @@ class Operations:
                         else:
                             agg_value = field.np_dtype.type(agg_value)
 
-                values.append(agg_value)
+                if not percentile_values:
+                    values.append(agg_value)
 
             # If numeric_only is True and We only have a NaN type field then we check for empty.
             if values:
                 results[field.column] = values if len(values) > 1 else values[0]
+            # This only runs when df.quantile() or series.quantile() is called
+            if percentile_values and not is_dataframe_agg:
+                results[f"{field.column}"] = percentile_values
 
         return results
+
+    def quantile(
+        self,
+        query_compiler: "QueryCompiler",
+        pd_aggs: List[str],
+        quantiles: Union[float, List[float]],
+        is_dataframe: bool = True,
+        numeric_only: bool = True,
+    ) -> Union[pd.DataFrame, pd.Series]:
+        # To verify if quantile range falls between 0 to 1
+        def verify_quantile_range(quantile: Any) -> float:
+            if isinstance(quantile, (int, float, str)):
+                quantile = float(quantile)
+                if quantile > 1 or quantile < 0:
+                    raise ValueError(
+                        f"quantile should be in range of 0 and 1, given {quantile}"
+                    )
+            else:
+                raise TypeError("quantile should be of type int or float or str")
+            # quantile * 100 = percentile
+            return quantile * 100
+
+        percentiles = list(
+            map(
+                verify_quantile_range,
+                (quantiles if isinstance(quantiles, list) else [quantiles]),
+            )
+        )
+
+        result = self._metric_aggs(
+            query_compiler,
+            pd_aggs=pd_aggs,
+            percentiles=percentiles,
+            is_dataframe_agg=False,
+            numeric_only=numeric_only,
+        )
+
+        df = pd.DataFrame(
+            result,
+            index=[i / 100 for i in percentiles],
+            columns=result.keys(),
+            dtype=(np.float64 if numeric_only else None),
+        )
+
+        # Display Output same as pandas does
+        if isinstance(quantiles, float):
+            return df.squeeze() if is_dataframe else df.squeeze()
+        else:
+            return df if is_dataframe else df.transpose().iloc[0]
 
     def aggs_groupby(
         self,
@@ -821,10 +916,13 @@ class Operations:
                 return composite_buckets["buckets"]
 
     @staticmethod
-    def _map_pd_aggs_to_es_aggs(pd_aggs):
+    def _map_pd_aggs_to_es_aggs(
+        pd_aggs: List[str], percentiles: Optional[List[float]] = None
+    ) -> Union[List[str], List[Tuple[str, List[float]]]]:
         """
         Args:
             pd_aggs - list of pandas aggs (e.g. ['mad', 'min', 'std'] etc.)
+            percentiles - list of percentiles for 'quantile' agg
 
         Returns:
             ed_aggs - list of corresponding es_aggs (e.g. ['median_absolute_deviation', 'min', 'std'] etc.)
@@ -885,7 +983,14 @@ class Operations:
             elif pd_agg == "mad":
                 es_aggs.append("median_absolute_deviation")
             elif pd_agg == "median":
-                es_aggs.append(("percentiles", "50.0"))
+                es_aggs.append(("percentiles", [50.0]))
+            elif pd_agg == "quantile":
+                # None when 'quantile' is called in df.agg[...]
+                # Behaves same as median because pandas does the same.
+                if percentiles is not None:
+                    es_aggs.append(("percentiles", percentiles))
+                else:
+                    es_aggs.append(("percentiles", [50.0]))
 
             elif pd_agg == "mode":
                 if len(pd_aggs) != 1:
@@ -896,9 +1001,6 @@ class Operations:
                     es_aggs.append("mode")
 
             # Not implemented
-            elif pd_agg == "quantile":
-                # TODO
-                raise NotImplementedError(pd_agg, " not currently implemented")
             elif pd_agg == "rank":
                 # TODO
                 raise NotImplementedError(pd_agg, " not currently implemented")
@@ -913,7 +1015,7 @@ class Operations:
         if extended_stats_calls >= 2:
             es_aggs = [
                 ("extended_stats", es_agg)
-                if es_agg in extended_stats_es_aggs
+                if not isinstance(es_agg, tuple) and (es_agg in extended_stats_es_aggs)
                 else es_agg
                 for es_agg in es_aggs
             ]

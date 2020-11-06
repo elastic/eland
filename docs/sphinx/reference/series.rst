@@ -80,6 +80,7 @@ Computations / Descriptive Stats
    Series.nunique
    Series.value_counts
    Series.mode
+   Series.quantile
 
 Reindexing / Selection / Label Manipulation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

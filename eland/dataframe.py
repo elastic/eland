@@ -1685,6 +1685,56 @@ class DataFrame(NDFrame):
         return self._query_compiler.mode(
             numeric_only=numeric_only, dropna=True, is_dataframe=True, es_size=es_size
         )
+    def quantile(
+        self,
+        q: Union[float, List[float]] = 0.5,
+        numeric_only: Optional[bool] = True,
+    ) -> "pd.DataFrame":
+        """
+        Used to calculate quantile for a given DataFrame.
+
+        PARAMETERS
+        ----------
+        q:
+            float or array like, default 0.5
+            Value between 0 <= q <= 1, the quantile(s) to compute.
+        numeric_only: {True, False, None} Default is None
+            Which datatype to be returned
+            - True: Returns all values as float64, NaN/NaT values are removed
+            - None: Returns all values as the same dtype where possible, NaN/NaT are removed
+            - False: Returns all values as the same dtype where possible, NaN/NaT are preserved
+
+        Returns
+        -------
+        pandas.DataFrame
+            quantile value for each column
+
+        See Also
+        --------
+        :pandas_api_docs:`pandas.DataFrame.quantile`
+
+        Examples
+        --------
+        >>> ed_flights = ed.DataFrame('localhost', 'flights')
+        >>> ed_flights.quantile() # doctest: +SKIP
+        AvgTicketPrice    640.387285
+        Cancelled           0.000000
+        dayOfWeek           3.000000
+        Name: 0.5, dtype: float64
+
+        >>> ed_flights.quantile([.2, .5, .75]) # doctest: +SKIP
+              AvgTicketPrice  Cancelled  dayOfWeek
+        0.20      361.040768        0.0        1.0
+        0.50      640.387285        0.0        3.0
+        0.75      842.213490        0.0        4.0
+
+        >>> ed_flights.quantile([.2, .5, .75], numeric_only=False) # doctest: +SKIP
+              AvgTicketPrice  Cancelled  dayOfWeek                     timestamp
+        0.20      361.040768        0.0        1.0 2018-01-09 04:37:40.409370361
+        0.50      640.387285        0.0        3.0 2018-01-21 23:59:14.074445068
+        0.75      842.213490        0.0        4.0 2018-02-01 04:54:29.135782959
+        """
+        return self._query_compiler.quantile(quantiles=q, numeric_only=numeric_only)
 
     def query(self, expr) -> "DataFrame":
         """
