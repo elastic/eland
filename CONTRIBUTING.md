@@ -1,5 +1,4 @@
-Contributing to eland
-=====================
+# Contributing to eland
 
 Eland is an open source project and we love to receive contributions
 from our community --- you! There are many ways to contribute, from
@@ -7,8 +6,7 @@ writing tutorials or blog posts, improving the documentation, submitting
 bug reports and feature requests or writing code which can be
 incorporated into eland itself.
 
-Bug reports
------------
+## Bug reports
 
 If you think you have found a bug in eland, first make sure that you are
 testing against the [latest version of
@@ -29,8 +27,7 @@ lies with your query, when actually it depends on how your data is
 indexed. The easier it is for us to recreate your problem, the faster it
 is likely to be fixed.
 
-Feature requests
-----------------
+## Feature requests
 
 If you find yourself wishing for a feature that doesn\'t exist in eland,
 you are probably not alone. There are bound to be others out there with
@@ -40,8 +37,7 @@ list](https://github.com/elastic/eland/issues) on GitHub which describes
 the feature you would like to see, why you need it, and how it should
 work.
 
-Contributing code and documentation changes
--------------------------------------------
+## Contributing code and documentation changes
 
 If you have a bugfix or new feature that you would like to contribute to
 eland, please find or open an issue about it first. Talk about what you
@@ -66,7 +62,7 @@ individual projects can be found below.
 
 You will need to fork the main eland code or documentation repository
 and clone it to your local machine. See [github help
-page](https://help.github.com/articles/fork-a-repo) for help.
+page](https://docs.github.com/en/free-pro-team@latest/github/getting-started-with-github/fork-a-repo) for help.
 
 Further instructions for specific projects are given below.
 
@@ -74,22 +70,28 @@ Further instructions for specific projects are given below.
 
 Once your changes and tests are ready to submit for review:
 
-1.  Test your changes
+1. Run the linter and test suite to ensure your changes do not break the existing code:
 
-    Run the test suite to make sure that nothing is broken (TODO add
-    link to testing doc).
+    (TODO Add link to the testing document)
 
-2.  Sign the Contributor License Agreement
+    ``` bash
+    # Run Auto-format, lint, mypy type checker for your changes
+    $ nox -s format
 
-    Please make sure you have signed our [Contributor License
-    Agreement](https://www.elastic.co/contributor-agreement/). We are
-    not asking you to assign copyright to us, but to give us the right
-    to distribute your code without restriction. We ask this of all
-    contributors in order to assure our users of the origin and
-    continuing existence of the code. You only need to sign the CLA
-    once.
+    # Run the test suite
+    $ pytest --doctest-modules eland/tests/
+    $ pytest --nbval eland/tests/tests_notebook/
 
-3.  Rebase your changes
+    ```
+
+2. Sign the Contributor License Agreement
+
+    Please make sure you have signed our [Contributor License Agreement](https://www.elastic.co/contributor-agreement/).
+    We are not asking you to assign copyright to us, but to give us the right to distribute your code without restriction.
+    We ask this of all contributors in order to assure our users of the origin and continuing existence of the code.
+    You only need to sign the CLA once.
+
+3. Rebase your changes
 
     Update your local repository with the most recent code from the main
     eland repository, and rebase your branch on top of the latest master
@@ -99,19 +101,19 @@ Once your changes and tests are ready to submit for review:
     merging we will either ask you to squash all commits yourself or
     we\'ll do it for you.
 
-4.  Submit a pull request
+4. Submit a pull request
 
     Push your local changes to your forked copy of the repository and
     [submit a pull
-    request](https://help.github.com/articles/using-pull-requests). In
-    the pull request, choose a title which sums up the changes that you
+    request](https://docs.github.com/en/free-pro-team@latest/github/collaborating-with-issues-and-pull-requests/proposing-changes-to-your-work-with-pull-requests) .
+    In the pull request, choose a title which sums up the changes that you
     have made, and in the body provide more details about what your
     changes do. Also mention the number of the issue where discussion
     has taken place, eg "Closes \#123".
 
 Then sit back and wait. There will probably be discussion about the pull
 request and, if any changes are needed, we would love to work with you
-to get your pull request merged into eland.
+to get your pull request merged into `eland` .
 
 Please adhere to the general guideline that you should never force push
 to a publicly shared branch. Once you have opened your pull request, you
@@ -124,8 +126,7 @@ request. Note that squashing at the end of the review process should
 also not be done, that can be done when the pull request is [integrated
 via GitHub](https://github.com/blog/2141-squash-your-commits).
 
-Contributing to the eland codebase
-----------------------------------
+## Contributing to the eland codebase
 
 **Repository:** <https://github.com/elastic/eland>
 
@@ -136,35 +137,91 @@ currently using a minimum version of PyCharm 2019.2.4.
 
 (All commands should be run from module root)
 
--   Create a new project via \'Check out from Version
+* Create a new project via \'Check out from Version
+
     Control\'-\>\'Git\' on the \"Welcome to PyCharm\" page (or other)
--   Enter the URL to your fork of eland
-    (e.g. `git@github.com:stevedodson/eland.git`)
--   Click \'Yes\' for \'Checkout from Version Control\'
--   Configure PyCharm environment:
--   In \'Preferences\' configure a \'Project: eland\'-\>\'Project
+
+* Enter the URL to your fork of eland
+
+    (e.g.  `git@github.com:stevedodson/eland.git` )
+
+* Click \'Yes\' for \'Checkout from Version Control\'
+* Configure PyCharm environment:
+* In \'Preferences\' configure a \'Project: eland\'-\>\'Project
+
     Interpreter\'. Generally, we recommend creating a virtual
     environment (TODO link to installing for python version support).
--   In \'Preferences\' set \'Tools\'-\>\'Python Integrated
-    Tools\'-\>\'Default test runner\' to `pytest`
--   In \'Preferences\' set \'Tools\'-\>\'Python Integrated
-    Tools\'-\>\'Docstring format\' to `numpy`
--   Install development requirements. Open terminal in virtual
-    environment and run `pip install -r requirements-dev.txt`
--   Setup Elasticsearch instance with docker `ELASTICSEARCH_VERSION=elasticsearch:7.x-SNAPSHOT .ci/run-elasticsearch.sh` and check `http://localhost:9200`
-- Run
-    `python -m eland.tests.setup_tests` to setup test environment -*note
-    this modifies Elasticsearch indices*
--   Install local `eland` module (required to execute notebook tests)
-    `python setup.py install`
--   Run `pytest --nbval` to validate install
--   To test specific versions of Python use `nox -s test-3.8`
--   To run the automatic formatter and check for lint issues
-    run `nox -s format`
 
+* In \'Preferences\' set \'Tools\'-\>\'Python Integrated
+
+    Tools\'-\>\'Default test runner\' to `pytest`
+
+* In \'Preferences\' set \'Tools\'-\>\'Python Integrated
+
+    Tools\'-\>\'Docstring format\' to `numpy`
+
+* To install development requirements. Open terminal in virtual environment and run
+
+    ``` bash
+    > pip install -r requirements-dev.txt
+    ```
+
+* Setup Elasticsearch instance with docker
+
+    ``` bash
+    > ELASTICSEARCH_VERSION=elasticsearch:7.x-SNAPSHOT .ci/run-elasticsearch.sh
+    ```
+
+* Now check `http://localhost:9200`
+* Install local `eland` module (required to execute notebook tests)
+
+    ``` bash
+    > python setup.py install
+    ```
+
+* To setup test environment:
+
+    ``` bash
+    > python -m eland.tests.setup_tests
+    ```
+
+    (Note this modifies Elasticsearch indices)
+
+* To validate installation, open python console and run
+
+    ``` bash
+    > import eland as ed
+    > ed_df = ed.DataFrame('localhost', 'flights')
+    ```
+
+* To run the automatic formatter and check for lint issues run
+
+    ``` bash
+    > nox -s format`
+    ```
+
+* To test specific versions of Python run
+
+    ``` bash
+    > nox -s test-3.8`
+    ```
 
 ### Documentation
--   [Install pandoc on your system](https://pandoc.org/installing.html)  
-    For Ubuntu or Debian you can do `sudo apt-get install -y pandoc`
--   Install documentation requirements. Open terminal in virtual
-    environment and run `pip install -r docs/requirements-docs.txt`
+
+* [Install pandoc on your system](https://pandoc.org/installing.html) . For Ubuntu or Debian you can do
+
+    ``` bash
+    > sudo apt-get install -y pandoc
+    ```
+
+* Install documentation requirements. Open terminal in virtual environment and run
+
+    ``` bash
+    > pip install -r docs/requirements-docs.txt
+    ```
+
+* To verify/generate documentation run
+
+    ``` bash
+    > nox -s docs
+    ```
