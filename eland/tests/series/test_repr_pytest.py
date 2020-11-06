@@ -50,14 +50,14 @@ class TestSeriesRepr(TestData):
     def test_series_repr_pd_get_option_none(self):
         show_dimensions = pd.get_option("display.show_dimensions")
         show_rows = pd.get_option("display.max_rows")
+        try:
+            pd.set_option("display.show_dimensions", False)
+            pd.set_option("display.max_rows", None)
 
-        pd.set_option("display.show_dimensions", False)
-        pd.set_option("display.max_rows", None)
+            ed_flights = self.ed_flights()["Cancelled"].head(40).__repr__()
+            pd_flights = self.pd_flights()["Cancelled"].head(40).__repr__()
 
-        ed_flights = self.ed_flights()["Cancelled"].head(40).__repr__()
-        pd_flights = self.pd_flights()["Cancelled"].head(40).__repr__()
-
-        assert ed_flights == pd_flights
-
-        pd.set_option("display.max_rows", show_rows)
-        pd.set_option("display.show_dimensions", show_dimensions)
+            assert ed_flights == pd_flights
+        finally:
+            pd.set_option("display.max_rows", show_rows)
+            pd.set_option("display.show_dimensions", show_dimensions)

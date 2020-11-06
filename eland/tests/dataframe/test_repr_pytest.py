@@ -273,23 +273,23 @@ class TestDataFrameRepr(TestData):
     def test_dataframe_repr_pd_get_option_none(self):
         show_dimensions = pd.get_option("display.show_dimensions")
         show_rows = pd.get_option("display.max_rows")
+        try:
+            pd.set_option("display.show_dimensions", False)
+            pd.set_option("display.max_rows", None)
 
-        pd.set_option("display.show_dimensions", False)
-        pd.set_option("display.max_rows", None)
+            columns = [
+                "AvgTicketPrice",
+                "Cancelled",
+                "dayOfWeek",
+                "timestamp",
+                "DestCountry",
+            ]
 
-        columns = [
-            "AvgTicketPrice",
-            "Cancelled",
-            "dayOfWeek",
-            "timestamp",
-            "DestCountry",
-        ]
+            ed_flights = self.ed_flights().filter(columns).head(40).__repr__()
+            pd_flights = self.pd_flights().filter(columns).head(40).__repr__()
 
-        ed_flights = self.ed_flights().filter(columns).head(40).__repr__()
-        pd_flights = self.pd_flights().filter(columns).head(40).__repr__()
-
-        assert ed_flights == pd_flights
-
-        # Restore default
-        pd.set_option("display.max_rows", show_rows)
-        pd.set_option("display.show_dimensions", show_dimensions)
+            assert ed_flights == pd_flights
+        finally:
+            # Restore default
+            pd.set_option("display.max_rows", show_rows)
+            pd.set_option("display.show_dimensions", show_dimensions)
