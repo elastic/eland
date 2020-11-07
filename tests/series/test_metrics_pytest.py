@@ -138,7 +138,9 @@ class TestSeriesMetrics(TestData):
         ed_mode = ed_series["order_date"].mode(es_size)
 
         assert_series_equal(pd_mode, ed_mode)
-    @pytest.mark.parametrize("quantile_list", [0.2, 0.5, [0.2, 0.5]])
+    @pytest.mark.parametrize(
+        "quantile_list", [0.2, 0.5, [0.2, 0.5], [0.75, 0.2, 0.1, 0.5]]
+    )
     @pytest.mark.parametrize("column", ["AvgTicketPrice", "Cancelled", "dayOfWeek"])
     def test_flights_quantile(self, column, quantile_list):
         pd_flights = self.pd_flights()[column]
@@ -150,3 +152,11 @@ class TestSeriesMetrics(TestData):
             assert_series_equal(pd_quantile, ed_quantile, check_exact=False, rtol=2)
         else:
             assert pd_quantile * 0.9 <= ed_quantile <= pd_quantile * 1.1
+
+    @pytest.mark.parametrize("quantiles_list", [[np.array([1, 2])], ["1", 2]])
+    def test_quantile_non_numeric_values(self, quantiles_list):
+        ed_flights = self.ed_flights()["dayOfWeek"]
+
+        match = "quantile should be of type int or float"
+        with pytest.raises(TypeError, match=match):
+            ed_flights.quantile(q=quantiles_list)

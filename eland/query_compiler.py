@@ -638,14 +638,14 @@ class QueryCompiler:
         )
     def quantile(
         self,
-        quantiles: Union[float, List[float]],
-        numeric_only: bool = True,
+        quantiles: Union[int, float, List[int], List[float]],
+        numeric_only: Optional[bool] = True,
         is_dataframe: bool = True,
     ) -> Union[pd.DataFrame, pd.Series, Any]:
         """
         Holds quantile object for both DataFrame and Series
 
-        PARAMETERS
+        Parameters
         ----------
         quantiles:
             list of quantiles for computation

@@ -1687,18 +1687,18 @@ class DataFrame(NDFrame):
         )
     def quantile(
         self,
-        q: Union[float, List[float]] = 0.5,
+        q: Union[int, float, List[int], List[float]] = 0.5,
         numeric_only: Optional[bool] = True,
     ) -> "pd.DataFrame":
         """
         Used to calculate quantile for a given DataFrame.
 
-        PARAMETERS
+        Parameters
         ----------
         q:
             float or array like, default 0.5
             Value between 0 <= q <= 1, the quantile(s) to compute.
-        numeric_only: {True, False, None} Default is None
+        numeric_only: {True, False, None} Default is True
             Which datatype to be returned
             - True: Returns all values as float64, NaN/NaT values are removed
             - None: Returns all values as the same dtype where possible, NaN/NaT are removed

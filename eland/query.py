@@ -260,7 +260,7 @@ class Query:
         """
         Add's after_key to existing query to fetch next bunch of results
 
-        PARAMETERS
+        Parameters
         ----------
         name: str
             Name of the buckets

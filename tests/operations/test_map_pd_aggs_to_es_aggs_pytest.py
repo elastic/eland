@@ -63,3 +63,9 @@ def test_extended_stats_optimization():
 
         es_aggs = Operations._map_pd_aggs_to_es_aggs(["count", pd_agg, "nunique"])
         assert es_aggs == ["value_count", extended_es_agg, "cardinality"]
+
+
+def test_percentiles_none():
+    es_aggs = Operations._map_pd_aggs_to_es_aggs(["count", "min", "quantile"])
+
+    assert es_aggs == ["value_count", "min", ("percentiles", [50.0])]

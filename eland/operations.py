@@ -351,6 +351,7 @@ class Operations:
             response=response,
             numeric_only=numeric_only,
             is_dataframe_agg=is_dataframe_agg,
+            percentiles=percentiles,
         )
 
     def _terms_aggs(
@@ -497,8 +498,9 @@ class Operations:
         pd_aggs: List[str],
         response: Dict[str, Any],
         numeric_only: Optional[bool],
+        percentiles: Optional[List[float]] = None,
         is_dataframe_agg: bool = False,
-    ):
+    ) -> Dict[str, List[Any]]:
         """
         This method unpacks metric aggregations JSON response.
         This can be called either directly on an aggs query
@@ -519,6 +521,8 @@ class Operations:
         is_dataframe_agg:
             - True then aggregation is called from dataframe
             - False then aggregation is called from series
+        percentiles:
+            List of percentiles when 'quantile' agg is called. Otherwise it is None
 
         Returns
         -------
@@ -560,18 +564,14 @@ class Operations:
                         elif pd_agg == "quantile" and is_dataframe_agg:
                             agg_value = agg_value["50.0"]
                         else:
-                            # We have to filter out the `_as_string` from results
-                            # e.g. 'Cancelled_50.0': 0.0, 'Cancelled_50.0_as_string': 'false'
-                            percentile_values = [
-                                value
-                                for key, value in agg_value.items()
-                                if not key.endswith("as_string")
-                            ]
+                            # Maintain order of percentiles
+                            percentile_values = [agg_value[str(i)] for i in percentiles]
 
                     if not percentile_values and pd_agg not in ("quantile", "median"):
                         agg_value = agg_value[es_agg[1]]
                     # Need to convert 'Population' stddev and variance
-                    # from Elasticsearch into 'Sample' stddev and variance which is what pandas uses.
+                    # from Elasticsearch into 'Sample' stddev and variance
+                    # which is what pandas uses.
                     if es_agg[1] in ("std_deviation", "variance"):
                         # Neither transformation works with count <=1
                         count = response["aggregations"][
@@ -626,7 +626,7 @@ class Operations:
                             ]
 
                 # Null usually means there were no results.
-                if not isinstance(agg_value, (list, dict)) and (
+                if not isinstance(agg_value, dict) and (
                     agg_value is None or np.isnan(agg_value)
                 ):
                     if is_dataframe_agg and not numeric_only:
@@ -657,7 +657,6 @@ class Operations:
                         agg_value = elasticsearch_date_to_pandas_date(
                             agg_value, field.es_date_format
                         )
-                    func = elasticsearch_date_to_pandas_date
                 # If numeric_only is False | None then maintain column datatype
                 elif not numeric_only and pd_agg != "quantile":
                     # we're only converting to bool for lossless aggs like min, max, and median.
@@ -684,29 +683,30 @@ class Operations:
         self,
         query_compiler: "QueryCompiler",
         pd_aggs: List[str],
-        quantiles: Union[float, List[float]],
+        quantiles: Union[int, float, List[int], List[float]],
         is_dataframe: bool = True,
-        numeric_only: bool = True,
+        numeric_only: Optional[bool] = True,
     ) -> Union[pd.DataFrame, pd.Series]:
         # To verify if quantile range falls between 0 to 1
-        def verify_quantile_range(quantile: Any) -> float:
-            if isinstance(quantile, (int, float, str)):
+        def quantile_to_percentile(quantile: Any) -> float:
+            if isinstance(quantile, (int, float)):
                 quantile = float(quantile)
                 if quantile > 1 or quantile < 0:
                     raise ValueError(
                         f"quantile should be in range of 0 and 1, given {quantile}"
                     )
             else:
-                raise TypeError("quantile should be of type int or float or str")
+                raise TypeError("quantile should be of type int or float")
             # quantile * 100 = percentile
-            return quantile * 100
+            # return float(...) because min(1.0) gives 1
+            return float(min(100, max(0, quantile * 100)))
 
-        percentiles = list(
-            map(
-                verify_quantile_range,
-                (quantiles if isinstance(quantiles, list) else [quantiles]),
+        percentiles = [
+            quantile_to_percentile(x)
+            for x in (
+                (quantiles,) if not isinstance(quantiles, (list, tuple)) else quantiles
             )
-        )
+        ]
 
         result = self._metric_aggs(
             query_compiler,
@@ -952,8 +952,8 @@ class Operations:
         """
         # pd aggs that will be mapped to es aggs
         # that can use 'extended_stats'.
-        extended_stats_pd_aggs = {"mean", "min", "max", "sum", "var", "std"}
-        extended_stats_es_aggs = {"avg", "min", "max", "sum"}
+        extended_stats_pd_aggs = ["mean", "min", "max", "sum", "var", "std"]
+        extended_stats_es_aggs = ["avg", "min", "max", "sum"]
         extended_stats_calls = 0
 
         es_aggs = []
@@ -1015,7 +1015,7 @@ class Operations:
         if extended_stats_calls >= 2:
             es_aggs = [
                 ("extended_stats", es_agg)
-                if not isinstance(es_agg, tuple) and (es_agg in extended_stats_es_aggs)
+                if es_agg in extended_stats_es_aggs
                 else es_agg
                 for es_agg in es_aggs
             ]
