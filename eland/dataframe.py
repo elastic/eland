@@ -831,6 +831,7 @@ class DataFrame(NDFrame):
          1   geoip.city_name      4094 non-null   object
         dtypes: object(2)
         memory usage: ...
+        Elasticsearch storage usage: ...
         """
         if buf is None:  # pragma: no cover
             buf = sys.stdout
@@ -940,9 +941,9 @@ class DataFrame(NDFrame):
             # returns size in human readable format
             for x in ["bytes", "KB", "MB", "GB", "TB"]:
                 if num < 1024.0:
-                    return f"{num:3.1f}{size_qualifier} {x}"
+                    return f"{num:3.3f}{size_qualifier} {x}"
                 num /= 1024.0
-            return f"{num:3.1f}{size_qualifier} PB"
+            return f"{num:3.3f}{size_qualifier} PB"
 
         if verbose:
             _verbose_repr()
@@ -972,7 +973,13 @@ class DataFrame(NDFrame):
             # TODO - this is different from pd.DataFrame as we shouldn't
             #   really hold much in memory. For now just approximate with getsizeof + ignore deep
             mem_usage = sys.getsizeof(self)
-            lines.append(f"memory usage: {_sizeof_fmt(mem_usage, size_qualifier)}\n")
+            lines.append(f"memory usage: {_sizeof_fmt(mem_usage, size_qualifier)}")
+            storage_usage = self._query_compiler._client.indices.stats(
+                index=self._query_compiler._index_pattern, metric=["store"]
+            )["_all"]["total"]["store"]["size_in_bytes"]
+            lines.append(
+                f"Elasticsearch storage usage: {_sizeof_fmt(storage_usage,size_qualifier)}\n"
+            )
 
         fmt.buffer_put_lines(buf, lines)
 
