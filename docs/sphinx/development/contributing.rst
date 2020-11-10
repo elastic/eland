@@ -184,7 +184,7 @@ Configuring PyCharm And Running Tests
 - To setup test environment -*note this modifies Elasticsearch indices* run
    .. code-block:: bash
 
-      python -m test_eland.setup_tests
+      python -m tests.setup_tests
 
 - To validate installation, open python console and run
    .. code-block:: bash

@@ -12,7 +12,7 @@ build/
 docs/build/
 
 # pytest results
-test_eland/test_dataframe/results/*csv
+tests/dataframe/results/*csv
 result_images/
 
 
