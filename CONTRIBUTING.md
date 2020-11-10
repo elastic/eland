@@ -80,7 +80,7 @@ Once your changes and tests are ready to submit for review:
 
     # Run the test suite
     $ pytest --doctest-modules tests/
-    $ pytest --nbval tests/tests_notebook/
+    $ pytest --nbval tests/notebook/
 
     ```
 

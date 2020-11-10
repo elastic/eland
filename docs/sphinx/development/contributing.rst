@@ -87,7 +87,7 @@ Once your changes and tests are ready to submit for review:
 
       # Run the test suite
       $ pytest --doctest-modules eland/tests/
-      $ pytest --nbval eland/tests/tests_notebook/
+      $ pytest --nbval eland/tests/notebook/
 
 2. Sign the Contributor License Agreement
 

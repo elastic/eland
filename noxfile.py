@@ -102,7 +102,7 @@ def test(session):
         "--doctest-modules",
         *(session.posargs or ("eland/", "tests/")),
         "--nbval",
-        "tests/tests_notebook/",
+        "tests/notebook/",
     )
 
     session.run(
