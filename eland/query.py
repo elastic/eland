@@ -101,7 +101,14 @@ class Query:
         else:
             self._query = self._query & Rlike(field, value)
 
-    def terms_aggs(self, name: str, func: str, field: str, es_size: int) -> None:
+    def terms_aggs(
+        self,
+        name: str,
+        func: str,
+        field: str,
+        es_size: Optional[int] = None,
+        missing: Optional[Any] = None,
+    ) -> None:
         """
         Add terms agg e.g
 
@@ -109,12 +116,18 @@ class Query:
             "name": {
                 "terms": {
                     "field": "Airline",
-                    "size": 10
+                    "size": 10,
+                    "missing": "null"
                 }
             }
         }
         """
-        agg = {func: {"field": field, "size": es_size}}
+        agg = {func: {"field": field}}
+        if es_size:
+            agg[func]["size"] = str(es_size)
+
+        if missing:
+            agg[func]["missing"] = missing
         self._aggs[name] = agg
 
     def metric_aggs(self, name: str, func: str, field: str) -> None:

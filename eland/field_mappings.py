@@ -109,6 +109,9 @@ class Field(NamedTuple):
         # Timestamps also work for 'min', 'max' and 'avg'
         if es_agg in {"min", "max", "avg", "percentiles"} and self.is_timestamp:
             return True
+        # All datatypes work for mode
+        if es_agg == "mode":
+            return True
         return False
 
     @property

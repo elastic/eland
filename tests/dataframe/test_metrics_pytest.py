@@ -426,3 +426,18 @@ class TestDataFrameMetrics(TestData):
         ed_count = ed_flights.agg(["count"])
 
         assert_frame_equal(pd_count, ed_count)
+
+    @pytest.mark.parametrize("numeric_only", [True, False])
+    @pytest.mark.parametrize("es_size", [2, 10, 20])
+    def test_aggs_mode(self, es_size, numeric_only):
+        pd_flights = self.pd_flights().filter(
+            ["Cancelled", "dayOfWeek", "timestamp", "DestCountry"]
+        )
+        ed_flights = self.ed_flights().filter(
+            ["Cancelled", "dayOfWeek", "timestamp", "DestCountry"]
+        )
+
+        pd_mode = pd_flights.mode(numeric_only=numeric_only)[:es_size]
+        ed_mode = ed_flights.mode(numeric_only=numeric_only, es_size=es_size)
+
+        assert_frame_equal(pd_mode, ed_mode)

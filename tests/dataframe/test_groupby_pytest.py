@@ -194,3 +194,9 @@ class TestGroupbyDataFrame(TestData):
         assert_index_equal(pd_min_mad.columns, ed_min_mad.columns)
         assert_index_equal(pd_min_mad.index, ed_min_mad.index)
         assert_series_equal(pd_min_mad.dtypes, ed_min_mad.dtypes)
+
+    def test_groupby_mode(self):
+        ed_flights = self.ed_flights()
+        match = "Currently mode is not supported for groupby"
+        with pytest.raises(NotImplementedError, match=match):
+            ed_flights.groupby("Cancelled").mode()
