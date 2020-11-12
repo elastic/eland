@@ -95,14 +95,15 @@ def test(session):
     session.run("python", "-m", "tests.setup_tests")
     session.install(".")
     session.run(
+        "python",
+        "-m",
         "pytest",
         "--cov-report",
         "term-missing",
         "--cov=eland/",
         "--doctest-modules",
-        *(session.posargs or ("eland/", "tests/")),
         "--nbval",
-        "tests/notebook/",
+        *(session.posargs or ("eland/", "tests/")),
     )
 
     session.run(

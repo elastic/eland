@@ -30,7 +30,7 @@ from tests.common import ROOT_DIR, TestData
 
 class TestDataFrameToCSV(TestData):
     def test_to_csv_head(self):
-        results_file = ROOT_DIR + "/test_dataframe/results/test_to_csv_head.csv"
+        results_file = ROOT_DIR + "/dataframe/results/test_to_csv_head.csv"
 
         ed_flights = self.ed_flights().head()
         pd_flights = self.pd_flights().head()
@@ -50,7 +50,7 @@ class TestDataFrameToCSV(TestData):
         assert_frame_equal(pd_flights, pd_from_csv)
 
     def test_to_csv_full(self):
-        results_file = ROOT_DIR + "/test_dataframe/results/test_to_csv_full.csv"
+        results_file = ROOT_DIR + "/dataframe/results/test_to_csv_full.csv"
 
         # Test is slow as it's for the full dataset, but it is useful as it goes over 10000 docs
         ed_flights = self.ed_flights()
