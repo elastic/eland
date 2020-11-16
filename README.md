@@ -121,6 +121,7 @@ Data columns (total 27 columns):
  26  timestamp           13059 non-null  datetime64[ns]
 dtypes: bool(2), datetime64[ns](1), float64(5), int64(2), object(17)
 memory usage: 80.0 bytes
+Elasticsearch storage usage: 5.043 MB
 
 # Filtering of rows using comparisons
 >>> df[(df.Carrier=="Kibana Airlines") & (df.AvgTicketPrice > 900.0) & (df.Cancelled == True)].head()
