@@ -116,7 +116,7 @@ def test(session):
         "xgboost",
         "lightgbm",
     )
-    session.run("pytest", "tests/test_ml/")
+    session.run("pytest", "tests/ml/")
 
 
 @nox.session(reuse_venv=True)
