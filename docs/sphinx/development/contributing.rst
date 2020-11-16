@@ -87,7 +87,7 @@ Once your changes and tests are ready to submit for review:
 
       # Run the test suite
       $ pytest --doctest-modules eland/tests/
-      $ pytest --nbval eland/tests/tests_notebook/
+      $ pytest --nbval eland/tests/notebook/
 
 2. Sign the Contributor License Agreement
 
@@ -184,13 +184,13 @@ Configuring PyCharm And Running Tests
 - To setup test environment -*note this modifies Elasticsearch indices* run
    .. code-block:: bash
 
-      python -m eland.tests.setup_tests
+      python -m tests.setup_tests
 
 - To validate installation, open python console and run
    .. code-block:: bash
 
-   import eland as ed
-   ed_df = ed.DataFrame('localhost', 'flights')
+      import eland as ed
+      ed_df = ed.DataFrame('localhost', 'flights')
 
 - To run the automatic formatter and check for lint issues
    .. code-block:: bash

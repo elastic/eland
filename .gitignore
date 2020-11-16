@@ -1,5 +1,6 @@
 # Compiled python modules.
 *.pyc
+__pycache__/
 
 # Setuptools distribution folder.
 dist/
@@ -11,18 +12,19 @@ build/
 docs/build/
 
 # pytest results
-eland/tests/dataframe/results/
+tests/dataframe/results/*csv
 result_images/
 
 
 # Python egg metadata, regenerated from source files by setuptools.
 /*.egg-info
+eland.egg-info/
 
 # PyCharm files
 .idea/
 
 # vscode files
-.vscode/*
+.vscode/
 
 # pytest files
 .pytest_cache/

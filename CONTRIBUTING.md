@@ -79,8 +79,8 @@ Once your changes and tests are ready to submit for review:
     $ nox -s format
 
     # Run the test suite
-    $ pytest --doctest-modules eland/tests/
-    $ pytest --nbval eland/tests/tests_notebook/
+    $ pytest --doctest-modules tests/
+    $ pytest --nbval tests/notebook/
 
     ```
 
@@ -182,7 +182,7 @@ currently using a minimum version of PyCharm 2019.2.4.
 * To setup test environment:
 
     ``` bash
-    > python -m eland.tests.setup_tests
+    > python -m tests.setup_tests
     ```
 
     (Note this modifies Elasticsearch indices)
