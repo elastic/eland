@@ -428,13 +428,14 @@ class TestDataFrameMetrics(TestData):
         assert_frame_equal(pd_count, ed_count)
 
     @pytest.mark.parametrize("numeric_only", [True, False])
-    @pytest.mark.parametrize("es_size", [2, 10, 20])
+    @pytest.mark.parametrize("es_size", [2, 20, 100, 5000, 3000])
     def test_aggs_mode(self, es_size, numeric_only):
+        # FlightNum has unique values, so we can test `fill` NaN/NaT for remaining columns
         pd_flights = self.pd_flights().filter(
-            ["Cancelled", "dayOfWeek", "timestamp", "DestCountry"]
+            ["Cancelled", "dayOfWeek", "timestamp", "DestCountry", "FlightNum"]
         )
         ed_flights = self.ed_flights().filter(
-            ["Cancelled", "dayOfWeek", "timestamp", "DestCountry"]
+            ["Cancelled", "dayOfWeek", "timestamp", "DestCountry", "FlightNum"]
         )
 
         pd_mode = pd_flights.mode(numeric_only=numeric_only)[:es_size]

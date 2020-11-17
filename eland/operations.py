@@ -571,16 +571,17 @@ class Operations:
                     # include top-terms in the result.
                     if not agg_value:
                         # If the all the documents for a field are empty
-                        agg_value = [np.NaN]
+                        agg_value = [field.nan_value]
                     else:
                         max_doc_count = agg_value[0]["doc_count"]
                         # We need only keys which are equal to max_doc_count
                         # lesser values are ignored
                         agg_value = [
-                            agg_value[i]["key"]
-                            for i in range(len(agg_value))
-                            if agg_value[i]["doc_count"] == max_doc_count
+                            item["key"]
+                            for item in agg_value
+                            if item["doc_count"] == max_doc_count
                         ]
+
                         # Maintain datatype by default because pandas does the same
                         # text are returned as-is
                         if field.is_bool or field.is_numeric:
