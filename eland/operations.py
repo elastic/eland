@@ -952,8 +952,8 @@ class Operations:
         """
         # pd aggs that will be mapped to es aggs
         # that can use 'extended_stats'.
-        extended_stats_pd_aggs = ["mean", "min", "max", "sum", "var", "std"]
-        extended_stats_es_aggs = ["avg", "min", "max", "sum"]
+        extended_stats_pd_aggs = {"mean", "min", "max", "sum", "var", "std"}
+        extended_stats_es_aggs = {"avg", "min", "max", "sum"}
         extended_stats_calls = 0
 
         es_aggs = []
@@ -983,14 +983,14 @@ class Operations:
             elif pd_agg == "mad":
                 es_aggs.append("median_absolute_deviation")
             elif pd_agg == "median":
-                es_aggs.append(("percentiles", [50.0]))
+                es_aggs.append(("percentiles", (50.0,)))
             elif pd_agg == "quantile":
                 # None when 'quantile' is called in df.agg[...]
                 # Behaves same as median because pandas does the same.
                 if percentiles is not None:
-                    es_aggs.append(("percentiles", percentiles))
+                    es_aggs.append(("percentiles", tuple(percentiles)))
                 else:
-                    es_aggs.append(("percentiles", [50.0]))
+                    es_aggs.append(("percentiles", (50.0,)))
 
             elif pd_agg == "mode":
                 if len(pd_aggs) != 1:

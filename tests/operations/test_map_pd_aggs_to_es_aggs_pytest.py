@@ -44,8 +44,15 @@ def test_all_aggs():
         "median_absolute_deviation",
         "value_count",
         "cardinality",
-        ("percentiles", [50.0]),
-        ("percentiles", [0.2, 0.5, 0.8]),
+        ("percentiles", (50.0,)),
+        (
+            "percentiles",
+            (
+                0.2,
+                0.5,
+                0.8,
+            ),
+        ),
     ]
 
 
@@ -68,4 +75,4 @@ def test_extended_stats_optimization():
 def test_percentiles_none():
     es_aggs = Operations._map_pd_aggs_to_es_aggs(["count", "min", "quantile"])
 
-    assert es_aggs == ["value_count", "min", ("percentiles", [50.0])]
+    assert es_aggs == ["value_count", "min", ("percentiles", (50.0,))]
