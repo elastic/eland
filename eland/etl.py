@@ -27,37 +27,6 @@ from pandas.io.parsers import _c_parser_defaults  # type: ignore
 from eland import DataFrame
 from eland.common import DEFAULT_CHUNK_SIZE, ensure_es_client
 from eland.field_mappings import FieldMappings, verify_mapping_compatibility
-from eland.utils import deprecated_api
-
-
-@deprecated_api("eland.DataFrame()")
-def read_es(
-    es_client: Union[str, List[str], Tuple[str, ...], Elasticsearch],
-    es_index_pattern: str,
-) -> DataFrame:
-    """
-    Utility method to create an eland.Dataframe from an Elasticsearch index_pattern.
-    (Similar to pandas.read_csv, but source data is an Elasticsearch index rather than
-    a csv file)
-
-    Parameters
-    ----------
-    es_client: Elasticsearch client argument(s)
-        - elasticsearch-py parameters or
-        - elasticsearch-py instance
-    es_index_pattern: str
-        Elasticsearch index pattern
-
-    Returns
-    -------
-    eland.DataFrame
-
-    See Also
-    --------
-    eland.pandas_to_eland: Create an eland.Dataframe from pandas.DataFrame
-    eland.eland_to_pandas: Create a pandas.Dataframe from eland.DataFrame
-    """
-    return DataFrame(es_client=es_client, es_index_pattern=es_index_pattern)
 
 
 def pandas_to_eland(
@@ -552,8 +521,3 @@ def csv_to_eland(  # type: ignore
 
     # Now create an eland.DataFrame that references the new index
     return DataFrame(es_client, es_index_pattern=es_dest_index)
-
-
-@deprecated_api("eland.csv_to_eland()")
-def read_csv(*args, **kwargs) -> DataFrame:  # type: ignore
-    return csv_to_eland(*args, **kwargs)
