@@ -80,7 +80,7 @@ def check_prediction_equality(es_model, py_model, test_data):
     np.testing.assert_almost_equal(test_results, es_results, decimal=2)
 
 
-class TestImportedMLModel:
+class TestMLModel:
     @requires_no_ml_extras
     def test_import_ml_model_when_dependencies_are_not_available(self):
         from eland.ml import MLModel  # noqa: F401
