@@ -89,7 +89,7 @@ def lint(session):
             session.error("\n" + "\n".join(sorted(set(errors))))
 
 
-@nox.session(python=["3.6", "3.7", "3.8"])
+@nox.session(python=["3.6", "3.7", "3.8", "3.9"])
 def test(session):
     session.install("-r", "requirements-dev.txt")
 

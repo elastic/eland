@@ -39,6 +39,7 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
+    name: "Python=${{ matrix.python-version }} ES=${{ matrix.es-version}} Pandas=${{ matrix.pandas-version }}"
 
     strategy:
       fail-fast: false
