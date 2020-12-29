@@ -98,6 +98,12 @@ def lint(session):
 @nox.session(python=["3.6", "3.7", "3.8"])
 def test(session):
     session.install("-r", "requirements-dev.txt")
+
+    # Allow overriding PANDAS_VERSION in CI.
+    pandas_version = os.getenv("PANDAS_VERSION")
+    if pandas_version:
+        session.install(f"pandas=={pandas_version}")
+
     session.run("python", "-m", "eland.tests.setup_tests")
     session.install(".")
     session.run("pytest", "--doctest-modules", *(session.posargs or ("eland/",)))
