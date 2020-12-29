@@ -321,7 +321,7 @@ class Series(NDFrame):
         max_rows = pd.get_option("display.max_rows")
         min_rows = pd.get_option("display.min_rows")
 
-        if len(self) > max_rows:
+        if max_rows and len(self) > max_rows:
             max_rows = min_rows
 
         show_dimensions = pd.get_option("display.show_dimensions")

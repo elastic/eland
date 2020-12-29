@@ -22,13 +22,7 @@ from pathlib import Path
 import nox
 
 BASE_DIR = Path(__file__).parent
-SOURCE_FILES = (
-    "setup.py",
-    "noxfile.py",
-    "eland/",
-    "docs/",
-    "utils/",
-)
+SOURCE_FILES = ("setup.py", "noxfile.py", "eland/", "docs/", "utils/", "tests/")
 
 # Whenever type-hints are completed on a file it should
 # be added here so that this file will continue to be checked
@@ -104,10 +98,19 @@ def test(session):
     if pandas_version:
         session.install(f"pandas=={pandas_version}")
 
-    session.run("python", "-m", "eland.tests.setup_tests")
+    session.run("python", "-m", "tests.setup_tests")
     session.install(".")
-    session.run("pytest", "--doctest-modules", *(session.posargs or ("eland/",)))
-    session.run("pytest", "--nbval", "eland/tests/tests_notebook/")
+    session.run(
+        "python",
+        "-m",
+        "pytest",
+        "--cov-report",
+        "term-missing",
+        "--cov=eland/",
+        "--doctest-modules",
+        "--nbval",
+        *(session.posargs or ("eland/", "tests/")),
+    )
 
     session.run(
         "python",
@@ -119,7 +122,7 @@ def test(session):
         "xgboost",
         "lightgbm",
     )
-    session.run("pytest", "eland/tests/ml/")
+    session.run("pytest", "tests/ml/")
 
 
 @nox.session(reuse_venv=True)
@@ -138,7 +141,7 @@ def docs(session):
         es = elasticsearch.Elasticsearch("localhost:9200")
         es.info()
         if not es.indices.exists("flights"):
-            session.run("python", "-m", "eland.tests.setup_tests")
+            session.run("python", "-m", "tests.setup_tests")
         es_active = True
     except Exception:
         es_active = False
