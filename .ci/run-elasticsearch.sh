@@ -130,6 +130,16 @@ if [[ "$ELASTICSEARCH_VERSION" != *oss* ]]; then
   url="http://elastic:$ELASTIC_PASSWORD@$NODE_NAME"
 fi
 
+# Pull the container, retry on failures up to 5 times with
+# short delays between each attempt. Fixes most transient network errors.
+docker_pull_attempts=0
+until [ "$docker_pull_attempts" -ge 5 ]
+do
+   docker pull docker.elastic.co/elasticsearch/"$ELASTICSEARCH_VERSION" && break
+   docker_pull_attempts=$((docker_pull_attempts+1))
+   sleep 10
+done
+
 echo -e "\033[34;1mINFO:\033[0m Starting container $NODE_NAME \033[0m"
 set -x
 docker run \

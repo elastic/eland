@@ -22,7 +22,7 @@ import pandas as pd
 import pytest
 from pandas.testing import assert_frame_equal, assert_series_equal
 
-from tests.common import TestData
+from tests.common import TestData, assert_almost_equal
 
 
 class TestDataFrameMetrics(TestData):
@@ -181,7 +181,9 @@ class TestDataFrameMetrics(TestData):
         )
         ed_metrics_dict = ed_metrics["timestamp"].to_dict()
         ed_metrics_dict.pop("median")  # Median is tested below.
-        assert ed_metrics_dict == expected_values
+
+        for key, expected_value in expected_values.items():
+            assert_almost_equal(ed_metrics_dict[key], expected_value)
 
     @pytest.mark.parametrize("agg", ["mean", "min", "max", "nunique"])
     def test_flights_datetime_metrics_single_agg(self, agg):
@@ -200,7 +202,7 @@ class TestDataFrameMetrics(TestData):
         else:
             # df with timestamp column should return datetime64[ns]
             assert ed_metric.dtypes["timestamp"] == np.dtype("datetime64[ns]")
-        assert ed_metric["timestamp"][0] == expected_values[agg]
+        assert_almost_equal(ed_metric["timestamp"][0], expected_values[agg])
 
     @pytest.mark.parametrize("agg", ["mean", "min", "max"])
     def test_flights_datetime_metrics_agg_func(self, agg):
@@ -213,7 +215,7 @@ class TestDataFrameMetrics(TestData):
         ed_metric = getattr(ed_timestamps, agg)(numeric_only=False)
 
         assert ed_metric.dtype == np.dtype("datetime64[ns]")
-        assert ed_metric[0] == expected_values[agg]
+        assert_almost_equal(ed_metric[0], expected_values[agg])
 
     def test_flights_datetime_metrics_median(self):
         ed_df = self.ed_flights_small()[["timestamp"]]
@@ -283,7 +285,7 @@ class TestDataFrameMetrics(TestData):
             else:
                 assert_series_equal(
                     agg_data[agg].rename(None),
-                    getattr(pd_flights, agg)(numeric_only=True),
+                    getattr(pd_flights, agg)(numeric_only=True).astype(float),
                     check_exact=False,
                     rtol=True,
                 )

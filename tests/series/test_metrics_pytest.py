@@ -23,7 +23,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from tests.common import TestData
+from tests.common import TestData, assert_almost_equal
 
 
 class TestSeriesMetrics(TestData):
@@ -102,7 +102,7 @@ class TestSeriesMetrics(TestData):
         }
         ed_metric = getattr(ed_timestamps, agg)()
 
-        assert ed_metric == expected_values[agg]
+        assert_almost_equal(ed_metric, expected_values[agg])
 
     def test_flights_datetime_median_metric(self):
         ed_series = self.ed_flights_small()["timestamp"]

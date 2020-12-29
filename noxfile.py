@@ -89,11 +89,18 @@ def lint(session):
             session.error("\n" + "\n".join(sorted(set(errors))))
 
 
-@nox.session(python=["3.6", "3.7", "3.8"])
+@nox.session(python=["3.6", "3.7", "3.8", "3.9"])
 def test(session):
     session.install("-r", "requirements-dev.txt")
     session.run("python", "-m", "tests.setup_tests")
     session.install(".")
+
+    # Notebooks are only run on Python 3.7+ due to pandas 1.2.0
+    if session.python == "3.6":
+        nbval = ()
+    else:
+        nbval = ("--nbval",)
+
     session.run(
         "python",
         "-m",
@@ -102,21 +109,23 @@ def test(session):
         "term-missing",
         "--cov=eland/",
         "--doctest-modules",
-        "--nbval",
+        *nbval,
         *(session.posargs or ("eland/", "tests/")),
     )
 
-    session.run(
-        "python",
-        "-m",
-        "pip",
-        "uninstall",
-        "--yes",
-        "scikit-learn",
-        "xgboost",
-        "lightgbm",
-    )
-    session.run("pytest", "tests/ml/")
+    # Only run during default test execution
+    if not session.posargs:
+        session.run(
+            "python",
+            "-m",
+            "pip",
+            "uninstall",
+            "--yes",
+            "scikit-learn",
+            "xgboost",
+            "lightgbm",
+        )
+        session.run("pytest", "tests/ml/")
 
 
 @nox.session(reuse_venv=True)

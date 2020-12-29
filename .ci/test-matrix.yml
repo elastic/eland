@@ -4,13 +4,12 @@ ELASTICSEARCH_VERSION:
   - 8.0.0-SNAPSHOT
   - 7.x-SNAPSHOT
   - 7.10-SNAPSHOT
-  - 7.7-SNAPSHOT
-  - 7.6-SNAPSHOT
 
 TEST_SUITE:
   - xpack
 
 PYTHON_VERSION:
+  - 3.9
   - 3.8
   - 3.7
   - 3.6
