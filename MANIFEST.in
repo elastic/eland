@@ -1,4 +1,3 @@
 include LICENSE.txt
 include README.md
-recursive-include eland 
 include eland/py.typed
