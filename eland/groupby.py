@@ -71,7 +71,7 @@ class DataFrameGroupBy(GroupBy):
         ...   "localhost", "flights",
         ...   columns=["AvgTicketPrice", "Cancelled", "dayOfWeek", "timestamp", "DestCountry"]
         ... )
-        >>> df.groupby("DestCountry").mean(numeric_only=False) # doctest: +NORMALIZE_WHITESPACE
+        >>> df.groupby("DestCountry").mean(numeric_only=False) # doctest: +SKIP
                      AvgTicketPrice  Cancelled  dayOfWeek                     timestamp
         DestCountry
         AE               605.132970   0.152174   2.695652 2018-01-21 16:58:07.891304443

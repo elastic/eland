@@ -16,6 +16,7 @@
 #  under the License.
 
 import os
+from datetime import timedelta
 
 import pandas as pd
 from pandas.testing import assert_frame_equal, assert_series_equal
@@ -106,3 +107,30 @@ def assert_pandas_eland_series_equal(left, right, **kwargs):
 
     # Use pandas tests to check similarity
     assert_series_equal(left, right.to_pandas(), **kwargs)
+
+
+def assert_almost_equal(left, right, **kwargs):
+    """Asserts left and right are almost equal. Left and right
+    can be scalars, series, dataframes, etc
+    """
+    if isinstance(left, (ed.DataFrame, ed.Series)):
+        left = left.to_pandas()
+    if isinstance(right, (ed.DataFrame, ed.Series)):
+        right = right.to_pandas()
+
+    if isinstance(right, pd.DataFrame):
+        kwargs.setdefault("check_exact", True)
+        assert_frame_equal(left, right)
+    elif isinstance(right, pd.Series):
+        kwargs.setdefault("check_exact", True)
+        assert_series_equal(left, right)
+    elif isinstance(right, float):
+        assert right * 0.99 <= left <= right * 1.01
+    elif isinstance(right, pd.Timestamp):
+        assert isinstance(left, pd.Timestamp) and right - timedelta(
+            seconds=0.1
+        ) < left < right + timedelta(seconds=0.1)
+    elif right is pd.NaT:
+        assert left is pd.NaT
+    else:
+        assert left == right, f"{left} != {right}"

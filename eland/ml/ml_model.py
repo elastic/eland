@@ -114,7 +114,7 @@ class MLModel:
         >>> regressor = regressor.fit(training_data[0], training_data[1])
 
         >>> # Get some test results
-        >>> regressor.predict(np.array(test_data))
+        >>> regressor.predict(np.array(test_data))  # doctest: +SKIP
         array([0.06062475, 0.9990102 ], dtype=float32)
 
         >>> # Serialise the model to Elasticsearch
@@ -123,7 +123,7 @@ class MLModel:
         >>> es_model = MLModel.import_model('localhost', model_id, regressor, feature_names, es_if_exists='replace')
 
         >>> # Get some test results from Elasticsearch model
-        >>> es_model.predict(test_data)
+        >>> es_model.predict(test_data)  # doctest: +SKIP
         array([0.0606248 , 0.99901026], dtype=float32)
 
         >>> # Delete model from Elasticsearch

@@ -214,7 +214,7 @@ class NDFrame(ABC):
         Examples
         --------
         >>> df = ed.DataFrame('localhost', 'flights', columns=["AvgTicketPrice", "Cancelled", "dayOfWeek", "timestamp", "DestCountry"])
-        >>> df.mean()
+        >>> df.mean()  # doctest: +SKIP
         AvgTicketPrice                          628.254
         Cancelled                              0.128494
         dayOfWeek                               2.83598
@@ -227,7 +227,7 @@ class NDFrame(ABC):
         dayOfWeek           2.835975
         dtype: float64
 
-        >>> df.mean(numeric_only=False)
+        >>> df.mean(numeric_only=False)  # doctest: +SKIP
         AvgTicketPrice                          628.254
         Cancelled                              0.128494
         dayOfWeek                               2.83598
@@ -263,7 +263,7 @@ class NDFrame(ABC):
         Examples
         --------
         >>> df = ed.DataFrame('localhost', 'flights', columns=["AvgTicketPrice", "Cancelled", "dayOfWeek", "timestamp", "DestCountry"])
-        >>> df.sum()
+        >>> df.sum()  # doctest: +SKIP
         AvgTicketPrice    8.20436e+06
         Cancelled                1678
         dayOfWeek               37035
@@ -275,7 +275,7 @@ class NDFrame(ABC):
         dayOfWeek         3.703500e+04
         dtype: float64
 
-        >>> df.sum(numeric_only=False)
+        >>> df.sum(numeric_only=False)  # doctest: +SKIP
         AvgTicketPrice    8.20436e+06
         Cancelled                1678
         dayOfWeek               37035
@@ -311,7 +311,7 @@ class NDFrame(ABC):
         Examples
         --------
         >>> df = ed.DataFrame('localhost', 'flights', columns=["AvgTicketPrice", "Cancelled", "dayOfWeek", "timestamp", "DestCountry"])
-        >>> df.min()
+        >>> df.min()  # doctest: +SKIP
         AvgTicketPrice                100.021
         Cancelled                       False
         dayOfWeek                           0
@@ -324,7 +324,7 @@ class NDFrame(ABC):
         dayOfWeek           0.000000
         dtype: float64
 
-        >>> df.min(numeric_only=False)
+        >>> df.min(numeric_only=False)  # doctest: +SKIP
         AvgTicketPrice                100.021
         Cancelled                       False
         dayOfWeek                           0
@@ -358,7 +358,7 @@ class NDFrame(ABC):
         Examples
         --------
         >>> df = ed.DataFrame('localhost', 'flights', columns=["AvgTicketPrice", "Cancelled", "dayOfWeek", "timestamp", "DestCountry"])
-        >>> df.var()
+        >>> df.var()  # doctest: +SKIP
         AvgTicketPrice    70964.570234
         Cancelled             0.111987
         dayOfWeek             3.761279
@@ -370,7 +370,7 @@ class NDFrame(ABC):
         dayOfWeek             3.761279
         dtype: float64
 
-        >>> df.var(numeric_only=False)
+        >>> df.var(numeric_only=False)  # doctest: +SKIP
         AvgTicketPrice     70964.6
         Cancelled         0.111987
         dayOfWeek          3.76128
@@ -404,7 +404,7 @@ class NDFrame(ABC):
         Examples
         --------
         >>> df = ed.DataFrame('localhost', 'flights', columns=["AvgTicketPrice", "Cancelled", "dayOfWeek", "timestamp", "DestCountry"])
-        >>> df.std()
+        >>> df.std()  # doctest: +SKIP
         AvgTicketPrice    266.407061
         Cancelled           0.334664
         dayOfWeek           1.939513
@@ -416,7 +416,7 @@ class NDFrame(ABC):
         dayOfWeek           1.939513
         dtype: float64
 
-        >>> df.std(numeric_only=False)
+        >>> df.std(numeric_only=False)  # doctest: +SKIP
         AvgTicketPrice     266.407
         Cancelled         0.334664
         dayOfWeek          1.93951
@@ -499,7 +499,7 @@ class NDFrame(ABC):
         Examples
         --------
         >>> df = ed.DataFrame('localhost', 'flights', columns=["AvgTicketPrice", "Cancelled", "dayOfWeek", "timestamp", "DestCountry"])
-        >>> df.max()
+        >>> df.max()  # doctest: +SKIP
         AvgTicketPrice                1199.73
         Cancelled                        True
         dayOfWeek                           6
@@ -512,7 +512,7 @@ class NDFrame(ABC):
         dayOfWeek            6.000000
         dtype: float64
 
-        >>> df.max(numeric_only=False)
+        >>> df.max(numeric_only=False)  # doctest: +SKIP
         AvgTicketPrice                1199.73
         Cancelled                        True
         dayOfWeek                           6

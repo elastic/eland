@@ -18,7 +18,19 @@
 import numpy as np
 from pandas.core.dtypes.generic import ABCIndexClass
 from pandas.plotting._matplotlib import converter
-from pandas.plotting._matplotlib.tools import _flatten, _set_ticks_props, _subplots
+
+try:  # pandas>=1.2.0
+    from pandas.plotting._matplotlib.tools import (
+        create_subplots,
+        flatten_axes,
+        set_ticks_props,
+    )
+except ImportError:  # pandas<1.2.0
+    from pandas.plotting._matplotlib.tools import (
+        _flatten as flatten_axes,
+        _set_ticks_props as set_ticks_props,
+        _subplots as create_subplots,
+    )
 
 from eland.utils import try_sort
 
@@ -63,7 +75,7 @@ def hist_series(
         ax.grid(grid)
         axes = np.array([ax])
 
-        _set_ticks_props(
+        set_ticks_props(
             axes, xlabelsize=xlabelsize, xrot=xrot, ylabelsize=ylabelsize, yrot=yrot
         )
 
@@ -110,7 +122,7 @@ def hist_frame(
     if naxes == 0:
         raise ValueError("hist method requires numerical columns, " "nothing to plot.")
 
-    fig, axes = _subplots(
+    fig, axes = create_subplots(
         naxes=naxes,
         ax=ax,
         squeeze=False,
@@ -119,7 +131,7 @@ def hist_frame(
         figsize=figsize,
         layout=layout,
     )
-    _axes = _flatten(axes)
+    _axes = flatten_axes(axes)
 
     for i, col in enumerate(try_sort(data.columns)):
         ax = _axes[i]
@@ -132,7 +144,7 @@ def hist_frame(
         ax.set_title(col)
         ax.grid(grid)
 
-    _set_ticks_props(
+    set_ticks_props(
         axes, xlabelsize=xlabelsize, xrot=xrot, ylabelsize=ylabelsize, yrot=yrot
     )
     fig.subplots_adjust(wspace=0.3, hspace=0.3)
