@@ -105,7 +105,7 @@ class Field(NamedTuple):
         # Cardinality, Count and mode work for all types
         # Numerics and bools work for all aggs
         if (
-            es_agg in ("cardinality", "value_count", "mode")
+            es_agg in {"cardinality", "value_count", "mode"}
             or self.is_numeric
             or self.is_bool
         ):
