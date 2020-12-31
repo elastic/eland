@@ -21,6 +21,7 @@ import elasticsearch
 import numpy as np  # type: ignore
 
 from eland.common import ensure_es_client, es_version
+from eland.utils import deprecated_api
 
 from .common import TYPE_CLASSIFICATION, TYPE_REGRESSION
 from .transformers import get_model_transformer
@@ -441,3 +442,6 @@ class MLModel:
                 raise ValueError(f"Model with Model ID {self._model_id!r} wasn't found")
             self._trained_model_config_cache = resp["trained_model_configs"][0]
         return self._trained_model_config_cache
+
+
+ImportedMLModel = deprecated_api("MLModel.import_model()")(MLModel.import_model)
