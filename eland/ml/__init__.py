@@ -15,9 +15,6 @@
 #  specific language governing permissions and limitations
 #  under the License.
 
-from eland.ml.ml_model import ImportedMLModel, MLModel
+from eland.ml.ml_model import ImportedMLModel, MLModel  # noqa: F401
 
-__all__ = [
-    "MLModel",
-    "ImportedMLModel",
-]
+__all__ = ["MLModel"]

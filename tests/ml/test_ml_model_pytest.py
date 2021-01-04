@@ -80,7 +80,7 @@ def check_prediction_equality(es_model, py_model, test_data):
     np.testing.assert_almost_equal(test_results, es_results, decimal=2)
 
 
-class TestImportedMLModel:
+class TestMLModel:
     @requires_no_ml_extras
     def test_import_ml_model_when_dependencies_are_not_available(self):
         from eland.ml import MLModel  # noqa: F401
@@ -238,6 +238,17 @@ class TestImportedMLModel:
         check_prediction_equality(
             es_model, regressor, random_rows(training_data[0], 20)
         )
+
+        match = f"Trained machine learning model {model_id} already exists"
+        with pytest.raises(ValueError, match=match):
+            MLModel.import_model(
+                ES_TEST_CLIENT,
+                model_id,
+                regressor,
+                feature_names,
+                es_if_exists="fail",
+                es_compress_model_definition=compress_model_definition,
+            )
 
         # Clean up
         es_model.delete_model()
@@ -460,110 +471,3 @@ class TestImportedMLModel:
 
         # Clean up
         es_model.delete_model()
-
-    # If both overwrite and es_if_exists is given.
-    @requires_sklearn
-    @pytest.mark.parametrize("compress_model_definition", [True, False])
-    @pytest.mark.parametrize("es_if_exists", ["fail", "replace"])
-    @pytest.mark.parametrize("overwrite", [True, False])
-    def test_imported_mlmodel_bothparams(
-        self, compress_model_definition, es_if_exists, overwrite
-    ):
-        # Train model
-        training_data = datasets.make_regression(n_features=5)
-        regressor = RandomForestRegressor()
-        regressor.fit(training_data[0], training_data[1])
-
-        feature_names = ["f0", "f1", "f2", "f3", "f4"]
-        model_id = "test_random_forest_regressor"
-
-        match = "Using 'overwrite' and 'es_if_exists' together is invalid, use only 'es_if_exists'"
-        with pytest.raises(ValueError, match=match):
-            MLModel.import_model(
-                ES_TEST_CLIENT,
-                model_id,
-                regressor,
-                feature_names,
-                es_if_exists=es_if_exists,
-                overwrite=overwrite,
-                es_compress_model_definition=compress_model_definition,
-            )
-
-    # Deprecation warning for overwrite parameter
-    @requires_sklearn
-    @pytest.mark.parametrize("compress_model_definition", [True, False])
-    @pytest.mark.parametrize("overwrite", [True])
-    def test_imported_mlmodel_overwrite_true(
-        self, compress_model_definition, overwrite
-    ):
-        # Train model
-        training_data = datasets.make_regression(n_features=5)
-        regressor = RandomForestRegressor()
-        regressor.fit(training_data[0], training_data[1])
-
-        feature_names = ["f0", "f1", "f2", "f3", "f4"]
-        model_id = "test_random_forest_regressor"
-
-        match = "'overwrite' parameter is deprecated, use 'es_if_exists' instead"
-        with pytest.warns(DeprecationWarning, match=match):
-            MLModel.import_model(
-                ES_TEST_CLIENT,
-                model_id,
-                regressor,
-                feature_names,
-                overwrite=overwrite,
-                es_compress_model_definition=compress_model_definition,
-            )
-
-    @requires_sklearn
-    @pytest.mark.parametrize("compress_model_definition", [True, False])
-    @pytest.mark.parametrize("overwrite", [False])
-    def test_imported_mlmodel_overwrite_false(
-        self, compress_model_definition, overwrite
-    ):
-        # Train model
-        training_data = datasets.make_regression(n_features=5)
-        regressor = RandomForestRegressor()
-        regressor.fit(training_data[0], training_data[1])
-
-        feature_names = ["f0", "f1", "f2", "f3", "f4"]
-        model_id = "test_random_forest_regressor"
-
-        match_error = f"Trained machine learning model {model_id} already exists"
-        match_warning = (
-            "'overwrite' parameter is deprecated, use 'es_if_exists' instead"
-        )
-        with pytest.raises(ValueError, match=match_error):
-            with pytest.warns(DeprecationWarning, match=match_warning):
-                MLModel.import_model(
-                    ES_TEST_CLIENT,
-                    model_id,
-                    regressor,
-                    feature_names,
-                    overwrite=overwrite,
-                    es_compress_model_definition=compress_model_definition,
-                )
-
-    # Raise ValueError if Model exists when es_if_exists = 'fail'
-    @requires_sklearn
-    @pytest.mark.parametrize("compress_model_definition", [True, False])
-    def test_es_if_exists_fail(self, compress_model_definition):
-        # Train model
-        training_data = datasets.make_regression(n_features=5)
-        regressor = RandomForestRegressor()
-        regressor.fit(training_data[0], training_data[1])
-
-        feature_names = ["f0", "f1", "f2", "f3", "f4"]
-        model_id = "test_random_forest_regressor"
-
-        # If both overwrite and es_if_exists is given.
-        match = f"Trained machine learning model {model_id} already exists"
-        with pytest.raises(ValueError, match=match):
-            MLModel.import_model(
-                ES_TEST_CLIENT,
-                model_id,
-                regressor,
-                feature_names,
-                es_if_exists="fail",
-                es_compress_model_definition=compress_model_definition,
-            )

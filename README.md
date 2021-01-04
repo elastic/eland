@@ -153,7 +153,7 @@ to be serialized and used as an inference model in Elasticsearch
 
 ```python
 >>> from xgboost import XGBClassifier
->>> from eland.ml import ImportedMLModel
+>>> from eland.ml import MLModel
 
 # Train and exercise an XGBoost ML model locally
 >>> xgb_model = XGBClassifier(booster="gbtree")
@@ -163,7 +163,7 @@ to be serialized and used as an inference model in Elasticsearch
 [0 1 1 0 1 0 0 0 1 0]
 
 # Import the model into Elasticsearch
->>> es_model = ImportedMLModel(
+>>> es_model = MLModel(
     es_client="localhost:9200",
     model_id="xgb-classifier",
     model=xgb_model,

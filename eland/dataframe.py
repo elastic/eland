@@ -39,7 +39,7 @@ from eland.filter import BooleanFilter
 from eland.groupby import DataFrameGroupBy
 from eland.ndframe import NDFrame
 from eland.series import Series
-from eland.utils import deprecated_api, is_valid_attr_name
+from eland.utils import is_valid_attr_name
 
 
 class DataFrame(NDFrame):
@@ -627,10 +627,6 @@ class DataFrame(NDFrame):
         super()._es_info(buf)
 
         return buf.getvalue()
-
-    @deprecated_api("eland.DataFrame.es_info()")
-    def info_es(self):
-        return self.es_info()
 
     def es_match(
         self,

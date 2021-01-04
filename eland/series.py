@@ -59,7 +59,7 @@ from eland.filter import (
     ScriptFilter,
 )
 from eland.ndframe import NDFrame
-from eland.utils import deprecated_api, to_list
+from eland.utils import to_list
 
 if TYPE_CHECKING:  # type: ignore
     from elasticsearch import Elasticsearch  # noqa: F401
@@ -711,10 +711,6 @@ class Series(NDFrame):
         super()._es_info(buf)
 
         return buf.getvalue()
-
-    @deprecated_api("eland.Series.es_info()")
-    def info_es(self) -> str:
-        return self.es_info()
 
     def __add__(self, right):
         """
