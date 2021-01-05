@@ -890,7 +890,7 @@ class Operations:
             elif pd_agg == "mode":
                 if len(pd_aggs) != 1:
                     raise NotImplementedError(
-                        "Currently mode is not supported in df.agg[...]. Try df.mode()"
+                        "Currently mode is not supported in df.agg(...). Try df.mode()"
                     )
                 else:
                     es_aggs.append("mode")

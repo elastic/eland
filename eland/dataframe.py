@@ -1635,7 +1635,7 @@ class DataFrame(NDFrame):
         es_size: int = 10,
     ) -> pd.DataFrame:
         """
-            Calculate mode of a DataFrame
+        Calculate mode of a DataFrame
 
         Parameters
         ----------

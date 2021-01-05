@@ -128,7 +128,7 @@ class TestSeriesMetrics(TestData):
 
         assert_series_equal(ed_mode, pd_mode)
 
-    @pytest.mark.parametrize("es_size", [2, 10, 20])
+    @pytest.mark.parametrize("es_size", [1, 2, 10, 20])
     def test_ecommerce_mode_es_size(self, es_size):
         ed_series = self.ed_ecommerce()
         pd_series = self.pd_ecommerce()
