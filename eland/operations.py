@@ -515,7 +515,7 @@ class Operations:
         pd_aggs:
             a list of aggs
         response:
-            a dict containing response from ElasticSearch
+            a dict containing response from Elastic Search
         numeric_only:
             return either numeric values or NaN/NaT
         is_dataframe_agg:
