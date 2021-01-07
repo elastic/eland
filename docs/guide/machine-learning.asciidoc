@@ -1,0 +1,31 @@
+[[machine-learning]]
+== Machine Learning
+
+Eland allows transforming trained models from scikit-learn, XGBoost,
+and LightGBM libraries to be serialized and used as an inference
+model in Elasticsearch
+
+[source,python]
+------------------------
+>>> from xgboost import XGBClassifier
+>>> from eland.ml import MLModel
+
+# Train and exercise an XGBoost ML model locally
+>>> xgb_model = XGBClassifier(booster="gbtree")
+>>> xgb_model.fit(training_data[0], training_data[1])
+
+>>> xgb_model.predict(training_data[0])
+[0 1 1 0 1 0 0 0 1 0]
+
+# Import the model into Elasticsearch
+>>> es_model = MLModel.import_model(
+    es_client="localhost:9200",
+    model_id="xgb-classifier",
+    model=xgb_model,
+    feature_names=["f0", "f1", "f2", "f3", "f4"],
+)
+
+# Exercise the ML model in Elasticsearch with the training data
+>>> es_model.predict(training_data[0])
+[0 1 1 0 1 0 0 0 1 0]
+------------------------

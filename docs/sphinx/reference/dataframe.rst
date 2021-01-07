@@ -41,6 +41,15 @@ Indexing, Iteration
 
 Function Application, GroupBy & Window
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. note::
+
+    Elasticsearch aggregations using cardinality (``count``) are accurate
+    approximations using the `HyperLogLog++ algorithm`_ so may not
+    be exact.
+
+.. _HyperLogLog++ algorithm: https://static.googleusercontent.com/media/research.google.com/fr//pubs/archive/40671.pdf
+
 .. autosummary::
    :toctree: api/
 
