@@ -181,7 +181,7 @@ class Operations:
                 dtype = "object"
             return build_pd_series(results, index=results.keys(), dtype=dtype)
 
-    def value_counts(self, query_compiler, es_size):
+    def value_counts(self, query_compiler: "QueryCompiler", es_size: int) -> pd.Series:
         return self._terms_aggs(query_compiler, "terms", es_size)
 
     def hist(self, query_compiler, bins):
@@ -195,12 +195,54 @@ class Operations:
             results, index=pd_aggs, dtype=(np.float64 if numeric_only else None)
         )
 
+    def mode(
+        self,
+        query_compiler: "QueryCompiler",
+        pd_aggs: List[str],
+        is_dataframe: bool,
+        es_size: int,
+        numeric_only: bool = False,
+        dropna: bool = True,
+    ) -> Union[pd.DataFrame, pd.Series]:
+
+        results = self._metric_aggs(
+            query_compiler,
+            pd_aggs=pd_aggs,
+            numeric_only=numeric_only,
+            dropna=dropna,
+            es_mode_size=es_size,
+        )
+
+        pd_dict: Dict[str, Any] = {}
+        row_diff: Optional[int] = None
+
+        if is_dataframe:
+            # If multiple values of mode is returned for a particular column
+            # find the maximum length and use that to fill dataframe with NaN/NaT
+            rows_len = max([len(value) for value in results.values()])
+            for key, values in results.items():
+                row_diff = rows_len - len(values)
+                # Convert np.ndarray to list
+                values = list(values)
+                if row_diff:
+                    if isinstance(values[0], pd.Timestamp):
+                        values.extend([pd.NaT] * row_diff)
+                    else:
+                        values.extend([np.NaN] * row_diff)
+                pd_dict[key] = values
+
+            return pd.DataFrame(pd_dict)
+        else:
+            return pd.DataFrame(results.values()).iloc[0].rename()
+
     def _metric_aggs(
         self,
         query_compiler: "QueryCompiler",
         pd_aggs: List[str],
         numeric_only: Optional[bool] = None,
         is_dataframe_agg: bool = False,
+        es_mode_size: Optional[int] = None,
+        dropna: bool = True,
     ) -> Dict[str, Any]:
         """
         Used to calculate metric aggregations
@@ -216,6 +258,10 @@ class Operations:
             return either all numeric values or NaN/NaT
         is_dataframe_agg:
             know if this method is called from single-agg or aggreagation method
+        es_mode_size:
+            number of rows to return when multiple mode values are present.
+        dropna:
+            drop NaN/NaT for a dataframe
 
         Returns
         -------
@@ -252,6 +298,15 @@ class Operations:
                         es_agg[0],
                         field.aggregatable_es_field_name,
                     )
+                elif es_agg == "mode":
+                    # TODO for dropna=False, Check If field is timestamp or boolean or numeric,
+                    # then use missing parameter for terms aggregation.
+                    body.terms_aggs(
+                        f"{es_agg}_{field.es_field_name}",
+                        "terms",
+                        field.aggregatable_es_field_name,
+                        es_mode_size,
+                    )
                 else:
                     body.metric_aggs(
                         f"{es_agg}_{field.es_field_name}",
@@ -280,7 +335,9 @@ class Operations:
             is_dataframe_agg=is_dataframe_agg,
         )
 
-    def _terms_aggs(self, query_compiler, func, es_size=None):
+    def _terms_aggs(
+        self, query_compiler: "QueryCompiler", func: str, es_size: int
+    ) -> pd.Series:
         """
         Parameters
         ----------
@@ -499,13 +556,43 @@ class Operations:
                             agg_value = np.sqrt(
                                 (count / (count - 1.0)) * agg_value * agg_value
                             )
+                elif es_agg == "mode":
+                    # For terms aggregation buckets are returned
+                    # agg_value will be of type list
+                    agg_value = response["aggregations"][
+                        f"{es_agg}_{field.es_field_name}"
+                    ]["buckets"]
                 else:
                     agg_value = response["aggregations"][
                         f"{es_agg}_{field.es_field_name}"
                     ]["value"]
 
+                if isinstance(agg_value, list):
+                    # include top-terms in the result.
+                    if not agg_value:
+                        # If the all the documents for a field are empty
+                        agg_value = [field.nan_value]
+                    else:
+                        max_doc_count = agg_value[0]["doc_count"]
+                        # We need only keys which are equal to max_doc_count
+                        # lesser values are ignored
+                        agg_value = [
+                            item["key"]
+                            for item in agg_value
+                            if item["doc_count"] == max_doc_count
+                        ]
+
+                        # Maintain datatype by default because pandas does the same
+                        # text are returned as-is
+                        if field.is_bool or field.is_numeric:
+                            agg_value = [
+                                field.np_dtype.type(value) for value in agg_value
+                            ]
+
                 # Null usually means there were no results.
-                if agg_value is None or np.isnan(agg_value):
+                if not isinstance(agg_value, list) and (
+                    agg_value is None or np.isnan(agg_value)
+                ):
                     if is_dataframe_agg and not numeric_only:
                         agg_value = np.NaN
                     elif not is_dataframe_agg and numeric_only is False:
@@ -517,13 +604,22 @@ class Operations:
 
                 # If this is a non-null timestamp field convert to a pd.Timestamp()
                 elif field.is_timestamp:
-                    agg_value = elasticsearch_date_to_pandas_date(
-                        agg_value, field.es_date_format
-                    )
+                    if isinstance(agg_value, list):
+                        # convert to timestamp results for mode
+                        agg_value = [
+                            elasticsearch_date_to_pandas_date(
+                                value, field.es_date_format
+                            )
+                            for value in agg_value
+                        ]
+                    else:
+                        agg_value = elasticsearch_date_to_pandas_date(
+                            agg_value, field.es_date_format
+                        )
                 # If numeric_only is False | None then maintain column datatype
                 elif not numeric_only:
                     # we're only converting to bool for lossless aggs like min, max, and median.
-                    if pd_agg in {"max", "min", "median", "sum"}:
+                    if pd_agg in {"max", "min", "median", "sum", "mode"}:
                         # 'sum' isn't representable with bool, use int64
                         if pd_agg == "sum" and field.is_bool:
                             agg_value = np.int64(agg_value)
@@ -791,10 +887,15 @@ class Operations:
             elif pd_agg == "median":
                 es_aggs.append(("percentiles", "50.0"))
 
-            # Not implemented
             elif pd_agg == "mode":
-                # We could do this via top term
-                raise NotImplementedError(pd_agg, " not currently implemented")
+                if len(pd_aggs) != 1:
+                    raise NotImplementedError(
+                        "Currently mode is not supported in df.agg(...). Try df.mode()"
+                    )
+                else:
+                    es_aggs.append("mode")
+
+            # Not implemented
             elif pd_agg == "quantile":
                 # TODO
                 raise NotImplementedError(pd_agg, " not currently implemented")

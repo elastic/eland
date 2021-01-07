@@ -617,3 +617,6 @@ class DataFrameGroupBy(GroupBy):
             numeric_only=False,
             is_dataframe_agg=False,
         )
+
+    def mode(self) -> None:
+        raise NotImplementedError("Currently mode is not supported for groupby")

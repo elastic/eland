@@ -426,3 +426,23 @@ class TestDataFrameMetrics(TestData):
         ed_count = ed_flights.agg(["count"])
 
         assert_frame_equal(pd_count, ed_count)
+
+    @pytest.mark.parametrize("numeric_only", [True, False])
+    @pytest.mark.parametrize("es_size", [1, 2, 20, 100, 5000, 3000])
+    def test_aggs_mode(self, es_size, numeric_only):
+        # FlightNum has unique values, so we can test `fill` NaN/NaT for remaining columns
+        pd_flights = self.pd_flights().filter(
+            ["Cancelled", "dayOfWeek", "timestamp", "DestCountry", "FlightNum"]
+        )
+        ed_flights = self.ed_flights().filter(
+            ["Cancelled", "dayOfWeek", "timestamp", "DestCountry", "FlightNum"]
+        )
+
+        pd_mode = pd_flights.mode(numeric_only=numeric_only)[:es_size]
+        ed_mode = ed_flights.mode(numeric_only=numeric_only, es_size=es_size)
+
+        # Skipping dtype check because eland is giving Cancelled dtype as bool
+        # but pandas is referring it as object
+        assert_frame_equal(
+            pd_mode, ed_mode, check_dtype=(False if es_size == 1 else True)
+        )

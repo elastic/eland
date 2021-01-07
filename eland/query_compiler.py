@@ -621,6 +621,22 @@ class QueryCompiler:
             self, ["nunique"], numeric_only=False
         )
 
+    def mode(
+        self,
+        es_size: int,
+        numeric_only: bool = False,
+        dropna: bool = True,
+        is_dataframe: bool = True,
+    ) -> Union[pd.DataFrame, pd.Series]:
+        return self._operations.mode(
+            self,
+            pd_aggs=["mode"],
+            numeric_only=numeric_only,
+            dropna=dropna,
+            is_dataframe=is_dataframe,
+            es_size=es_size,
+        )
+
     def aggs_groupby(
         self,
         by: List[str],
@@ -638,7 +654,7 @@ class QueryCompiler:
             numeric_only=numeric_only,
         )
 
-    def value_counts(self, es_size):
+    def value_counts(self, es_size: int) -> pd.Series:
         return self._operations.value_counts(self, es_size)
 
     def es_info(self, buf):

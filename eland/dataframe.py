@@ -1624,6 +1624,68 @@ class DataFrame(NDFrame):
             by=by, query_compiler=self._query_compiler.copy(), dropna=dropna
         )
 
+    def mode(
+        self,
+        numeric_only: bool = False,
+        dropna: bool = True,
+        es_size: int = 10,
+    ) -> pd.DataFrame:
+        """
+        Calculate mode of a DataFrame
+
+        Parameters
+        ----------
+        numeric_only: {True, False} Default is False
+            Which datatype to be returned
+            - True: Returns all numeric or timestamp columns
+            - False: Returns all columns
+        dropna: {True, False} Default is True
+            - True: Don’t consider counts of NaN/NaT.
+            - False: Consider counts of NaN/NaT.
+        es_size: default 10
+            number of rows to be returned if mode has multiple values
+
+        See Also
+        --------
+        :pandas_api_docs:`pandas.DataFrame.mode`
+
+        Examples
+        --------
+        >>> ed_ecommerce = ed.DataFrame('localhost', 'ecommerce')
+        >>> ed_df = ed_ecommerce.filter(["total_quantity", "geoip.city_name", "customer_birth_date", "day_of_week", "taxful_total_price"])
+        >>> ed_df.mode(numeric_only=False)
+           total_quantity geoip.city_name customer_birth_date day_of_week  taxful_total_price
+        0               2        New York                 NaT    Thursday               53.98
+
+        >>> ed_df.mode(numeric_only=True)
+           total_quantity  taxful_total_price
+        0               2               53.98
+
+        >>> ed_df = ed_ecommerce.filter(["products.tax_amount","order_date"])
+        >>> ed_df.mode()
+           products.tax_amount          order_date
+        0                  0.0 2016-12-02 20:36:58
+        1                  NaN 2016-12-04 23:44:10
+        2                  NaN 2016-12-08 06:21:36
+        3                  NaN 2016-12-08 09:38:53
+        4                  NaN 2016-12-12 11:38:24
+        5                  NaN 2016-12-12 19:46:34
+        6                  NaN 2016-12-14 18:00:00
+        7                  NaN 2016-12-15 11:38:24
+        8                  NaN 2016-12-22 19:39:22
+        9                  NaN 2016-12-24 06:21:36
+
+        >>> ed_df.mode(es_size = 3)
+           products.tax_amount          order_date
+        0                  0.0 2016-12-02 20:36:58
+        1                  NaN 2016-12-04 23:44:10
+        2                  NaN 2016-12-08 06:21:36
+        """
+        # TODO dropna=False
+        return self._query_compiler.mode(
+            numeric_only=numeric_only, dropna=True, is_dataframe=True, es_size=es_size
+        )
+
     def query(self, expr) -> "DataFrame":
         """
         Query the columns of a DataFrame with a boolean expression.

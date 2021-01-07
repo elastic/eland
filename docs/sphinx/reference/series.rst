@@ -79,6 +79,7 @@ Computations / Descriptive Stats
    Series.var
    Series.nunique
    Series.value_counts
+   Series.mode
 
 Reindexing / Selection / Label Manipulation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

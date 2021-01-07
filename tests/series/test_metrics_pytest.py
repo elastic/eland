@@ -22,6 +22,7 @@ from datetime import timedelta
 import numpy as np
 import pandas as pd
 import pytest
+from pandas.testing import assert_series_equal
 
 from tests.common import TestData, assert_almost_equal
 
@@ -114,3 +115,25 @@ class TestSeriesMetrics(TestData):
             <= median
             <= pd.to_datetime("2018-01-01 12:00:00.000")
         )
+
+    @pytest.mark.parametrize(
+        "column", ["day_of_week", "geoip.region_name", "taxful_total_price", "user"]
+    )
+    def test_ecommerce_mode(self, column):
+        ed_series = self.ed_ecommerce()
+        pd_series = self.pd_ecommerce()
+
+        ed_mode = ed_series[column].mode()
+        pd_mode = pd_series[column].mode()
+
+        assert_series_equal(ed_mode, pd_mode)
+
+    @pytest.mark.parametrize("es_size", [1, 2, 10, 20])
+    def test_ecommerce_mode_es_size(self, es_size):
+        ed_series = self.ed_ecommerce()
+        pd_series = self.pd_ecommerce()
+
+        pd_mode = pd_series["order_date"].mode()[:es_size]
+        ed_mode = ed_series["order_date"].mode(es_size)
+
+        assert_series_equal(pd_mode, ed_mode)

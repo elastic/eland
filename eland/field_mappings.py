@@ -102,9 +102,13 @@ class Field(NamedTuple):
         # Except "median_absolute_deviation" which doesn't support bool
         if es_agg == "median_absolute_deviation" and self.is_bool:
             return False
-        # Cardinality and Count work for all types
+        # Cardinality, Count and mode work for all types
         # Numerics and bools work for all aggs
-        if es_agg in ("cardinality", "value_count") or self.is_numeric or self.is_bool:
+        if (
+            es_agg in {"cardinality", "value_count", "mode"}
+            or self.is_numeric
+            or self.is_bool
+        ):
             return True
         # Timestamps also work for 'min', 'max' and 'avg'
         if es_agg in {"min", "max", "avg", "percentiles"} and self.is_timestamp:

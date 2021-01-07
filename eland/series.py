@@ -637,6 +637,48 @@ class Series(NDFrame):
         )
         return Series(_query_compiler=new_query_compiler)
 
+    def mode(self, es_size: int = 10) -> pd.Series:
+        """
+            Calculate mode of a series
+
+        Parameters
+        ----------
+        es_size: default 10
+            number of rows to be returned if mode has multiple values
+
+        See Also
+        --------
+        :pandas_api_docs:`pandas.Series.mode`
+
+        Examples
+        --------
+        >>> ed_ecommerce = ed.DataFrame('localhost', 'ecommerce')
+        >>> ed_ecommerce["day_of_week"].mode()
+        0    Thursday
+        dtype: object
+
+        >>> ed_ecommerce["order_date"].mode()
+        0   2016-12-02 20:36:58
+        1   2016-12-04 23:44:10
+        2   2016-12-08 06:21:36
+        3   2016-12-08 09:38:53
+        4   2016-12-12 11:38:24
+        5   2016-12-12 19:46:34
+        6   2016-12-14 18:00:00
+        7   2016-12-15 11:38:24
+        8   2016-12-22 19:39:22
+        9   2016-12-24 06:21:36
+        dtype: datetime64[ns]
+
+        >>> ed_ecommerce["order_date"].mode(es_size=3)
+        0   2016-12-02 20:36:58
+        1   2016-12-04 23:44:10
+        2   2016-12-08 06:21:36
+        dtype: datetime64[ns]
+
+        """
+        return self._query_compiler.mode(is_dataframe=False, es_size=es_size)
+
     def es_match(
         self,
         text: str,

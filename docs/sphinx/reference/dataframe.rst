@@ -89,6 +89,7 @@ Computations / Descriptive Stats
    DataFrame.var
    DataFrame.sum
    DataFrame.nunique
+   DataFrame.mode
 
 Reindexing / Selection / Label Manipulation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
