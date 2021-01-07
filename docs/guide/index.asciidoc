@@ -8,6 +8,6 @@ include::overview.asciidoc[]
 
 include::installation.asciidoc[]
 
-include::dataframe.asciidoc[]
+include::dataframes.asciidoc[]
 
 include::machine-learning.asciidoc[]
