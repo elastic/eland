@@ -15,7 +15,6 @@
 #  specific language governing permissions and limitations
 #  under the License.
 
-import warnings
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union, cast
 
 import elasticsearch
@@ -105,7 +104,7 @@ class MLModel:
         --------
         >>> from sklearn import datasets
         >>> from xgboost import XGBRegressor
-        >>> from eland.ml import ImportedMLModel
+        >>> from eland.ml import MLModel
 
         >>> # Train model
         >>> training_data = datasets.make_classification(n_features=6, random_state=0)
@@ -254,7 +253,6 @@ class MLModel:
         classification_labels: Optional[List[str]] = None,
         classification_weights: Optional[List[float]] = None,
         es_if_exists: Optional[str] = None,
-        overwrite: Optional[bool] = None,
         es_compress_model_definition: bool = True,
     ) -> "MLModel":
         """
@@ -318,9 +316,6 @@ class MLModel:
             - fail: Raise a Value Error
             - replace: Overwrite existing model
 
-        overwrite: **DEPRECATED** - bool
-            Delete and overwrite existing model (if exists)
-
         es_compress_model_definition: bool
             If True will use 'compressed_definition' which uses gzipped
             JSON instead of raw JSON to reduce the amount of data sent
@@ -370,20 +365,7 @@ class MLModel:
         serializer = transformer.transform()
         model_type = transformer.model_type
 
-        # Verify if both parameters are given
-        if overwrite is not None and es_if_exists is not None:
-            raise ValueError(
-                "Using 'overwrite' and 'es_if_exists' together is invalid, use only 'es_if_exists'"
-            )
-
-        if overwrite is not None:
-            warnings.warn(
-                "'overwrite' parameter is deprecated, use 'es_if_exists' instead",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-            es_if_exists = "replace" if overwrite else "fail"
-        elif es_if_exists is None:
+        if es_if_exists is None:
             es_if_exists = "fail"
 
         ml_model = MLModel(
