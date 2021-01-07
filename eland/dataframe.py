@@ -1685,6 +1685,7 @@ class DataFrame(NDFrame):
         return self._query_compiler.mode(
             numeric_only=numeric_only, dropna=True, is_dataframe=True, es_size=es_size
         )
+
     def quantile(
         self,
         q: Union[int, float, List[int], List[float]] = 0.5,

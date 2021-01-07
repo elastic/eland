@@ -138,6 +138,7 @@ class TestSeriesMetrics(TestData):
         ed_mode = ed_series["order_date"].mode(es_size)
 
         assert_series_equal(pd_mode, ed_mode)
+
     @pytest.mark.parametrize(
         "quantile_list", [0.2, 0.5, [0.2, 0.5], [0.75, 0.2, 0.1, 0.5]]
     )

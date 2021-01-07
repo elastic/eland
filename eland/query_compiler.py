@@ -636,6 +636,7 @@ class QueryCompiler:
             is_dataframe=is_dataframe,
             es_size=es_size,
         )
+
     def quantile(
         self,
         quantiles: Union[int, float, List[int], List[float]],

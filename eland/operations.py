@@ -283,7 +283,7 @@ class Operations:
             # Consider if field is Int/Float/Bool
             fields = [field for field in fields if (field.is_numeric or field.is_bool)]
         elif not numeric_only and (pd_aggs == ["quantile"]):
-            # quantile doesn't accept text fields
+            # quantile doesn't accept timestamp fields
             fields = [
                 field
                 for field in fields
@@ -626,7 +626,7 @@ class Operations:
                             ]
 
                 # Null usually means there were no results.
-                if not isinstance(agg_value, dict) and (
+                if not isinstance(agg_value, (list, dict)) and (
                     agg_value is None or np.isnan(agg_value)
                 ):
                     if is_dataframe_agg and not numeric_only:
@@ -650,7 +650,9 @@ class Operations:
                         ]
                     elif percentile_values:
                         percentile_values = [
-                            elasticsearch_date_to_pandas_date(value, field.es_date_format)
+                            elasticsearch_date_to_pandas_date(
+                                value, field.es_date_format
+                            )
                             for value in percentile_values
                         ]
                     else:
