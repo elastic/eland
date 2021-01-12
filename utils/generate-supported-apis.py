@@ -25,7 +25,7 @@ import pandas
 
 import eland
 
-api_docs_dir = Path(__file__).absolute().parent.parent / "docs/source/reference/api"
+api_docs_dir = Path(__file__).absolute().parent.parent / "docs/sphinx/reference/api"
 is_supported = []
 supported_attr = re.compile(
     r"(?:[a-zA-Z0-9][a-zA-Z0-9_]*|__[a-zA-Z0-9][a-zA-Z0-9_]*__)"

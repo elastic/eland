@@ -2,6 +2,34 @@
 Changelog
 =========
 
+7.10.1b1 (2021-01-12)
+---------------------
+
+Added
+^^^^^
+
+* Added support for Pandas 1.2.0 (`#336`_)
+
+* Added ``DataFrame.mode()`` and ``Series.mode()`` aggregation (`#323`_, contributed by `@V1NAY8`_)
+
+* Added support for ``pd.set_option("display.max_rows", None)``
+  (`#308`_, contributed by `@V1NAY8`_)
+
+* Added Elasticsearch storage usage to ``df.info()`` (`#321`_, contributed by `@V1NAY8`_)
+
+Removed
+^^^^^^^
+
+* Removed deprecated aliases ``read_es``, ``read_csv``, ``DataFrame.info_es``,
+  and ``MLModel(overwrite=True)`` (`#331`_, contributed by `@V1NAY8`_)
+
+ .. _#336: https://github.com/elastic/eland/pull/336
+ .. _#331: https://github.com/elastic/eland/pull/331
+ .. _#323: https://github.com/elastic/eland/pull/323
+ .. _#321: https://github.com/elastic/eland/pull/321
+ .. _#308: https://github.com/elastic/eland/pull/308
+
+
 7.10.0b1 (2020-10-29)
 ---------------------
 
