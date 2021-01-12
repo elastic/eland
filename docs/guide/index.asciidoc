@@ -1,4 +1,4 @@
-= eland
+= Eland
 
 :doctype:           book
 
@@ -7,3 +7,7 @@ include::{asciidoc-dir}/../../shared/attributes.asciidoc[]
 include::overview.asciidoc[]
 
 include::installation.asciidoc[]
+
+include::dataframes.asciidoc[]
+
+include::machine-learning.asciidoc[]

@@ -8,8 +8,8 @@ Source code is available on https://github.com/elastic/eland[GitHub].
 [discrete]
 === Compatibility
 
-The library is compatible with all {es} versions since `7.6.x` but you
-**have to use a matching major version**:
+The library is compatible with Python 3.6 and later and all
+{es} versions since `7.6.x` but you **have to use a matching major version**:
 
 The recommended way to set your requirements in your `setup.py` or
 `requirements.txt` is::
@@ -53,7 +53,32 @@ Create a `DataFrame` object connected to an {es} cluster running on `localhost:9
 [13059 rows x 27 columns]
 ------------------------------------
 
-Eland can also be used for complex queries and aggregations:
+[discrete]
+==== Elastic Cloud
+
+You can also connect Eland to an Elasticsearch instance in Elastic Cloud:
+
+[source,python]
+------------------------------------
+>>> import eland as ed
+>>> from elasticsearch import Elasticsearch
+
+# First instantiate an 'Elasticsearch' instance connected to Elastic Cloud
+>>> es = Elasticsearch(cloud_id="...", api_key=("...", "..."))
+
+# then wrap the client in an Eland DataFrame:
+>>> df = ed.DataFrame(es, es_index_pattern="flights")
+>>> df.head(5)
+       AvgTicketPrice  Cancelled  ... dayOfWeek           timestamp
+0          841.265642      False  ...         0 2018-01-01 00:00:00
+1          882.982662      False  ...         0 2018-01-01 18:27:00
+2          190.636904      False  ...         0 2018-01-01 17:11:14
+3          181.694216       True  ...         0 2018-01-01 10:33:28
+4          730.041778      False  ...         0 2018-01-01 05:13:00
+[5 rows x 27 columns]
+------------------------------------
+
+Eland can be used for complex queries and aggregations:
 
 [source,python]
 ------------------------------------

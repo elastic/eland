@@ -163,7 +163,7 @@ to be serialized and used as an inference model in Elasticsearch
 [0 1 1 0 1 0 0 0 1 0]
 
 # Import the model into Elasticsearch
->>> es_model = MLModel(
+>>> es_model = MLModel.import_model(
     es_client="localhost:9200",
     model_id="xgb-classifier",
     model=xgb_model,
