@@ -68,12 +68,12 @@ def lint(session):
     session.run("flake8", "--ignore=E501,W503,E402,E712,E203", *SOURCE_FILES)
 
     # TODO: When all files are typed we can change this to .run("mypy", "--strict", "eland/")
-    session.log("mypy --strict eland/")
+    session.log("mypy --implicit-reexport --strict eland/")
     for typed_file in TYPED_FILES:
         if not os.path.isfile(typed_file):
             session.error(f"The file {typed_file!r} couldn't be found")
         popen = subprocess.Popen(
-            f"mypy --strict {typed_file}",
+            f"mypy --implicit-reexport --strict {typed_file}",
             env=session.env,
             shell=True,
             stdout=subprocess.PIPE,
