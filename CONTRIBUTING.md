@@ -197,13 +197,13 @@ currently using a minimum version of PyCharm 2019.2.4.
 * To run the automatic formatter and check for lint issues run
 
     ``` bash
-    > nox -s format`
+    > nox -s format
     ```
 
 * To test specific versions of Python run
 
     ``` bash
-    > nox -s test-3.8`
+    > nox -s test-3.8
     ```
 
 ### Documentation
