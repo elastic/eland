@@ -202,6 +202,11 @@ class FieldMappings:
             )
 
         get_mapping = client.indices.get_mapping(index=index_pattern)
+        if not get_mapping:  # dict is empty
+            raise ValueError(
+                f"Can not get mapping for {index_pattern} "
+                f"check indexes exist and client has permission to get mapping."
+            )
 
         # Get all fields (including all nested) and then all field_caps
         all_fields = FieldMappings._extract_fields_from_mapping(get_mapping)
@@ -307,7 +312,10 @@ class FieldMappings:
                         if field_type == "date" and "format" in x:
                             date_format = x["format"]
                         # If there is a conflicting type, warn - first values added wins
-                        if field_name in fields and fields[field_name] != field_type:
+                        if field_name in fields and fields[field_name] != (
+                            field_type,
+                            date_format,
+                        ):
                             warnings.warn(
                                 f"Field {field_name} has conflicting types "
                                 f"{fields[field_name]} != {field_type}",
@@ -403,14 +411,14 @@ class FieldMappings:
 
                     if "non_aggregatable_indices" in vv:
                         warnings.warn(
-                            "Field {} has conflicting aggregatable fields across indexes {}",
-                            format(field, vv["non_aggregatable_indices"]),
+                            f"Field {field} has conflicting aggregatable fields across indexes "
+                            f"{str(vv['non_aggregatable_indices'])}",
                             UserWarning,
                         )
                     if "non_searchable_indices" in vv:
                         warnings.warn(
-                            "Field {} has conflicting searchable fields across indexes {}",
-                            format(field, vv["non_searchable_indices"]),
+                            f"Field {field} has conflicting searchable fields across indexes "
+                            f"{str(vv['non_searchable_indices'])}",
                             UserWarning,
                         )
 

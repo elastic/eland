@@ -65,19 +65,15 @@ except ImportError:
 try:
     from .xgboost import _MODEL_TRANSFORMERS as _XGBOOST_MODEL_TRANSFORMERS
     from .xgboost import (
-        XGBClassifier,
         XGBoostClassifierTransformer,
         XGBoostForestTransformer,
         XGBoostRegressorTransformer,
-        XGBRegressor,
     )
 
     __all__ += [
         "XGBoostClassifierTransformer",
-        "XGBClassifier",
         "XGBoostForestTransformer",
         "XGBoostRegressorTransformer",
-        "XGBRegressor",
     ]
     _MODEL_TRANSFORMERS.update(_XGBOOST_MODEL_TRANSFORMERS)
 except ImportError:
@@ -86,16 +82,12 @@ except ImportError:
 try:
     from .lightgbm import _MODEL_TRANSFORMERS as _LIGHTGBM_MODEL_TRANSFORMERS
     from .lightgbm import (
-        LGBMClassifier,
         LGBMClassifierTransformer,
         LGBMForestTransformer,
-        LGBMRegressor,
         LGBMRegressorTransformer,
     )
 
     __all__ += [
-        "LGBMRegressor",
-        "LGBMClassifier",
         "LGBMForestTransformer",
         "LGBMRegressorTransformer",
         "LGBMClassifierTransformer",
