@@ -15,6 +15,9 @@
 #  specific language governing permissions and limitations
 #  under the License.
 
+import base64
+import math
+import os
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union, cast
 
 import elasticsearch
@@ -51,6 +54,8 @@ if TYPE_CHECKING:
     except ImportError:
         pass
 
+_MODEL_IMPORT_CHUNK_SIZE = 4 * 1024 * 1024
+
 
 class MLModel:
     """
@@ -64,9 +69,9 @@ class MLModel:
     """
 
     def __init__(
-        self,
-        es_client: Union[str, List[str], Tuple[str, ...], "Elasticsearch"],
-        model_id: str,
+            self,
+            es_client: Union[str, List[str], Tuple[str, ...], "Elasticsearch"],
+            model_id: str,
     ):
         """
         Parameters
@@ -83,7 +88,7 @@ class MLModel:
         self._trained_model_config_cache: Optional[Dict[str, Any]] = None
 
     def predict(
-        self, X: Union[np.ndarray, List[float], List[List[float]]]
+            self, X: Union[np.ndarray, List[float], List[List[float]]]
     ) -> np.ndarray:
         """
         Make a prediction using a trained model stored in Elasticsearch.
@@ -145,10 +150,10 @@ class MLModel:
             features = cast(List[List[float]], [X])
         # If not a list of lists of floats then we error out.
         elif isinstance(X, list) and all(
-            [
-                isinstance(i, list) and all([isinstance(ix, (float, int)) for ix in i])
-                for i in X
-            ]
+                [
+                    isinstance(i, list) and all([isinstance(ix, (float, int)) for ix in i])
+                    for i in X
+                ]
         ):
             features = cast(List[List[float]], X)
         else:
@@ -236,24 +241,24 @@ class MLModel:
 
     @classmethod
     def import_model(
-        cls,
-        es_client: Union[str, List[str], Tuple[str, ...], "Elasticsearch"],
-        model_id: str,
-        model: Union[
-            "DecisionTreeClassifier",
-            "DecisionTreeRegressor",
-            "RandomForestRegressor",
-            "RandomForestClassifier",
-            "XGBClassifier",
-            "XGBRegressor",
-            "LGBMRegressor",
-            "LGBMClassifier",
-        ],
-        feature_names: List[str],
-        classification_labels: Optional[List[str]] = None,
-        classification_weights: Optional[List[float]] = None,
-        es_if_exists: Optional[str] = None,
-        es_compress_model_definition: bool = True,
+            cls,
+            es_client: Union[str, List[str], Tuple[str, ...], "Elasticsearch"],
+            model_id: str,
+            model: Union[
+                "DecisionTreeClassifier",
+                "DecisionTreeRegressor",
+                "RandomForestRegressor",
+                "RandomForestClassifier",
+                "XGBClassifier",
+                "XGBRegressor",
+                "LGBMRegressor",
+                "LGBMClassifier",
+            ],
+            feature_names: List[str],
+            classification_labels: Optional[List[str]] = None,
+            classification_weights: Optional[List[float]] = None,
+            es_if_exists: Optional[str] = None,
+            es_compress_model_definition: bool = True,
     ) -> "MLModel":
         """
         Transform and serialize a trained 3rd party model into Elasticsearch.
@@ -399,6 +404,63 @@ class MLModel:
             body=body,
         )
         return ml_model
+
+    @classmethod
+    def import_model_from_file(
+            cls,
+            es_client: Union[str, List[str], Tuple[str, ...], "Elasticsearch"],
+            path: str,
+            model_id: str,
+            show_progress: bool = False,
+    ) -> Dict[str, any]:
+        es_client = ensure_es_client(es_client)
+        file_stats = os.stat(path)
+        total_doc_num = math.ceil(file_stats.st_size / _MODEL_IMPORT_CHUNK_SIZE)
+
+        mappings = {
+            "mappings": {
+                "properties": {
+                    "doc_type": {"type": "keyword"},
+                    "model_id": {"type": "keyword"},
+                    "definition_length": {"type": "long"},
+                    "total_definition_length": {"type": "long"},
+                    "compression_version": {"type": "long"},
+                    "definition": {"type": "binary"},
+                    "eos": {"type": "boolean"},
+                }
+            }
+        }
+
+        es_client.indices.create(index="test", body=mappings)
+
+        def model_file_chunk_generator():
+            with open(path, "rb") as f:
+                while True:
+                    data = f.read(_MODEL_IMPORT_CHUNK_SIZE)
+                    if not data:
+                        break
+                    yield data
+
+        for doc_index, chunk in enumerate(model_file_chunk_generator(), start=1):
+            definition_length = len(chunk)
+            encoded = base64.b64encode(chunk)
+            doc = {
+                "doc_type": "trained_model_definition_doc",
+                "model_id": model_id,
+                "doc_num": doc_index,
+                "definition_length": definition_length,
+                "total_definition_length": file_stats.st_size,
+                "compression_version": 1,
+                "definition": encoded.decode(),
+                "eos": doc_index == total_doc_num,
+            }
+            if show_progress and (doc_index < 10 or doc_index == total_doc_num or doc_index % 10 == 0):
+                print(
+                    f"[{model_id}] Importing model definition doc {doc_index}/{total_doc_num}"
+                )
+            es_client.index(index="test", body=doc)
+
+        return {"uploaded": path}
 
     def delete_model(self) -> None:
         """
