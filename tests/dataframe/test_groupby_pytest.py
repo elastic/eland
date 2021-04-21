@@ -31,18 +31,26 @@ class TestGroupbyDataFrame(TestData):
         "Cancelled",
         "dayOfWeek",
     ]
+    ecommerce_filter_data = [
+        "total_quantity",
+        "geoip.region_name",
+        "day_of_week",
+        "total_unique_products",
+        "taxful_total_price",
+    ]
 
+    @pytest.mark.parametrize("dropna", [True, False])
     @pytest.mark.parametrize("numeric_only", [True])
-    def test_groupby_aggregate(self, numeric_only):
+    def test_groupby_aggregate(self, numeric_only, dropna):
         # TODO Add tests for numeric_only=False for aggs
         # when we support aggregations on text fields
         pd_flights = self.pd_flights().filter(self.filter_data)
         ed_flights = self.ed_flights().filter(self.filter_data)
 
-        pd_groupby = pd_flights.groupby("Cancelled").agg(
+        pd_groupby = pd_flights.groupby("Cancelled", dropna=dropna).agg(
             self.funcs, numeric_only=numeric_only
         )
-        ed_groupby = ed_flights.groupby("Cancelled").agg(
+        ed_groupby = ed_flights.groupby("Cancelled", dropna=dropna).agg(
             self.funcs, numeric_only=numeric_only
         )
 
@@ -60,29 +68,37 @@ class TestGroupbyDataFrame(TestData):
         # checking only values because dtypes are checked in aggs tests
         assert_frame_equal(pd_groupby, ed_groupby, check_exact=False, check_dtype=False)
 
+    @pytest.mark.parametrize("dropna", [True, False])
     @pytest.mark.parametrize("pd_agg", ["max", "min", "mean", "sum", "median"])
-    def test_groupby_aggs_numeric_only_true(self, pd_agg):
+    def test_groupby_aggs_numeric_only_true(self, pd_agg, dropna):
         # Pandas has numeric_only  applicable for the above aggs with groupby only.
 
         pd_flights = self.pd_flights().filter(self.filter_data)
         ed_flights = self.ed_flights().filter(self.filter_data)
 
-        pd_groupby = getattr(pd_flights.groupby("Cancelled"), pd_agg)(numeric_only=True)
-        ed_groupby = getattr(ed_flights.groupby("Cancelled"), pd_agg)(numeric_only=True)
+        pd_groupby = getattr(pd_flights.groupby("Cancelled", dropna=dropna), pd_agg)(
+            numeric_only=True
+        )
+        ed_groupby = getattr(ed_flights.groupby("Cancelled", dropna=dropna), pd_agg)(
+            numeric_only=True
+        )
 
         # checking only values because dtypes are checked in aggs tests
         assert_frame_equal(
             pd_groupby, ed_groupby, check_exact=False, check_dtype=False, rtol=2
         )
 
+    @pytest.mark.parametrize("dropna", [True, False])
     @pytest.mark.parametrize("pd_agg", ["mad", "var", "std"])
-    def test_groupby_aggs_mad_var_std(self, pd_agg):
+    def test_groupby_aggs_mad_var_std(self, pd_agg, dropna):
         # For these aggs pandas doesn't support numeric_only
         pd_flights = self.pd_flights().filter(self.filter_data)
         ed_flights = self.ed_flights().filter(self.filter_data)
 
-        pd_groupby = getattr(pd_flights.groupby("Cancelled"), pd_agg)()
-        ed_groupby = getattr(ed_flights.groupby("Cancelled"), pd_agg)(numeric_only=True)
+        pd_groupby = getattr(pd_flights.groupby("Cancelled", dropna=dropna), pd_agg)()
+        ed_groupby = getattr(ed_flights.groupby("Cancelled", dropna=dropna), pd_agg)(
+            numeric_only=True
+        )
 
         # checking only values because dtypes are checked in aggs tests
         assert_frame_equal(
@@ -151,9 +167,23 @@ class TestGroupbyDataFrame(TestData):
         assert pd_groupby.index.dtype == ed_groupby.index.dtype
         assert list(pd_groupby.columns) == list(ed_groupby.columns)
 
-    def test_groupby_dropna(self):
-        # TODO Add tests once dropna is implemeted
-        pass
+    @pytest.mark.parametrize("dropna", [True, False])
+    @pytest.mark.parametrize("groupby", ["geoip.region_name", "day_of_week"])
+    @pytest.mark.parametrize("func", ["min", "max", "mean"])
+    def test_groupby_dropna(self, dropna, func, groupby):
+        pd_ecommerce = self.pd_ecommerce().filter(self.ecommerce_filter_data)
+        ed_ecommerce = self.ed_ecommerce().filter(self.ecommerce_filter_data)
+
+        pd_groupby = getattr(pd_ecommerce.groupby(groupby, dropna=dropna), func)(
+            numeric_only=True
+        )
+        ed_groupby = getattr(ed_ecommerce.groupby(groupby, dropna=dropna), func)(
+            numeric_only=True
+        )
+
+        assert_index_equal(pd_groupby.columns, ed_groupby.columns)
+        assert_index_equal(pd_groupby.index, ed_groupby.index)
+        assert_frame_equal(pd_groupby, ed_groupby, check_dtype=False)
 
     @pytest.mark.parametrize("groupby", ["dayOfWeek", ["dayOfWeek", "Cancelled"]])
     @pytest.mark.parametrize(

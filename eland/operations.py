@@ -763,7 +763,7 @@ class Operations:
                     for pd_agg, val in zip(pd_aggs, value):
                         results[f"{key}_{pd_agg}"].append(val)
 
-        agg_df = pd.DataFrame(results).set_index(by)
+        agg_df = pd.DataFrame(results).set_index(by).sort_index()
 
         if is_dataframe_agg:
             # Convert header columns to MultiIndex
