@@ -21,6 +21,7 @@ import os
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union, cast
 
 import elasticsearch
+from elasticsearch.helpers import parallel_bulk
 import numpy as np  # type: ignore
 
 from eland.common import ensure_es_client, es_version
@@ -411,6 +412,7 @@ class MLModel:
             es_client: Union[str, List[str], Tuple[str, ...], "Elasticsearch"],
             path: str,
             model_id: str,
+            index: str,
             show_progress: bool = False,
     ) -> Dict[str, any]:
         es_client = ensure_es_client(es_client)
@@ -431,7 +433,7 @@ class MLModel:
             }
         }
 
-        es_client.indices.create(index="test", body=mappings)
+        es_client.indices.create(index=index, body=mappings)
 
         def model_file_chunk_generator():
             with open(path, "rb") as f:
@@ -441,25 +443,38 @@ class MLModel:
                         break
                     yield data
 
-        for doc_index, chunk in enumerate(model_file_chunk_generator(), start=1):
-            definition_length = len(chunk)
-            encoded = base64.b64encode(chunk)
-            doc = {
-                "doc_type": "trained_model_definition_doc",
-                "model_id": model_id,
-                "doc_num": doc_index,
-                "definition_length": definition_length,
-                "total_definition_length": file_stats.st_size,
-                "compression_version": 1,
-                "definition": encoded.decode(),
-                "eos": doc_index == total_doc_num,
-            }
-            if show_progress and (doc_index < 10 or doc_index == total_doc_num or doc_index % 10 == 0):
-                print(
-                    f"[{model_id}] Importing model definition doc {doc_index}/{total_doc_num}"
-                )
-            es_client.index(index="test", body=doc)
+        def bulk_action_generator():
+            for doc_index, chunk in enumerate(model_file_chunk_generator(), start=1):
+                definition_length = len(chunk)
+                encoded = base64.b64encode(chunk)
+                doc = {
+                    "doc_type": "trained_model_definition_doc",
+                    "model_id": model_id,
+                    "doc_num": doc_index,
+                    "definition_length": definition_length,
+                    "total_definition_length": file_stats.st_size,
+                    "compression_version": 1,
+                    "definition": encoded.decode(),
+                    "eos": doc_index == total_doc_num,
+                }
+                if show_progress and doc_index < total_doc_num and (doc_index < 10 or doc_index % 10 == 0):
+                    print(
+                        f"[{model_id}] Importing model definition doc {doc_index}/{total_doc_num}"
+                    )
+                yield {
+                    '_op_type': 'index',
+                    '_index': index,
+                    '_source': doc
+                }
 
+        for success, info in parallel_bulk(es_client, bulk_action_generator(), chunk_size=1000):
+            if not success:
+                print('A document failed:', info)
+
+        if show_progress:
+            print(
+                f"[{model_id}] Importing model definition doc {total_doc_num}/{total_doc_num}"
+            )
         return {"uploaded": path}
 
     def delete_model(self) -> None:
