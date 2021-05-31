@@ -142,7 +142,9 @@ class TestSeriesMetrics(TestData):
     @pytest.mark.parametrize(
         "quantile_list", [0.2, 0.5, [0.2, 0.5], [0.75, 0.2, 0.1, 0.5]]
     )
-    @pytest.mark.parametrize("column", ["AvgTicketPrice", "Cancelled", "dayOfWeek"])
+    @pytest.mark.parametrize(
+        "column", ["AvgTicketPrice", "FlightDelayMin", "dayOfWeek"]
+    )
     def test_flights_quantile(self, column, quantile_list):
         pd_flights = self.pd_flights()[column]
         ed_flights = self.ed_flights()[column]

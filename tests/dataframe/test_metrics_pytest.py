@@ -455,10 +455,10 @@ class TestDataFrameMetrics(TestData):
         ed_flights = self.ed_flights()
 
         pd_quantile = pd_flights.filter(
-            ["AvgTicketPrice", "Cancelled", "dayOfWeek"]
+            ["AvgTicketPrice", "FlightDelayMin", "dayOfWeek"]
         ).quantile(q=quantiles, numeric_only=numeric_only)
         ed_quantile = ed_flights.filter(
-            ["AvgTicketPrice", "Cancelled", "dayOfWeek"]
+            ["AvgTicketPrice", "FlightDelayMin", "dayOfWeek"]
         ).quantile(q=quantiles, numeric_only=numeric_only)
 
         assert_frame_equal(pd_quantile, ed_quantile, check_exact=False, rtol=2)
@@ -486,10 +486,10 @@ class TestDataFrameMetrics(TestData):
     @pytest.mark.parametrize("numeric_only", [True, False, None])
     def test_flights_agg_quantile(self, numeric_only):
         pd_flights = self.pd_flights().filter(
-            ["AvgTicketPrice", "Cancelled", "dayOfWeek"]
+            ["AvgTicketPrice", "FlightDelayMin", "dayOfWeek"]
         )
         ed_flights = self.ed_flights().filter(
-            ["AvgTicketPrice", "Cancelled", "dayOfWeek"]
+            ["AvgTicketPrice", "FlightDelayMin", "dayOfWeek"]
         )
 
         pd_quantile = pd_flights.agg(["quantile", "min"], numeric_only=numeric_only)

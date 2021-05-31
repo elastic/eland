@@ -1716,24 +1716,25 @@ class DataFrame(NDFrame):
 
         Examples
         --------
-        >>> ed_flights = ed.DataFrame('localhost', 'flights')
+        >>> ed_df = ed.DataFrame('localhost', 'flights')
+        >>> ed_flights = ed_df.filter(["AvgTicketPrice", "FlightDelayMin", "dayOfWeek", "timestamp"])
         >>> ed_flights.quantile() # doctest: +SKIP
         AvgTicketPrice    640.387285
-        Cancelled           0.000000
+        FlightDelayMin      0.000000
         dayOfWeek           3.000000
         Name: 0.5, dtype: float64
 
         >>> ed_flights.quantile([.2, .5, .75]) # doctest: +SKIP
-              AvgTicketPrice  Cancelled  dayOfWeek
-        0.20      361.040768        0.0        1.0
-        0.50      640.387285        0.0        3.0
-        0.75      842.213490        0.0        4.0
+              AvgTicketPrice  FlightDelayMin  dayOfWeek
+        0.20      361.040768             0.0        1.0
+        0.50      640.387285             0.0        3.0
+        0.75      842.213490            15.0        4.0
 
         >>> ed_flights.quantile([.2, .5, .75], numeric_only=False) # doctest: +SKIP
-              AvgTicketPrice  Cancelled  dayOfWeek                     timestamp
-        0.20      361.040768        0.0        1.0 2018-01-09 04:37:40.409370361
-        0.50      640.387285        0.0        3.0 2018-01-21 23:59:14.074445068
-        0.75      842.213490        0.0        4.0 2018-02-01 04:54:29.135782959
+              AvgTicketPrice  FlightDelayMin  dayOfWeek                     timestamp
+        0.20      361.040768             0.0        1.0 2018-01-09 04:43:55.296587520
+        0.50      640.387285             0.0        3.0 2018-01-21 23:51:57.637076736
+        0.75      842.213490            15.0        4.0 2018-02-01 04:46:16.658119680
         """
         return self._query_compiler.quantile(quantiles=q, numeric_only=numeric_only)
 
