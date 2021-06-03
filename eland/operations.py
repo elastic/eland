@@ -282,13 +282,6 @@ class Operations:
         if numeric_only:
             # Consider if field is Int/Float/Bool
             fields = [field for field in fields if (field.is_numeric or field.is_bool)]
-        elif not numeric_only and (pd_aggs == ["quantile"]):
-            # quantile doesn't accept timestamp fields
-            fields = [
-                field
-                for field in fields
-                if (field.is_numeric or field.is_bool or field.is_timestamp)
-            ]
 
         body = Query(query_params.query)
 
@@ -305,31 +298,31 @@ class Operations:
                 if isinstance(es_agg, tuple):
                     if es_agg[0] == "percentiles":
                         body.percentile_agg(
-                            f"{es_agg[0]}_{field.es_field_name}",
-                            field.es_field_name,
-                            es_agg[1],
+                            name=f"{es_agg[0]}_{field.es_field_name}",
+                            field=field.es_field_name,
+                            percents=es_agg[1],
                         )
                     else:
                         body.metric_aggs(
-                            f"{es_agg[0]}_{field.es_field_name}",
-                            es_agg[0],
-                            field.aggregatable_es_field_name,
+                            name=f"{es_agg[0]}_{field.es_field_name}",
+                            func=es_agg[0],
+                            field=field.aggregatable_es_field_name,
                         )
                 elif es_agg == "mode":
                     # TODO for dropna=False, Check If field is timestamp or boolean or numeric,
                     # then use missing parameter for terms aggregation.
                     body.terms_aggs(
-                        f"{es_agg}_{field.es_field_name}",
-                        "terms",
-                        field.aggregatable_es_field_name,
-                        es_mode_size,
+                        name=f"{es_agg}_{field.es_field_name}",
+                        func="terms",
+                        field=field.aggregatable_es_field_name,
+                        es_size=es_mode_size,
                     )
 
                 else:
                     body.metric_aggs(
-                        f"{es_agg}_{field.es_field_name}",
-                        es_agg,
-                        field.aggregatable_es_field_name,
+                        name=f"{es_agg}_{field.es_field_name}",
+                        func=es_agg,
+                        field=field.aggregatable_es_field_name,
                     )
 
         response = query_compiler._client.search(
@@ -515,7 +508,7 @@ class Operations:
         pd_aggs:
             a list of aggs
         response:
-            a dict containing response from Elastic Search
+            a dict containing response from Elasticsearch
         numeric_only:
             return either numeric values or NaN/NaT
         is_dataframe_agg:
@@ -727,7 +720,7 @@ class Operations:
 
         # Display Output same as pandas does
         if isinstance(quantiles, float):
-            return df.squeeze() if is_dataframe else df.squeeze()
+            return df.squeeze()
         else:
             return df if is_dataframe else df.transpose().iloc[0]
 
