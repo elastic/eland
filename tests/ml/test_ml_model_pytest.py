@@ -263,10 +263,12 @@ class TestMLModel:
             training_data = datasets.make_classification(
                 n_features=5, n_classes=3, n_informative=3
             )
-            classifier = XGBClassifier(booster="gbtree", objective="multi:softmax")
+            classifier = XGBClassifier(
+                booster="gbtree", objective="multi:softmax", use_label_encoder=False
+            )
         else:
             training_data = datasets.make_classification(n_features=5)
-            classifier = XGBClassifier(booster="gbtree")
+            classifier = XGBClassifier(booster="gbtree", use_label_encoder=False)
 
         # Train model
         classifier.fit(training_data[0], training_data[1])
@@ -303,10 +305,14 @@ class TestMLModel:
             training_data = datasets.make_classification(
                 n_features=5, n_classes=3, n_informative=3
             )
-            classifier = XGBClassifier(booster=booster, objective=objective)
+            classifier = XGBClassifier(
+                booster=booster, objective=objective, use_label_encoder=False
+            )
         else:
             training_data = datasets.make_classification(n_features=5)
-            classifier = XGBClassifier(booster=booster, objective=objective)
+            classifier = XGBClassifier(
+                booster=booster, objective=objective, use_label_encoder=False
+            )
 
         # Train model
         classifier.fit(training_data[0], training_data[1])

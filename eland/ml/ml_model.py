@@ -196,7 +196,7 @@ class MLModel:
 
         # Return results as np.ndarray of float32 or int (consistent with sklearn/xgboost)
         if self.model_type == TYPE_CLASSIFICATION:
-            dt = np.int
+            dt = np.int_
         else:
             dt = np.float32
         return np.asarray(y, dtype=dt)
