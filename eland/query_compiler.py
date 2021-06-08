@@ -637,6 +637,35 @@ class QueryCompiler:
             es_size=es_size,
         )
 
+    def quantile(
+        self,
+        quantiles: Union[int, float, List[int], List[float]],
+        numeric_only: Optional[bool] = True,
+        is_dataframe: bool = True,
+    ) -> Union[pd.DataFrame, pd.Series, Any]:
+        """
+        Holds quantile object for both DataFrame and Series
+
+        Parameters
+        ----------
+        quantiles:
+            list of quantiles for computation
+        numeric_only:
+            Flag used to filter numeric columns
+        is_dataframe:
+            To identify if quantile is called from Series or DataFrame
+            True: Called from DataFrame
+            False: Called from Series
+
+        """
+        return self._operations.quantile(
+            self,
+            pd_aggs=["quantile"],
+            quantiles=quantiles,
+            numeric_only=numeric_only,
+            is_dataframe=is_dataframe,
+        )
+
     def aggs_groupby(
         self,
         by: List[str],

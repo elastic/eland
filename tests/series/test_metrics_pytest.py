@@ -105,14 +105,15 @@ class TestSeriesMetrics(TestData):
 
         assert_almost_equal(ed_metric, expected_values[agg])
 
-    def test_flights_datetime_median_metric(self):
+    @pytest.mark.parametrize("agg", ["median", "quantile"])
+    def test_flights_datetime_median_metric(self, agg):
         ed_series = self.ed_flights_small()["timestamp"]
 
-        median = ed_series.median()
-        assert isinstance(median, pd.Timestamp)
+        agg_value = getattr(ed_series, agg)()
+        assert isinstance(agg_value, pd.Timestamp)
         assert (
             pd.to_datetime("2018-01-01 10:00:00.000")
-            <= median
+            <= agg_value
             <= pd.to_datetime("2018-01-01 12:00:00.000")
         )
 
@@ -137,3 +138,28 @@ class TestSeriesMetrics(TestData):
         ed_mode = ed_series["order_date"].mode(es_size)
 
         assert_series_equal(pd_mode, ed_mode)
+
+    @pytest.mark.parametrize(
+        "quantile_list", [0.2, 0.5, [0.2, 0.5], [0.75, 0.2, 0.1, 0.5]]
+    )
+    @pytest.mark.parametrize(
+        "column", ["AvgTicketPrice", "FlightDelayMin", "dayOfWeek"]
+    )
+    def test_flights_quantile(self, column, quantile_list):
+        pd_flights = self.pd_flights()[column]
+        ed_flights = self.ed_flights()[column]
+
+        pd_quantile = pd_flights.quantile(quantile_list)
+        ed_quantile = ed_flights.quantile(quantile_list)
+        if isinstance(quantile_list, list):
+            assert_series_equal(pd_quantile, ed_quantile, check_exact=False, rtol=2)
+        else:
+            assert pd_quantile * 0.9 <= ed_quantile <= pd_quantile * 1.1
+
+    @pytest.mark.parametrize("quantiles_list", [[np.array([1, 2])], ["1", 2]])
+    def test_quantile_non_numeric_values(self, quantiles_list):
+        ed_flights = self.ed_flights()["dayOfWeek"]
+
+        match = "quantile should be of type int or float"
+        with pytest.raises(TypeError, match=match):
+            ed_flights.quantile(q=quantiles_list)

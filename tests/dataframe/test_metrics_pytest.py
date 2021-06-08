@@ -217,7 +217,8 @@ class TestDataFrameMetrics(TestData):
         assert ed_metric.dtype == np.dtype("datetime64[ns]")
         assert_almost_equal(ed_metric[0], expected_values[agg])
 
-    def test_flights_datetime_metrics_median(self):
+    @pytest.mark.parametrize("agg", ["median", "quantile"])
+    def test_flights_datetime_metrics_median_quantile(self, agg):
         ed_df = self.ed_flights_small()[["timestamp"]]
 
         median = ed_df.median(numeric_only=False)[0]
@@ -228,11 +229,11 @@ class TestDataFrameMetrics(TestData):
             <= pd.to_datetime("2018-01-01 12:00:00.000")
         )
 
-        median = ed_df.agg(["mean"])["timestamp"][0]
-        assert isinstance(median, pd.Timestamp)
+        agg_value = ed_df.agg([agg])["timestamp"][0]
+        assert isinstance(agg_value, pd.Timestamp)
         assert (
             pd.to_datetime("2018-01-01 10:00:00.000")
-            <= median
+            <= agg_value
             <= pd.to_datetime("2018-01-01 12:00:00.000")
         )
 
@@ -445,4 +446,55 @@ class TestDataFrameMetrics(TestData):
         # but pandas is referring it as object
         assert_frame_equal(
             pd_mode, ed_mode, check_dtype=(False if es_size == 1 else True)
+        )
+
+    @pytest.mark.parametrize("quantiles", [[0.2, 0.5], [0, 1], [0.75, 0.2, 0.1, 0.5]])
+    @pytest.mark.parametrize("numeric_only", [False, None])
+    def test_flights_quantile(self, quantiles, numeric_only):
+        pd_flights = self.pd_flights()
+        ed_flights = self.ed_flights()
+
+        pd_quantile = pd_flights.filter(
+            ["AvgTicketPrice", "FlightDelayMin", "dayOfWeek"]
+        ).quantile(q=quantiles, numeric_only=numeric_only)
+        ed_quantile = ed_flights.filter(
+            ["AvgTicketPrice", "FlightDelayMin", "dayOfWeek"]
+        ).quantile(q=quantiles, numeric_only=numeric_only)
+
+        assert_frame_equal(pd_quantile, ed_quantile, check_exact=False, rtol=2)
+
+        pd_quantile = pd_flights[["timestamp"]].quantile(
+            q=quantiles, numeric_only=numeric_only
+        )
+        ed_quantile = ed_flights[["timestamp"]].quantile(
+            q=quantiles, numeric_only=numeric_only
+        )
+
+        pd_timestamp = pd.to_numeric(pd_quantile.squeeze(), downcast="float")
+        ed_timestamp = pd.to_numeric(ed_quantile.squeeze(), downcast="float")
+
+        assert_series_equal(pd_timestamp, ed_timestamp, check_exact=False, rtol=2)
+
+    @pytest.mark.parametrize("quantiles", [5, [2, 1], -1.5, [1.2, 0.2]])
+    def test_flights_quantile_error(self, quantiles):
+        ed_flights = self.ed_flights().filter(self.filter_data)
+
+        match = f"quantile should be in range of 0 and 1, given {quantiles[0] if isinstance(quantiles, list) else quantiles}"
+        with pytest.raises(ValueError, match=match):
+            ed_flights[["timestamp"]].quantile(q=quantiles)
+
+    @pytest.mark.parametrize("numeric_only", [True, False, None])
+    def test_flights_agg_quantile(self, numeric_only):
+        pd_flights = self.pd_flights().filter(
+            ["AvgTicketPrice", "FlightDelayMin", "dayOfWeek"]
+        )
+        ed_flights = self.ed_flights().filter(
+            ["AvgTicketPrice", "FlightDelayMin", "dayOfWeek"]
+        )
+
+        pd_quantile = pd_flights.agg(["quantile", "min"], numeric_only=numeric_only)
+        ed_quantile = ed_flights.agg(["quantile", "min"], numeric_only=numeric_only)
+
+        assert_frame_equal(
+            pd_quantile, ed_quantile, check_exact=False, rtol=4, check_dtype=False
         )

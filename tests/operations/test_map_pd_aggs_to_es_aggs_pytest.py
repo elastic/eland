@@ -20,7 +20,19 @@ from eland.operations import Operations
 
 def test_all_aggs():
     es_aggs = Operations._map_pd_aggs_to_es_aggs(
-        ["min", "max", "mean", "std", "var", "mad", "count", "nunique", "median"]
+        [
+            "min",
+            "max",
+            "mean",
+            "std",
+            "var",
+            "mad",
+            "count",
+            "nunique",
+            "median",
+            "quantile",
+        ],
+        percentiles=[0.2, 0.5, 0.8],
     )
 
     assert es_aggs == [
@@ -32,7 +44,15 @@ def test_all_aggs():
         "median_absolute_deviation",
         "value_count",
         "cardinality",
-        ("percentiles", "50.0"),
+        ("percentiles", (50.0,)),
+        (
+            "percentiles",
+            (
+                0.2,
+                0.5,
+                0.8,
+            ),
+        ),
     ]
 
 
@@ -50,3 +70,9 @@ def test_extended_stats_optimization():
 
         es_aggs = Operations._map_pd_aggs_to_es_aggs(["count", pd_agg, "nunique"])
         assert es_aggs == ["value_count", extended_es_agg, "cardinality"]
+
+
+def test_percentiles_none():
+    es_aggs = Operations._map_pd_aggs_to_es_aggs(["count", "min", "quantile"])
+
+    assert es_aggs == ["value_count", "min", ("percentiles", (50.0,))]

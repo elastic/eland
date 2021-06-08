@@ -35,7 +35,7 @@ import sys
 import warnings
 from collections.abc import Collection
 from io import StringIO
-from typing import TYPE_CHECKING, Any, Optional, Sequence, Tuple, Union
+from typing import TYPE_CHECKING, Any, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -564,6 +564,45 @@ class Series(NDFrame):
         return NotNull(field=self.name)
 
     notnull = notna
+
+    def quantile(
+        self, q: Union[int, float, List[int], List[float]] = 0.5
+    ) -> Union[pd.Series, Any]:
+        """
+        Used to calculate quantile for a given Series.
+
+        Parameters
+        ----------
+        q:
+            float or array like, default 0.5
+            Value between 0 <= q <= 1, the quantile(s) to compute.
+
+        Returns
+        -------
+        pandas.Series or any single dtype
+
+        See Also
+        --------
+        :pandas_api_docs:`pandas.Series.quantile`
+
+        Examples
+        --------
+        >>> ed_flights = ed.DataFrame('localhost', 'flights')
+        >>> ed_flights["timestamp"].quantile([.2,.5,.75]) # doctest: +SKIP
+        0.20   2018-01-09 04:30:57.289159912
+        0.50   2018-01-21 23:39:27.031627441
+        0.75   2018-02-01 04:54:59.256136963
+        Name: timestamp, dtype: datetime64[ns]
+
+        >>> ed_flights["dayOfWeek"].quantile() # doctest: +SKIP
+        3.0
+
+        >>> ed_flights["timestamp"].quantile() # doctest: +SKIP
+        Timestamp('2018-01-22 00:12:48.844534180')
+        """
+        return self._query_compiler.quantile(
+            quantiles=q, numeric_only=None, is_dataframe=False
+        )
 
     @property
     def ndim(self) -> int:

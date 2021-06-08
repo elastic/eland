@@ -99,6 +99,7 @@ Computations / Descriptive Stats
    DataFrame.sum
    DataFrame.nunique
    DataFrame.mode
+   DataFrame.quantile
 
 Reindexing / Selection / Label Manipulation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

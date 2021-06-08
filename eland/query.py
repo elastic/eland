@@ -145,6 +145,24 @@ class Query:
         agg = {func: {"field": field}}
         self._aggs[name] = agg
 
+    def percentile_agg(self, name: str, field: str, percents: List[float]) -> None:
+        """
+
+        Ref: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-metrics-percentile-aggregation.html
+
+        "aggs": {
+            "percentile_": {
+                "percentiles": {
+                    "field": "AvgTicketPrice",
+                    "percents": [95, 99, 99.0]
+                }
+            }
+        }
+
+        """
+        agg = {"percentiles": {"field": field, "percents": percents}}
+        self._aggs[name] = agg
+
     def composite_agg_bucket_terms(self, name: str, field: str) -> None:
         """
         Add terms agg for composite aggregation
@@ -242,7 +260,7 @@ class Query:
         """
         Add's after_key to existing query to fetch next bunch of results
 
-        PARAMETERS
+        Parameters
         ----------
         name: str
             Name of the buckets
