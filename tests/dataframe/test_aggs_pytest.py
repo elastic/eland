@@ -94,7 +94,7 @@ class TestDataFrameAggs(TestData):
         # Eland returns all float values for all metric aggs, pandas can return int
         # TODO - investigate this more
         pd_aggs = pd_aggs.astype("float64")
-        assert_frame_equal(pd_aggs, ed_aggs, check_exact=False, check_less_precise=2)
+        assert_frame_equal(pd_aggs, ed_aggs, check_exact=False, rtol=2)
 
     # If Aggregate is given a string then series is returned.
     @pytest.mark.parametrize("agg", ["mean", "min", "max"])

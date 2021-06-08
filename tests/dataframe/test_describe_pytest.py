@@ -34,7 +34,7 @@ class TestDataFrameDescribe(TestData):
             pd_describe.drop(["25%", "50%", "75%"], axis="index"),
             ed_describe.drop(["25%", "50%", "75%"], axis="index"),
             check_exact=False,
-            check_less_precise=True,
+            rtol=True,
         )
 
         # TODO - this fails for percentile fields as ES aggregations are approximate

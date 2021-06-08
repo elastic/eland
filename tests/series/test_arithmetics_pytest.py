@@ -50,7 +50,7 @@ class TestSeriesArithmetics(TestData):
             + ed_df["total_quantity"]
         )
 
-        assert_pandas_eland_series_equal(pd_series, ed_series, check_less_precise=True)
+        assert_pandas_eland_series_equal(pd_series, ed_series, rtol=True)
 
     def test_ecommerce_series_simple_integer_addition(self):
         pd_df = self.pd_ecommerce().head(100)
@@ -59,7 +59,7 @@ class TestSeriesArithmetics(TestData):
         pd_series = pd_df["taxful_total_price"] + 5
         ed_series = ed_df["taxful_total_price"] + 5
 
-        assert_pandas_eland_series_equal(pd_series, ed_series, check_less_precise=True)
+        assert_pandas_eland_series_equal(pd_series, ed_series, rtol=True)
 
     def test_ecommerce_series_simple_series_addition(self):
         pd_df = self.pd_ecommerce().head(100)
@@ -68,7 +68,7 @@ class TestSeriesArithmetics(TestData):
         pd_series = pd_df["taxful_total_price"] + pd_df["total_quantity"]
         ed_series = ed_df["taxful_total_price"] + ed_df["total_quantity"]
 
-        assert_pandas_eland_series_equal(pd_series, ed_series, check_less_precise=True)
+        assert_pandas_eland_series_equal(pd_series, ed_series, rtol=True)
 
     def test_ecommerce_series_basic_arithmetics(self):
         pd_df = self.pd_ecommerce().head(100)
@@ -98,27 +98,19 @@ class TestSeriesArithmetics(TestData):
             ed_series = getattr(ed_df["taxful_total_price"], op)(
                 ed_df["total_quantity"]
             )
-            assert_pandas_eland_series_equal(
-                pd_series, ed_series, check_less_precise=True
-            )
+            assert_pandas_eland_series_equal(pd_series, ed_series, rtol=True)
 
             pd_series = getattr(pd_df["taxful_total_price"], op)(10.56)
             ed_series = getattr(ed_df["taxful_total_price"], op)(10.56)
-            assert_pandas_eland_series_equal(
-                pd_series, ed_series, check_less_precise=True
-            )
+            assert_pandas_eland_series_equal(pd_series, ed_series, rtol=True)
 
             pd_series = getattr(pd_df["taxful_total_price"], op)(np.float32(1.879))
             ed_series = getattr(ed_df["taxful_total_price"], op)(np.float32(1.879))
-            assert_pandas_eland_series_equal(
-                pd_series, ed_series, check_less_precise=True
-            )
+            assert_pandas_eland_series_equal(pd_series, ed_series, rtol=True)
 
             pd_series = getattr(pd_df["taxful_total_price"], op)(int(8))
             ed_series = getattr(ed_df["taxful_total_price"], op)(int(8))
-            assert_pandas_eland_series_equal(
-                pd_series, ed_series, check_less_precise=True
-            )
+            assert_pandas_eland_series_equal(pd_series, ed_series, rtol=True)
 
     def test_supported_series_dtypes_ops(self):
         pd_df = self.pd_ecommerce().head(100)
@@ -153,9 +145,7 @@ class TestSeriesArithmetics(TestData):
             ed_series = getattr(ed_df["taxful_total_price"], op)(
                 ed_df["taxless_total_price"]
             )
-            assert_pandas_eland_series_equal(
-                pd_series, ed_series, check_less_precise=True
-            )
+            assert_pandas_eland_series_equal(pd_series, ed_series, rtol=True)
 
         # int op float
         for op in numeric_ops:
@@ -165,9 +155,7 @@ class TestSeriesArithmetics(TestData):
             ed_series = getattr(ed_df["total_quantity"], op)(
                 ed_df["taxless_total_price"]
             )
-            assert_pandas_eland_series_equal(
-                pd_series, ed_series, check_less_precise=True
-            )
+            assert_pandas_eland_series_equal(pd_series, ed_series, rtol=True)
 
         # float op int
         for op in numeric_ops:
@@ -177,9 +165,7 @@ class TestSeriesArithmetics(TestData):
             ed_series = getattr(ed_df["taxful_total_price"], op)(
                 ed_df["total_quantity"]
             )
-            assert_pandas_eland_series_equal(
-                pd_series, ed_series, check_less_precise=True
-            )
+            assert_pandas_eland_series_equal(pd_series, ed_series, rtol=True)
 
         # str op int (throws)
         for op in non_string_numeric_ops:
@@ -227,27 +213,19 @@ class TestSeriesArithmetics(TestData):
             ed_series = getattr(ed_df["taxful_total_price"], op)(
                 ed_df["total_quantity"]
             )
-            assert_pandas_eland_series_equal(
-                pd_series, ed_series, check_less_precise=True
-            )
+            assert_pandas_eland_series_equal(pd_series, ed_series, rtol=True)
 
             pd_series = getattr(pd_df["taxful_total_price"], op)(3.141)
             ed_series = getattr(ed_df["taxful_total_price"], op)(3.141)
-            assert_pandas_eland_series_equal(
-                pd_series, ed_series, check_less_precise=True
-            )
+            assert_pandas_eland_series_equal(pd_series, ed_series, rtol=True)
 
             pd_series = getattr(pd_df["taxful_total_price"], op)(np.float32(2.879))
             ed_series = getattr(ed_df["taxful_total_price"], op)(np.float32(2.879))
-            assert_pandas_eland_series_equal(
-                pd_series, ed_series, check_less_precise=True
-            )
+            assert_pandas_eland_series_equal(pd_series, ed_series, rtol=True)
 
             pd_series = getattr(pd_df["taxful_total_price"], op)(int(6))
             ed_series = getattr(ed_df["taxful_total_price"], op)(int(6))
-            assert_pandas_eland_series_equal(
-                pd_series, ed_series, check_less_precise=True
-            )
+            assert_pandas_eland_series_equal(pd_series, ed_series, rtol=True)
 
     def test_supported_series_dtypes_rops(self):
         pd_df = self.pd_ecommerce().head(100)
@@ -282,9 +260,7 @@ class TestSeriesArithmetics(TestData):
             ed_series = getattr(ed_df["taxful_total_price"], op)(
                 ed_df["taxless_total_price"]
             )
-            assert_pandas_eland_series_equal(
-                pd_series, ed_series, check_less_precise=True
-            )
+            assert_pandas_eland_series_equal(pd_series, ed_series, rtol=True)
 
         # int op float
         for op in numeric_ops:
@@ -294,9 +270,7 @@ class TestSeriesArithmetics(TestData):
             ed_series = getattr(ed_df["total_quantity"], op)(
                 ed_df["taxless_total_price"]
             )
-            assert_pandas_eland_series_equal(
-                pd_series, ed_series, check_less_precise=True
-            )
+            assert_pandas_eland_series_equal(pd_series, ed_series, rtol=True)
 
         # float op int
         for op in numeric_ops:
@@ -306,9 +280,7 @@ class TestSeriesArithmetics(TestData):
             ed_series = getattr(ed_df["taxful_total_price"], op)(
                 ed_df["total_quantity"]
             )
-            assert_pandas_eland_series_equal(
-                pd_series, ed_series, check_less_precise=True
-            )
+            assert_pandas_eland_series_equal(pd_series, ed_series, rtol=True)
 
         # str op int (throws)
         for op in non_string_numeric_ops:
