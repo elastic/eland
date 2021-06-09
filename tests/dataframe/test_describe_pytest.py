@@ -28,7 +28,10 @@ class TestDataFrameDescribe(TestData):
         ed_flights = self.ed_flights()
 
         pd_describe = pd_flights.describe()
-        ed_describe = ed_flights.describe()
+        # We remove bool columns to match pandas output
+        ed_describe = ed_flights.describe().drop(
+            ["Cancelled", "FlightDelay"], axis="columns"
+        )
 
         assert_frame_equal(
             pd_describe.drop(["25%", "50%", "75%"], axis="index"),
