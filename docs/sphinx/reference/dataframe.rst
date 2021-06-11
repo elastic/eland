@@ -75,6 +75,7 @@ Function Application, GroupBy & Window
    DataFrameGroupBy.std
    DataFrameGroupBy.sum
    DataFrameGroupBy.var
+   DataFrameGroupBy.quantile
    GroupBy
 
 .. currentmodule:: eland
