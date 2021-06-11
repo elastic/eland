@@ -505,7 +505,7 @@ class DataFrameGroupBy(GroupBy):
 
     def quantile(
         self, q: Union[int, float, List[int], List[float]] = 0.5
-    ) -> pd.DataFrame:
+    ) -> "pd.DataFrame":
         """
         Used to groupby and calculate quantile for a given DataFrame.
 
