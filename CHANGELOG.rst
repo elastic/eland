@@ -2,6 +2,39 @@
 Changelog
 =========
 
+7.13.0b1 (2021-06-22)
+---------------------
+
+Added
+^^^^^
+
+* Added ``DataFrame.quantile()``, ``Series.quantile()``, and
+  ``DataFrameGroupBy.quantile()`` aggregations (`#318`_ and `#356`_, contributed by `@V1NAY8`_)
+
+Changed
+^^^^^^^
+
+* Changed the error raised when ``es_index_pattern`` doesn't point to any indices
+  to be more user-friendly (`#346`_)
+
+Fixed
+^^^^^
+
+* Fixed a warning about conflicting field types when wildcards are used
+  in ``es_index_pattern`` (`#346`_)
+
+* Fixed sorting when using ``DataFrame.groupby()`` with ``dropna``
+  (`#322`_, contributed by `@V1NAY8`_)
+
+* Fixed deprecated usage ``numpy.int`` in favor of ``numpy.int_`` (`#354`_, contributed by `@V1NAY8`_)
+
+ .. _#318: https://github.com/elastic/eland/pull/318
+ .. _#322: https://github.com/elastic/eland/pull/322
+ .. _#346: https://github.com/elastic/eland/pull/346
+ .. _#354: https://github.com/elastic/eland/pull/354
+ .. _#356: https://github.com/elastic/eland/pull/356
+
+
 7.10.1b1 (2021-01-12)
 ---------------------
 
