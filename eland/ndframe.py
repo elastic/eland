@@ -628,8 +628,8 @@ class NDFrame(ABC):
 
         Examples
         --------
-        >>> df = ed.DataFrame('localhost', 'flights', columns=['AvgTicketPrice', 'FlightDelayMin'])
-        >>> df.describe() # ignoring percentiles as they don't generate consistent results
+        >>> df = ed.DataFrame('localhost', 'flights', columns=['AvgTicketPrice', 'FlightDelayMin']) # ignoring percentiles
+        >>> df.describe() # doctest: +SKIP
                AvgTicketPrice  FlightDelayMin
         count    13059.000000    13059.000000
         mean       628.253689       47.335171

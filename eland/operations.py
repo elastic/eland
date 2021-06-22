@@ -1081,51 +1081,25 @@ class Operations:
                 f"Can not count field matches if size is set {size}"
             )
 
-        numeric_source_fields = query_compiler._mappings.numeric_source_fields()
-
-        # for each field we compute:
-        # count, mean, std, min, 25%, 50%, 75%, max
-        body = Query(query_params.query)
-
-        for field in numeric_source_fields:
-            body.metric_aggs("extended_stats_" + field, "extended_stats", field)
-            body.metric_aggs("percentiles_" + field, "percentiles", field)
-
-        response = query_compiler._client.search(
-            index=query_compiler._index_pattern, size=0, body=body.to_search_body()
+        df1 = self.aggs(
+            query_compiler=query_compiler,
+            pd_aggs=["count", "mean", "std", "min", "max"],
+            numeric_only=True,
+        )
+        df2 = self.quantile(
+            query_compiler=query_compiler,
+            pd_aggs=["quantile"],
+            quantiles=[0.25, 0.5, 0.75],
+            is_dataframe=True,
+            numeric_only=True,
         )
 
-        results = {}
+        # Convert [.25,.5,.75] to ["25%", "50%", "75%"]
+        df2 = df2.set_index([["25%", "50%", "75%"]])
 
-        for field in numeric_source_fields:
-            values = list()
-            values.append(response["aggregations"]["extended_stats_" + field]["count"])
-            values.append(response["aggregations"]["extended_stats_" + field]["avg"])
-            values.append(
-                response["aggregations"]["extended_stats_" + field]["std_deviation"]
-            )
-            values.append(response["aggregations"]["extended_stats_" + field]["min"])
-            values.append(
-                response["aggregations"]["percentiles_" + field]["values"]["25.0"]
-            )
-            values.append(
-                response["aggregations"]["percentiles_" + field]["values"]["50.0"]
-            )
-            values.append(
-                response["aggregations"]["percentiles_" + field]["values"]["75.0"]
-            )
-            values.append(response["aggregations"]["extended_stats_" + field]["max"])
-
-            # if not None
-            if values.count(None) < len(values):
-                results[field] = values
-
-        df = pd.DataFrame(
-            data=results,
-            index=["count", "mean", "std", "min", "25%", "50%", "75%", "max"],
+        return pd.concat([df1, df2]).reindex(
+            ["count", "mean", "std", "min", "25%", "50%", "75%", "max"]
         )
-
-        return df
 
     def to_pandas(self, query_compiler, show_progress=False):
         class PandasDataFrameCollector:

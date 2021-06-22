@@ -1269,7 +1269,7 @@ class Series(NDFrame):
         3    2
         4    2
         Name: total_quantity, dtype: int64
-        >>> np.int(2) ** df.total_quantity
+        >>> np.int_(2) ** df.total_quantity
         0    4.0
         1    4.0
         2    4.0
@@ -1627,8 +1627,8 @@ class Series(NDFrame):
 
         Examples
         --------
-        >>> df = ed.DataFrame('localhost', 'flights')
-        >>> df.AvgTicketPrice.describe() # ignoring percentiles as they don't generate consistent results
+        >>> df = ed.DataFrame('localhost', 'flights') # ignoring percentiles as they don't generate consistent results
+        >>> df.AvgTicketPrice.describe()  # doctest: +SKIP
         count    13059.000000
         mean       628.253689
         std        266.386661
