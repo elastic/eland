@@ -503,6 +503,86 @@ class DataFrameGroupBy(GroupBy):
             numeric_only=False,
         )
 
+    def quantile(
+        self, q: Union[int, float, List[int], List[float]] = 0.5
+    ) -> "pd.DataFrame":
+        """
+        Used to groupby and calculate quantile for a given DataFrame.
+
+        Parameters
+        ----------
+        q:
+            float or array like, default 0.5
+            Value between 0 <= q <= 1, the quantile(s) to compute.
+
+        Returns
+        -------
+        pandas.DataFrame
+            quantile value for each grouped column
+
+        See Also
+        --------
+        :pandas_api_docs:`pandas.core.groupby.GroupBy.quantile`
+
+        Examples
+        --------
+        >>> ed_df = ed.DataFrame('localhost', 'flights')
+        >>> ed_flights = ed_df.filter(["AvgTicketPrice", "FlightDelayMin", "dayOfWeek", "timestamp"])
+        >>> ed_flights.groupby(["dayOfWeek", "Cancelled"]).quantile() # doctest: +SKIP
+                             AvgTicketPrice  FlightDelayMin
+        dayOfWeek Cancelled
+        0         False          572.290384             0.0
+                  True           578.140564             0.0
+        1         False          567.980560             0.0
+                  True           582.618713             0.0
+        2         False          590.170986             0.0
+                  True           579.811890             0.0
+        3         False          574.131340             0.0
+                  True           572.852264             0.0
+        4         False          591.533699             0.0
+                  True           582.877014             0.0
+        5         False          791.622625             0.0
+                  True           793.362946             0.0
+        6         False          817.378523             0.0
+                  True           766.855530             0.0
+
+        >>> ed_flights.groupby(["dayOfWeek", "Cancelled"]).quantile(q=[.2, .5]) # doctest: +SKIP
+                                 AvgTicketPrice  FlightDelayMin
+        dayOfWeek Cancelled
+        0         False     0.2      319.925979             0.0
+                            0.5      572.290384             0.0
+                  True      0.2      325.704562             0.0
+                            0.5      578.140564             0.0
+        1         False     0.2      327.311007             0.0
+                            0.5      567.980560             0.0
+                  True      0.2      336.839572             0.0
+                            0.5      582.618713             0.0
+        2         False     0.2      332.323011             0.0
+                            0.5      590.170986             0.0
+                  True      0.2      314.472537             0.0
+                            0.5      579.811890             0.0
+        3         False     0.2      327.652659             0.0
+                            0.5      574.131340             0.0
+                  True      0.2      298.483032             0.0
+                            0.5      572.852264             0.0
+        4         False     0.2      314.290205             0.0
+                            0.5      591.533699             0.0
+                  True      0.2      325.024850             0.0
+                            0.5      582.877014             0.0
+        5         False     0.2      567.362137             0.0
+                            0.5      791.622625             0.0
+                  True      0.2      568.323944             0.0
+                            0.5      793.362946             0.0
+        6         False     0.2      568.489746             0.0
+                            0.5      817.378523             0.0
+                  True      0.2      523.890680             0.0
+                            0.5      766.855530             0.0
+
+        """
+        return self._query_compiler.aggs_groupby(
+            by=self._by, pd_aggs=["quantile"], quantiles=q, numeric_only=True
+        )
+
     def aggregate(
         self, func: Union[str, List[str]], numeric_only: Optional[bool] = False
     ) -> "pd.DataFrame":

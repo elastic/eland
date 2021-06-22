@@ -230,3 +230,26 @@ class TestGroupbyDataFrame(TestData):
         match = "Currently mode is not supported for groupby"
         with pytest.raises(NotImplementedError, match=match):
             ed_flights.groupby("Cancelled").mode()
+
+    @pytest.mark.parametrize("dropna", [True, False])
+    @pytest.mark.parametrize(
+        ["func", "args"],
+        [
+            ("quantile", ()),
+            ("quantile", (0.55,)),
+            ("quantile", ([0.2, 0.4, 0.6, 0.8],)),
+        ],
+    )
+    @pytest.mark.parametrize("columns", ["Cancelled", ["dayOfWeek", "Cancelled"]])
+    def test_groupby_aggs_quantile(self, dropna, columns, func, args):
+        # Pandas has numeric_only  applicable for the above aggs with groupby only.
+
+        pd_flights = self.pd_flights().filter(self.filter_data)
+        ed_flights = self.ed_flights().filter(self.filter_data)
+
+        pd_groupby = getattr(pd_flights.groupby(columns, dropna=dropna), func)(*args)
+        ed_groupby = getattr(ed_flights.groupby(columns, dropna=dropna), func)(*args)
+        # checking only values because dtypes are checked in aggs tests
+        assert_frame_equal(
+            pd_groupby, ed_groupby, check_exact=False, check_dtype=False, rtol=2
+        )

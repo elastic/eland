@@ -493,6 +493,7 @@ class Operations:
         numeric_only: Optional[bool],
         percentiles: Optional[List[float]] = None,
         is_dataframe_agg: bool = False,
+        is_groupby: bool = False,
     ) -> Dict[str, List[Any]]:
         """
         This method unpacks metric aggregations JSON response.
@@ -554,7 +555,9 @@ class Operations:
                             agg_value = agg_value["50.0"]
                         # Currently Pandas does the same
                         # If we call quantile it returns the same result as of median.
-                        elif pd_agg == "quantile" and is_dataframe_agg:
+                        elif (
+                            pd_agg == "quantile" and is_dataframe_agg and not is_groupby
+                        ):
                             agg_value = agg_value["50.0"]
                         else:
                             # Maintain order of percentiles
@@ -668,8 +671,9 @@ class Operations:
             # If numeric_only is True and We only have a NaN type field then we check for empty.
             if values:
                 results[field.column] = values if len(values) > 1 else values[0]
-            # This only runs when df.quantile() or series.quantile() is called
-            if percentile_values and not is_dataframe_agg:
+            # This only runs when df.quantile() or series.quantile() or
+            # quantile from groupby is called
+            if percentile_values:
                 results[f"{field.column}"] = percentile_values
 
         return results
@@ -682,19 +686,6 @@ class Operations:
         is_dataframe: bool = True,
         numeric_only: Optional[bool] = True,
     ) -> Union[pd.DataFrame, pd.Series]:
-        # To verify if quantile range falls between 0 to 1
-        def quantile_to_percentile(quantile: Any) -> float:
-            if isinstance(quantile, (int, float)):
-                quantile = float(quantile)
-                if quantile > 1 or quantile < 0:
-                    raise ValueError(
-                        f"quantile should be in range of 0 and 1, given {quantile}"
-                    )
-            else:
-                raise TypeError("quantile should be of type int or float")
-            # quantile * 100 = percentile
-            # return float(...) because min(1.0) gives 1
-            return float(min(100, max(0, quantile * 100)))
 
         percentiles = [
             quantile_to_percentile(x)
@@ -730,6 +721,7 @@ class Operations:
         by: List[str],
         pd_aggs: List[str],
         dropna: bool = True,
+        quantiles: Optional[List[float]] = None,
         is_dataframe_agg: bool = False,
         numeric_only: Optional[bool] = True,
     ) -> pd.DataFrame:
@@ -751,6 +743,8 @@ class Operations:
             Know if groupby with aggregation or single agg is called.
         numeric_only:
             return either numeric values or NaN/NaT
+        quantiles:
+            List of quantiles when 'quantile' agg is called. Otherwise it is None
 
         Returns
         -------
@@ -779,8 +773,19 @@ class Operations:
         # To return for creating multi-index on columns
         headers = [agg_field.column for agg_field in agg_fields]
 
+        percentiles: Optional[List[str]] = None
+        if quantiles:
+            percentiles = [
+                quantile_to_percentile(x)
+                for x in (
+                    (quantiles,)
+                    if not isinstance(quantiles, (list, tuple))
+                    else quantiles
+                )
+            ]
+
         # Convert pandas aggs to ES equivalent
-        es_aggs = self._map_pd_aggs_to_es_aggs(pd_aggs)
+        es_aggs = self._map_pd_aggs_to_es_aggs(pd_aggs=pd_aggs, percentiles=percentiles)
 
         # Construct Query
         for by_field in by_fields:
@@ -804,11 +809,18 @@ class Operations:
 
                 # If we have multiple 'extended_stats' etc. here we simply NOOP on 2nd call
                 if isinstance(es_agg, tuple):
-                    body.metric_aggs(
-                        f"{es_agg[0]}_{agg_field.es_field_name}",
-                        es_agg[0],
-                        agg_field.aggregatable_es_field_name,
-                    )
+                    if es_agg[0] == "percentiles":
+                        body.percentile_agg(
+                            name=f"{es_agg[0]}_{agg_field.es_field_name}",
+                            field=agg_field.es_field_name,
+                            percents=es_agg[1],
+                        )
+                    else:
+                        body.metric_aggs(
+                            f"{es_agg[0]}_{agg_field.es_field_name}",
+                            es_agg[0],
+                            agg_field.aggregatable_es_field_name,
+                        )
                 else:
                     body.metric_aggs(
                         f"{es_agg}_{agg_field.es_field_name}",
@@ -832,7 +844,12 @@ class Operations:
                     if by_field.is_timestamp and isinstance(bucket_key, int):
                         bucket_key = pd.to_datetime(bucket_key, unit="ms")
 
-                    results[by_field.column].append(bucket_key)
+                    if pd_aggs == ["quantile"] and len(percentiles) > 1:
+                        bucket_key = [bucket_key] * len(percentiles)
+
+                    results[by_field.column].extend(
+                        bucket_key if isinstance(bucket_key, list) else [bucket_key]
+                    )
 
                 agg_calculation = self._unpack_metric_aggs(
                     fields=agg_fields,
@@ -840,18 +857,31 @@ class Operations:
                     pd_aggs=pd_aggs,
                     response={"aggregations": bucket},
                     numeric_only=numeric_only,
+                    percentiles=percentiles,
                     # We set 'True' here because we want the value
                     # unpacking to always be in 'dataframe' mode.
                     is_dataframe_agg=True,
+                    is_groupby=True,
                 )
+
+                # to construct index with quantiles
+                if pd_aggs == ["quantile"] and len(percentiles) > 1:
+                    results[None].extend([i / 100 for i in percentiles])
 
                 # Process the calculated agg values to response
                 for key, value in agg_calculation.items():
                     if not isinstance(value, list):
                         results[key].append(value)
                         continue
-                    for pd_agg, val in zip(pd_aggs, value):
-                        results[f"{key}_{pd_agg}"].append(val)
+                    elif isinstance(value, list) and pd_aggs == ["quantile"]:
+                        results[f"{key}_{pd_aggs[0]}"].extend(value)
+                    else:
+                        for pd_agg, val in zip(pd_aggs, value):
+                            results[f"{key}_{pd_agg}"].append(val)
+
+        # Just to maintain Output same as pandas with empty header.
+        if pd_aggs == ["quantile"] and len(percentiles) > 1:
+            by = by + [None]
 
         agg_df = pd.DataFrame(results).set_index(by).sort_index()
 
@@ -1408,3 +1438,18 @@ class Operations:
     def update_query(self, boolean_filter):
         task = BooleanFilterTask(boolean_filter)
         self._tasks.append(task)
+
+
+def quantile_to_percentile(quantile: Union[int, float]) -> float:
+    # To verify if quantile range falls between 0 to 1
+    if isinstance(quantile, (int, float)):
+        quantile = float(quantile)
+        if quantile > 1 or quantile < 0:
+            raise ValueError(
+                f"quantile should be in range of 0 and 1, given {quantile}"
+            )
+    else:
+        raise TypeError("quantile should be of type int or float")
+    # quantile * 100 = percentile
+    # return float(...) because min(1.0) gives 1
+    return float(min(100, max(0, quantile * 100)))

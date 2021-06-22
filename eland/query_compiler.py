@@ -673,11 +673,13 @@ class QueryCompiler:
         dropna: bool = True,
         is_dataframe_agg: bool = False,
         numeric_only: Optional[bool] = True,
+        quantiles: Union[int, float, List[int], List[float], None] = None,
     ) -> pd.DataFrame:
         return self._operations.aggs_groupby(
             self,
             by=by,
             pd_aggs=pd_aggs,
+            quantiles=quantiles,
             dropna=dropna,
             is_dataframe_agg=is_dataframe_agg,
             numeric_only=numeric_only,
