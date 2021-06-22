@@ -688,7 +688,7 @@ class Operations:
     ) -> Union[pd.DataFrame, pd.Series]:
 
         percentiles = [
-            self.quantile_to_percentile(x)
+            quantile_to_percentile(x)
             for x in (
                 (quantiles,) if not isinstance(quantiles, (list, tuple)) else quantiles
             )
@@ -776,7 +776,7 @@ class Operations:
         percentiles: Optional[List[str]] = None
         if quantiles:
             percentiles = [
-                self.quantile_to_percentile(x)
+                quantile_to_percentile(x)
                 for x in (
                     (quantiles,)
                     if not isinstance(quantiles, (list, tuple))
@@ -1439,16 +1439,17 @@ class Operations:
         task = BooleanFilterTask(boolean_filter)
         self._tasks.append(task)
 
-    def quantile_to_percentile(self, quantile: Union[int, float]) -> float:
-        # To verify if quantile range falls between 0 to 1
-        if isinstance(quantile, (int, float)):
-            quantile = float(quantile)
-            if quantile > 1 or quantile < 0:
-                raise ValueError(
-                    f"quantile should be in range of 0 and 1, given {quantile}"
-                )
-        else:
-            raise TypeError("quantile should be of type int or float")
-        # quantile * 100 = percentile
-        # return float(...) because min(1.0) gives 1
-        return float(min(100, max(0, quantile * 100)))
+
+def quantile_to_percentile(quantile: Union[int, float]) -> float:
+    # To verify if quantile range falls between 0 to 1
+    if isinstance(quantile, (int, float)):
+        quantile = float(quantile)
+        if quantile > 1 or quantile < 0:
+            raise ValueError(
+                f"quantile should be in range of 0 and 1, given {quantile}"
+            )
+    else:
+        raise TypeError("quantile should be of type int or float")
+    # quantile * 100 = percentile
+    # return float(...) because min(1.0) gives 1
+    return float(min(100, max(0, quantile * 100)))
