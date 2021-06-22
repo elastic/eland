@@ -26,7 +26,7 @@ Fixed
 * Fixed sorting when using ``DataFrame.groupby()`` with ``dropna``
   (`#322`_, contributed by `@V1NAY8`_)
 
-* Fixed deprecated ``numpy.int`` in favor of ``numpy.int_`` (`#354`_, contributed by `@V1NAY8`_)
+* Fixed deprecated usage ``numpy.int`` in favor of ``numpy.int_`` (`#354`_, contributed by `@V1NAY8`_)
 
  .. _#318: https://github.com/elastic/eland/pull/318
  .. _#322: https://github.com/elastic/eland/pull/322
