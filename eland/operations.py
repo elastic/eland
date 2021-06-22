@@ -1439,8 +1439,7 @@ class Operations:
         task = BooleanFilterTask(boolean_filter)
         self._tasks.append(task)
 
-    @staticmethod
-    def quantile_to_percentile(quantile: Any) -> float:
+    def quantile_to_percentile(self, quantile: Union[int, float]) -> float:
         # To verify if quantile range falls between 0 to 1
         if isinstance(quantile, (int, float)):
             quantile = float(quantile)

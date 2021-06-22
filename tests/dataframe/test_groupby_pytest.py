@@ -232,16 +232,23 @@ class TestGroupbyDataFrame(TestData):
             ed_flights.groupby("Cancelled").mode()
 
     @pytest.mark.parametrize("dropna", [True, False])
+    @pytest.mark.parametrize(
+        ["func", "args"],
+        [
+            ("quantile", ()),
+            ("quantile", (0.55,)),
+            ("quantile", ([0.2, 0.4, 0.6, 0.8],)),
+        ],
+    )
     @pytest.mark.parametrize("columns", ["Cancelled", ["dayOfWeek", "Cancelled"]])
-    @pytest.mark.parametrize("quantiles", [0.55, [0.2, 0.4, 0.6, 0.8]])
-    def test_groupby_aggs_quantile(self, dropna, columns, quantiles):
+    def test_groupby_aggs_quantile(self, dropna, columns, func, args):
         # Pandas has numeric_only  applicable for the above aggs with groupby only.
 
         pd_flights = self.pd_flights().filter(self.filter_data)
         ed_flights = self.ed_flights().filter(self.filter_data)
 
-        pd_groupby = pd_flights.groupby(columns, dropna=dropna).quantile(q=quantiles)
-        ed_groupby = ed_flights.groupby(columns, dropna=dropna).quantile(q=quantiles)
+        pd_groupby = getattr(pd_flights.groupby(columns, dropna=dropna), func)(*args)
+        ed_groupby = getattr(ed_flights.groupby(columns, dropna=dropna), func)(*args)
         # checking only values because dtypes are checked in aggs tests
         assert_frame_equal(
             pd_groupby, ed_groupby, check_exact=False, check_dtype=False, rtol=2
