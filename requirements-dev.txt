@@ -1,4 +1,4 @@
-elasticsearch>=7.7
+elasticsearch==7.14.0a1
 pandas>=1
 matplotlib
 pytest>=5.2.1
