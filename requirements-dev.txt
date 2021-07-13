@@ -1,5 +1,5 @@
 elasticsearch==7.14.0a1
-pandas>=1
+pandas>=1,<1.3
 matplotlib
 pytest>=5.2.1
 pytest-mock
