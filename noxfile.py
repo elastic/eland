@@ -90,10 +90,12 @@ def lint(session):
 
 
 @nox.session(python=["3.6", "3.7", "3.8", "3.9"])
-def test(session):
+@nox.parametrize("pandas_version", ["1.2.0", "1.3.0"])
+def test(session, pandas_version: str):
     session.install("-r", "requirements-dev.txt")
-    session.run("python", "-m", "tests.setup_tests")
     session.install(".")
+    session.run("python", "-m", "pip", "install", f"pandas=={pandas_version}")
+    session.run("python", "-m", "tests.setup_tests")
 
     # Notebooks are only run on Python 3.7+ due to pandas 1.2.0
     if session.python == "3.6":

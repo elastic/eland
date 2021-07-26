@@ -50,11 +50,15 @@
     - axis:
         type: yaml
         filename: .ci/test-matrix.yml
-        name: TEST_SUITE
+        name: PYTHON_VERSION
     - axis:
         type: yaml
         filename: .ci/test-matrix.yml
-        name: PYTHON_VERSION
+        name: PANDAS_VERSION
+    - axis:
+        type: yaml
+        filename: .ci/test-matrix.yml
+        name: TEST_SUITE
     yaml-strategy:
       exclude-key: exclude
       filename: .ci/test-matrix.yml
