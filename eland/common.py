@@ -26,12 +26,14 @@ from elasticsearch import Elasticsearch
 
 # Default number of rows displayed (different to pandas where ALL could be displayed)
 DEFAULT_NUM_ROWS_DISPLAYED = 60
-
 DEFAULT_CHUNK_SIZE = 10000
 DEFAULT_CSV_BATCH_OUTPUT_SIZE = 10000
 DEFAULT_PROGRESS_REPORTING_NUM_ROWS = 10000
 DEFAULT_ES_MAX_RESULT_WINDOW = 10000  # index.max_result_window
 DEFAULT_PAGINATION_SIZE = 5000  # for composite aggregations
+PANDAS_VERSION: Tuple[int, ...] = tuple(
+    int(part) for part in pd.__version__.split(".") if part.isdigit()
+)[:2]
 
 
 with warnings.catch_warnings():

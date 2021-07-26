@@ -22,11 +22,17 @@ from typing import Any, Dict, Generator, List, Mapping, Optional, Tuple, Union
 import pandas as pd  # type: ignore
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import parallel_bulk
-from pandas.io.parsers import _c_parser_defaults  # type: ignore
 
 from eland import DataFrame
-from eland.common import DEFAULT_CHUNK_SIZE, ensure_es_client
+from eland.common import DEFAULT_CHUNK_SIZE, PANDAS_VERSION, ensure_es_client
 from eland.field_mappings import FieldMappings, verify_mapping_compatibility
+
+try:
+    from pandas.io.parsers import _c_parser_defaults  # type: ignore
+except ImportError:
+    from pandas.io.parsers.readers import _c_parser_defaults  # type: ignore
+
+_DEFAULT_LOW_MEMORY: bool = _c_parser_defaults["low_memory"]
 
 
 def pandas_to_eland(
@@ -339,11 +345,12 @@ def csv_to_eland(  # type: ignore
     encoding=None,
     dialect=None,
     # Error Handling
-    error_bad_lines=True,
-    warn_bad_lines=True,
+    warn_bad_lines: bool = True,
+    error_bad_lines: bool = True,
+    on_bad_lines: str = "error",
     # Internal
     delim_whitespace=False,
-    low_memory=_c_parser_defaults["low_memory"],
+    low_memory: bool = _DEFAULT_LOW_MEMORY,
     memory_map=False,
     float_precision=None,
 ) -> "DataFrame":
@@ -481,6 +488,7 @@ def csv_to_eland(  # type: ignore
         "delim_whitespace": delim_whitespace,
         "warn_bad_lines": warn_bad_lines,
         "error_bad_lines": error_bad_lines,
+        "on_bad_lines": on_bad_lines,
         "low_memory": low_memory,
         "mangle_dupe_cols": mangle_dupe_cols,
         "infer_datetime_format": infer_datetime_format,
@@ -489,6 +497,29 @@ def csv_to_eland(  # type: ignore
 
     if chunksize is None:
         kwargs["chunksize"] = DEFAULT_CHUNK_SIZE
+
+    if PANDAS_VERSION >= (1, 3):
+        # Bug in Pandas v1.3.0
+        # If names and prefix both passed as None, it's considering them as specified values and throwing ValueError
+        # Ref: https://github.com/pandas-dev/pandas/issues/42387
+        if kwargs["names"] is None and kwargs["prefix"] is None:
+            kwargs.pop("prefix")
+
+        if kwargs["warn_bad_lines"] is True:
+            kwargs["on_bad_lines"] = "warn"
+        if kwargs["error_bad_lines"] is True:
+            kwargs["on_bad_lines"] = "error"
+
+        kwargs.pop("warn_bad_lines")
+        kwargs.pop("error_bad_lines")
+
+    else:
+        if on_bad_lines == "warn":
+            kwargs["warn_bad_lines"] = True
+        if on_bad_lines == "error":
+            kwargs["error_bad_lines"] = True
+
+        kwargs.pop("on_bad_lines")
 
     # read csv in chunks to pandas DataFrame and dump to eland DataFrame (and Elasticsearch)
     reader = pd.read_csv(filepath_or_buffer, **kwargs)
