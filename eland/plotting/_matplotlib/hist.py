@@ -16,8 +16,14 @@
 #  under the License.
 
 import numpy as np
-from pandas.core.dtypes.generic import ABCIndexClass
 from pandas.plotting._matplotlib import converter
+
+try:
+    # pandas<1.3.0
+    from pandas.core.dtypes.generic import ABCIndexClass as ABCIndex
+except ImportError:
+    # pandas>=1.3.0
+    from pandas.core.dtypes.generic import ABCIndex
 
 try:  # pandas>=1.2.0
     from pandas.plotting._matplotlib.tools import (
@@ -113,7 +119,7 @@ def hist_frame(
         raise NotImplementedError("TODO")
 
     if column is not None:
-        if not isinstance(column, (list, np.ndarray, ABCIndexClass)):
+        if not isinstance(column, (list, np.ndarray, ABCIndex)):
             column = [column]
         ed_df_bins = ed_df_bins[column]
         ed_df_weights = ed_df_weights[column]

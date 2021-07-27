@@ -1,5 +1,5 @@
 elasticsearch>=7.7
-pandas>=1
+pandas>=1.2.0
 matplotlib
 pytest>=5.2.1
 pytest-mock
@@ -8,5 +8,5 @@ numpydoc>=0.9.0
 scikit-learn>=0.22.1
 xgboost>=1
 nox
-lightgbm>=2.3.0
+lightgbm
 pytest-cov
