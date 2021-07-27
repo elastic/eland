@@ -219,7 +219,7 @@ class Operations:
         if is_dataframe:
             # If multiple values of mode is returned for a particular column
             # find the maximum length and use that to fill dataframe with NaN/NaT
-            rows_len = max([len(value) for value in results.values()])
+            rows_len = max(len(value) for value in results.values())
             for key, values in results.items():
                 row_diff = rows_len - len(values)
                 # Convert np.ndarray to list

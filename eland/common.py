@@ -310,7 +310,7 @@ def es_version(es_client: Elasticsearch) -> Tuple[int, int, int]:
                 f"Received: {version_info}"
             )
         eland_es_version = cast(
-            Tuple[int, int, int], tuple([int(x) for x in match.groups()])
+            Tuple[int, int, int], tuple(int(x) for x in match.groups())
         )
         es_client._eland_es_version = eland_es_version  # type: ignore
     else:

@@ -38,10 +38,10 @@ CLASSIFIERS = [
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.6",
     "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
     "Topic :: Scientific/Engineering",
 ]
 
@@ -70,8 +70,8 @@ setup(
     classifiers=CLASSIFIERS,
     keywords="elastic eland pandas python",
     packages=find_packages(include=["eland", "eland.*"]),
-    install_requires=["elasticsearch>=7.7", "pandas>=1", "matplotlib", "numpy"],
-    python_requires=">=3.6",
+    install_requires=["elasticsearch>=7.13", "pandas>=1.2,<1.4", "matplotlib", "numpy"],
+    python_requires=">=3.7",
     package_data={"eland": ["py.typed"]},
     include_package_data=True,
     zip_safe=False,
