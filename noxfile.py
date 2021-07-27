@@ -53,7 +53,7 @@ TYPED_FILES = (
 def format(session):
     session.install("black", "isort")
     session.run("python", "utils/license-headers.py", "fix", *SOURCE_FILES)
-    session.run("black", "--target-version=py36", *SOURCE_FILES)
+    session.run("black", "--target-version=py37", *SOURCE_FILES)
     session.run("isort", *SOURCE_FILES)
     lint(session)
 
@@ -63,7 +63,7 @@ def lint(session):
     session.install("black", "flake8", "mypy", "isort")
     session.install("--pre", "elasticsearch")
     session.run("python", "utils/license-headers.py", "check", *SOURCE_FILES)
-    session.run("black", "--check", "--target-version=py36", *SOURCE_FILES)
+    session.run("black", "--check", "--target-version=py37", *SOURCE_FILES)
     session.run("isort", "--check", *SOURCE_FILES)
     session.run("flake8", "--ignore=E501,W503,E402,E712,E203", *SOURCE_FILES)
 
@@ -89,20 +89,13 @@ def lint(session):
             session.error("\n" + "\n".join(sorted(set(errors))))
 
 
-@nox.session(python=["3.6", "3.7", "3.8", "3.9"])
-@nox.parametrize("pandas_version", ["1.2.0", "1.3.0"])
+@nox.session(python=["3.7", "3.8", "3.9"])
+@nox.parametrize("pandas_version", ["1.2", "1.3"])
 def test(session, pandas_version: str):
     session.install("-r", "requirements-dev.txt")
     session.install(".")
-    session.run("python", "-m", "pip", "install", f"pandas=={pandas_version}")
+    session.run("python", "-m", "pip", "install", f"pandas~={pandas_version}")
     session.run("python", "-m", "tests.setup_tests")
-
-    # Notebooks are only run on Python 3.7+ due to pandas 1.2.0
-    if session.python == "3.6":
-        nbval = ()
-    else:
-        nbval = ("--nbval",)
-
     session.run(
         "python",
         "-m",
@@ -111,7 +104,7 @@ def test(session, pandas_version: str):
         "term-missing",
         "--cov=eland/",
         "--doctest-modules",
-        *nbval,
+        "--nbval",
         *(session.posargs or ("eland/", "tests/")),
     )
 
