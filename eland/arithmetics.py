@@ -19,9 +19,11 @@ from abc import ABC, abstractmethod
 from io import StringIO
 from typing import TYPE_CHECKING, Any, List, Union
 
-import numpy as np  # type: ignore
+import numpy as np
 
 if TYPE_CHECKING:
+    from numpy.typing import DTypeLike
+
     from .query_compiler import QueryCompiler
 
 
@@ -32,7 +34,7 @@ class ArithmeticObject(ABC):
         pass
 
     @abstractmethod
-    def dtype(self) -> np.dtype:
+    def dtype(self) -> "DTypeLike":
         pass
 
     @abstractmethod
@@ -52,7 +54,7 @@ class ArithmeticString(ArithmeticObject):
         return self.value
 
     @property
-    def dtype(self) -> np.dtype:
+    def dtype(self) -> "DTypeLike":
         return np.dtype(object)
 
     @property
@@ -64,7 +66,7 @@ class ArithmeticString(ArithmeticObject):
 
 
 class ArithmeticNumber(ArithmeticObject):
-    def __init__(self, value: Union[int, float], dtype: np.dtype):
+    def __init__(self, value: Union[int, float], dtype: "DTypeLike"):
         self._value = value
         self._dtype = dtype
 
@@ -76,7 +78,7 @@ class ArithmeticNumber(ArithmeticObject):
         return f"{self._value}"
 
     @property
-    def dtype(self) -> np.dtype:
+    def dtype(self) -> "DTypeLike":
         return self._dtype
 
     def __repr__(self) -> str:
@@ -89,8 +91,8 @@ class ArithmeticSeries(ArithmeticObject):
     """
 
     def __init__(
-        self, query_compiler: "QueryCompiler", display_name: str, dtype: np.dtype
-    ):
+        self, query_compiler: "QueryCompiler", display_name: str, dtype: "DTypeLike"
+    ) -> None:
         # type defs
         self._value: str
         self._tasks: List["ArithmeticTask"]
@@ -121,7 +123,7 @@ class ArithmeticSeries(ArithmeticObject):
         return self._value
 
     @property
-    def dtype(self) -> np.dtype:
+    def dtype(self) -> "DTypeLike":
         return self._dtype
 
     def __repr__(self) -> str:

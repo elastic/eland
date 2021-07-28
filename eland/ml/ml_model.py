@@ -18,7 +18,7 @@
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union, cast
 
 import elasticsearch
-import numpy as np  # type: ignore
+import numpy as np
 
 from eland.common import ensure_es_client, es_version
 from eland.utils import deprecated_api
@@ -27,7 +27,8 @@ from .common import TYPE_CLASSIFICATION, TYPE_REGRESSION
 from .transformers import get_model_transformer
 
 if TYPE_CHECKING:
-    from elasticsearch import Elasticsearch  # noqa: F401
+    from elasticsearch import Elasticsearch
+    from numpy.typing import ArrayLike, DTypeLike
 
     # Try importing each ML lib separately so mypy users don't have to
     # have both installed to use type-checking.
@@ -83,8 +84,8 @@ class MLModel:
         self._trained_model_config_cache: Optional[Dict[str, Any]] = None
 
     def predict(
-        self, X: Union[np.ndarray, List[float], List[List[float]]]
-    ) -> np.ndarray:
+        self, X: Union["ArrayLike", List[float], List[List[float]]]
+    ) -> "ArrayLike":
         """
         Make a prediction using a trained model stored in Elasticsearch.
 
@@ -196,7 +197,7 @@ class MLModel:
 
         # Return results as np.ndarray of float32 or int (consistent with sklearn/xgboost)
         if self.model_type == TYPE_CLASSIFICATION:
-            dt = np.int_
+            dt: "DTypeLike" = np.int_
         else:
             dt = np.float32
         return np.asarray(y, dtype=dt)

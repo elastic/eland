@@ -16,7 +16,7 @@
 #  under the License.
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, List, Tuple
+from typing import TYPE_CHECKING, List, Tuple
 
 from eland import SortOrder
 from eland.actions import HeadAction, SortIndexAction, TailAction
@@ -253,7 +253,7 @@ class QueryIdsTask(Task):
 
 
 class QueryTermsTask(Task):
-    def __init__(self, must: bool, field: str, terms: List[Any]):
+    def __init__(self, must: bool, field: str, terms: List[str]):
         """
         Parameters
         ----------

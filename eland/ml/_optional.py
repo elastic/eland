@@ -19,6 +19,10 @@ import distutils.version
 import importlib
 import types
 import warnings
+from typing import TYPE_CHECKING, Any, Optional
+
+if TYPE_CHECKING:
+    from types import ModuleType
 
 # ----------------------------------------------------------------------------
 # functions largely based / taken from the six module
@@ -42,7 +46,7 @@ version_message = (
 )
 
 
-def _get_version(module: types.ModuleType) -> str:
+def _get_version(module: types.ModuleType) -> Any:
     version = getattr(module, "__version__", None)
     if version is None:
         # xlrd uses a capitalized attribute name
@@ -55,7 +59,7 @@ def _get_version(module: types.ModuleType) -> str:
 
 def import_optional_dependency(
     name: str, extra: str = "", raise_on_missing: bool = True, on_version: str = "raise"
-):
+) -> Optional[ModuleType]:
     """
     Import an optional dependency.
 

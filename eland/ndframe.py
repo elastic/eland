@@ -17,7 +17,7 @@
 
 import sys
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, List, Optional, TextIO, Tuple, Union
 
 import pandas as pd  # type: ignore
 
@@ -186,7 +186,7 @@ class NDFrame(ABC):
         """
         return len(self.index)
 
-    def _es_info(self, buf):
+    def _es_info(self, buf: TextIO) -> None:
         self._query_compiler.es_info(buf)
 
     def mean(self, numeric_only: Optional[bool] = None) -> pd.Series:
@@ -604,7 +604,7 @@ class NDFrame(ABC):
         """
         return self._query_compiler.mad(numeric_only=numeric_only)
 
-    def _hist(self, num_bins):
+    def _hist(self, num_bins: int) -> Tuple[pd.DataFrame, pd.DataFrame]:
         return self._query_compiler._hist(num_bins)
 
     def describe(self) -> pd.DataFrame:

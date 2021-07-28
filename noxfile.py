@@ -38,7 +38,10 @@ TYPED_FILES = (
     "eland/tasks.py",
     "eland/utils.py",
     "eland/groupby.py",
+    "eland/operations.py",
+    "eland/ndframe.py",
     "eland/ml/__init__.py",
+    "eland/ml/_optional.py",
     "eland/ml/_model_serializer.py",
     "eland/ml/ml_model.py",
     "eland/ml/transformers/__init__.py",
@@ -46,6 +49,7 @@ TYPED_FILES = (
     "eland/ml/transformers/lightgbm.py",
     "eland/ml/transformers/sklearn.py",
     "eland/ml/transformers/xgboost.py",
+    "eland/plotting/_matplotlib/__init__.py",
 )
 
 
@@ -60,7 +64,9 @@ def format(session):
 
 @nox.session(reuse_venv=True)
 def lint(session):
-    session.install("black", "flake8", "mypy", "isort")
+    # Install numpy to use its mypy plugin
+    # https://numpy.org/devdocs/reference/typing.html#mypy-plugin
+    session.install("black", "flake8", "mypy", "isort", "numpy")
     session.install("--pre", "elasticsearch")
     session.run("python", "utils/license-headers.py", "check", *SOURCE_FILES)
     session.run("black", "--check", "--target-version=py37", *SOURCE_FILES)

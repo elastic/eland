@@ -229,7 +229,7 @@ class XGBoostClassifierTransformer(XGBoostForestTransformer):
         if model.classes_ is None:
             n_estimators = model.get_params()["n_estimators"]
             num_trees = model.get_booster().trees_to_dataframe()["Tree"].max() + 1
-            self._num_classes = num_trees // n_estimators
+            self._num_classes: int = num_trees // n_estimators
         else:
             self._num_classes = len(model.classes_)
 

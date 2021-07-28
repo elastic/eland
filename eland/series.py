@@ -38,8 +38,8 @@ from io import StringIO
 from typing import TYPE_CHECKING, Any, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
-import pandas as pd
-from pandas.io.common import _expand_user, stringify_path
+import pandas as pd  # type: ignore
+from pandas.io.common import _expand_user, stringify_path  # type: ignore
 
 import eland.plotting
 from eland.arithmetics import ArithmeticNumber, ArithmeticSeries, ArithmeticString
@@ -61,10 +61,10 @@ from eland.filter import (
 from eland.ndframe import NDFrame
 from eland.utils import to_list
 
-if TYPE_CHECKING:  # type: ignore
-    from elasticsearch import Elasticsearch  # noqa: F401
+if TYPE_CHECKING:
+    from elasticsearch import Elasticsearch
 
-    from eland.query_compiler import QueryCompiler  # noqa: F401
+    from eland.query_compiler import QueryCompiler
 
 
 def _get_method_name() -> str:
@@ -175,7 +175,7 @@ class Series(NDFrame):
         return num_rows, num_columns
 
     @property
-    def es_field_name(self) -> str:
+    def es_field_name(self) -> pd.Index:
         """
         Returns
         -------
@@ -185,7 +185,7 @@ class Series(NDFrame):
         return self._query_compiler.get_field_names(include_scripted_fields=True)[0]
 
     @property
-    def name(self) -> str:
+    def name(self) -> pd.Index:
         return self._query_compiler.columns[0]
 
     @name.setter
@@ -793,7 +793,7 @@ class Series(NDFrame):
 
         return buf.getvalue()
 
-    def __add__(self, right):
+    def __add__(self, right: "Series") -> "Series":
         """
         Return addition of series and right, element-wise (binary operator add).
 
@@ -853,7 +853,7 @@ class Series(NDFrame):
         """
         return self._numeric_op(right, _get_method_name())
 
-    def __truediv__(self, right):
+    def __truediv__(self, right: "Series") -> "Series":
         """
         Return floating division of series and right, element-wise (binary operator truediv).
 
@@ -892,7 +892,7 @@ class Series(NDFrame):
         """
         return self._numeric_op(right, _get_method_name())
 
-    def __floordiv__(self, right):
+    def __floordiv__(self, right: "Series") -> "Series":
         """
         Return integer division of series and right, element-wise (binary operator floordiv //).
 
@@ -931,7 +931,7 @@ class Series(NDFrame):
         """
         return self._numeric_op(right, _get_method_name())
 
-    def __mod__(self, right):
+    def __mod__(self, right: "Series") -> "Series":
         """
         Return modulo of series and right, element-wise (binary operator mod %).
 
@@ -970,7 +970,7 @@ class Series(NDFrame):
         """
         return self._numeric_op(right, _get_method_name())
 
-    def __mul__(self, right):
+    def __mul__(self, right: "Series") -> "Series":
         """
         Return multiplication of series and right, element-wise (binary operator mul).
 
@@ -1009,7 +1009,7 @@ class Series(NDFrame):
         """
         return self._numeric_op(right, _get_method_name())
 
-    def __sub__(self, right):
+    def __sub__(self, right: "Series") -> "Series":
         """
         Return subtraction of series and right, element-wise (binary operator sub).
 
@@ -1048,7 +1048,7 @@ class Series(NDFrame):
         """
         return self._numeric_op(right, _get_method_name())
 
-    def __pow__(self, right):
+    def __pow__(self, right: "Series") -> "Series":
         """
         Return exponential power of series and right, element-wise (binary operator pow).
 
@@ -1087,7 +1087,7 @@ class Series(NDFrame):
         """
         return self._numeric_op(right, _get_method_name())
 
-    def __radd__(self, left):
+    def __radd__(self, left: "Series") -> "Series":
         """
         Return addition of series and left, element-wise (binary operator add).
 
@@ -1119,7 +1119,7 @@ class Series(NDFrame):
         """
         return self._numeric_op(left, _get_method_name())
 
-    def __rtruediv__(self, left):
+    def __rtruediv__(self, left: "Series") -> "Series":
         """
         Return division of series and left, element-wise (binary operator div).
 
@@ -1151,7 +1151,7 @@ class Series(NDFrame):
         """
         return self._numeric_op(left, _get_method_name())
 
-    def __rfloordiv__(self, left):
+    def __rfloordiv__(self, left: "Series") -> "Series":
         """
         Return integer division of series and left, element-wise (binary operator floordiv //).
 
@@ -1183,7 +1183,7 @@ class Series(NDFrame):
         """
         return self._numeric_op(left, _get_method_name())
 
-    def __rmod__(self, left):
+    def __rmod__(self, left: "Series") -> "Series":
         """
         Return modulo of series and left, element-wise (binary operator mod %).
 
@@ -1215,7 +1215,7 @@ class Series(NDFrame):
         """
         return self._numeric_op(left, _get_method_name())
 
-    def __rmul__(self, left):
+    def __rmul__(self, left: "Series") -> "Series":
         """
         Return multiplication of series and left, element-wise (binary operator mul).
 
@@ -1247,7 +1247,7 @@ class Series(NDFrame):
         """
         return self._numeric_op(left, _get_method_name())
 
-    def __rpow__(self, left):
+    def __rpow__(self, left: "Series") -> "Series":
         """
         Return exponential power of series and left, element-wise (binary operator pow).
 
@@ -1279,7 +1279,7 @@ class Series(NDFrame):
         """
         return self._numeric_op(left, _get_method_name())
 
-    def __rsub__(self, left):
+    def __rsub__(self, left: "Series") -> "Series":
         """
         Return subtraction of series and left, element-wise (binary operator sub).
 
@@ -1398,7 +1398,7 @@ class Series(NDFrame):
 
         return series
 
-    def max(self, numeric_only=None):
+    def max(self, numeric_only: Optional[bool] = None) -> pd.Series:
         """
         Return the maximum of the Series values
 
@@ -1422,7 +1422,7 @@ class Series(NDFrame):
         results = super().max(numeric_only=numeric_only)
         return results.squeeze()
 
-    def mean(self, numeric_only=None):
+    def mean(self, numeric_only: Optional[bool] = None) -> pd.Series:
         """
         Return the mean of the Series values
 
@@ -1446,7 +1446,7 @@ class Series(NDFrame):
         results = super().mean(numeric_only=numeric_only)
         return results.squeeze()
 
-    def median(self, numeric_only=None):
+    def median(self, numeric_only: Optional[bool] = None) -> pd.Series:
         """
         Return the median of the Series values
 
@@ -1470,7 +1470,7 @@ class Series(NDFrame):
         results = super().median(numeric_only=numeric_only)
         return results.squeeze()
 
-    def min(self, numeric_only=None):
+    def min(self, numeric_only: Optional[bool] = None) -> pd.Series:
         """
         Return the minimum of the Series values
 
@@ -1494,7 +1494,7 @@ class Series(NDFrame):
         results = super().min(numeric_only=numeric_only)
         return results.squeeze()
 
-    def sum(self, numeric_only=None):
+    def sum(self, numeric_only: Optional[bool] = None) -> pd.Series:
         """
         Return the sum of the Series values
 
@@ -1518,7 +1518,7 @@ class Series(NDFrame):
         results = super().sum(numeric_only=numeric_only)
         return results.squeeze()
 
-    def nunique(self):
+    def nunique(self) -> pd.Series:
         """
         Return the number of unique values in a Series
 
@@ -1540,7 +1540,7 @@ class Series(NDFrame):
         results = super().nunique()
         return results.squeeze()
 
-    def var(self, numeric_only=None):
+    def var(self, numeric_only: Optional[bool] = None) -> pd.Series:
         """
         Return variance for a Series
 
@@ -1562,7 +1562,7 @@ class Series(NDFrame):
         results = super().var(numeric_only=numeric_only)
         return results.squeeze()
 
-    def std(self, numeric_only=None):
+    def std(self, numeric_only: Optional[bool] = None) -> pd.Series:
         """
         Return standard deviation for a Series
 
@@ -1584,7 +1584,7 @@ class Series(NDFrame):
         results = super().std(numeric_only=numeric_only)
         return results.squeeze()
 
-    def mad(self, numeric_only=None):
+    def mad(self, numeric_only: Optional[bool] = None) -> pd.Series:
         """
         Return median absolute deviation for a Series
 
@@ -1643,7 +1643,7 @@ class Series(NDFrame):
 
     # def values TODO - not implemented as causes current implementation of query to fail
 
-    def to_numpy(self):
+    def to_numpy(self) -> None:
         """
         Not implemented.
 
