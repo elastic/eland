@@ -516,7 +516,7 @@ class TestDataFrameMetrics(TestData):
         assert_series_equal(pd_idxmin, ed_idxmin)
 
     def test_flights_idx_on_columns(self):
-        match = "This feature is not Implemented Yet"
+        match = "This feature is not implemented yet for 'axis = 1'"
         with pytest.raises(NotImplementedError, match=match):
             ed_flights = self.ed_flights().filter(
                 ["AvgTicketPrice", "FlightDelayMin", "dayOfWeek"]

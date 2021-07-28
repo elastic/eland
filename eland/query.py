@@ -170,12 +170,10 @@ class Query:
         sort_order: str,
         size: int = 1,
     ) -> None:
-        def construct_sort(column: str, order: str) -> Dict[str, Dict[str, str]]:
-            return {column: {"order": order}}
 
         top_hits: Any = {}
         if sort_order:
-            top_hits["sort"] = [construct_sort(i, sort_order) for i in source_columns]
+            top_hits["sort"] = [{i: {"order": sort_order}} for i in source_columns]
         if source_columns:
             top_hits["_source"] = {"includes": source_columns}
         top_hits["size"] = size
