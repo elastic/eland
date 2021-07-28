@@ -72,16 +72,17 @@ def lint(session):
     for typed_file in TYPED_FILES:
         if not os.path.isfile(typed_file):
             session.error(f"The file {typed_file!r} couldn't be found")
-        popen = subprocess.Popen(
-            f"mypy --strict {typed_file}",
+        process = subprocess.run(
+            ["mypy", "--strict", typed_file],
             env=session.env,
-            shell=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
         )
-        popen.wait()
+        # Ensure that mypy itself ran successfully
+        assert process.returncode in (0, 1)
+
         errors = []
-        for line in popen.stdout.read().decode().split("\n"):
+        for line in process.stdout.decode().split("\n"):
             filepath = line.partition(":")[0]
             if filepath in TYPED_FILES:
                 errors.append(line)

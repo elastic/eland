@@ -187,6 +187,56 @@ class Operations:
     def hist(self, query_compiler, bins):
         return self._hist_aggs(query_compiler, bins)
 
+    def idx(
+        self, query_compiler: "QueryCompiler", axis: int, sort_order: str
+    ) -> pd.Series:
+
+        if axis == 1:
+            # Fetch idx on Columns
+            raise NotImplementedError(
+                "This feature is not implemented yet for 'axis = 1'"
+            )
+
+        # Fetch idx on Index
+        query_params, post_processing = self._resolve_tasks(query_compiler)
+
+        fields = query_compiler._mappings.all_source_fields()
+
+        # Consider only Numeric fields
+        fields = [field for field in fields if (field.is_numeric)]
+
+        body = Query(query_params.query)
+
+        for field in fields:
+            body.top_hits_agg(
+                name=f"top_hits_{field.es_field_name}",
+                source_columns=[field.es_field_name],
+                sort_order=sort_order,
+                size=1,
+            )
+
+        # Fetch Response
+        response = query_compiler._client.search(
+            index=query_compiler._index_pattern, size=0, body=body.to_search_body()
+        )
+        response = response["aggregations"]
+
+        results = {}
+        for field in fields:
+            res = response[f"top_hits_{field.es_field_name}"]["hits"]
+
+            if not res["total"]["value"] > 0:
+                raise ValueError("Empty Index with no rows")
+
+            if not res["hits"][0]["_source"]:
+                # This means there are NaN Values, we skip them
+                # Implement this when skipna is implemented
+                continue
+            else:
+                results[field.es_field_name] = res["hits"][0]["_id"]
+
+        return pd.Series(results)
+
     def aggs(self, query_compiler, pd_aggs, numeric_only=None) -> pd.DataFrame:
         results = self._metric_aggs(
             query_compiler, pd_aggs, numeric_only=numeric_only, is_dataframe_agg=True

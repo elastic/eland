@@ -1738,6 +1738,70 @@ class DataFrame(NDFrame):
         """
         return self._query_compiler.quantile(quantiles=q, numeric_only=numeric_only)
 
+    def idxmax(self, axis: int = 0) -> pd.Series:
+        """
+        Return index of first occurrence of maximum over requested axis.
+
+        NA/null values are excluded.
+
+        Parameters
+        ----------
+        axis : {0, 1}, default 0
+            The axis to filter on, expressed as index (int).
+
+        Returns
+        -------
+        pandas.Series
+
+        See Also
+        --------
+        :pandas_api_docs:`pandas.DataFrame.idxmax`
+
+        Examples
+        --------
+        >>> ed_df = ed.DataFrame('localhost', 'flights')
+        >>> ed_flights = ed_df.filter(["AvgTicketPrice", "FlightDelayMin", "dayOfWeek", "timestamp"])
+        >>> ed_flights.idxmax()
+        AvgTicketPrice    1843
+        FlightDelayMin     109
+        dayOfWeek         1988
+        dtype: object
+
+        """
+        return self._query_compiler.idx(axis=axis, sort_order="desc")
+
+    def idxmin(self, axis: int = 0) -> pd.Series:
+        """
+        Return index of first occurrence of minimum over requested axis.
+
+        NA/null values are excluded.
+
+        Parameters
+        ----------
+        axis : {0, 1}, default 0
+            The axis to filter on, expressed as index (int).
+
+        Returns
+        -------
+        pandas.Series
+
+        See Also
+        --------
+        :pandas_api_docs:`pandas.DataFrame.idxmin`
+
+        Examples
+        --------
+        >>> ed_df = ed.DataFrame('localhost', 'flights')
+        >>> ed_flights = ed_df.filter(["AvgTicketPrice", "FlightDelayMin", "dayOfWeek", "timestamp"])
+        >>> ed_flights.idxmin()
+        AvgTicketPrice    5454
+        FlightDelayMin       0
+        dayOfWeek            0
+        dtype: object
+
+        """
+        return self._query_compiler.idx(axis=axis, sort_order="asc")
+
     def query(self, expr) -> "DataFrame":
         """
         Query the columns of a DataFrame with a boolean expression.

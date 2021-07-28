@@ -498,3 +498,27 @@ class TestDataFrameMetrics(TestData):
         assert_frame_equal(
             pd_quantile, ed_quantile, check_exact=False, rtol=4, check_dtype=False
         )
+
+    def test_flights_idx_on_index(self):
+        pd_flights = self.pd_flights().filter(
+            ["AvgTicketPrice", "FlightDelayMin", "dayOfWeek"]
+        )
+        ed_flights = self.ed_flights().filter(
+            ["AvgTicketPrice", "FlightDelayMin", "dayOfWeek"]
+        )
+
+        pd_idxmax = pd_flights.idxmax()
+        ed_idxmax = ed_flights.idxmax()
+        assert_series_equal(pd_idxmax, ed_idxmax)
+
+        pd_idxmin = pd_flights.idxmin()
+        ed_idxmin = ed_flights.idxmin()
+        assert_series_equal(pd_idxmin, ed_idxmin)
+
+    def test_flights_idx_on_columns(self):
+        match = "This feature is not implemented yet for 'axis = 1'"
+        with pytest.raises(NotImplementedError, match=match):
+            ed_flights = self.ed_flights().filter(
+                ["AvgTicketPrice", "FlightDelayMin", "dayOfWeek"]
+            )
+            ed_flights.idxmax(axis=1)

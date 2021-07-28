@@ -101,6 +101,8 @@ Computations / Descriptive Stats
    DataFrame.nunique
    DataFrame.mode
    DataFrame.quantile
+   DataFrame.idxmax
+   DataFrame.idxmin
 
 Reindexing / Selection / Label Manipulation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
