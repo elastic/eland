@@ -685,6 +685,9 @@ class QueryCompiler:
             numeric_only=numeric_only,
         )
 
+    def idx(self, axis: int, sort_order: str) -> pd.Series:
+        return self._operations.idx(self, axis=axis, sort_order=sort_order)
+
     def value_counts(self, es_size: int) -> pd.Series:
         return self._operations.value_counts(self, es_size)
 

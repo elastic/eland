@@ -163,6 +163,24 @@ class Query:
         agg = {"percentiles": {"field": field, "percents": percents}}
         self._aggs[name] = agg
 
+    def top_hits_agg(
+        self,
+        name: str,
+        source_columns: List[str],
+        sort_order: str,
+        size: int = 1,
+    ) -> None:
+        def construct_sort(column: str, order: str) -> Dict[str, Dict[str, str]]:
+            return {column: {"order": order}}
+
+        top_hits: Any = {}
+        if sort_order:
+            top_hits["sort"] = [construct_sort(i, sort_order) for i in source_columns]
+        if source_columns:
+            top_hits["_source"] = {"includes": source_columns}
+        top_hits["size"] = size
+        self._aggs[name] = {"top_hits": top_hits}
+
     def composite_agg_bucket_terms(self, name: str, field: str) -> None:
         """
         Add terms agg for composite aggregation
