@@ -79,7 +79,7 @@ Once your changes and tests are ready to submit for review:
     $ nox -s format
 
     # Run the test suite
-    $ pytest --doctest-modules tests/
+    $ pytest --doctest-modules eland/ tests/
     $ pytest --nbval tests/notebook/
 
     ```

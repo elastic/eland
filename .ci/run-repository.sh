@@ -36,4 +36,4 @@ docker run \
   --name eland-test-runner \
   --rm \
   elastic/eland \
-  nox -s lint "test-${PYTHON_VERSION}(pandas_version='${PANDAS_VERSION}')"
+  nox -s "test-${PYTHON_VERSION}(pandas_version='${PANDAS_VERSION}')"

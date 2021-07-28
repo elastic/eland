@@ -86,8 +86,8 @@ Once your changes and tests are ready to submit for review:
       $ nox -s format
 
       # Run the test suite
-      $ pytest --doctest-modules eland/tests/
-      $ pytest --nbval eland/tests/notebook/
+      $ pytest --doctest-modules eland/ tests/
+      $ pytest --nbval tests/notebook/
 
 2. Sign the Contributor License Agreement
 
