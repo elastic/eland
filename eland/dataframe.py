@@ -19,7 +19,7 @@ import re
 import sys
 import warnings
 from io import StringIO
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Tuple, Union
+from typing import TYPE_CHECKING, Any, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import pandas as pd  # type: ignore
@@ -1859,7 +1859,7 @@ class DataFrame(NDFrame):
             for key in self.keys():
                 column_resolver[key] = self.get(key)
             # Create fake resolvers - index resolver is empty
-            resolvers: Dict[str, Any] = column_resolver, {}
+            resolvers = column_resolver, {}
             # Use pandas eval to parse query - TODO validate this further
             filter = eval(expr, target=self, resolvers=tuple(tuple(resolvers)))
             return DataFrame(_query_compiler=self._query_compiler._update_query(filter))
