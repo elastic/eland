@@ -10,3 +10,4 @@ xgboost>=1
 nox
 lightgbm
 pytest-cov
+mypy

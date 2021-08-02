@@ -15,8 +15,10 @@
 #  specific language governing permissions and limitations
 #  under the License.
 
+from typing import TYPE_CHECKING
+
 import numpy as np
-from pandas.plotting._matplotlib import converter
+from pandas.plotting._matplotlib import converter  # type: ignore
 
 try:
     # pandas<1.3.0
@@ -26,19 +28,22 @@ except ImportError:
     from pandas.core.dtypes.generic import ABCIndex
 
 try:  # pandas>=1.2.0
-    from pandas.plotting._matplotlib.tools import (
+    from pandas.plotting._matplotlib.tools import (  # type: ignore
         create_subplots,
         flatten_axes,
         set_ticks_props,
     )
 except ImportError:  # pandas<1.2.0
-    from pandas.plotting._matplotlib.tools import (
+    from pandas.plotting._matplotlib.tools import (  # type: ignore
         _flatten as flatten_axes,
         _set_ticks_props as set_ticks_props,
         _subplots as create_subplots,
     )
 
 from eland.utils import try_sort
+
+if TYPE_CHECKING:
+    from numpy.typing import ArrayLike
 
 
 def hist_series(
@@ -53,8 +58,8 @@ def hist_series(
     figsize=None,
     bins=10,
     **kwds,
-):
-    import matplotlib.pyplot as plt
+) -> "ArrayLike":
+    import matplotlib.pyplot as plt  # type: ignore
 
     if by is None:
         if kwds.get("layout", None) is not None:

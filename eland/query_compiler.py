@@ -17,9 +17,19 @@
 
 import copy
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, List, Optional, Sequence, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    TextIO,
+    Tuple,
+    Union,
+)
 
-import numpy as np  # type: ignore
+import numpy as np
 import pandas as pd  # type: ignore
 
 from eland.common import (
@@ -28,11 +38,15 @@ from eland.common import (
     ensure_es_client,
 )
 from eland.field_mappings import FieldMappings
-from eland.filter import QueryFilter
+from eland.filter import BooleanFilter, QueryFilter
 from eland.index import Index
 from eland.operations import Operations
 
 if TYPE_CHECKING:
+    from elasticsearch import Elasticsearch
+
+    from eland.arithmetics import ArithmeticSeries
+
     from .tasks import ArithmeticOpFieldsTask  # noqa: F401
 
 
@@ -67,8 +81,10 @@ class QueryCompiler:
 
     def __init__(
         self,
-        client=None,
-        index_pattern=None,
+        client: Optional[
+            Union[str, List[str], Tuple[str, ...], "Elasticsearch"]
+        ] = None,
+        index_pattern: Optional[str] = None,
         display_names=None,
         index_field=None,
         to_copy=None,
@@ -77,15 +93,15 @@ class QueryCompiler:
         if to_copy is not None:
             self._client = to_copy._client
             self._index_pattern = to_copy._index_pattern
-            self._index = Index(self, to_copy._index.es_index_field)
-            self._operations = copy.deepcopy(to_copy._operations)
+            self._index: "Index" = Index(self, to_copy._index.es_index_field)
+            self._operations: "Operations" = copy.deepcopy(to_copy._operations)
             self._mappings: FieldMappings = copy.deepcopy(to_copy._mappings)
         else:
             self._client = ensure_es_client(client)
             self._index_pattern = index_pattern
             # Get and persist mappings, this allows us to correctly
             # map returned types from Elasticsearch to pandas datatypes
-            self._mappings: FieldMappings = FieldMappings(
+            self._mappings = FieldMappings(
                 client=self._client,
                 index_pattern=self._index_pattern,
                 display_names=display_names,
@@ -103,15 +119,15 @@ class QueryCompiler:
 
         return pd.Index(columns)
 
-    def _get_display_names(self):
+    def _get_display_names(self) -> "pd.Index":
         display_names = self._mappings.display_names
 
         return pd.Index(display_names)
 
-    def _set_display_names(self, display_names):
+    def _set_display_names(self, display_names: List[str]) -> None:
         self._mappings.display_names = display_names
 
-    def get_field_names(self, include_scripted_fields):
+    def get_field_names(self, include_scripted_fields: bool) -> List[str]:
         return self._mappings.get_field_names(include_scripted_fields)
 
     def add_scripted_field(self, scripted_field_name, display_name, pd_dtype):
@@ -129,7 +145,12 @@ class QueryCompiler:
 
     # END Index, columns, and dtypes objects
 
-    def _es_results_to_pandas(self, results, batch_size=None, show_progress=False):
+    def _es_results_to_pandas(
+        self,
+        results: Dict[Any, Any],
+        batch_size: Optional[int] = None,
+        show_progress: bool = False,
+    ) -> "pd.Dataframe":
         """
         Parameters
         ----------
@@ -300,7 +321,7 @@ class QueryCompiler:
 
         return partial_result, df
 
-    def _flatten_dict(self, y, field_mapping_cache):
+    def _flatten_dict(self, y, field_mapping_cache: "FieldMappingCache"):
         out = {}
 
         def flatten(x, name=""):
@@ -368,7 +389,7 @@ class QueryCompiler:
         """
         return self._operations.index_count(self, self.index.es_index_field)
 
-    def _index_matches_count(self, items):
+    def _index_matches_count(self, items: List[Any]) -> int:
         """
         Returns
         -------
@@ -386,10 +407,10 @@ class QueryCompiler:
             df[c] = pd.Series(dtype=d)
         return df
 
-    def copy(self):
+    def copy(self) -> "QueryCompiler":
         return QueryCompiler(to_copy=self)
 
-    def rename(self, renames, inplace=False):
+    def rename(self, renames, inplace: bool = False) -> "QueryCompiler":
         if inplace:
             self._mappings.rename(renames)
             return self
@@ -398,21 +419,23 @@ class QueryCompiler:
             result._mappings.rename(renames)
             return result
 
-    def head(self, n):
+    def head(self, n: int) -> "QueryCompiler":
         result = self.copy()
 
         result._operations.head(self._index, n)
 
         return result
 
-    def tail(self, n):
+    def tail(self, n: int) -> "QueryCompiler":
         result = self.copy()
 
         result._operations.tail(self._index, n)
 
         return result
 
-    def sample(self, n=None, frac=None, random_state=None):
+    def sample(
+        self, n: Optional[int] = None, frac=None, random_state=None
+    ) -> "QueryCompiler":
         result = self.copy()
 
         if n is None and frac is None:
@@ -501,11 +524,11 @@ class QueryCompiler:
             query = {"multi_match": options}
         return QueryFilter(query)
 
-    def es_query(self, query):
+    def es_query(self, query: Dict[str, Any]) -> "QueryCompiler":
         return self._update_query(QueryFilter(query))
 
     # To/From Pandas
-    def to_pandas(self, show_progress=False):
+    def to_pandas(self, show_progress: bool = False):
         """Converts Eland DataFrame to Pandas DataFrame.
 
         Returns:
@@ -543,7 +566,9 @@ class QueryCompiler:
 
         return result
 
-    def drop(self, index=None, columns=None):
+    def drop(
+        self, index: Optional[str] = None, columns: Optional[List[str]] = None
+    ) -> "QueryCompiler":
         result = self.copy()
 
         # Drop gets all columns and removes drops
@@ -559,7 +584,7 @@ class QueryCompiler:
 
     def filter(
         self,
-        items: Optional[Sequence[str]] = None,
+        items: Optional[List[str]] = None,
         like: Optional[str] = None,
         regex: Optional[str] = None,
     ) -> "QueryCompiler":
@@ -570,53 +595,55 @@ class QueryCompiler:
         result._operations.filter(self, items=items, like=like, regex=regex)
         return result
 
-    def aggs(self, func: List[str], numeric_only: Optional[bool] = None):
+    def aggs(
+        self, func: List[str], numeric_only: Optional[bool] = None
+    ) -> pd.DataFrame:
         return self._operations.aggs(self, func, numeric_only=numeric_only)
 
-    def count(self):
+    def count(self) -> pd.Series:
         return self._operations.count(self)
 
-    def mean(self, numeric_only: Optional[bool] = None):
+    def mean(self, numeric_only: Optional[bool] = None) -> pd.Series:
         return self._operations._metric_agg_series(
             self, ["mean"], numeric_only=numeric_only
         )
 
-    def var(self, numeric_only: Optional[bool] = None):
+    def var(self, numeric_only: Optional[bool] = None) -> pd.Series:
         return self._operations._metric_agg_series(
             self, ["var"], numeric_only=numeric_only
         )
 
-    def std(self, numeric_only: Optional[bool] = None):
+    def std(self, numeric_only: Optional[bool] = None) -> pd.Series:
         return self._operations._metric_agg_series(
             self, ["std"], numeric_only=numeric_only
         )
 
-    def mad(self, numeric_only: Optional[bool] = None):
+    def mad(self, numeric_only: Optional[bool] = None) -> pd.Series:
         return self._operations._metric_agg_series(
             self, ["mad"], numeric_only=numeric_only
         )
 
-    def median(self, numeric_only: Optional[bool] = None):
+    def median(self, numeric_only: Optional[bool] = None) -> pd.Series:
         return self._operations._metric_agg_series(
             self, ["median"], numeric_only=numeric_only
         )
 
-    def sum(self, numeric_only: Optional[bool] = None):
+    def sum(self, numeric_only: Optional[bool] = None) -> pd.Series:
         return self._operations._metric_agg_series(
             self, ["sum"], numeric_only=numeric_only
         )
 
-    def min(self, numeric_only: Optional[bool] = None):
+    def min(self, numeric_only: Optional[bool] = None) -> pd.Series:
         return self._operations._metric_agg_series(
             self, ["min"], numeric_only=numeric_only
         )
 
-    def max(self, numeric_only: Optional[bool] = None):
+    def max(self, numeric_only: Optional[bool] = None) -> pd.Series:
         return self._operations._metric_agg_series(
             self, ["max"], numeric_only=numeric_only
         )
 
-    def nunique(self):
+    def nunique(self) -> pd.Series:
         return self._operations._metric_agg_series(
             self, ["nunique"], numeric_only=False
         )
@@ -673,7 +700,7 @@ class QueryCompiler:
         dropna: bool = True,
         is_dataframe_agg: bool = False,
         numeric_only: Optional[bool] = True,
-        quantiles: Union[int, float, List[int], List[float], None] = None,
+        quantiles: Optional[Union[int, float, List[int], List[float]]] = None,
     ) -> pd.DataFrame:
         return self._operations.aggs_groupby(
             self,
@@ -691,27 +718,27 @@ class QueryCompiler:
     def value_counts(self, es_size: int) -> pd.Series:
         return self._operations.value_counts(self, es_size)
 
-    def es_info(self, buf):
+    def es_info(self, buf: TextIO) -> None:
         buf.write(f"es_index_pattern: {self._index_pattern}\n")
 
         self._index.es_info(buf)
         self._mappings.es_info(buf)
         self._operations.es_info(self, buf)
 
-    def describe(self):
+    def describe(self) -> pd.DataFrame:
         return self._operations.describe(self)
 
-    def _hist(self, num_bins):
+    def _hist(self, num_bins: int) -> Tuple[pd.DataFrame, pd.DataFrame]:
         return self._operations.hist(self, num_bins)
 
-    def _update_query(self, boolean_filter):
+    def _update_query(self, boolean_filter: "BooleanFilter") -> "QueryCompiler":
         result = self.copy()
 
         result._operations.update_query(boolean_filter)
 
         return result
 
-    def check_arithmetics(self, right):
+    def check_arithmetics(self, right: "QueryCompiler") -> None:
         """
         Compare 2 query_compilers to see if arithmetic operations can be performed by the NDFrame object.
 
@@ -750,7 +777,9 @@ class QueryCompiler:
                 f"{self._index_pattern} != {right._index_pattern}"
             )
 
-    def arithmetic_op_fields(self, display_name, arithmetic_object):
+    def arithmetic_op_fields(
+        self, display_name: str, arithmetic_object: "ArithmeticSeries"
+    ) -> "QueryCompiler":
         result = self.copy()
 
         # create a new field name for this display name
@@ -758,7 +787,7 @@ class QueryCompiler:
 
         # add scripted field
         result._mappings.add_scripted_field(
-            scripted_field_name, display_name, arithmetic_object.dtype.name
+            scripted_field_name, display_name, arithmetic_object.dtype.name  # type: ignore
         )
 
         result._operations.arithmetic_op_fields(scripted_field_name, arithmetic_object)
@@ -768,7 +797,7 @@ class QueryCompiler:
     def get_arithmetic_op_fields(self) -> Optional["ArithmeticOpFieldsTask"]:
         return self._operations.get_arithmetic_op_fields()
 
-    def display_name_to_aggregatable_name(self, display_name: str) -> str:
+    def display_name_to_aggregatable_name(self, display_name: str) -> Optional[str]:
         aggregatable_field_name = self._mappings.aggregatable_field_name(display_name)
 
         return aggregatable_field_name
@@ -780,13 +809,13 @@ class FieldMappingCache:
     DataFrame access is slower than dict access.
     """
 
-    def __init__(self, mappings):
+    def __init__(self, mappings: "FieldMappings") -> None:
         self._mappings = mappings
 
-        self._field_name_pd_dtype = dict()
-        self._date_field_format = dict()
+        self._field_name_pd_dtype: Dict[str, str] = dict()
+        self._date_field_format: Dict[str, str] = dict()
 
-    def field_name_pd_dtype(self, es_field_name):
+    def field_name_pd_dtype(self, es_field_name: str) -> str:
         if es_field_name in self._field_name_pd_dtype:
             return self._field_name_pd_dtype[es_field_name]
 
@@ -797,7 +826,7 @@ class FieldMappingCache:
 
         return pd_dtype
 
-    def date_field_format(self, es_field_name):
+    def date_field_format(self, es_field_name: str) -> str:
         if es_field_name in self._date_field_format:
             return self._date_field_format[es_field_name]
 

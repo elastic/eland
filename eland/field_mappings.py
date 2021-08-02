@@ -25,13 +25,14 @@ from typing import (
     NamedTuple,
     Optional,
     Set,
+    TextIO,
     Tuple,
     Union,
 )
 
 import numpy as np
-import pandas as pd
-from pandas.core.dtypes.common import (
+import pandas as pd  # type: ignore
+from pandas.core.dtypes.common import (  # type: ignore
     is_bool_dtype,
     is_datetime_or_timedelta_dtype,
     is_float_dtype,
@@ -42,6 +43,7 @@ from pandas.core.dtypes.inference import is_list_like
 
 if TYPE_CHECKING:
     from elasticsearch import Elasticsearch
+    from numpy.typing import DTypeLike
 
 
 ES_FLOAT_TYPES: Set[str] = {"double", "float", "half_float", "scaled_float"}
@@ -559,7 +561,7 @@ class FieldMappings:
 
         return {"mappings": {"properties": mapping_props}}
 
-    def aggregatable_field_name(self, display_name):
+    def aggregatable_field_name(self, display_name: str) -> Optional[str]:
         """
         Return a single aggregatable field_name from display_name
 
@@ -598,7 +600,7 @@ class FieldMappings:
 
         return self._mappings_capabilities.loc[display_name].aggregatable_es_field_name
 
-    def aggregatable_field_names(self):
+    def aggregatable_field_names(self) -> Dict[str, str]:
         """
         Return a list of aggregatable Elasticsearch field_names for all display names.
         If field is not aggregatable_field_names, return nothing.
@@ -634,7 +636,7 @@ class FieldMappings:
             )["data"]
         )
 
-    def date_field_format(self, es_field_name):
+    def date_field_format(self, es_field_name: str) -> str:
         """
         Parameters
         ----------
@@ -650,7 +652,7 @@ class FieldMappings:
             self._mappings_capabilities.es_field_name == es_field_name
         ].es_date_format.squeeze()
 
-    def field_name_pd_dtype(self, es_field_name):
+    def field_name_pd_dtype(self, es_field_name: str) -> str:
         """
         Parameters
         ----------
@@ -674,7 +676,9 @@ class FieldMappings:
         ].pd_dtype.squeeze()
         return pd_dtype
 
-    def add_scripted_field(self, scripted_field_name, display_name, pd_dtype):
+    def add_scripted_field(
+        self, scripted_field_name: str, display_name: str, pd_dtype: str
+    ) -> None:
         # if this display name is used somewhere else, drop it
         if display_name in self._mappings_capabilities.index:
             self._mappings_capabilities = self._mappings_capabilities.drop(
@@ -706,8 +710,8 @@ class FieldMappings:
             capability_matrix_row
         )
 
-    def numeric_source_fields(self):
-        pd_dtypes, es_field_names, es_date_formats = self.metric_source_fields()
+    def numeric_source_fields(self) -> List[str]:
+        _, es_field_names, _ = self.metric_source_fields()
         return es_field_names
 
     def all_source_fields(self) -> List[Field]:
@@ -753,7 +757,9 @@ class FieldMappings:
         # Maintain groupby order as given input
         return [groupby_fields[column] for column in by], aggregatable_fields
 
-    def metric_source_fields(self, include_bool=False, include_timestamp=False):
+    def metric_source_fields(
+        self, include_bool: bool = False, include_timestamp: bool = False
+    ) -> Tuple[List["DTypeLike"], List[str], Optional[List[str]]]:
         """
         Returns
         -------
@@ -790,7 +796,7 @@ class FieldMappings:
         # return in display_name order
         return pd_dtypes, es_field_names, es_date_formats
 
-    def get_field_names(self, include_scripted_fields=True):
+    def get_field_names(self, include_scripted_fields: bool = True) -> List[str]:
         if include_scripted_fields:
             return self._mappings_capabilities.es_field_name.to_list()
 
@@ -801,7 +807,7 @@ class FieldMappings:
     def _get_display_names(self):
         return self._mappings_capabilities.index.to_list()
 
-    def _set_display_names(self, display_names):
+    def _set_display_names(self, display_names: List[str]):
         if not is_list_like(display_names):
             raise ValueError(f"'{display_names}' is not list like")
 
@@ -842,7 +848,7 @@ class FieldMappings:
         es_dtypes.name = None
         return es_dtypes
 
-    def es_info(self, buf):
+    def es_info(self, buf: TextIO) -> None:
         buf.write("Mappings:\n")
         buf.write(f" capabilities:\n{self._mappings_capabilities.to_string()}\n")
 

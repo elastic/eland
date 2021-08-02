@@ -19,19 +19,19 @@ import re
 import sys
 import warnings
 from io import StringIO
-from typing import Any, List, Optional, Sequence, Tuple, Union
+from typing import TYPE_CHECKING, Any, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
-import pandas as pd
-from pandas.core.common import apply_if_callable, is_bool_indexer
-from pandas.core.computation.eval import eval
-from pandas.core.dtypes.common import is_list_like
-from pandas.core.indexing import check_bool_indexer
-from pandas.io.common import _expand_user, stringify_path
-from pandas.io.formats import console
+import pandas as pd  # type: ignore
+from pandas.core.common import apply_if_callable, is_bool_indexer  # type: ignore
+from pandas.core.computation.eval import eval  # type: ignore
+from pandas.core.dtypes.common import is_list_like  # type: ignore
+from pandas.core.indexing import check_bool_indexer  # type: ignore
+from pandas.io.common import _expand_user, stringify_path  # type: ignore
+from pandas.io.formats import console  # type: ignore
 from pandas.io.formats import format as fmt
-from pandas.io.formats.printing import pprint_thing
-from pandas.util._validators import validate_bool_kwarg
+from pandas.io.formats.printing import pprint_thing  # type: ignore
+from pandas.util._validators import validate_bool_kwarg  # type: ignore
 
 import eland.plotting as gfx
 from eland.common import DEFAULT_NUM_ROWS_DISPLAYED, docstring_parameter
@@ -40,6 +40,11 @@ from eland.groupby import DataFrameGroupBy
 from eland.ndframe import NDFrame
 from eland.series import Series
 from eland.utils import is_valid_attr_name
+
+if TYPE_CHECKING:
+    from elasticsearch import Elasticsearch
+
+    from .query_compiler import QueryCompiler
 
 
 class DataFrame(NDFrame):
@@ -119,11 +124,13 @@ class DataFrame(NDFrame):
 
     def __init__(
         self,
-        es_client=None,
-        es_index_pattern=None,
-        es_index_field=None,
-        columns=None,
-        _query_compiler=None,
+        es_client: Optional[
+            Union[str, List[str], Tuple[str, ...], "Elasticsearch"]
+        ] = None,
+        es_index_pattern: Optional[str] = None,
+        columns: Optional[List[str]] = None,
+        es_index_field: Optional[str] = None,
+        _query_compiler: Optional["QueryCompiler"] = None,
     ) -> None:
         """
         There are effectively 2 constructors:
@@ -147,7 +154,7 @@ class DataFrame(NDFrame):
             _query_compiler=_query_compiler,
         )
 
-    def _get_columns(self):
+    def _get_columns(self) -> pd.Index:
         """
         The column labels of the DataFrame.
 
@@ -178,7 +185,7 @@ class DataFrame(NDFrame):
     columns = property(_get_columns)
 
     @property
-    def empty(self):
+    def empty(self) -> bool:
         """Determines if the DataFrame is empty.
 
         Returns
@@ -278,7 +285,10 @@ class DataFrame(NDFrame):
         return DataFrame(_query_compiler=self._query_compiler.tail(n))
 
     def sample(
-        self, n: int = None, frac: float = None, random_state: int = None
+        self,
+        n: Optional[int] = None,
+        frac: Optional[float] = None,
+        random_state: Optional[int] = None,
     ) -> "DataFrame":
         """
         Return n randomly sample rows or the specify fraction of rows
@@ -469,7 +479,7 @@ class DataFrame(NDFrame):
             if is_valid_attr_name(column_name)
         ]
 
-    def __repr__(self):
+    def __repr__(self) -> None:
         """
         From pandas
         """
@@ -501,7 +511,7 @@ class DataFrame(NDFrame):
 
         return buf.getvalue()
 
-    def _info_repr(self):
+    def _info_repr(self) -> bool:
         """
         True if the repr should show the info view.
         """
@@ -510,7 +520,7 @@ class DataFrame(NDFrame):
             self._repr_fits_horizontal_() and self._repr_fits_vertical_()
         )
 
-    def _repr_html_(self):
+    def _repr_html_(self) -> Optional[str]:
         """
         From pandas - this is called by notebooks
         """
@@ -540,7 +550,7 @@ class DataFrame(NDFrame):
         else:
             return None
 
-    def count(self):
+    def count(self) -> pd.Series:
         """
         Count non-NA cells for each column.
 
@@ -855,10 +865,10 @@ class DataFrame(NDFrame):
         exceeds_info_cols = len(self.columns) > max_cols
 
         # From pandas.DataFrame
-        def _put_str(s, space):
+        def _put_str(s, space) -> str:
             return f"{s}"[:space].ljust(space)
 
-        def _verbose_repr():
+        def _verbose_repr() -> None:
             lines.append(f"Data columns (total {len(self.columns)} columns):")
 
             id_head = " # "
@@ -930,10 +940,10 @@ class DataFrame(NDFrame):
                     + _put_str(dtype, space_dtype)
                 )
 
-        def _non_verbose_repr():
+        def _non_verbose_repr() -> None:
             lines.append(self.columns._summary(name="Columns"))
 
-        def _sizeof_fmt(num, size_qualifier):
+        def _sizeof_fmt(num: float, size_qualifier: str) -> str:
             # returns size in human readable format
             for x in ["bytes", "KB", "MB", "GB", "TB"]:
                 if num < 1024.0:
@@ -1004,7 +1014,7 @@ class DataFrame(NDFrame):
         border=None,
         table_id=None,
         render_links=False,
-    ):
+    ) -> Any:
         """
         Render a Elasticsearch data as an HTML table.
 
@@ -1171,7 +1181,7 @@ class DataFrame(NDFrame):
             result = _buf.getvalue()
             return result
 
-    def __getattr__(self, key):
+    def __getattr__(self, key: str) -> Any:
         """After regular attribute access, looks up the name in the columns
 
         Parameters
@@ -1190,7 +1200,12 @@ class DataFrame(NDFrame):
                 return self[key]
             raise e
 
-    def _getitem(self, key):
+    def _getitem(
+        self,
+        key: Union[
+            "DataFrame", "Series", pd.Index, List[str], str, BooleanFilter, np.ndarray
+        ],
+    ) -> Union["Series", "DataFrame"]:
         """Get the column specified by key for this DataFrame.
 
         Args:
@@ -1215,13 +1230,13 @@ class DataFrame(NDFrame):
         else:
             return self._getitem_column(key)
 
-    def _getitem_column(self, key):
+    def _getitem_column(self, key: str) -> "Series":
         if key not in self.columns:
             raise KeyError(f"Requested column [{key}] is not in the DataFrame.")
         s = self._reduce_dimension(self._query_compiler.getitem_column_array([key]))
         return s
 
-    def _getitem_array(self, key):
+    def _getitem_array(self, key: Union[str, pd.Series]) -> "DataFrame":
         if isinstance(key, Series):
             key = key.to_pandas()
         if is_bool_indexer(key):
@@ -1256,7 +1271,9 @@ class DataFrame(NDFrame):
                 _query_compiler=self._query_compiler.getitem_column_array(key)
             )
 
-    def _create_or_update_from_compiler(self, new_query_compiler, inplace=False):
+    def _create_or_update_from_compiler(
+        self, new_query_compiler: "QueryCompiler", inplace: bool = False
+    ) -> Union["QueryCompiler", "DataFrame"]:
         """Returns or updates a DataFrame given new query_compiler"""
         assert (
             isinstance(new_query_compiler, type(self._query_compiler))
@@ -1265,10 +1282,10 @@ class DataFrame(NDFrame):
         if not inplace:
             return DataFrame(_query_compiler=new_query_compiler)
         else:
-            self._query_compiler = new_query_compiler
+            self._query_compiler: "QueryCompiler" = new_query_compiler
 
     @staticmethod
-    def _reduce_dimension(query_compiler):
+    def _reduce_dimension(query_compiler: "QueryCompiler") -> "Series":
         return Series(_query_compiler=query_compiler)
 
     def to_csv(
@@ -1849,7 +1866,9 @@ class DataFrame(NDFrame):
         else:
             raise NotImplementedError(expr, type(expr))
 
-    def get(self, key, default=None):
+    def get(
+        self, key: Any, default: Optional[Any] = None
+    ) -> Union["Series", "DataFrame"]:
         """
         Get item from object for given key (ex: DataFrame column).
         Returns default value if not found.
@@ -1956,7 +1975,7 @@ class DataFrame(NDFrame):
 
             elif like is not None:
 
-                def matcher(x):
+                def matcher(x: str) -> bool:
                     return like in x
 
             else:
@@ -1965,7 +1984,7 @@ class DataFrame(NDFrame):
             return self[[column for column in self.columns if matcher(column)]]
 
     @property
-    def values(self):
+    def values(self) -> None:
         """
         Not implemented.
 
@@ -1983,7 +2002,7 @@ class DataFrame(NDFrame):
         """
         return self.to_numpy()
 
-    def to_numpy(self):
+    def to_numpy(self) -> None:
         """
         Not implemented.
 

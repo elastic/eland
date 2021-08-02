@@ -18,11 +18,23 @@
 import re
 import warnings
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Union,
+    cast,
+)
 
-import numpy as np  # type: ignore
 import pandas as pd  # type: ignore
 from elasticsearch import Elasticsearch
+
+if TYPE_CHECKING:
+    from numpy.typing import DTypeLike
 
 # Default number of rows displayed (different to pandas where ALL could be displayed)
 DEFAULT_NUM_ROWS_DISPLAYED = 60
@@ -42,7 +54,7 @@ with warnings.catch_warnings():
 
 
 def build_pd_series(
-    data: Dict[str, Any], dtype: Optional[np.dtype] = None, **kwargs: Any
+    data: Dict[str, Any], dtype: Optional["DTypeLike"] = None, **kwargs: Any
 ) -> pd.Series:
     """Builds a pd.Series while squelching the warning
     for unspecified dtype on empty series
@@ -88,7 +100,7 @@ class SortOrder(Enum):
 
 
 def elasticsearch_date_to_pandas_date(
-    value: Union[int, str], date_format: Optional[str]
+    value: Union[int, str, float], date_format: Optional[str]
 ) -> pd.Timestamp:
     """
     Given a specific Elasticsearch format for a date datatype, returns the
@@ -98,7 +110,7 @@ def elasticsearch_date_to_pandas_date(
 
     Parameters
     ----------
-    value: Union[int, str]
+    value: Union[int, str, float]
         The date value.
     date_format: str
         The Elasticsearch date format (ex. 'epoch_millis', 'epoch_second', etc.)
