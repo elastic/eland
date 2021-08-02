@@ -566,7 +566,9 @@ class QueryCompiler:
 
         return result
 
-    def drop(self, index: str = None, columns: List[str] = None) -> "QueryCompiler":
+    def drop(
+        self, index: Optional[str] = None, columns: Optional[List[str]] = None
+    ) -> "QueryCompiler":
         result = self.copy()
 
         # Drop gets all columns and removes drops

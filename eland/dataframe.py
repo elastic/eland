@@ -943,7 +943,7 @@ class DataFrame(NDFrame):
         def _non_verbose_repr() -> None:
             lines.append(self.columns._summary(name="Columns"))
 
-        def _sizeof_fmt(num: float, size_qualifier: str):
+        def _sizeof_fmt(num: float, size_qualifier: str) -> str:
             # returns size in human readable format
             for x in ["bytes", "KB", "MB", "GB", "TB"]:
                 if num < 1024.0:
@@ -1181,7 +1181,7 @@ class DataFrame(NDFrame):
             result = _buf.getvalue()
             return result
 
-    def __getattr__(self, key: str) -> str:
+    def __getattr__(self, key: str) -> Any:
         """After regular attribute access, looks up the name in the columns
 
         Parameters
@@ -1866,7 +1866,9 @@ class DataFrame(NDFrame):
         else:
             raise NotImplementedError(expr, type(expr))
 
-    def get(self, key: Any, default: Any = None) -> Union["Series", "DataFrame"]:
+    def get(
+        self, key: Any, default: Optional[Any] = None
+    ) -> Union["Series", "DataFrame"]:
         """
         Get item from object for given key (ex: DataFrame column).
         Returns default value if not found.

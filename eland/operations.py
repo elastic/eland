@@ -70,7 +70,7 @@ if TYPE_CHECKING:
 
 class QueryParams:
     def __init__(self) -> None:
-        self.query: "Query" = Query()
+        self.query: Query = Query()
         self.sort_field: Optional[str] = None
         self.sort_order: Optional[SortOrder] = None
         self.size: Optional[int] = None
@@ -713,7 +713,7 @@ class Operations:
                 elif pd_agg in ("nunique", "count"):
                     agg_value = (
                         int(agg_value)
-                        if isinstance(agg_value, (int, float, bytes))
+                        if isinstance(agg_value, (int, float))
                         else np.NaN
                     )
 
@@ -734,7 +734,8 @@ class Operations:
                             )
                             for value in percentile_values
                         ]
-                    elif not isinstance(agg_value, dict):
+                    else:
+                        assert not isinstance(agg_value, dict)
                         agg_value = elasticsearch_date_to_pandas_date(
                             agg_value, field.es_date_format
                         )
@@ -950,9 +951,8 @@ class Operations:
                 )
 
                 # to construct index with quantiles
-                if percentiles:
-                    if pd_aggs == ["quantile"] and len_percentiles > 1:
-                        results[None].extend([i / 100 for i in percentiles])
+                if pd_aggs == ["quantile"] and percentiles and len_percentiles > 1:
+                    results[None].extend([i / 100 for i in percentiles])
 
                 # Process the calculated agg values to response
                 for key, value in agg_calculation.items():
@@ -984,7 +984,7 @@ class Operations:
     @staticmethod
     def bucket_generator(
         query_compiler: "QueryCompiler", body: "Query"
-    ) -> Generator[Sequence[Any], None, Sequence[Any]]:
+    ) -> Generator[Sequence[Dict[str, Any]], None, Sequence[Dict[str, Any]]]:
         """
             This can be used for all groupby operations.
         e.g.
@@ -1019,7 +1019,7 @@ class Operations:
             after_key: Optional[Dict[str, Any]] = composite_buckets.get(
                 "after_key", None
             )
-            buckets: Sequence[Any] = composite_buckets["buckets"]
+            buckets: Sequence[Dict[str, Any]] = composite_buckets["buckets"]
 
             if after_key:
 
