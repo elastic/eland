@@ -1584,23 +1584,23 @@ class PandasDataFrameCollector:
         return self._show_progress
 
 class PandasDataFrameIteratorCollector:
-            def __init__(self, show_progress, batch_size):
-                self._df_iterator = None
-                self._show_progress = show_progress
-                self._batch_size = batch_size
+    def __init__(self, show_progress, batch_size):
+        self._df_iterator = None
+        self._show_progress = show_progress
+        self._batch_size = batch_size
 
-            def collect(self, df_iterator):
-                # This collector return a PandasDataFrameIterator. Therefore, it's support batch data.
-                # This method is only called once.
-                if self._df_iterator is not None:
-                    raise RuntimeError(
-                        "Logic error in execution, this method must only be called once for this"
-                    )
-                self._df_iterator = df_iterator
+    def collect(self, df_iterator):
+        # This collector return a PandasDataFrameIterator. Therefore, it's support batch data.
+        # This method is only called once.
+        if self._df_iterator is not None:
+            raise RuntimeError(
+                "Logic error in execution, this method must only be called once for this"
+            )
+        self._df_iterator = df_iterator
 
-            def batch_size(self):
-                return self._batch_size
+    def batch_size(self):
+        return self._batch_size
 
-            @property
-            def show_progress(self):
-                return self._show_progress
+    @property
+    def show_progress(self):
+        return self._show_progress
