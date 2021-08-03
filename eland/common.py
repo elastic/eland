@@ -18,19 +18,34 @@
 import re
 import warnings
 from enum import Enum
-from typing import Union, List, Tuple, cast, Callable, Any, Optional, Dict
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Union,
+    cast,
+)
 
-import numpy as np  # type: ignore
 import pandas as pd  # type: ignore
-from elasticsearch import Elasticsearch  # type: ignore
+from elasticsearch import Elasticsearch
+
+if TYPE_CHECKING:
+    from numpy.typing import DTypeLike
 
 # Default number of rows displayed (different to pandas where ALL could be displayed)
 DEFAULT_NUM_ROWS_DISPLAYED = 60
-
 DEFAULT_CHUNK_SIZE = 10000
 DEFAULT_CSV_BATCH_OUTPUT_SIZE = 10000
 DEFAULT_PROGRESS_REPORTING_NUM_ROWS = 10000
 DEFAULT_ES_MAX_RESULT_WINDOW = 10000  # index.max_result_window
+DEFAULT_PAGINATION_SIZE = 5000  # for composite aggregations
+PANDAS_VERSION: Tuple[int, ...] = tuple(
+    int(part) for part in pd.__version__.split(".") if part.isdigit()
+)[:2]
 
 
 with warnings.catch_warnings():
@@ -39,7 +54,7 @@ with warnings.catch_warnings():
 
 
 def build_pd_series(
-    data: Dict[str, Any], dtype: Optional[np.dtype] = None, **kwargs: Any
+    data: Dict[str, Any], dtype: Optional["DTypeLike"] = None, **kwargs: Any
 ) -> pd.Series:
     """Builds a pd.Series while squelching the warning
     for unspecified dtype on empty series
@@ -85,7 +100,7 @@ class SortOrder(Enum):
 
 
 def elasticsearch_date_to_pandas_date(
-    value: Union[int, str], date_format: str
+    value: Union[int, str, float], date_format: Optional[str]
 ) -> pd.Timestamp:
     """
     Given a specific Elasticsearch format for a date datatype, returns the
@@ -95,7 +110,7 @@ def elasticsearch_date_to_pandas_date(
 
     Parameters
     ----------
-    value: Union[int, str]
+    value: Union[int, str, float]
         The date value.
     date_format: str
         The Elasticsearch date format (ex. 'epoch_millis', 'epoch_second', etc.)
@@ -297,6 +312,7 @@ def es_version(es_client: Elasticsearch) -> Tuple[int, int, int]:
     """Tags the current ES client with a cached '_eland_es_version'
     property if one doesn't exist yet for the current Elasticsearch version.
     """
+    eland_es_version: Tuple[int, int, int]
     if not hasattr(es_client, "_eland_es_version"):
         version_info = es_client.info()["version"]["number"]
         match = re.match(r"^(\d+)\.(\d+)\.(\d+)", version_info)
@@ -305,6 +321,10 @@ def es_version(es_client: Elasticsearch) -> Tuple[int, int, int]:
                 f"Unable to determine Elasticsearch version. "
                 f"Received: {version_info}"
             )
-        major, minor, patch = [int(x) for x in match.groups()]
-        es_client._eland_es_version = (major, minor, patch)
-    return cast(Tuple[int, int, int], es_client._eland_es_version)
+        eland_es_version = cast(
+            Tuple[int, int, int], tuple(int(x) for x in match.groups())
+        )
+        es_client._eland_es_version = eland_es_version  # type: ignore
+    else:
+        eland_es_version = es_client._eland_es_version  # type: ignore
+    return eland_es_version

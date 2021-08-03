@@ -17,7 +17,7 @@
 
 # Originally based on code in MIT-licensed pandasticsearch filters
 
-from typing import Dict, Any, List, Optional, Union, cast
+from typing import Any, Dict, List, Optional, Union, cast
 
 
 class BooleanFilter:

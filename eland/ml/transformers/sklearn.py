@@ -15,16 +15,21 @@
 #  specific language governing permissions and limitations
 #  under the License.
 
-import numpy as np  # type: ignore
-from typing import Optional, Sequence, Union, Dict, Any, Type, Tuple
-from .base import ModelTransformer
-from ..common import TYPE_CLASSIFICATION, TYPE_REGRESSION
-from .._optional import import_optional_dependency
+from typing import Any, Dict, Optional, Sequence, Tuple, Type, Union
+
+import numpy as np
+
 from .._model_serializer import Ensemble, Tree, TreeNode
+from .._optional import import_optional_dependency
+from ..common import TYPE_CLASSIFICATION, TYPE_REGRESSION
+from .base import ModelTransformer
 
 import_optional_dependency("sklearn", on_version="warn")
 
-from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor  # type: ignore
+from sklearn.ensemble import (  # type: ignore
+    RandomForestClassifier,
+    RandomForestRegressor,
+)
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor  # type: ignore
 from sklearn.utils.validation import check_is_fitted  # type: ignore
 
@@ -59,7 +64,7 @@ class SKLearnTransformer(ModelTransformer):
         self,
         node_index: int,
         node_data: Tuple[Union[int, float], ...],
-        value: np.ndarray,
+        value: np.ndarray,  # type: ignore
     ) -> TreeNode:
         """
         This builds out a TreeNode class given the sklearn tree node definition.

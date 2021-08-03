@@ -20,7 +20,7 @@
 from codecs import open
 from os import path
 
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 here = path.abspath(path.dirname(__file__))
 about = {}
@@ -28,7 +28,7 @@ with open(path.join(here, "eland", "_version.py"), "r", "utf-8") as f:
     exec(f.read(), about)
 
 CLASSIFIERS = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "License :: OSI Approved :: Apache Software License",
     "Environment :: Console",
     "Operating System :: OS Independent",
@@ -38,10 +38,10 @@ CLASSIFIERS = [
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.6",
     "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
     "Topic :: Scientific/Engineering",
 ]
 
@@ -70,11 +70,14 @@ setup(
     classifiers=CLASSIFIERS,
     keywords="elastic eland pandas python",
     packages=find_packages(include=["eland", "eland.*"]),
-    install_requires=["elasticsearch>=7.7", "pandas>=1", "matplotlib", "numpy"],
-    python_requires=">=3.6",
+    install_requires=["elasticsearch>=7.13", "pandas>=1.2,<1.4", "matplotlib", "numpy"],
+    python_requires=">=3.7",
+    package_data={"eland": ["py.typed"]},
+    include_package_data=True,
+    zip_safe=False,
     extras_require={
         "xgboost": ["xgboost>=0.90,<2"],
         "scikit-learn": ["scikit-learn>=0.22.1,<1"],
-        "lightgbm": ["lightgbm>=2,<2.4"],
+        "lightgbm": ["lightgbm>=2,<4"],
     },
 )

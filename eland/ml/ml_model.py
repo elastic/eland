@@ -15,31 +15,40 @@
 #  specific language governing permissions and limitations
 #  under the License.
 
-from typing import List, Union, cast, Optional, Dict, TYPE_CHECKING, Any, Tuple
-import warnings
-import numpy as np  # type: ignore
-import elasticsearch  # type: ignore
-from .common import TYPE_REGRESSION, TYPE_CLASSIFICATION
-from .transformers import get_model_transformer
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union, cast
+
+import elasticsearch
+import numpy as np
+
 from eland.common import ensure_es_client, es_version
 from eland.utils import deprecated_api
 
+from .common import TYPE_CLASSIFICATION, TYPE_REGRESSION
+from .transformers import get_model_transformer
+
 if TYPE_CHECKING:
-    from elasticsearch import Elasticsearch  # noqa: F401
+    from elasticsearch import Elasticsearch
+    from numpy.typing import ArrayLike, DTypeLike
 
     # Try importing each ML lib separately so mypy users don't have to
     # have both installed to use type-checking.
     try:
-        from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor  # type: ignore # noqa: F401
-        from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor  # type: ignore # noqa: F401
+        from sklearn.ensemble import (  # type: ignore # noqa: F401
+            RandomForestClassifier,
+            RandomForestRegressor,
+        )
+        from sklearn.tree import (  # type: ignore # noqa: F401
+            DecisionTreeClassifier,
+            DecisionTreeRegressor,
+        )
     except ImportError:
         pass
     try:
-        from xgboost import XGBRegressor, XGBClassifier  # type: ignore # noqa: F401
+        from xgboost import XGBClassifier, XGBRegressor  # type: ignore # noqa: F401
     except ImportError:
         pass
     try:
-        from lightgbm import LGBMRegressor, LGBMClassifier  # type: ignore # noqa: F401
+        from lightgbm import LGBMClassifier, LGBMRegressor  # type: ignore # noqa: F401
     except ImportError:
         pass
 
@@ -75,8 +84,8 @@ class MLModel:
         self._trained_model_config_cache: Optional[Dict[str, Any]] = None
 
     def predict(
-        self, X: Union[np.ndarray, List[float], List[List[float]]]
-    ) -> np.ndarray:
+        self, X: Union["ArrayLike", List[float], List[List[float]]]
+    ) -> "ArrayLike":
         """
         Make a prediction using a trained model stored in Elasticsearch.
 
@@ -96,7 +105,7 @@ class MLModel:
         --------
         >>> from sklearn import datasets
         >>> from xgboost import XGBRegressor
-        >>> from eland.ml import ImportedMLModel
+        >>> from eland.ml import MLModel
 
         >>> # Train model
         >>> training_data = datasets.make_classification(n_features=6, random_state=0)
@@ -105,7 +114,7 @@ class MLModel:
         >>> regressor = regressor.fit(training_data[0], training_data[1])
 
         >>> # Get some test results
-        >>> regressor.predict(np.array(test_data))
+        >>> regressor.predict(np.array(test_data))  # doctest: +SKIP
         array([0.06062475, 0.9990102 ], dtype=float32)
 
         >>> # Serialise the model to Elasticsearch
@@ -114,7 +123,7 @@ class MLModel:
         >>> es_model = MLModel.import_model('localhost', model_id, regressor, feature_names, es_if_exists='replace')
 
         >>> # Get some test results from Elasticsearch model
-        >>> es_model.predict(test_data)
+        >>> es_model.predict(test_data)  # doctest: +SKIP
         array([0.0606248 , 0.99901026], dtype=float32)
 
         >>> # Delete model from Elasticsearch
@@ -188,7 +197,7 @@ class MLModel:
 
         # Return results as np.ndarray of float32 or int (consistent with sklearn/xgboost)
         if self.model_type == TYPE_CLASSIFICATION:
-            dt = np.int
+            dt: "DTypeLike" = np.int_
         else:
             dt = np.float32
         return np.asarray(y, dtype=dt)
@@ -245,7 +254,6 @@ class MLModel:
         classification_labels: Optional[List[str]] = None,
         classification_weights: Optional[List[float]] = None,
         es_if_exists: Optional[str] = None,
-        overwrite: Optional[bool] = None,
         es_compress_model_definition: bool = True,
     ) -> "MLModel":
         """
@@ -309,9 +317,6 @@ class MLModel:
             - fail: Raise a Value Error
             - replace: Overwrite existing model
 
-        overwrite: **DEPRECATED** - bool
-            Delete and overwrite existing model (if exists)
-
         es_compress_model_definition: bool
             If True will use 'compressed_definition' which uses gzipped
             JSON instead of raw JSON to reduce the amount of data sent
@@ -361,20 +366,7 @@ class MLModel:
         serializer = transformer.transform()
         model_type = transformer.model_type
 
-        # Verify if both parameters are given
-        if overwrite is not None and es_if_exists is not None:
-            raise ValueError(
-                "Using 'overwrite' and 'es_if_exists' together is invalid, use only 'es_if_exists'"
-            )
-
-        if overwrite is not None:
-            warnings.warn(
-                "'overwrite' parameter is deprecated, use 'es_if_exists' instead",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-            es_if_exists = "replace" if overwrite else "fail"
-        elif es_if_exists is None:
+        if es_if_exists is None:
             es_if_exists = "fail"
 
         ml_model = MLModel(
@@ -438,11 +430,13 @@ class MLModel:
             # In Elasticsearch 7.7 and earlier you can't get
             # target type without pulling the model definition
             # so we check the version first.
-            kwargs = {}
             if es_version(self._client) < (7, 8):
-                kwargs["include_model_definition"] = True
+                resp = self._client.ml.get_trained_models(
+                    model_id=self._model_id, include_model_definition=True
+                )
+            else:
+                resp = self._client.ml.get_trained_models(model_id=self._model_id)
 
-            resp = self._client.ml.get_trained_models(model_id=self._model_id, **kwargs)
             if resp["count"] > 1:
                 raise ValueError(f"Model ID {self._model_id!r} wasn't unambiguous")
             elif resp["count"] == 0:

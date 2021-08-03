@@ -16,18 +16,18 @@
 #  under the License.
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, List, Any, Tuple
+from typing import TYPE_CHECKING, List, Tuple
 
 from eland import SortOrder
-from eland.actions import HeadAction, TailAction, SortIndexAction
+from eland.actions import HeadAction, SortIndexAction, TailAction
 from eland.arithmetics import ArithmeticSeries
 
 if TYPE_CHECKING:
     from .actions import PostProcessingAction  # noqa: F401
     from .filter import BooleanFilter  # noqa: F401
-    from .query_compiler import QueryCompiler  # noqa: F401
-    from .operations import QueryParams  # noqa: F401
     from .index import Index  # noqa: F401
+    from .operations import QueryParams  # noqa: F401
+    from .query_compiler import QueryCompiler  # noqa: F401
 
 RESOLVED_TASK_TYPE = Tuple["QueryParams", List["PostProcessingAction"]]
 
@@ -221,7 +221,7 @@ class SampleTask(SizeTask):
 
 
 class QueryIdsTask(Task):
-    def __init__(self, must: bool, ids: List[str]):
+    def __init__(self, must: bool, ids: List[str], sort_index_by_ids: bool = False):
         """
         Parameters
         ----------
@@ -235,6 +235,7 @@ class QueryIdsTask(Task):
 
         self._must = must
         self._ids = ids
+        self._sort_index_by_ids = sort_index_by_ids
 
     def resolve_task(
         self,
@@ -243,6 +244,8 @@ class QueryIdsTask(Task):
         query_compiler: "QueryCompiler",
     ) -> RESOLVED_TASK_TYPE:
         query_params.query.ids(self._ids, must=self._must)
+        if self._sort_index_by_ids:
+            post_processing.append(SortIndexAction(items=self._ids))
         return query_params, post_processing
 
     def __repr__(self) -> str:
@@ -250,7 +253,7 @@ class QueryIdsTask(Task):
 
 
 class QueryTermsTask(Task):
-    def __init__(self, must: bool, field: str, terms: List[Any]):
+    def __init__(self, must: bool, field: str, terms: List[str]):
         """
         Parameters
         ----------

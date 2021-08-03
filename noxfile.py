@@ -18,18 +18,11 @@
 import os
 import subprocess
 from pathlib import Path
-import nox
-import elasticsearch
 
+import nox
 
 BASE_DIR = Path(__file__).parent
-SOURCE_FILES = (
-    "setup.py",
-    "noxfile.py",
-    "eland/",
-    "docs/",
-    "utils/",
-)
+SOURCE_FILES = ("setup.py", "noxfile.py", "eland/", "docs/", "utils/", "tests/")
 
 # Whenever type-hints are completed on a file it should
 # be added here so that this file will continue to be checked
@@ -44,7 +37,11 @@ TYPED_FILES = (
     "eland/query.py",
     "eland/tasks.py",
     "eland/utils.py",
+    "eland/groupby.py",
+    "eland/operations.py",
+    "eland/ndframe.py",
     "eland/ml/__init__.py",
+    "eland/ml/_optional.py",
     "eland/ml/_model_serializer.py",
     "eland/ml/ml_model.py",
     "eland/ml/transformers/__init__.py",
@@ -52,22 +49,28 @@ TYPED_FILES = (
     "eland/ml/transformers/lightgbm.py",
     "eland/ml/transformers/sklearn.py",
     "eland/ml/transformers/xgboost.py",
+    "eland/plotting/_matplotlib/__init__.py",
 )
 
 
 @nox.session(reuse_venv=True)
-def blacken(session):
-    session.install("black")
+def format(session):
+    session.install("black", "isort")
     session.run("python", "utils/license-headers.py", "fix", *SOURCE_FILES)
-    session.run("black", "--target-version=py36", *SOURCE_FILES)
+    session.run("black", "--target-version=py37", *SOURCE_FILES)
+    session.run("isort", *SOURCE_FILES)
     lint(session)
 
 
 @nox.session(reuse_venv=True)
 def lint(session):
-    session.install("black", "flake8", "mypy")
+    # Install numpy to use its mypy plugin
+    # https://numpy.org/devdocs/reference/typing.html#mypy-plugin
+    session.install("black", "flake8", "mypy", "isort", "numpy")
+    session.install("--pre", "elasticsearch")
     session.run("python", "utils/license-headers.py", "check", *SOURCE_FILES)
-    session.run("black", "--check", "--target-version=py36", *SOURCE_FILES)
+    session.run("black", "--check", "--target-version=py37", *SOURCE_FILES)
+    session.run("isort", "--check", *SOURCE_FILES)
     session.run("flake8", "--ignore=E501,W503,E402,E712,E203", *SOURCE_FILES)
 
     # TODO: When all files are typed we can change this to .run("mypy", "--strict", "eland/")
@@ -75,16 +78,17 @@ def lint(session):
     for typed_file in TYPED_FILES:
         if not os.path.isfile(typed_file):
             session.error(f"The file {typed_file!r} couldn't be found")
-        popen = subprocess.Popen(
-            f"mypy --strict {typed_file}",
+        process = subprocess.run(
+            ["mypy", "--strict", typed_file],
             env=session.env,
-            shell=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
         )
-        popen.wait()
+        # Ensure that mypy itself ran successfully
+        assert process.returncode in (0, 1)
+
         errors = []
-        for line in popen.stdout.read().decode().split("\n"):
+        for line in process.stdout.decode().split("\n"):
             filepath = line.partition(":")[0]
             if filepath in TYPED_FILES:
                 errors.append(line)
@@ -92,23 +96,38 @@ def lint(session):
             session.error("\n" + "\n".join(sorted(set(errors))))
 
 
-@nox.session(python=["3.6", "3.7", "3.8"])
-def test(session):
+@nox.session(python=["3.7", "3.8", "3.9"])
+@nox.parametrize("pandas_version", ["1.2.0", "1.3.0"])
+def test(session, pandas_version: str):
     session.install("-r", "requirements-dev.txt")
-    session.run("python", "-m", "eland.tests.setup_tests")
-    session.run("pytest", "--doctest-modules", *(session.posargs or ("eland/",)))
-
+    session.install(".")
+    session.run("python", "-m", "pip", "install", f"pandas~={pandas_version}")
+    session.run("python", "-m", "tests.setup_tests")
     session.run(
         "python",
         "-m",
-        "pip",
-        "uninstall",
-        "--yes",
-        "scikit-learn",
-        "xgboost",
-        "lightgbm",
+        "pytest",
+        "--cov-report",
+        "term-missing",
+        "--cov=eland/",
+        "--doctest-modules",
+        "--nbval",
+        *(session.posargs or ("eland/", "tests/")),
     )
-    session.run("pytest", "eland/tests/ml/")
+
+    # Only run during default test execution
+    if not session.posargs:
+        session.run(
+            "python",
+            "-m",
+            "pip",
+            "uninstall",
+            "--yes",
+            "scikit-learn",
+            "xgboost",
+            "lightgbm",
+        )
+        session.run("pytest", "tests/ml/")
 
 
 @nox.session(reuse_venv=True)
@@ -122,10 +141,12 @@ def docs(session):
     # See if we have an Elasticsearch cluster active
     # to rebuild the Jupyter notebooks with.
     try:
+        import elasticsearch
+
         es = elasticsearch.Elasticsearch("localhost:9200")
         es.info()
         if not es.indices.exists("flights"):
-            session.run("python", "-m", "eland.tests.setup_tests")
+            session.run("python", "-m", "tests.setup_tests")
         es_active = True
     except Exception:
         es_active = False

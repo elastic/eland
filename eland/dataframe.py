@@ -15,30 +15,36 @@
 #  specific language governing permissions and limitations
 #  under the License.
 
+import re
 import sys
 import warnings
 from io import StringIO
-import re
-from typing import Optional, Sequence, Union, Tuple, List
+from typing import TYPE_CHECKING, Any, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
-import pandas as pd
-from pandas.core.common import apply_if_callable, is_bool_indexer
-from pandas.core.computation.eval import eval
-from pandas.core.dtypes.common import is_list_like
-from pandas.core.indexing import check_bool_indexer
-from pandas.io.common import _expand_user, stringify_path
-from pandas.io.formats import console
+import pandas as pd  # type: ignore
+from pandas.core.common import apply_if_callable, is_bool_indexer  # type: ignore
+from pandas.core.computation.eval import eval  # type: ignore
+from pandas.core.dtypes.common import is_list_like  # type: ignore
+from pandas.core.indexing import check_bool_indexer  # type: ignore
+from pandas.io.common import _expand_user, stringify_path  # type: ignore
+from pandas.io.formats import console  # type: ignore
 from pandas.io.formats import format as fmt
-from pandas.io.formats.printing import pprint_thing
-from pandas.util._validators import validate_bool_kwarg
+from pandas.io.formats.printing import pprint_thing  # type: ignore
+from pandas.util._validators import validate_bool_kwarg  # type: ignore
 
 import eland.plotting as gfx
-from eland.ndframe import NDFrame
-from eland.series import Series
 from eland.common import DEFAULT_NUM_ROWS_DISPLAYED, docstring_parameter
 from eland.filter import BooleanFilter
-from eland.utils import deprecated_api, is_valid_attr_name
+from eland.groupby import DataFrameGroupBy
+from eland.ndframe import NDFrame
+from eland.series import Series
+from eland.utils import is_valid_attr_name
+
+if TYPE_CHECKING:
+    from elasticsearch import Elasticsearch
+
+    from .query_compiler import QueryCompiler
 
 
 class DataFrame(NDFrame):
@@ -118,11 +124,13 @@ class DataFrame(NDFrame):
 
     def __init__(
         self,
-        es_client=None,
-        es_index_pattern=None,
-        es_index_field=None,
-        columns=None,
-        _query_compiler=None,
+        es_client: Optional[
+            Union[str, List[str], Tuple[str, ...], "Elasticsearch"]
+        ] = None,
+        es_index_pattern: Optional[str] = None,
+        columns: Optional[List[str]] = None,
+        es_index_field: Optional[str] = None,
+        _query_compiler: Optional["QueryCompiler"] = None,
     ) -> None:
         """
         There are effectively 2 constructors:
@@ -146,7 +154,7 @@ class DataFrame(NDFrame):
             _query_compiler=_query_compiler,
         )
 
-    def _get_columns(self):
+    def _get_columns(self) -> pd.Index:
         """
         The column labels of the DataFrame.
 
@@ -177,7 +185,7 @@ class DataFrame(NDFrame):
     columns = property(_get_columns)
 
     @property
-    def empty(self):
+    def empty(self) -> bool:
         """Determines if the DataFrame is empty.
 
         Returns
@@ -277,7 +285,10 @@ class DataFrame(NDFrame):
         return DataFrame(_query_compiler=self._query_compiler.tail(n))
 
     def sample(
-        self, n: int = None, frac: float = None, random_state: int = None
+        self,
+        n: Optional[int] = None,
+        frac: Optional[float] = None,
+        random_state: Optional[int] = None,
     ) -> "DataFrame":
         """
         Return n randomly sample rows or the specify fraction of rows
@@ -468,7 +479,7 @@ class DataFrame(NDFrame):
             if is_valid_attr_name(column_name)
         ]
 
-    def __repr__(self):
+    def __repr__(self) -> None:
         """
         From pandas
         """
@@ -481,7 +492,7 @@ class DataFrame(NDFrame):
         max_cols = pd.get_option("display.max_columns")
         min_rows = pd.get_option("display.min_rows")
 
-        if len(self) > max_rows:
+        if max_rows and len(self) > max_rows:
             max_rows = min_rows
 
         show_dimensions = pd.get_option("display.show_dimensions")
@@ -500,7 +511,7 @@ class DataFrame(NDFrame):
 
         return buf.getvalue()
 
-    def _info_repr(self):
+    def _info_repr(self) -> bool:
         """
         True if the repr should show the info view.
         """
@@ -509,7 +520,7 @@ class DataFrame(NDFrame):
             self._repr_fits_horizontal_() and self._repr_fits_vertical_()
         )
 
-    def _repr_html_(self):
+    def _repr_html_(self) -> Optional[str]:
         """
         From pandas - this is called by notebooks
         """
@@ -527,7 +538,7 @@ class DataFrame(NDFrame):
             min_rows = pd.get_option("display.min_rows")
             show_dimensions = pd.get_option("display.show_dimensions")
 
-            if len(self) > max_rows:
+            if max_rows and len(self) > max_rows:
                 max_rows = min_rows
 
             return self.to_html(
@@ -539,7 +550,7 @@ class DataFrame(NDFrame):
         else:
             return None
 
-    def count(self):
+    def count(self) -> pd.Series:
         """
         Count non-NA cells for each column.
 
@@ -627,9 +638,102 @@ class DataFrame(NDFrame):
 
         return buf.getvalue()
 
-    @deprecated_api("eland.DataFrame.es_info()")
-    def info_es(self):
-        return self.es_info()
+    def es_match(
+        self,
+        text: str,
+        *,
+        columns: Optional[Union[str, Sequence[str]]] = None,
+        match_phrase: bool = False,
+        must_not_match: bool = False,
+        multi_match_type: Optional[str] = None,
+        match_only_text_fields: bool = True,
+        analyzer: Optional[str] = None,
+        fuzziness: Optional[Union[int, str]] = None,
+        **kwargs: Any,
+    ) -> "DataFrame":
+        """Filters data with an Elasticsearch ``match``, ``match_phrase``, or
+        ``multi_match`` query depending on the given parameters and columns.
+
+        Read more about `Full-Text Queries in Elasticsearch <https://www.elastic.co/guide/en/elasticsearch/reference/current/full-text-queries.html>`_
+
+        By default all fields of type 'text' within Elasticsearch are queried
+        otherwise specific columns can be specified via the ``columns`` parameter
+        or a single column can be filtered on with :py:meth:`eland.Series.es_match`
+
+        All additional keyword arguments are passed in the body of the match query.
+
+        Parameters
+        ----------
+        text: str
+            String of text to search for
+        columns: str, List[str], optional
+            List of columns to search over. Defaults to all 'text' fields in Elasticsearch
+        match_phrase: bool, default False
+            If True will use ``match_phrase`` instead of ``match`` query which takes into account
+            the order of the ``text`` parameter.
+        must_not_match: bool, default False
+            If True will apply a boolean NOT (~) to the
+            query. Instead of requiring a match the query
+            will require text to not match.
+        multi_match_type: str, optional
+            If given and matching against multiple columns will set the ``multi_match.type`` setting
+        match_only_text_fields: bool, default True
+            When True this function will raise an error if any non-text fields
+            are queried to prevent fields that aren't analyzed from not working properly.
+            Set to False to ignore this preventative check.
+        analyzer: str, optional
+            Specify which analyzer to use for the match query
+        fuzziness: int, str, optional
+            Specify the fuzziness option for the match query
+
+        Returns
+        -------
+        DataFrame
+            A filtered :py:class:`eland.DataFrame` with the given match query
+
+        Examples
+        --------
+        >>> df = ed.DataFrame("localhost:9200", "ecommerce")
+        >>> df.es_match("Men's", columns=["category"])
+                                                      category currency  ...   type     user
+        0                                     [Men's Clothing]      EUR  ...  order    eddie
+        4                  [Men's Clothing, Men's Accessories]      EUR  ...  order    eddie
+        6                                     [Men's Clothing]      EUR  ...  order   oliver
+        7     [Men's Clothing, Men's Accessories, Men's Shoes]      EUR  ...  order      abd
+        11                 [Men's Accessories, Men's Clothing]      EUR  ...  order    eddie
+        ...                                                ...      ...  ...    ...      ...
+        4663                     [Men's Shoes, Men's Clothing]      EUR  ...  order    samir
+        4667                     [Men's Clothing, Men's Shoes]      EUR  ...  order   sultan
+        4671                                  [Men's Clothing]      EUR  ...  order      jim
+        4672                                  [Men's Clothing]      EUR  ...  order    yahya
+        4674             [Women's Accessories, Men's Clothing]      EUR  ...  order  jackson
+        <BLANKLINE>
+        [2310 rows x 45 columns]
+        """
+        # Determine which columns will be used
+        es_dtypes = self.es_dtypes.to_dict()
+        if columns is None:
+            columns = [
+                column for column, es_dtype in es_dtypes.items() if es_dtype == "text"
+            ]
+        elif isinstance(columns, str):
+            columns = [columns]
+        columns = list(columns)
+
+        qc = self._query_compiler
+        filter = qc.es_match(
+            text,
+            columns,
+            match_phrase=match_phrase,
+            match_only_text_fields=match_only_text_fields,
+            multi_match_type=multi_match_type,
+            analyzer=analyzer,
+            fuzziness=fuzziness,
+            **kwargs,
+        )
+        if must_not_match:
+            filter = ~filter
+        return DataFrame(_query_compiler=qc._update_query(filter))
 
     def es_query(self, query) -> "DataFrame":
         """Applies an Elasticsearch DSL query to the current DataFrame.
@@ -733,6 +837,7 @@ class DataFrame(NDFrame):
          1   geoip.city_name      4094 non-null   object
         dtypes: object(2)
         memory usage: ...
+        Elasticsearch storage usage: ...
         """
         if buf is None:  # pragma: no cover
             buf = sys.stdout
@@ -760,10 +865,10 @@ class DataFrame(NDFrame):
         exceeds_info_cols = len(self.columns) > max_cols
 
         # From pandas.DataFrame
-        def _put_str(s, space):
+        def _put_str(s, space) -> str:
             return f"{s}"[:space].ljust(space)
 
-        def _verbose_repr():
+        def _verbose_repr() -> None:
             lines.append(f"Data columns (total {len(self.columns)} columns):")
 
             id_head = " # "
@@ -835,16 +940,16 @@ class DataFrame(NDFrame):
                     + _put_str(dtype, space_dtype)
                 )
 
-        def _non_verbose_repr():
+        def _non_verbose_repr() -> None:
             lines.append(self.columns._summary(name="Columns"))
 
-        def _sizeof_fmt(num, size_qualifier):
+        def _sizeof_fmt(num: float, size_qualifier: str) -> str:
             # returns size in human readable format
             for x in ["bytes", "KB", "MB", "GB", "TB"]:
                 if num < 1024.0:
-                    return f"{num:3.1f}{size_qualifier} {x}"
+                    return f"{num:3.3f}{size_qualifier} {x}"
                 num /= 1024.0
-            return f"{num:3.1f}{size_qualifier} PB"
+            return f"{num:3.3f}{size_qualifier} PB"
 
         if verbose:
             _verbose_repr()
@@ -874,7 +979,13 @@ class DataFrame(NDFrame):
             # TODO - this is different from pd.DataFrame as we shouldn't
             #   really hold much in memory. For now just approximate with getsizeof + ignore deep
             mem_usage = sys.getsizeof(self)
-            lines.append(f"memory usage: {_sizeof_fmt(mem_usage, size_qualifier)}\n")
+            lines.append(f"memory usage: {_sizeof_fmt(mem_usage, size_qualifier)}")
+            storage_usage = self._query_compiler._client.indices.stats(
+                index=self._query_compiler._index_pattern, metric=["store"]
+            )["_all"]["total"]["store"]["size_in_bytes"]
+            lines.append(
+                f"Elasticsearch storage usage: {_sizeof_fmt(storage_usage,size_qualifier)}\n"
+            )
 
         fmt.buffer_put_lines(buf, lines)
 
@@ -903,7 +1014,7 @@ class DataFrame(NDFrame):
         border=None,
         table_id=None,
         render_links=False,
-    ):
+    ) -> Any:
         """
         Render a Elasticsearch data as an HTML table.
 
@@ -1070,7 +1181,7 @@ class DataFrame(NDFrame):
             result = _buf.getvalue()
             return result
 
-    def __getattr__(self, key):
+    def __getattr__(self, key: str) -> Any:
         """After regular attribute access, looks up the name in the columns
 
         Parameters
@@ -1089,7 +1200,12 @@ class DataFrame(NDFrame):
                 return self[key]
             raise e
 
-    def _getitem(self, key):
+    def _getitem(
+        self,
+        key: Union[
+            "DataFrame", "Series", pd.Index, List[str], str, BooleanFilter, np.ndarray
+        ],
+    ) -> Union["Series", "DataFrame"]:
         """Get the column specified by key for this DataFrame.
 
         Args:
@@ -1114,13 +1230,13 @@ class DataFrame(NDFrame):
         else:
             return self._getitem_column(key)
 
-    def _getitem_column(self, key):
+    def _getitem_column(self, key: str) -> "Series":
         if key not in self.columns:
             raise KeyError(f"Requested column [{key}] is not in the DataFrame.")
         s = self._reduce_dimension(self._query_compiler.getitem_column_array([key]))
         return s
 
-    def _getitem_array(self, key):
+    def _getitem_array(self, key: Union[str, pd.Series]) -> "DataFrame":
         if isinstance(key, Series):
             key = key.to_pandas()
         if is_bool_indexer(key):
@@ -1155,7 +1271,9 @@ class DataFrame(NDFrame):
                 _query_compiler=self._query_compiler.getitem_column_array(key)
             )
 
-    def _create_or_update_from_compiler(self, new_query_compiler, inplace=False):
+    def _create_or_update_from_compiler(
+        self, new_query_compiler: "QueryCompiler", inplace: bool = False
+    ) -> Union["QueryCompiler", "DataFrame"]:
         """Returns or updates a DataFrame given new query_compiler"""
         assert (
             isinstance(new_query_compiler, type(self._query_compiler))
@@ -1164,10 +1282,10 @@ class DataFrame(NDFrame):
         if not inplace:
             return DataFrame(_query_compiler=new_query_compiler)
         else:
-            self._query_compiler = new_query_compiler
+            self._query_compiler: "QueryCompiler" = new_query_compiler
 
     @staticmethod
-    def _reduce_dimension(query_compiler):
+    def _reduce_dimension(query_compiler: "QueryCompiler") -> "Series":
         return Series(_query_compiler=query_compiler)
 
     def to_csv(
@@ -1430,6 +1548,277 @@ class DataFrame(NDFrame):
 
     hist = gfx.ed_hist_frame
 
+    def groupby(
+        self, by: Optional[Union[str, List[str]]] = None, dropna: bool = True
+    ) -> "DataFrameGroupBy":
+        """
+        Used to perform groupby operations
+
+        Parameters
+        ----------
+        by:
+            column or list of columns used to groupby
+            Currently accepts column or list of columns
+
+        dropna: default True
+            If True, and if group keys contain NA values, NA values together with row/column will be dropped.
+
+        Returns
+        -------
+        eland.groupby.DataFrameGroupBy
+
+        See Also
+        --------
+        :pandas_api_docs:`pandas.DataFrame.groupby`
+
+        Examples
+        --------
+        >>> ed_flights = ed.DataFrame('localhost', 'flights', columns=["AvgTicketPrice", "Cancelled", "dayOfWeek", "timestamp", "DestCountry"])
+        >>> ed_flights.groupby(["DestCountry", "Cancelled"]).agg(["min", "max"], numeric_only=True) # doctest: +NORMALIZE_WHITESPACE
+                              AvgTicketPrice              dayOfWeek
+                                         min          max       min  max
+        DestCountry Cancelled
+        AE          False         110.799911  1126.148682       0.0  6.0
+                    True          132.443756   817.931030       0.0  6.0
+        AR          False         125.589394  1199.642822       0.0  6.0
+                    True          251.389603  1172.382568       0.0  6.0
+        AT          False         100.020531  1181.835815       0.0  6.0
+        ...                              ...          ...       ...  ...
+        TR          True          307.915649   307.915649       0.0  0.0
+        US          False         100.145966  1199.729004       0.0  6.0
+                    True          102.153069  1192.429932       0.0  6.0
+        ZA          False         102.002663  1196.186157       0.0  6.0
+                    True          121.280296  1175.709961       0.0  6.0
+        <BLANKLINE>
+        [63 rows x 4 columns]
+
+        >>> ed_flights.groupby(["DestCountry", "Cancelled"]).mean(numeric_only=True) # doctest: +NORMALIZE_WHITESPACE
+                               AvgTicketPrice  dayOfWeek
+        DestCountry Cancelled
+        AE          False          643.956793   2.717949
+                    True           388.828809   2.571429
+        AR          False          673.551677   2.746154
+                    True           682.197241   2.733333
+        AT          False          647.158290   2.819936
+        ...                               ...        ...
+        TR          True           307.915649   0.000000
+        US          False          598.063146   2.752014
+                    True           579.799066   2.767068
+        ZA          False          636.998605   2.738589
+                    True           677.794078   2.928571
+        <BLANKLINE>
+        [63 rows x 2 columns]
+
+        >>> ed_flights.groupby(["DestCountry", "Cancelled"]).min(numeric_only=False) # doctest: +NORMALIZE_WHITESPACE
+                               AvgTicketPrice  dayOfWeek           timestamp
+        DestCountry Cancelled
+        AE          False          110.799911          0 2018-01-01 19:31:30
+                    True           132.443756          0 2018-01-06 13:03:25
+        AR          False          125.589394          0 2018-01-01 01:30:47
+                    True           251.389603          0 2018-01-01 02:13:17
+        AT          False          100.020531          0 2018-01-01 05:24:19
+        ...                               ...        ...                 ...
+        TR          True           307.915649          0 2018-01-08 04:35:10
+        US          False          100.145966          0 2018-01-01 00:06:27
+                    True           102.153069          0 2018-01-01 09:02:36
+        ZA          False          102.002663          0 2018-01-01 06:44:44
+                    True           121.280296          0 2018-01-04 00:37:01
+        <BLANKLINE>
+        [63 rows x 3 columns]
+        """
+        if by is None:
+            raise ValueError("by parameter should be specified to groupby")
+        if isinstance(by, str):
+            by = [by]
+        if isinstance(by, (list, tuple)):
+            remaining_columns = sorted(set(by) - set(self._query_compiler.columns))
+            if remaining_columns:
+                raise KeyError(
+                    f"Requested columns {repr(remaining_columns)[1:-1]} not in the DataFrame"
+                )
+
+        return DataFrameGroupBy(
+            by=by, query_compiler=self._query_compiler.copy(), dropna=dropna
+        )
+
+    def mode(
+        self,
+        numeric_only: bool = False,
+        dropna: bool = True,
+        es_size: int = 10,
+    ) -> pd.DataFrame:
+        """
+        Calculate mode of a DataFrame
+
+        Parameters
+        ----------
+        numeric_only: {True, False} Default is False
+            Which datatype to be returned
+            - True: Returns all numeric or timestamp columns
+            - False: Returns all columns
+        dropna: {True, False} Default is True
+            - True: Don’t consider counts of NaN/NaT.
+            - False: Consider counts of NaN/NaT.
+        es_size: default 10
+            number of rows to be returned if mode has multiple values
+
+        See Also
+        --------
+        :pandas_api_docs:`pandas.DataFrame.mode`
+
+        Examples
+        --------
+        >>> ed_ecommerce = ed.DataFrame('localhost', 'ecommerce')
+        >>> ed_df = ed_ecommerce.filter(["total_quantity", "geoip.city_name", "customer_birth_date", "day_of_week", "taxful_total_price"])
+        >>> ed_df.mode(numeric_only=False)
+           total_quantity geoip.city_name customer_birth_date day_of_week  taxful_total_price
+        0               2        New York                 NaT    Thursday               53.98
+
+        >>> ed_df.mode(numeric_only=True)
+           total_quantity  taxful_total_price
+        0               2               53.98
+
+        >>> ed_df = ed_ecommerce.filter(["products.tax_amount","order_date"])
+        >>> ed_df.mode()
+           products.tax_amount          order_date
+        0                  0.0 2016-12-02 20:36:58
+        1                  NaN 2016-12-04 23:44:10
+        2                  NaN 2016-12-08 06:21:36
+        3                  NaN 2016-12-08 09:38:53
+        4                  NaN 2016-12-12 11:38:24
+        5                  NaN 2016-12-12 19:46:34
+        6                  NaN 2016-12-14 18:00:00
+        7                  NaN 2016-12-15 11:38:24
+        8                  NaN 2016-12-22 19:39:22
+        9                  NaN 2016-12-24 06:21:36
+
+        >>> ed_df.mode(es_size = 3)
+           products.tax_amount          order_date
+        0                  0.0 2016-12-02 20:36:58
+        1                  NaN 2016-12-04 23:44:10
+        2                  NaN 2016-12-08 06:21:36
+        """
+        # TODO dropna=False
+        return self._query_compiler.mode(
+            numeric_only=numeric_only, dropna=True, is_dataframe=True, es_size=es_size
+        )
+
+    def quantile(
+        self,
+        q: Union[int, float, List[int], List[float]] = 0.5,
+        numeric_only: Optional[bool] = True,
+    ) -> "pd.DataFrame":
+        """
+        Used to calculate quantile for a given DataFrame.
+
+        Parameters
+        ----------
+        q:
+            float or array like, default 0.5
+            Value between 0 <= q <= 1, the quantile(s) to compute.
+        numeric_only: {True, False, None} Default is True
+            Which datatype to be returned
+            - True: Returns all values as float64, NaN/NaT values are removed
+            - None: Returns all values as the same dtype where possible, NaN/NaT are removed
+            - False: Returns all values as the same dtype where possible, NaN/NaT are preserved
+
+        Returns
+        -------
+        pandas.DataFrame
+            quantile value for each column
+
+        See Also
+        --------
+        :pandas_api_docs:`pandas.DataFrame.quantile`
+
+        Examples
+        --------
+        >>> ed_df = ed.DataFrame('localhost', 'flights')
+        >>> ed_flights = ed_df.filter(["AvgTicketPrice", "FlightDelayMin", "dayOfWeek", "timestamp"])
+        >>> ed_flights.quantile() # doctest: +SKIP
+        AvgTicketPrice    640.387285
+        FlightDelayMin      0.000000
+        dayOfWeek           3.000000
+        Name: 0.5, dtype: float64
+
+        >>> ed_flights.quantile([.2, .5, .75]) # doctest: +SKIP
+              AvgTicketPrice  FlightDelayMin  dayOfWeek
+        0.20      361.040768             0.0        1.0
+        0.50      640.387285             0.0        3.0
+        0.75      842.213490            15.0        4.0
+
+        >>> ed_flights.quantile([.2, .5, .75], numeric_only=False) # doctest: +SKIP
+              AvgTicketPrice  FlightDelayMin  dayOfWeek                     timestamp
+        0.20      361.040768             0.0        1.0 2018-01-09 04:43:55.296587520
+        0.50      640.387285             0.0        3.0 2018-01-21 23:51:57.637076736
+        0.75      842.213490            15.0        4.0 2018-02-01 04:46:16.658119680
+        """
+        return self._query_compiler.quantile(quantiles=q, numeric_only=numeric_only)
+
+    def idxmax(self, axis: int = 0) -> pd.Series:
+        """
+        Return index of first occurrence of maximum over requested axis.
+
+        NA/null values are excluded.
+
+        Parameters
+        ----------
+        axis : {0, 1}, default 0
+            The axis to filter on, expressed as index (int).
+
+        Returns
+        -------
+        pandas.Series
+
+        See Also
+        --------
+        :pandas_api_docs:`pandas.DataFrame.idxmax`
+
+        Examples
+        --------
+        >>> ed_df = ed.DataFrame('localhost', 'flights')
+        >>> ed_flights = ed_df.filter(["AvgTicketPrice", "FlightDelayMin", "dayOfWeek", "timestamp"])
+        >>> ed_flights.idxmax()
+        AvgTicketPrice    1843
+        FlightDelayMin     109
+        dayOfWeek         1988
+        dtype: object
+
+        """
+        return self._query_compiler.idx(axis=axis, sort_order="desc")
+
+    def idxmin(self, axis: int = 0) -> pd.Series:
+        """
+        Return index of first occurrence of minimum over requested axis.
+
+        NA/null values are excluded.
+
+        Parameters
+        ----------
+        axis : {0, 1}, default 0
+            The axis to filter on, expressed as index (int).
+
+        Returns
+        -------
+        pandas.Series
+
+        See Also
+        --------
+        :pandas_api_docs:`pandas.DataFrame.idxmin`
+
+        Examples
+        --------
+        >>> ed_df = ed.DataFrame('localhost', 'flights')
+        >>> ed_flights = ed_df.filter(["AvgTicketPrice", "FlightDelayMin", "dayOfWeek", "timestamp"])
+        >>> ed_flights.idxmin()
+        AvgTicketPrice    5454
+        FlightDelayMin       0
+        dayOfWeek            0
+        dtype: object
+
+        """
+        return self._query_compiler.idx(axis=axis, sort_order="asc")
+
     def query(self, expr) -> "DataFrame":
         """
         Query the columns of a DataFrame with a boolean expression.
@@ -1477,7 +1866,9 @@ class DataFrame(NDFrame):
         else:
             raise NotImplementedError(expr, type(expr))
 
-    def get(self, key, default=None):
+    def get(
+        self, key: Any, default: Optional[Any] = None
+    ) -> Union["Series", "DataFrame"]:
         """
         Get item from object for given key (ex: DataFrame column).
         Returns default value if not found.
@@ -1584,7 +1975,7 @@ class DataFrame(NDFrame):
 
             elif like is not None:
 
-                def matcher(x):
+                def matcher(x: str) -> bool:
                     return like in x
 
             else:
@@ -1593,7 +1984,7 @@ class DataFrame(NDFrame):
             return self[[column for column in self.columns if matcher(column)]]
 
     @property
-    def values(self):
+    def values(self) -> None:
         """
         Not implemented.
 
@@ -1611,7 +2002,7 @@ class DataFrame(NDFrame):
         """
         return self.to_numpy()
 
-    def to_numpy(self):
+    def to_numpy(self) -> None:
         """
         Not implemented.
 

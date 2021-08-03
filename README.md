@@ -1,16 +1,26 @@
-<p align="center">
+<div align="center">
   <a href="https://github.com/elastic/eland">
-    <img src="https://raw.githubusercontent.com/elastic/eland/master/docs/source/logo/eland.png" width="30%" alt="Eland" />
+    <img src="https://raw.githubusercontent.com/elastic/eland/master/docs/sphinx/logo/eland.png" width="30%"
+      alt="Eland" />
   </a>
-</p>
-<p align="center">
-<a href="https://pypi.org/project/eland"><img src="https://img.shields.io/pypi/v/eland.svg" alt="PyPI Version"></a>
-<a href="https://anaconda.org/conda-forge/eland"><img src="https://img.shields.io/conda/vn/conda-forge/eland" alt="Conda Version"></a>
-<a href="https://pepy.tech/project/eland"><img src="https://pepy.tech/badge/eland" alt="Downloads"></a>
-<a href="https://pypi.org/project/eland"><img src="https://img.shields.io/pypi/status/eland.svg" alt="Package Status"></a>
-<a href="https://clients-ci.elastic.co/job/elastic+eland+master"><img src="https://clients-ci.elastic.co/buildStatus/icon?job=elastic%2Beland%2Bmaster" alt="Build Status"></a>
-<a href="https://github.com/elastic/eland/blob/master/LICENSE.txt"><img src="https://img.shields.io/pypi/l/eland.svg" alt="License"></a>
-</p>
+</div>
+<br />
+<div align="center">
+  <a href="https://pypi.org/project/eland"><img src="https://img.shields.io/pypi/v/eland.svg" alt="PyPI Version"></a>
+  <a href="https://anaconda.org/conda-forge/eland"><img src="https://img.shields.io/conda/vn/conda-forge/eland"
+      alt="Conda Version"></a>
+  <a href="https://pepy.tech/project/eland"><img src="https://pepy.tech/badge/eland" alt="Downloads"></a>
+  <a href="https://pypi.org/project/eland"><img src="https://img.shields.io/pypi/status/eland.svg"
+      alt="Package Status"></a>
+  <a href="https://clients-ci.elastic.co/job/elastic+eland+master"><img
+      src="https://clients-ci.elastic.co/buildStatus/icon?job=elastic%2Beland%2Bmaster" alt="Build Status"></a>
+  <a href="https://github.com/elastic/eland/blob/master/LICENSE.txt"><img src="https://img.shields.io/pypi/l/eland.svg"
+      alt="License"></a>
+  <a href="https://eland.readthedocs.io/en/7.10.0b1/?badge=7.10.0b1"><img
+      src="https://readthedocs.org/projects/eland/badge/?version=7.10.0b1" alt="Documentation Status"></a>
+</div>
+
+## About
 
 Eland is a Python Elasticsearch client for exploring and
 analyzing data in Elasticsearch with a familiar Pandas-compatible API.
@@ -111,6 +121,7 @@ Data columns (total 27 columns):
  26  timestamp           13059 non-null  datetime64[ns]
 dtypes: bool(2), datetime64[ns](1), float64(5), int64(2), object(17)
 memory usage: 80.0 bytes
+Elasticsearch storage usage: 5.043 MB
 
 # Filtering of rows using comparisons
 >>> df[(df.Carrier=="Kibana Airlines") & (df.AvgTicketPrice > 900.0) & (df.Cancelled == True)].head()
@@ -142,7 +153,7 @@ to be serialized and used as an inference model in Elasticsearch
 
 ```python
 >>> from xgboost import XGBClassifier
->>> from eland.ml import ImportedMLModel
+>>> from eland.ml import MLModel
 
 # Train and exercise an XGBoost ML model locally
 >>> xgb_model = XGBClassifier(booster="gbtree")
@@ -152,7 +163,7 @@ to be serialized and used as an inference model in Elasticsearch
 [0 1 1 0 1 0 0 0 1 0]
 
 # Import the model into Elasticsearch
->>> es_model = ImportedMLModel(
+>>> es_model = MLModel.import_model(
     es_client="localhost:9200",
     model_id="xgb-classifier",
     model=xgb_model,

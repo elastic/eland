@@ -16,42 +16,61 @@
 #  under the License.
 
 import copy
-import typing
 import warnings
-from typing import Optional, Tuple, List, Dict, Any
+from collections import defaultdict
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Generator,
+    List,
+    Optional,
+    Sequence,
+    TextIO,
+    Tuple,
+    Union,
+)
 
 import numpy as np
-import pandas as pd
+import pandas as pd  # type: ignore
 from elasticsearch.helpers import scan
 
-from eland.index import Index
+from eland.actions import PostProcessingAction, SortFieldAction
 from eland.common import (
-    SortOrder,
     DEFAULT_CSV_BATCH_OUTPUT_SIZE,
     DEFAULT_ES_MAX_RESULT_WINDOW,
-    elasticsearch_date_to_pandas_date,
+    DEFAULT_PAGINATION_SIZE,
+    SortOrder,
     build_pd_series,
+    elasticsearch_date_to_pandas_date,
 )
+from eland.index import Index
 from eland.query import Query
-from eland.actions import SortFieldAction
 from eland.tasks import (
-    HeadTask,
-    TailTask,
-    SampleTask,
-    BooleanFilterTask,
+    RESOLVED_TASK_TYPE,
     ArithmeticOpFieldsTask,
-    QueryTermsTask,
+    BooleanFilterTask,
+    HeadTask,
     QueryIdsTask,
+    QueryTermsTask,
+    SampleTask,
     SizeTask,
+    TailTask,
 )
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
+    from numpy.typing import DTypeLike
+
+    from eland.arithmetics import ArithmeticSeries
+    from eland.field_mappings import Field
+    from eland.filter import BooleanFilter
     from eland.query_compiler import QueryCompiler
+    from eland.tasks import Task
 
 
 class QueryParams:
-    def __init__(self):
-        self.query = Query()
+    def __init__(self) -> None:
+        self.query: Query = Query()
         self.sort_field: Optional[str] = None
         self.sort_order: Optional[SortOrder] = None
         self.size: Optional[int] = None
@@ -72,37 +91,48 @@ class Operations:
     (see https://docs.dask.org/en/latest/spec.html)
     """
 
-    def __init__(self, tasks=None, arithmetic_op_fields_task=None):
+    def __init__(
+        self,
+        tasks: Optional[List["Task"]] = None,
+        arithmetic_op_fields_task: Optional["ArithmeticOpFieldsTask"] = None,
+    ) -> None:
+        self._tasks: List["Task"]
         if tasks is None:
             self._tasks = []
         else:
             self._tasks = tasks
         self._arithmetic_op_fields_task = arithmetic_op_fields_task
 
-    def __constructor__(self, *args, **kwargs):
+    def __constructor__(
+        self,
+        *args: Any,
+        **kwargs: Any,
+    ) -> "Operations":
         return type(self)(*args, **kwargs)
 
-    def copy(self):
+    def copy(self) -> "Operations":
         return self.__constructor__(
             tasks=copy.deepcopy(self._tasks),
             arithmetic_op_fields_task=copy.deepcopy(self._arithmetic_op_fields_task),
         )
 
-    def head(self, index, n):
+    def head(self, index: "Index", n: int) -> None:
         # Add a task that is an ascending sort with size=n
         task = HeadTask(index, n)
         self._tasks.append(task)
 
-    def tail(self, index, n):
+    def tail(self, index: "Index", n: int) -> None:
         # Add a task that is descending sort with size=n
         task = TailTask(index, n)
         self._tasks.append(task)
 
-    def sample(self, index, n, random_state):
+    def sample(self, index: "Index", n: int, random_state: int) -> None:
         task = SampleTask(index, n, random_state)
         self._tasks.append(task)
 
-    def arithmetic_op_fields(self, display_name, arithmetic_series):
+    def arithmetic_op_fields(
+        self, display_name: str, arithmetic_series: "ArithmeticSeries"
+    ) -> None:
         if self._arithmetic_op_fields_task is None:
             self._arithmetic_op_fields_task = ArithmeticOpFieldsTask(
                 display_name, arithmetic_series
@@ -114,10 +144,10 @@ class Operations:
         # get an ArithmeticOpFieldsTask if it exists
         return self._arithmetic_op_fields_task
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return repr(self._tasks)
 
-    def count(self, query_compiler):
+    def count(self, query_compiler: "QueryCompiler") -> pd.Series:
         query_params, post_processing = self._resolve_tasks(query_compiler)
 
         # Elasticsearch _count is very efficient and so used to return results here. This means that
@@ -148,7 +178,7 @@ class Operations:
     def _metric_agg_series(
         self,
         query_compiler: "QueryCompiler",
-        agg: List,
+        agg: List["str"],
         numeric_only: Optional[bool] = None,
     ) -> pd.Series:
         results = self._metric_aggs(query_compiler, agg, numeric_only=numeric_only)
@@ -157,7 +187,7 @@ class Operations:
         else:
             # If all results are float convert into float64
             if all(isinstance(i, float) for i in results.values()):
-                dtype = np.float64
+                dtype: "DTypeLike" = np.float64
             # If all results are int convert into int64
             elif all(isinstance(i, int) for i in results.values()):
                 dtype = np.int64
@@ -168,13 +198,70 @@ class Operations:
                 dtype = "object"
             return build_pd_series(results, index=results.keys(), dtype=dtype)
 
-    def value_counts(self, query_compiler, es_size):
+    def value_counts(self, query_compiler: "QueryCompiler", es_size: int) -> pd.Series:
         return self._terms_aggs(query_compiler, "terms", es_size)
 
-    def hist(self, query_compiler, bins):
+    def hist(
+        self, query_compiler: "QueryCompiler", bins: int
+    ) -> Tuple[pd.DataFrame, pd.DataFrame]:
         return self._hist_aggs(query_compiler, bins)
 
-    def aggs(self, query_compiler, pd_aggs, numeric_only=None) -> pd.DataFrame:
+    def idx(
+        self, query_compiler: "QueryCompiler", axis: int, sort_order: str
+    ) -> pd.Series:
+
+        if axis == 1:
+            # Fetch idx on Columns
+            raise NotImplementedError(
+                "This feature is not implemented yet for 'axis = 1'"
+            )
+
+        # Fetch idx on Index
+        query_params, post_processing = self._resolve_tasks(query_compiler)
+
+        fields = query_compiler._mappings.all_source_fields()
+
+        # Consider only Numeric fields
+        fields = [field for field in fields if (field.is_numeric)]
+
+        body = Query(query_params.query)
+
+        for field in fields:
+            body.top_hits_agg(
+                name=f"top_hits_{field.es_field_name}",
+                source_columns=[field.es_field_name],
+                sort_order=sort_order,
+                size=1,
+            )
+
+        # Fetch Response
+        response = query_compiler._client.search(
+            index=query_compiler._index_pattern, size=0, body=body.to_search_body()
+        )
+        response = response["aggregations"]
+
+        results = {}
+        for field in fields:
+            res = response[f"top_hits_{field.es_field_name}"]["hits"]
+
+            if not res["total"]["value"] > 0:
+                raise ValueError("Empty Index with no rows")
+
+            if not res["hits"][0]["_source"]:
+                # This means there are NaN Values, we skip them
+                # Implement this when skipna is implemented
+                continue
+            else:
+                results[field.es_field_name] = res["hits"][0]["_id"]
+
+        return pd.Series(results)
+
+    def aggs(
+        self,
+        query_compiler: "QueryCompiler",
+        pd_aggs: List[str],
+        numeric_only: Optional[bool] = None,
+    ) -> pd.DataFrame:
         results = self._metric_aggs(
             query_compiler, pd_aggs, numeric_only=numeric_only, is_dataframe_agg=True
         )
@@ -182,13 +269,81 @@ class Operations:
             results, index=pd_aggs, dtype=(np.float64 if numeric_only else None)
         )
 
+    def mode(
+        self,
+        query_compiler: "QueryCompiler",
+        pd_aggs: List[str],
+        is_dataframe: bool,
+        es_size: int,
+        numeric_only: bool = False,
+        dropna: bool = True,
+    ) -> Union[pd.DataFrame, pd.Series]:
+
+        results = self._metric_aggs(
+            query_compiler,
+            pd_aggs=pd_aggs,
+            numeric_only=numeric_only,
+            dropna=dropna,
+            es_mode_size=es_size,
+        )
+
+        pd_dict: Dict[str, Any] = {}
+        row_diff: Optional[int] = None
+
+        if is_dataframe:
+            # If multiple values of mode is returned for a particular column
+            # find the maximum length and use that to fill dataframe with NaN/NaT
+            rows_len = max(len(value) for value in results.values())
+            for key, values in results.items():
+                row_diff = rows_len - len(values)
+                # Convert np.ndarray to list
+                values = list(values)
+                if row_diff:
+                    if isinstance(values[0], pd.Timestamp):
+                        values.extend([pd.NaT] * row_diff)
+                    else:
+                        values.extend([np.NaN] * row_diff)
+                pd_dict[key] = values
+
+            return pd.DataFrame(pd_dict)
+        else:
+            return pd.DataFrame(results.values()).iloc[0].rename()
+
     def _metric_aggs(
         self,
         query_compiler: "QueryCompiler",
-        pd_aggs,
+        pd_aggs: List[str],
         numeric_only: Optional[bool] = None,
         is_dataframe_agg: bool = False,
-    ) -> Dict:
+        es_mode_size: Optional[int] = None,
+        dropna: bool = True,
+        percentiles: Optional[List[float]] = None,
+    ) -> Dict[str, Any]:
+        """
+        Used to calculate metric aggregations
+        https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-metrics.html
+
+        Parameters
+        ----------
+        query_compiler:
+            Query Compiler object
+        pd_aggs:
+            aggregations that are to be performed on dataframe or series
+        numeric_only:
+            return either all numeric values or NaN/NaT
+        is_dataframe_agg:
+            know if this method is called from single-agg or aggreagation method
+        es_mode_size:
+            number of rows to return when multiple mode values are present.
+        dropna:
+            drop NaN/NaT for a dataframe
+        percentiles:
+            List of percentiles when 'quantile' agg is called. Otherwise it is None
+
+        Returns
+        -------
+            A dictionary which contains all aggregations calculated.
+        """
         query_params, post_processing = self._resolve_tasks(query_compiler)
 
         size = self._size(query_params, post_processing)
@@ -197,7 +352,6 @@ class Operations:
                 f"Can not count field matches if size is set {size}"
             )
 
-        results = {}
         fields = query_compiler._mappings.all_source_fields()
         if numeric_only:
             # Consider if field is Int/Float/Bool
@@ -206,7 +360,7 @@ class Operations:
         body = Query(query_params.query)
 
         # Convert pandas aggs to ES equivalent
-        es_aggs = self._map_pd_aggs_to_es_aggs(pd_aggs)
+        es_aggs = self._map_pd_aggs_to_es_aggs(pd_aggs, percentiles)
 
         for field in fields:
             for es_agg in es_aggs:
@@ -216,16 +370,33 @@ class Operations:
 
                 # If we have multiple 'extended_stats' etc. here we simply NOOP on 2nd call
                 if isinstance(es_agg, tuple):
-                    body.metric_aggs(
-                        f"{es_agg[0]}_{field.es_field_name}",
-                        es_agg[0],
-                        field.aggregatable_es_field_name,
+                    if es_agg[0] == "percentiles":
+                        body.percentile_agg(
+                            name=f"{es_agg[0]}_{field.es_field_name}",
+                            field=field.es_field_name,
+                            percents=es_agg[1],
+                        )
+                    else:
+                        body.metric_aggs(
+                            name=f"{es_agg[0]}_{field.es_field_name}",
+                            func=es_agg[0],
+                            field=field.aggregatable_es_field_name,
+                        )
+                elif es_agg == "mode":
+                    # TODO for dropna=False, Check If field is timestamp or boolean or numeric,
+                    # then use missing parameter for terms aggregation.
+                    body.terms_aggs(
+                        name=f"{es_agg}_{field.es_field_name}",
+                        func="terms",
+                        field=field.aggregatable_es_field_name,
+                        es_size=es_mode_size,
                     )
+
                 else:
                     body.metric_aggs(
-                        f"{es_agg}_{field.es_field_name}",
-                        es_agg,
-                        field.aggregatable_es_field_name,
+                        name=f"{es_agg}_{field.es_field_name}",
+                        func=es_agg,
+                        field=field.aggregatable_es_field_name,
                     )
 
         response = query_compiler._client.search(
@@ -239,97 +410,20 @@ class Operations:
         sum    8.204365e+06        9.261629e+07   5.754909e+07          618150
         min    1.000205e+02        0.000000e+00   0.000000e+00               0
         """
-        for field in fields:
-            values = []
-            for es_agg, pd_agg in zip(es_aggs, pd_aggs):
-                # is_dataframe_agg is used to differentiate agg() and an aggregation called through .mean()
-                # If the field and agg aren't compatible we add a NaN/NaT for agg
-                # If the field and agg aren't compatible we don't add NaN/NaT for an aggregation called through .mean()
-                if not field.is_es_agg_compatible(es_agg):
-                    if is_dataframe_agg and not numeric_only:
-                        values.append(field.nan_value)
-                    elif not is_dataframe_agg and numeric_only is False:
-                        values.append(field.nan_value)
-                    # Explicit condition for mad to add NaN because it doesn't support bool
-                    elif is_dataframe_agg and numeric_only:
-                        if pd_agg == "mad":
-                            values.append(field.nan_value)
-                    continue
 
-                if isinstance(es_agg, tuple):
-                    agg_value = response["aggregations"][
-                        f"{es_agg[0]}_{field.es_field_name}"
-                    ]
+        return self._unpack_metric_aggs(
+            fields=fields,
+            es_aggs=es_aggs,
+            pd_aggs=pd_aggs,
+            response=response,
+            numeric_only=numeric_only,
+            is_dataframe_agg=is_dataframe_agg,
+            percentiles=percentiles,
+        )
 
-                    # Pull multiple values from 'percentiles' result.
-                    if es_agg[0] == "percentiles":
-                        agg_value = agg_value["values"]
-
-                    agg_value = agg_value[es_agg[1]]
-
-                    # Need to convert 'Population' stddev and variance
-                    # from Elasticsearch into 'Sample' stddev and variance
-                    # which is what pandas uses.
-                    if es_agg[1] in ("std_deviation", "variance"):
-                        # Neither transformation works with count <=1
-                        count = response["aggregations"][
-                            f"{es_agg[0]}_{field.es_field_name}"
-                        ]["count"]
-
-                        # All of the below calculations result in NaN if count<=1
-                        if count <= 1:
-                            agg_value = np.NaN
-
-                        elif es_agg[1] == "std_deviation":
-                            agg_value *= count / (count - 1.0)
-
-                        else:  # es_agg[1] == "variance"
-                            # sample_std=\sqrt{\frac{1}{N-1}\sum_{i=1}^N(x_i-\bar{x})^2}
-                            # population_std=\sqrt{\frac{1}{N}\sum_{i=1}^N(x_i-\bar{x})^2}
-                            # sample_std=\sqrt{\frac{N}{N-1}population_std}
-                            agg_value = np.sqrt(
-                                (count / (count - 1.0)) * agg_value * agg_value
-                            )
-                else:
-                    agg_value = response["aggregations"][
-                        f"{es_agg}_{field.es_field_name}"
-                    ]["value"]
-
-                # Null usually means there were no results.
-                if agg_value is None or np.isnan(agg_value):
-                    if is_dataframe_agg and not numeric_only:
-                        agg_value = np.NaN
-                    elif not is_dataframe_agg and numeric_only is False:
-                        agg_value = np.NaN
-
-                # Cardinality is always either NaN or integer.
-                elif pd_agg == "nunique":
-                    agg_value = int(agg_value)
-
-                # If this is a non-null timestamp field convert to a pd.Timestamp()
-                elif field.is_timestamp:
-                    agg_value = elasticsearch_date_to_pandas_date(
-                        agg_value, field.es_date_format
-                    )
-                # If numeric_only is False | None then maintain column datatype
-                elif not numeric_only:
-                    # we're only converting to bool for lossless aggs like min, max, and median.
-                    if pd_agg in {"max", "min", "median", "sum"}:
-                        # 'sum' isn't representable with bool, use int64
-                        if pd_agg == "sum" and field.is_bool:
-                            agg_value = np.int64(agg_value)
-                        else:
-                            agg_value = field.np_dtype.type(agg_value)
-
-                values.append(agg_value)
-
-            # If numeric_only is True and We only have a NaN type field then we check for empty.
-            if values:
-                results[field.index] = values if len(values) > 1 else values[0]
-
-        return results
-
-    def _terms_aggs(self, query_compiler, func, es_size=None):
+    def _terms_aggs(
+        self, query_compiler: "QueryCompiler", func: str, es_size: int
+    ) -> pd.Series:
         """
         Parameters
         ----------
@@ -371,13 +465,15 @@ class Operations:
 
         try:
             # get first value in dict (key is .keyword)
-            name = list(aggregatable_field_names.values())[0]
+            name: Optional[str] = list(aggregatable_field_names.values())[0]
         except IndexError:
             name = None
 
         return build_pd_series(results, name=name)
 
-    def _hist_aggs(self, query_compiler, num_bins):
+    def _hist_aggs(
+        self, query_compiler: "QueryCompiler", num_bins: int
+    ) -> Tuple[pd.DataFrame, pd.DataFrame]:
         # Get histogram bins and weights for numeric field_names
         query_params, post_processing = self._resolve_tasks(query_compiler)
 
@@ -418,8 +514,8 @@ class Operations:
         #         },
         #         ...
 
-        bins = {}
-        weights = {}
+        bins: Dict[str, List[int]] = {}
+        weights: Dict[str, List[int]] = {}
 
         # There is one more bin that weights
         # len(bins) = len(weights) + 1
@@ -464,11 +560,487 @@ class Operations:
         df_weights = pd.DataFrame(data=weights)
         return df_bins, df_weights
 
+    def _unpack_metric_aggs(
+        self,
+        fields: List["Field"],
+        es_aggs: Union[List[str], List[Tuple[str, List[float]]]],
+        pd_aggs: List[str],
+        response: Dict[str, Any],
+        numeric_only: Optional[bool],
+        percentiles: Optional[Sequence[float]] = None,
+        is_dataframe_agg: bool = False,
+        is_groupby: bool = False,
+    ) -> Dict[str, List[Any]]:
+        """
+        This method unpacks metric aggregations JSON response.
+        This can be called either directly on an aggs query
+        or on an individual bucket within a composite aggregation.
+
+        Parameters
+        ----------
+        fields:
+            a list of Field Mappings
+        es_aggs:
+            Eland Equivalent of aggs
+        pd_aggs:
+            a list of aggs
+        response:
+            a dict containing response from Elasticsearch
+        numeric_only:
+            return either numeric values or NaN/NaT
+        is_dataframe_agg:
+            - True then aggregation is called from dataframe
+            - False then aggregation is called from series
+        percentiles:
+            List of percentiles when 'quantile' agg is called. Otherwise it is None
+
+        Returns
+        -------
+            a dictionary on which agg caluculations are done.
+        """
+        results: Dict[str, Any] = {}
+        percentile_values: List[float] = []
+        agg_value: Any
+
+        for field in fields:
+            values = []
+            for es_agg, pd_agg in zip(es_aggs, pd_aggs):
+                # is_dataframe_agg is used to differentiate agg() and an aggregation called through .mean()
+                # If the field and agg aren't compatible we add a NaN/NaT for agg
+                # If the field and agg aren't compatible we don't add NaN/NaT for an aggregation called through .mean()
+                if not field.is_es_agg_compatible(es_agg):
+                    if is_dataframe_agg and not numeric_only:
+                        values.append(field.nan_value)
+                    elif not is_dataframe_agg and numeric_only is False:
+                        values.append(field.nan_value)
+                    # Explicit condition for mad to add NaN because it doesn't support bool
+                    elif is_dataframe_agg and numeric_only:
+                        if pd_agg == "mad":
+                            values.append(field.nan_value)
+                    continue
+
+                if isinstance(es_agg, tuple):
+                    agg_value = response["aggregations"][
+                        f"{es_agg[0]}_{field.es_field_name}"
+                    ]
+
+                    # Pull multiple values from 'percentiles' result.
+                    if es_agg[0] == "percentiles":
+                        agg_value = agg_value["values"]  # Returns dictionary
+                        if pd_agg == "median":
+                            agg_value = agg_value["50.0"]
+                        # Currently Pandas does the same
+                        # If we call quantile it returns the same result as of median.
+                        elif (
+                            pd_agg == "quantile" and is_dataframe_agg and not is_groupby
+                        ):
+                            agg_value = agg_value["50.0"]
+                        else:
+                            # Maintain order of percentiles
+                            if percentiles:
+                                percentile_values = [
+                                    agg_value[str(i)] for i in percentiles
+                                ]
+
+                    if not percentile_values and pd_agg not in ("quantile", "median"):
+                        agg_value = agg_value[es_agg[1]]
+                    # Need to convert 'Population' stddev and variance
+                    # from Elasticsearch into 'Sample' stddev and variance
+                    # which is what pandas uses.
+                    if es_agg[1] in ("std_deviation", "variance"):
+                        # Neither transformation works with count <=1
+                        count = response["aggregations"][
+                            f"{es_agg[0]}_{field.es_field_name}"
+                        ]["count"]
+
+                        # All of the below calculations result in NaN if count<=1
+                        if count <= 1:
+                            agg_value = np.NaN
+
+                        elif es_agg[1] == "std_deviation":
+                            agg_value *= count / (count - 1.0)
+
+                        else:  # es_agg[1] == "variance"
+                            # sample_std=\sqrt{\frac{1}{N-1}\sum_{i=1}^N(x_i-\bar{x})^2}
+                            # population_std=\sqrt{\frac{1}{N}\sum_{i=1}^N(x_i-\bar{x})^2}
+                            # sample_std=\sqrt{\frac{N}{N-1}population_std}
+                            agg_value = np.sqrt(
+                                (count / (count - 1.0)) * agg_value * agg_value
+                            )
+                elif es_agg == "mode":
+                    # For terms aggregation buckets are returned
+                    # agg_value will be of type list
+                    agg_value = response["aggregations"][
+                        f"{es_agg}_{field.es_field_name}"
+                    ]["buckets"]
+                else:
+                    agg_value = response["aggregations"][
+                        f"{es_agg}_{field.es_field_name}"
+                    ]["value"]
+
+                if isinstance(agg_value, list):
+                    # include top-terms in the result.
+                    if not agg_value:
+                        # If the all the documents for a field are empty
+                        agg_value = [field.nan_value]
+                    else:
+                        max_doc_count = agg_value[0]["doc_count"]
+                        # We need only keys which are equal to max_doc_count
+                        # lesser values are ignored
+                        agg_value = [
+                            item["key"]
+                            for item in agg_value
+                            if item["doc_count"] == max_doc_count
+                        ]
+
+                        # Maintain datatype by default because pandas does the same
+                        # text are returned as-is
+                        if field.is_bool or field.is_numeric:
+                            agg_value = [
+                                field.np_dtype.type(value) for value in agg_value
+                            ]
+
+                # Null usually means there were no results.
+                if not isinstance(agg_value, (list, dict)) and (
+                    agg_value is None or np.isnan(agg_value)
+                ):
+                    if is_dataframe_agg and not numeric_only:
+                        agg_value = np.NaN
+                    elif not is_dataframe_agg and numeric_only is False:
+                        agg_value = np.NaN
+
+                # Cardinality is always either NaN or integer.
+                elif pd_agg in ("nunique", "count"):
+                    agg_value = (
+                        int(agg_value)
+                        if isinstance(agg_value, (int, float))
+                        else np.NaN
+                    )
+
+                # If this is a non-null timestamp field convert to a pd.Timestamp()
+                elif field.is_timestamp:
+                    if isinstance(agg_value, list):
+                        # convert to timestamp results for mode
+                        agg_value = [
+                            elasticsearch_date_to_pandas_date(
+                                value, field.es_date_format
+                            )
+                            for value in agg_value
+                        ]
+                    elif percentile_values:
+                        percentile_values = [
+                            elasticsearch_date_to_pandas_date(
+                                value, field.es_date_format
+                            )
+                            for value in percentile_values
+                        ]
+                    else:
+                        assert not isinstance(agg_value, dict)
+                        agg_value = elasticsearch_date_to_pandas_date(
+                            agg_value, field.es_date_format
+                        )
+                # If numeric_only is False | None then maintain column datatype
+                elif not numeric_only and pd_agg != "quantile":
+                    # we're only converting to bool for lossless aggs like min, max, and median.
+                    if pd_agg in {"max", "min", "median", "sum", "mode"}:
+                        # 'sum' isn't representable with bool, use int64
+                        if pd_agg == "sum" and field.is_bool:
+                            agg_value = np.int64(agg_value)
+                        else:
+                            agg_value = field.np_dtype.type(agg_value)
+
+                if not percentile_values:
+                    values.append(agg_value)
+
+            # If numeric_only is True and We only have a NaN type field then we check for empty.
+            if values:
+                results[field.column] = values if len(values) > 1 else values[0]
+            # This only runs when df.quantile() or series.quantile() or
+            # quantile from groupby is called
+            if percentile_values:
+                results[f"{field.column}"] = percentile_values
+
+        return results
+
+    def quantile(
+        self,
+        query_compiler: "QueryCompiler",
+        pd_aggs: List[str],
+        quantiles: Union[int, float, List[int], List[float]],
+        is_dataframe: bool = True,
+        numeric_only: Optional[bool] = True,
+    ) -> Union[pd.DataFrame, pd.Series]:
+
+        percentiles = [
+            quantile_to_percentile(x)
+            for x in (
+                (quantiles,) if not isinstance(quantiles, (list, tuple)) else quantiles
+            )
+        ]
+
+        result = self._metric_aggs(
+            query_compiler,
+            pd_aggs=pd_aggs,
+            percentiles=percentiles,
+            is_dataframe_agg=False,
+            numeric_only=numeric_only,
+        )
+
+        df = pd.DataFrame(
+            result,
+            index=[i / 100 for i in percentiles],
+            columns=result.keys(),
+            dtype=(np.float64 if numeric_only else None),
+        )
+
+        # Display Output same as pandas does
+        if isinstance(quantiles, float):
+            return df.squeeze()
+        else:
+            return df if is_dataframe else df.transpose().iloc[0]
+
+    def aggs_groupby(
+        self,
+        query_compiler: "QueryCompiler",
+        by: List[str],
+        pd_aggs: List[str],
+        dropna: bool = True,
+        quantiles: Optional[Union[int, float, List[int], List[float]]] = None,
+        is_dataframe_agg: bool = False,
+        numeric_only: Optional[bool] = True,
+    ) -> pd.DataFrame:
+        """
+        This method is used to construct groupby aggregation dataframe
+
+        Parameters
+        ----------
+        query_compiler:
+            A Query compiler
+        by:
+            a list of columns on which groupby operations have to be performed
+        pd_aggs:
+            a list of aggregations to be performed
+        dropna:
+            Drop None values if True.
+            TODO Not yet implemented
+        is_dataframe_agg:
+            Know if groupby with aggregation or single agg is called.
+        numeric_only:
+            return either numeric values or NaN/NaT
+        quantiles:
+            List of quantiles when 'quantile' agg is called. Otherwise it is None
+
+        Returns
+        -------
+            A dataframe which consists groupby data
+        """
+        query_params, post_processing = self._resolve_tasks(query_compiler)
+
+        size = self._size(query_params, post_processing)
+        if size is not None:
+            raise NotImplementedError(
+                f"Can not count field matches if size is set {size}"
+            )
+
+        by_fields, agg_fields = query_compiler._mappings.groupby_source_fields(by=by)
+
+        # Used defaultdict to avoid initialization of columns with lists
+        results: Dict[Any, List[Any]] = defaultdict(list)
+
+        if numeric_only:
+            agg_fields = [
+                field for field in agg_fields if (field.is_numeric or field.is_bool)
+            ]
+
+        body = Query(query_params.query)
+
+        # To return for creating multi-index on columns
+        headers = [agg_field.column for agg_field in agg_fields]
+
+        percentiles: Optional[List[float]] = None
+        len_percentiles: int = 0
+        if quantiles:
+            percentiles = [
+                quantile_to_percentile(x)
+                for x in (
+                    (quantiles,)
+                    if not isinstance(quantiles, (list, tuple))
+                    else quantiles
+                )
+            ]
+            len_percentiles = len(percentiles)
+
+        # Convert pandas aggs to ES equivalent
+        es_aggs = self._map_pd_aggs_to_es_aggs(pd_aggs=pd_aggs, percentiles=percentiles)
+
+        # Construct Query
+        for by_field in by_fields:
+            if by_field.aggregatable_es_field_name is None:
+                raise ValueError(
+                    f"Cannot use {by_field.column!r} with groupby() because "
+                    f"it has no aggregatable fields in Elasticsearch"
+                )
+            # groupby fields will be term aggregations
+            body.composite_agg_bucket_terms(
+                name=f"groupby_{by_field.column}",
+                field=by_field.aggregatable_es_field_name,
+            )
+
+        for agg_field in agg_fields:
+            for es_agg in es_aggs:
+                # Skip if the field isn't compatible or if the agg is
+                # 'value_count' as this value is pulled from bucket.doc_count.
+                if not agg_field.is_es_agg_compatible(es_agg):
+                    continue
+
+                # If we have multiple 'extended_stats' etc. here we simply NOOP on 2nd call
+                if isinstance(es_agg, tuple):
+                    if es_agg[0] == "percentiles":
+                        body.percentile_agg(
+                            name=f"{es_agg[0]}_{agg_field.es_field_name}",
+                            field=agg_field.es_field_name,
+                            percents=es_agg[1],
+                        )
+                    else:
+                        body.metric_aggs(
+                            f"{es_agg[0]}_{agg_field.es_field_name}",
+                            es_agg[0],
+                            agg_field.aggregatable_es_field_name,
+                        )
+                else:
+                    body.metric_aggs(
+                        f"{es_agg}_{agg_field.es_field_name}",
+                        es_agg,
+                        agg_field.aggregatable_es_field_name,
+                    )
+
+        # Composite aggregation
+        body.composite_agg_start(
+            size=DEFAULT_PAGINATION_SIZE, name="groupby_buckets", dropna=dropna
+        )
+
+        for buckets in self.bucket_generator(query_compiler, body):
+            # We recieve response row-wise
+            for bucket in buckets:
+                # groupby columns are added to result same way they are returned
+                for by_field in by_fields:
+                    bucket_key = bucket["key"][f"groupby_{by_field.column}"]
+
+                    # Datetimes always come back as integers, convert to pd.Timestamp()
+                    if by_field.is_timestamp and isinstance(bucket_key, int):
+                        bucket_key = pd.to_datetime(bucket_key, unit="ms")
+
+                    if pd_aggs == ["quantile"] and len_percentiles > 1:
+                        bucket_key = [bucket_key] * len_percentiles
+
+                    results[by_field.column].extend(
+                        bucket_key if isinstance(bucket_key, list) else [bucket_key]
+                    )
+
+                agg_calculation = self._unpack_metric_aggs(
+                    fields=agg_fields,
+                    es_aggs=es_aggs,
+                    pd_aggs=pd_aggs,
+                    response={"aggregations": bucket},
+                    numeric_only=numeric_only,
+                    percentiles=percentiles,
+                    # We set 'True' here because we want the value
+                    # unpacking to always be in 'dataframe' mode.
+                    is_dataframe_agg=True,
+                    is_groupby=True,
+                )
+
+                # to construct index with quantiles
+                if pd_aggs == ["quantile"] and percentiles and len_percentiles > 1:
+                    results[None].extend([i / 100 for i in percentiles])
+
+                # Process the calculated agg values to response
+                for key, value in agg_calculation.items():
+                    if not isinstance(value, list):
+                        results[key].append(value)
+                        continue
+                    elif isinstance(value, list) and pd_aggs == ["quantile"]:
+                        results[f"{key}_{pd_aggs[0]}"].extend(value)
+                    else:
+                        for pd_agg, val in zip(pd_aggs, value):
+                            results[f"{key}_{pd_agg}"].append(val)
+
+        if pd_aggs == ["quantile"] and len_percentiles > 1:
+            # by never holds None by default, we make an exception
+            # here to maintain output same as pandas, also mypy complains
+            by = by + [None]  # type: ignore
+
+        agg_df = pd.DataFrame(results).set_index(by).sort_index()
+
+        if is_dataframe_agg:
+            # Convert header columns to MultiIndex
+            agg_df.columns = pd.MultiIndex.from_product([headers, pd_aggs])
+        else:
+            # Convert header columns to Index
+            agg_df.columns = pd.Index(headers)
+
+        return agg_df
+
     @staticmethod
-    def _map_pd_aggs_to_es_aggs(pd_aggs):
+    def bucket_generator(
+        query_compiler: "QueryCompiler", body: "Query"
+    ) -> Generator[Sequence[Dict[str, Any]], None, Sequence[Dict[str, Any]]]:
+        """
+            This can be used for all groupby operations.
+        e.g.
+        "aggregations": {
+            "groupby_buckets": {
+                "after_key": {"total_quantity": 8},
+                "buckets": [
+                    {
+                        "key": {"total_quantity": 1},
+                        "doc_count": 87,
+                        "taxful_total_price_avg": {"value": 48.035978536496216},
+                    }
+                ],
+            }
+        }
+        Returns
+        -------
+        A generator which initially yields the bucket
+        If after_key is found, use it to fetch the next set of buckets.
+
+        """
+        while True:
+            res = query_compiler._client.search(
+                index=query_compiler._index_pattern,
+                size=0,
+                body=body.to_search_body(),
+            )
+
+            # Pagination Logic
+            composite_buckets: Dict[str, Any] = res["aggregations"]["groupby_buckets"]
+
+            after_key: Optional[Dict[str, Any]] = composite_buckets.get(
+                "after_key", None
+            )
+            buckets: Sequence[Dict[str, Any]] = composite_buckets["buckets"]
+
+            if after_key:
+
+                # yield the bucket which contains the result
+                yield buckets
+
+                body.composite_agg_after_key(
+                    name="groupby_buckets",
+                    after_key=after_key,
+                )
+            else:
+                return buckets
+
+    @staticmethod
+    def _map_pd_aggs_to_es_aggs(
+        pd_aggs: List[str], percentiles: Optional[List[float]] = None
+    ) -> Union[List[str], List[Tuple[str, List[float]]]]:
         """
         Args:
             pd_aggs - list of pandas aggs (e.g. ['mad', 'min', 'std'] etc.)
+            percentiles - list of percentiles for 'quantile' agg
 
         Returns:
             ed_aggs - list of corresponding es_aggs (e.g. ['median_absolute_deviation', 'min', 'std'] etc.)
@@ -498,18 +1070,18 @@ class Operations:
         """
         # pd aggs that will be mapped to es aggs
         # that can use 'extended_stats'.
-        extended_stats_pd_aggs = {"mean", "min", "max", "count", "sum", "var", "std"}
-        extended_stats_es_aggs = {"avg", "min", "max", "count", "sum"}
+        extended_stats_pd_aggs = {"mean", "min", "max", "sum", "var", "std"}
+        extended_stats_es_aggs = {"avg", "min", "max", "sum"}
         extended_stats_calls = 0
 
-        es_aggs = []
+        es_aggs: List[Any] = []
         for pd_agg in pd_aggs:
             if pd_agg in extended_stats_pd_aggs:
                 extended_stats_calls += 1
 
             # Aggs that are 'extended_stats' compatible
             if pd_agg == "count":
-                es_aggs.append("count")
+                es_aggs.append("value_count")
             elif pd_agg == "max":
                 es_aggs.append("max")
             elif pd_agg == "min":
@@ -529,15 +1101,24 @@ class Operations:
             elif pd_agg == "mad":
                 es_aggs.append("median_absolute_deviation")
             elif pd_agg == "median":
-                es_aggs.append(("percentiles", "50.0"))
+                es_aggs.append(("percentiles", (50.0,)))
+            elif pd_agg == "quantile":
+                # None when 'quantile' is called in df.agg[...]
+                # Behaves same as median because pandas does the same.
+                if percentiles is not None:
+                    es_aggs.append(("percentiles", tuple(percentiles)))
+                else:
+                    es_aggs.append(("percentiles", (50.0,)))
+
+            elif pd_agg == "mode":
+                if len(pd_aggs) != 1:
+                    raise NotImplementedError(
+                        "Currently mode is not supported in df.agg(...). Try df.mode()"
+                    )
+                else:
+                    es_aggs.append("mode")
 
             # Not implemented
-            elif pd_agg == "mode":
-                # We could do this via top term
-                raise NotImplementedError(pd_agg, " not currently implemented")
-            elif pd_agg == "quantile":
-                # TODO
-                raise NotImplementedError(pd_agg, " not currently implemented")
             elif pd_agg == "rank":
                 # TODO
                 raise NotImplementedError(pd_agg, " not currently implemented")
@@ -559,7 +1140,13 @@ class Operations:
 
         return es_aggs
 
-    def filter(self, query_compiler, items=None, like=None, regex=None):
+    def filter(
+        self,
+        query_compiler: "QueryCompiler",
+        items: Optional[List[str]] = None,
+        like: Optional[str] = None,
+        regex: Optional[str] = None,
+    ) -> None:
         # This function is only called for axis='index',
         # DataFrame.filter(..., axis="columns") calls .drop()
         if items is not None:
@@ -578,7 +1165,7 @@ class Operations:
             f"to substring and regex operations not being available for Elasticsearch document IDs."
         )
 
-    def describe(self, query_compiler):
+    def describe(self, query_compiler: "QueryCompiler") -> pd.DataFrame:
         query_params, post_processing = self._resolve_tasks(query_compiler)
 
         size = self._size(query_params, post_processing)
@@ -587,76 +1174,29 @@ class Operations:
                 f"Can not count field matches if size is set {size}"
             )
 
-        numeric_source_fields = query_compiler._mappings.numeric_source_fields()
-
-        # for each field we compute:
-        # count, mean, std, min, 25%, 50%, 75%, max
-        body = Query(query_params.query)
-
-        for field in numeric_source_fields:
-            body.metric_aggs("extended_stats_" + field, "extended_stats", field)
-            body.metric_aggs("percentiles_" + field, "percentiles", field)
-
-        response = query_compiler._client.search(
-            index=query_compiler._index_pattern, size=0, body=body.to_search_body()
+        df1 = self.aggs(
+            query_compiler=query_compiler,
+            pd_aggs=["count", "mean", "std", "min", "max"],
+            numeric_only=True,
+        )
+        df2 = self.quantile(
+            query_compiler=query_compiler,
+            pd_aggs=["quantile"],
+            quantiles=[0.25, 0.5, 0.75],
+            is_dataframe=True,
+            numeric_only=True,
         )
 
-        results = {}
+        # Convert [.25,.5,.75] to ["25%", "50%", "75%"]
+        df2 = df2.set_index([["25%", "50%", "75%"]])
 
-        for field in numeric_source_fields:
-            values = list()
-            values.append(response["aggregations"]["extended_stats_" + field]["count"])
-            values.append(response["aggregations"]["extended_stats_" + field]["avg"])
-            values.append(
-                response["aggregations"]["extended_stats_" + field]["std_deviation"]
-            )
-            values.append(response["aggregations"]["extended_stats_" + field]["min"])
-            values.append(
-                response["aggregations"]["percentiles_" + field]["values"]["25.0"]
-            )
-            values.append(
-                response["aggregations"]["percentiles_" + field]["values"]["50.0"]
-            )
-            values.append(
-                response["aggregations"]["percentiles_" + field]["values"]["75.0"]
-            )
-            values.append(response["aggregations"]["extended_stats_" + field]["max"])
-
-            # if not None
-            if values.count(None) < len(values):
-                results[field] = values
-
-        df = pd.DataFrame(
-            data=results,
-            index=["count", "mean", "std", "min", "25%", "50%", "75%", "max"],
+        return pd.concat([df1, df2]).reindex(
+            ["count", "mean", "std", "min", "25%", "50%", "75%", "max"]
         )
 
-        return df
-
-    def to_pandas(self, query_compiler, show_progress=False):
-        class PandasDataFrameCollector:
-            def __init__(self, show_progress):
-                self._df = None
-                self._show_progress = show_progress
-
-            def collect(self, df):
-                # This collector does not batch data on output. Therefore, batch_size is fixed to None and this method
-                # is only called once.
-                if self._df is not None:
-                    raise RuntimeError(
-                        "Logic error in execution, this method must only be called once for this"
-                        "collector - batch_size == None"
-                    )
-                self._df = df
-
-            @staticmethod
-            def batch_size():
-                # Do not change (see notes on collect)
-                return None
-
-            @property
-            def show_progress(self):
-                return self._show_progress
+    def to_pandas(
+        self, query_compiler: "QueryCompiler", show_progress: bool = False
+    ) -> None:
 
         collector = PandasDataFrameCollector(show_progress)
 
@@ -664,35 +1204,12 @@ class Operations:
 
         return collector._df
 
-    def to_csv(self, query_compiler, show_progress=False, **kwargs):
-        class PandasToCSVCollector:
-            def __init__(self, show_progress, **args):
-                self._args = args
-                self._show_progress = show_progress
-                self._ret = None
-                self._first_time = True
-
-            def collect(self, df):
-                # If this is the first time we collect results, then write header, otherwise don't write header
-                # and append results
-                if self._first_time:
-                    self._first_time = False
-                    df.to_csv(**self._args)
-                else:
-                    # Don't write header, and change mode to append
-                    self._args["header"] = False
-                    self._args["mode"] = "a"
-                    df.to_csv(**self._args)
-
-            @staticmethod
-            def batch_size():
-                # By default read n docs and then dump to csv
-                batch_size = DEFAULT_CSV_BATCH_OUTPUT_SIZE
-                return batch_size
-
-            @property
-            def show_progress(self):
-                return self._show_progress
+    def to_csv(
+        self,
+        query_compiler: "QueryCompiler",
+        show_progress: bool = False,
+        **kwargs: Union[bool, str],
+    ) -> None:
 
         collector = PandasToCSVCollector(show_progress, **kwargs)
 
@@ -700,7 +1217,11 @@ class Operations:
 
         return collector._ret
 
-    def _es_results(self, query_compiler, collector):
+    def _es_results(
+        self,
+        query_compiler: "QueryCompiler",
+        collector: Union["PandasToCSVCollector", "PandasDataFrameCollector"],
+    ) -> None:
         query_params, post_processing = self._resolve_tasks(query_compiler)
 
         size, sort_params = Operations._query_params_to_size_and_sort(query_params)
@@ -727,31 +1248,19 @@ class Operations:
         else:
             body["_source"] = False
 
-        es_results = None
+        es_results: Any = None
 
         # If size=None use scan not search - then post sort results when in df
         # If size>10000 use scan
         is_scan = False
         if size is not None and size <= DEFAULT_ES_MAX_RESULT_WINDOW:
             if size > 0:
-                try:
-
-                    es_results = query_compiler._client.search(
-                        index=query_compiler._index_pattern,
-                        size=size,
-                        sort=sort_params,
-                        body=body,
-                    )
-                except Exception:
-                    # Catch all ES errors and print debug (currently to stdout)
-                    error = {
-                        "index": query_compiler._index_pattern,
-                        "size": size,
-                        "sort": sort_params,
-                        "body": body,
-                    }
-                    print("Elasticsearch error:", error)
-                    raise
+                es_results = query_compiler._client.search(
+                    index=query_compiler._index_pattern,
+                    size=size,
+                    sort=sort_params,
+                    body=body,
+                )
         else:
             is_scan = True
             es_results = scan(
@@ -777,7 +1286,7 @@ class Operations:
             df = self._apply_df_post_processing(df, post_processing)
             collector.collect(df)
 
-    def index_count(self, query_compiler, field):
+    def index_count(self, query_compiler: "QueryCompiler", field: str) -> int:
         # field is the index field so count values
         query_params, post_processing = self._resolve_tasks(query_compiler)
 
@@ -791,11 +1300,14 @@ class Operations:
         body = Query(query_params.query)
         body.exists(field, must=True)
 
-        return query_compiler._client.count(
+        count: int = query_compiler._client.count(
             index=query_compiler._index_pattern, body=body.to_count_body()
         )["count"]
+        return count
 
-    def _validate_index_operation(self, query_compiler, items):
+    def _validate_index_operation(
+        self, query_compiler: "QueryCompiler", items: List[str]
+    ) -> RESOLVED_TASK_TYPE:
         if not isinstance(items, list):
             raise TypeError(f"list item required - not {type(items)}")
 
@@ -812,7 +1324,9 @@ class Operations:
 
         return query_params, post_processing
 
-    def index_matches_count(self, query_compiler, field, items):
+    def index_matches_count(
+        self, query_compiler: "QueryCompiler", field: str, items: List[Any]
+    ) -> int:
         query_params, post_processing = self._validate_index_operation(
             query_compiler, items
         )
@@ -824,11 +1338,14 @@ class Operations:
         else:
             body.terms(field, items, must=True)
 
-        return query_compiler._client.count(
+        count: int = query_compiler._client.count(
             index=query_compiler._index_pattern, body=body.to_count_body()
         )["count"]
+        return count
 
-    def drop_index_values(self, query_compiler, field, items):
+    def drop_index_values(
+        self, query_compiler: "QueryCompiler", field: str, items: List[str]
+    ) -> None:
         self._validate_index_operation(query_compiler, items)
 
         # Putting boolean queries together
@@ -839,18 +1356,22 @@ class Operations:
         # a in ['a','b','c']
         # b not in ['a','b','c']
         # For now use term queries
+        task: Union["QueryIdsTask", "QueryTermsTask"]
         if field == Index.ID_INDEX_FIELD:
             task = QueryIdsTask(False, items)
         else:
             task = QueryTermsTask(False, field, items)
         self._tasks.append(task)
 
-    def filter_index_values(self, query_compiler, field, items):
+    def filter_index_values(
+        self, query_compiler: "QueryCompiler", field: str, items: List[str]
+    ) -> None:
         # Basically .drop_index_values() except with must=True on tasks.
         self._validate_index_operation(query_compiler, items)
 
+        task: Union["QueryIdsTask", "QueryTermsTask"]
         if field == Index.ID_INDEX_FIELD:
-            task = QueryIdsTask(True, items)
+            task = QueryIdsTask(True, items, sort_index_by_ids=True)
         else:
             task = QueryTermsTask(True, field, items)
         self._tasks.append(task)
@@ -869,7 +1390,9 @@ class Operations:
         return size, sort_params
 
     @staticmethod
-    def _count_post_processing(post_processing):
+    def _count_post_processing(
+        post_processing: List["PostProcessingAction"],
+    ) -> Optional[int]:
         size = None
         for action in post_processing:
             if isinstance(action, SizeTask):
@@ -878,19 +1401,21 @@ class Operations:
         return size
 
     @staticmethod
-    def _apply_df_post_processing(df, post_processing):
+    def _apply_df_post_processing(
+        df: "pd.DataFrame", post_processing: List["PostProcessingAction"]
+    ) -> pd.DataFrame:
         for action in post_processing:
             df = action.resolve_action(df)
 
         return df
 
-    def _resolve_tasks(self, query_compiler):
+    def _resolve_tasks(self, query_compiler: "QueryCompiler") -> RESOLVED_TASK_TYPE:
         # We now try and combine all tasks into an Elasticsearch query
         # Some operations can be simply combined into a single query
         # other operations require pre-queries and then combinations
         # other operations require in-core post-processing of results
         query_params = QueryParams()
-        post_processing = []
+        post_processing: List["PostProcessingAction"] = []
 
         for task in self._tasks:
             query_params, post_processing = task.resolve_task(
@@ -907,7 +1432,9 @@ class Operations:
 
         return query_params, post_processing
 
-    def _size(self, query_params, post_processing):
+    def _size(
+        self, query_params: "QueryParams", post_processing: List["PostProcessingAction"]
+    ) -> Optional[int]:
         # Shrink wrap code around checking if size parameter is set
         size = query_params.size
 
@@ -921,7 +1448,7 @@ class Operations:
         # This can return None
         return size
 
-    def es_info(self, query_compiler, buf):
+    def es_info(self, query_compiler: "QueryCompiler", buf: TextIO) -> None:
         buf.write("Operations:\n")
         buf.write(f" tasks: {self._tasks}\n")
 
@@ -941,6 +1468,76 @@ class Operations:
         buf.write(f" body: {body}\n")
         buf.write(f" post_processing: {post_processing}\n")
 
-    def update_query(self, boolean_filter):
+    def update_query(self, boolean_filter: "BooleanFilter") -> None:
         task = BooleanFilterTask(boolean_filter)
         self._tasks.append(task)
+
+
+def quantile_to_percentile(quantile: Union[int, float]) -> float:
+    # To verify if quantile range falls between 0 to 1
+    if isinstance(quantile, (int, float)):
+        quantile = float(quantile)
+        if quantile > 1 or quantile < 0:
+            raise ValueError(
+                f"quantile should be in range of 0 and 1, given {quantile}"
+            )
+    else:
+        raise TypeError("quantile should be of type int or float")
+    # quantile * 100 = percentile
+    # return float(...) because min(1.0) gives 1
+    return float(min(100, max(0, quantile * 100)))
+
+
+class PandasToCSVCollector:
+    def __init__(self, show_progress: bool, **kwargs: Union[bool, str]) -> None:
+        self._args = kwargs
+        self._show_progress = show_progress
+        self._ret = None
+        self._first_time = True
+
+    def collect(self, df: "pd.DataFrame") -> None:
+        # If this is the first time we collect results, then write header, otherwise don't write header
+        # and append results
+        if self._first_time:
+            self._first_time = False
+            df.to_csv(**self._args)
+        else:
+            # Don't write header, and change mode to append
+            self._args["header"] = False
+            self._args["mode"] = "a"
+            df.to_csv(**self._args)
+
+    @staticmethod
+    def batch_size() -> int:
+        # By default read n docs and then dump to csv
+        batch_size: int = DEFAULT_CSV_BATCH_OUTPUT_SIZE
+        return batch_size
+
+    @property
+    def show_progress(self) -> bool:
+        return self._show_progress
+
+
+class PandasDataFrameCollector:
+    def __init__(self, show_progress: bool) -> None:
+        self._df = None
+        self._show_progress = show_progress
+
+    def collect(self, df: "pd.DataFrame") -> None:
+        # This collector does not batch data on output. Therefore, batch_size is fixed to None and this method
+        # is only called once.
+        if self._df is not None:
+            raise RuntimeError(
+                "Logic error in execution, this method must only be called once for this"
+                "collector - batch_size == None"
+            )
+        self._df = df
+
+    @staticmethod
+    def batch_size() -> None:
+        # Do not change (see notes on collect)
+        return None
+
+    @property
+    def show_progress(self) -> bool:
+        return self._show_progress

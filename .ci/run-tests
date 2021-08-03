@@ -12,6 +12,7 @@ set -euxo pipefail
 
 TEST_SUITE=${TEST_SUITE-xpack}
 NODE_NAME=localhost
+PANDAS_VERSION=${PANDAS_VERSION-1.3.0}
 
 
 elasticsearch_image=elasticsearch
@@ -55,5 +56,6 @@ ELASTICSEARCH_CONTAINER=${elasticsearch_image}:${ELASTICSEARCH_VERSION} \
   NODE_NAME=${NODE_NAME} \
   ELASTICSEARCH_URL=${elasticsearch_url} \
   TEST_SUITE=${TEST_SUITE} \
+  PANDAS_VERSION=${PANDAS_VERSION} \
   bash .ci/run-repository.sh
 

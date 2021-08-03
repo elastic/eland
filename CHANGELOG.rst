@@ -2,6 +2,123 @@
 Changelog
 =========
 
+7.13.0b1 (2021-06-22)
+---------------------
+
+Added
+^^^^^
+
+* Added ``DataFrame.quantile()``, ``Series.quantile()``, and
+  ``DataFrameGroupBy.quantile()`` aggregations (`#318`_ and `#356`_, contributed by `@V1NAY8`_)
+
+Changed
+^^^^^^^
+
+* Changed the error raised when ``es_index_pattern`` doesn't point to any indices
+  to be more user-friendly (`#346`_)
+
+Fixed
+^^^^^
+
+* Fixed a warning about conflicting field types when wildcards are used
+  in ``es_index_pattern`` (`#346`_)
+
+* Fixed sorting when using ``DataFrame.groupby()`` with ``dropna``
+  (`#322`_, contributed by `@V1NAY8`_)
+
+* Fixed deprecated usage ``numpy.int`` in favor of ``numpy.int_`` (`#354`_, contributed by `@V1NAY8`_)
+
+ .. _#318: https://github.com/elastic/eland/pull/318
+ .. _#322: https://github.com/elastic/eland/pull/322
+ .. _#346: https://github.com/elastic/eland/pull/346
+ .. _#354: https://github.com/elastic/eland/pull/354
+ .. _#356: https://github.com/elastic/eland/pull/356
+
+
+7.10.1b1 (2021-01-12)
+---------------------
+
+Added
+^^^^^
+
+* Added support for Pandas 1.2.0 (`#336`_)
+
+* Added ``DataFrame.mode()`` and ``Series.mode()`` aggregation (`#323`_, contributed by `@V1NAY8`_)
+
+* Added support for ``pd.set_option("display.max_rows", None)``
+  (`#308`_, contributed by `@V1NAY8`_)
+
+* Added Elasticsearch storage usage to ``df.info()`` (`#321`_, contributed by `@V1NAY8`_)
+
+Removed
+^^^^^^^
+
+* Removed deprecated aliases ``read_es``, ``read_csv``, ``DataFrame.info_es``,
+  and ``MLModel(overwrite=True)`` (`#331`_, contributed by `@V1NAY8`_)
+
+ .. _#336: https://github.com/elastic/eland/pull/336
+ .. _#331: https://github.com/elastic/eland/pull/331
+ .. _#323: https://github.com/elastic/eland/pull/323
+ .. _#321: https://github.com/elastic/eland/pull/321
+ .. _#308: https://github.com/elastic/eland/pull/308
+
+
+7.10.0b1 (2020-10-29)
+---------------------
+
+Added
+^^^^^
+
+* Added ``DataFrame.groupby()`` method with all aggregations
+  (`#278`_, `#291`_, `#292`_, `#300`_ contributed by `@V1NAY8`_)
+
+* Added ``es_match()`` method to ``DataFrame`` and ``Series`` for
+  filtering rows with full-text search (`#301`_)
+
+* Added support for type hints of the ``elasticsearch-py`` package (`#295`_)
+
+* Added support for passing dictionaries to ``es_type_overrides`` parameter
+  in the ``pandas_to_eland()`` function to directly control the field mapping
+  generated in Elasticsearch (`#310`_)
+
+* Added ``es_dtypes`` property to ``DataFrame`` and ``Series`` (`#285`_) 
+
+Changed
+^^^^^^^
+
+* Changed ``pandas_to_eland()`` to use the ``parallel_bulk()``
+  helper instead of single-threaded ``bulk()`` helper to improve
+  performance (`#279`_, contributed by `@V1NAY8`_)
+
+* Changed the ``es_type_overrides`` parameter in ``pandas_to_eland()``
+  to raise ``ValueError`` if an unknown column is given (`#302`_)
+
+* Changed ``DataFrame.filter()`` to preserve the order of items
+  (`#283`_, contributed by `@V1NAY8`_)
+
+* Changed when setting ``es_type_overrides={"column": "text"}`` in
+  ``pandas_to_eland()`` will automatically add the ``column.keyword``
+  sub-field so that aggregations are available for the field as well (`#310`_)
+
+Fixed
+^^^^^
+
+* Fixed ``Series.__repr__`` when the series is empty (`#306`_)
+
+ .. _#278: https://github.com/elastic/eland/pull/278
+ .. _#279: https://github.com/elastic/eland/pull/279
+ .. _#283: https://github.com/elastic/eland/pull/283
+ .. _#285: https://github.com/elastic/eland/pull/285
+ .. _#291: https://github.com/elastic/eland/pull/291
+ .. _#292: https://github.com/elastic/eland/pull/292
+ .. _#295: https://github.com/elastic/eland/pull/295
+ .. _#300: https://github.com/elastic/eland/pull/300
+ .. _#301: https://github.com/elastic/eland/pull/301
+ .. _#302: https://github.com/elastic/eland/pull/302
+ .. _#306: https://github.com/elastic/eland/pull/306
+ .. _#310: https://github.com/elastic/eland/pull/310
+
+
 7.9.1a1 (2020-09-29)
 --------------------
 

@@ -34,37 +34,38 @@ Based on NDFrame which underpins eland.DataFrame
 import sys
 import warnings
 from collections.abc import Collection
-from io import StringIO
-from typing import Optional, Union, Sequence, Any, Tuple, TYPE_CHECKING
-
 from datetime import datetime
+from io import StringIO
+from typing import TYPE_CHECKING, Any, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
-import pandas as pd
-from pandas.io.common import _expand_user, stringify_path
+import pandas as pd  # type: ignore
+from pandas.io.common import _expand_user, stringify_path  # type: ignore
 
 import eland.plotting
-from eland import NDFrame
-from eland.arithmetics import ArithmeticSeries, ArithmeticString, ArithmeticNumber
+from eland.arithmetics import ArithmeticNumber, ArithmeticSeries, ArithmeticString
 from eland.common import DEFAULT_NUM_ROWS_DISPLAYED, docstring_parameter
 from eland.filter import (
     BooleanFilter,
-    NotFilter,
     Equal,
     Greater,
-    Less,
     GreaterEqual,
-    LessEqual,
-    ScriptFilter,
     IsIn,
     IsNull,
+    Less,
+    LessEqual,
+    NotFilter,
     NotNull,
+    QueryFilter,
+    ScriptFilter,
 )
-from eland.utils import deprecated_api, to_list
+from eland.ndframe import NDFrame
+from eland.utils import to_list
 
-if TYPE_CHECKING:  # type: ignore
-    from elasticsearch import Elasticsearch  # noqa: F401
-    from eland.query_compiler import QueryCompiler  # noqa: F401
+if TYPE_CHECKING:
+    from elasticsearch import Elasticsearch
+
+    from eland.query_compiler import QueryCompiler
 
 
 def _get_method_name() -> str:
@@ -175,7 +176,7 @@ class Series(NDFrame):
         return num_rows, num_columns
 
     @property
-    def es_field_name(self) -> str:
+    def es_field_name(self) -> pd.Index:
         """
         Returns
         -------
@@ -185,7 +186,7 @@ class Series(NDFrame):
         return self._query_compiler.get_field_names(include_scripted_fields=True)[0]
 
     @property
-    def name(self) -> str:
+    def name(self) -> pd.Index:
         return self._query_compiler.columns[0]
 
     @name.setter
@@ -321,14 +322,14 @@ class Series(NDFrame):
         max_rows = pd.get_option("display.max_rows")
         min_rows = pd.get_option("display.min_rows")
 
-        if len(self) > max_rows:
+        if max_rows and len(self) > max_rows:
             max_rows = min_rows
 
         show_dimensions = pd.get_option("display.show_dimensions")
 
         self.to_string(
             buf=buf,
-            name=self.name,
+            name=True,
             dtype=True,
             min_rows=min_rows,
             max_rows=max_rows,
@@ -394,30 +395,46 @@ class Series(NDFrame):
         else:
             _buf = StringIO()
 
-        # Create repr of fake series without name, length, dtype summary
-        temp_series.to_string(
-            buf=_buf,
-            na_rep=na_rep,
-            float_format=float_format,
-            header=header,
-            index=index,
-            length=False,
-            dtype=False,
-            name=False,
-            max_rows=max_rows,
-        )
+        if num_rows == 0:
+            # Empty series are rendered differently than
+            # series with items. We can luckily use our
+            # example series in this case.
+            temp_series.head(0).to_string(
+                buf=_buf,
+                na_rep=na_rep,
+                float_format=float_format,
+                header=header,
+                index=index,
+                length=length,
+                dtype=dtype,
+                name=name,
+                max_rows=max_rows,
+            )
+        else:
+            # Create repr of fake series without name, length, dtype summary
+            temp_series.to_string(
+                buf=_buf,
+                na_rep=na_rep,
+                float_format=float_format,
+                header=header,
+                index=index,
+                length=False,
+                dtype=False,
+                name=False,
+                max_rows=max_rows,
+            )
 
-        # Create the summary
-        footer = []
-        if name and self.name is not None:
-            footer.append(f"Name: {self.name}")
-        if length and len(self) > max_rows:
-            footer.append(f"Length: {len(self.index)}")
-        if dtype:
-            footer.append(f"dtype: {temp_series.dtype}")
+            # Create the summary
+            footer = []
+            if name and self.name is not None:
+                footer.append(f"Name: {self.name}")
+            if length and len(self) > max_rows:
+                footer.append(f"Length: {len(self.index)}")
+            if dtype:
+                footer.append(f"dtype: {temp_series.dtype}")
 
-        if footer:
-            _buf.write(f"\n{', '.join(footer)}")
+            if footer:
+                _buf.write(f"\n{', '.join(footer)}")
 
         if buf is None:
             result = _buf.getvalue()
@@ -436,6 +453,13 @@ class Series(NDFrame):
         :pandas_api_docs:`pandas.Series.dtype`
         """
         return self._query_compiler.dtypes[0]
+
+    @property
+    def es_dtype(self) -> str:
+        """
+        Return the Elasticsearch type of the underlying data.
+        """
+        return self._query_compiler.es_dtypes[0]
 
     def __gt__(self, other: Union[int, float, "Series"]) -> BooleanFilter:
         if isinstance(other, np.datetime64):
@@ -561,6 +585,45 @@ class Series(NDFrame):
 
     notnull = notna
 
+    def quantile(
+        self, q: Union[int, float, List[int], List[float]] = 0.5
+    ) -> Union[pd.Series, Any]:
+        """
+        Used to calculate quantile for a given Series.
+
+        Parameters
+        ----------
+        q:
+            float or array like, default 0.5
+            Value between 0 <= q <= 1, the quantile(s) to compute.
+
+        Returns
+        -------
+        pandas.Series or any single dtype
+
+        See Also
+        --------
+        :pandas_api_docs:`pandas.Series.quantile`
+
+        Examples
+        --------
+        >>> ed_flights = ed.DataFrame('localhost', 'flights')
+        >>> ed_flights["timestamp"].quantile([.2,.5,.75]) # doctest: +SKIP
+        0.20   2018-01-09 04:30:57.289159912
+        0.50   2018-01-21 23:39:27.031627441
+        0.75   2018-02-01 04:54:59.256136963
+        Name: timestamp, dtype: datetime64[ns]
+
+        >>> ed_flights["dayOfWeek"].quantile() # doctest: +SKIP
+        3.0
+
+        >>> ed_flights["timestamp"].quantile() # doctest: +SKIP
+        Timestamp('2018-01-22 00:12:48.844534180')
+        """
+        return self._query_compiler.quantile(
+            quantiles=q, numeric_only=None, is_dataframe=False
+        )
+
     @property
     def ndim(self) -> int:
         """
@@ -633,6 +696,116 @@ class Series(NDFrame):
         )
         return Series(_query_compiler=new_query_compiler)
 
+    def mode(self, es_size: int = 10) -> pd.Series:
+        """
+            Calculate mode of a series
+
+        Parameters
+        ----------
+        es_size: default 10
+            number of rows to be returned if mode has multiple values
+
+        See Also
+        --------
+        :pandas_api_docs:`pandas.Series.mode`
+
+        Examples
+        --------
+        >>> ed_ecommerce = ed.DataFrame('localhost', 'ecommerce')
+        >>> ed_ecommerce["day_of_week"].mode()
+        0    Thursday
+        dtype: object
+
+        >>> ed_ecommerce["order_date"].mode()
+        0   2016-12-02 20:36:58
+        1   2016-12-04 23:44:10
+        2   2016-12-08 06:21:36
+        3   2016-12-08 09:38:53
+        4   2016-12-12 11:38:24
+        5   2016-12-12 19:46:34
+        6   2016-12-14 18:00:00
+        7   2016-12-15 11:38:24
+        8   2016-12-22 19:39:22
+        9   2016-12-24 06:21:36
+        dtype: datetime64[ns]
+
+        >>> ed_ecommerce["order_date"].mode(es_size=3)
+        0   2016-12-02 20:36:58
+        1   2016-12-04 23:44:10
+        2   2016-12-08 06:21:36
+        dtype: datetime64[ns]
+
+        """
+        return self._query_compiler.mode(is_dataframe=False, es_size=es_size)
+
+    def es_match(
+        self,
+        text: str,
+        *,
+        match_phrase: bool = False,
+        match_only_text_fields: bool = True,
+        analyzer: Optional[str] = None,
+        fuzziness: Optional[Union[int, str]] = None,
+        **kwargs: Any,
+    ) -> QueryFilter:
+        """Filters data with an Elasticsearch ``match`` or ``match_phrase``
+        query depending on the given parameters.
+
+        Read more about `Full-Text Queries in Elasticsearch <https://www.elastic.co/guide/en/elasticsearch/reference/current/full-text-queries.html>`_
+
+        All additional keyword arguments are passed in the body of the match query.
+
+        Parameters
+        ----------
+        text: str
+            String of text to search for
+        match_phrase: bool, default False
+            If True will use ``match_phrase`` instead of ``match`` query which takes into account
+            the order of the ``text`` parameter.
+        match_only_text_fields: bool, default True
+            When True this function will raise an error if any non-text fields
+            are queried to prevent fields that aren't analyzed from not working properly.
+            Set to False to ignore this preventative check.
+        analyzer: str, optional
+            Specify which analyzer to use for the match query
+        fuzziness: int, str, optional
+            Specify the fuzziness option for the match query
+
+        Returns
+        -------
+        QueryFilter
+            Boolean filter to be combined with other filters and
+            then passed to DataFrame[...].
+
+        Examples
+        --------
+        >>> df = ed.DataFrame(
+        ...   "localhost:9200", "ecommerce",
+        ...   columns=["category", "taxful_total_price"]
+        ... )
+        >>> df[
+        ...     df.category.es_match("Men's")
+        ...     & (df.taxful_total_price > 200.0)
+        ... ].head(5)
+                                       category  taxful_total_price
+        13                     [Men's Clothing]              266.96
+        33                     [Men's Clothing]              221.98
+        54                     [Men's Clothing]              234.98
+        93   [Men's Shoes, Women's Accessories]              239.98
+        273                       [Men's Shoes]              214.98
+        <BLANKLINE>
+        [5 rows x 2 columns]
+        """
+        return self._query_compiler.es_match(
+            text,
+            columns=[self.name],
+            match_phrase=match_phrase,
+            match_only_text_fields=match_only_text_fields,
+            analyzer=analyzer,
+            fuzziness=fuzziness,
+            **kwargs,
+        )
+
     def es_info(self) -> str:
         buf = StringIO()
 
@@ -640,11 +813,7 @@ class Series(NDFrame):
 
         return buf.getvalue()
 
-    @deprecated_api("eland.Series.es_info()")
-    def info_es(self) -> str:
-        return self.es_info()
-
-    def __add__(self, right):
+    def __add__(self, right: "Series") -> "Series":
         """
         Return addition of series and right, element-wise (binary operator add).
 
@@ -704,7 +873,7 @@ class Series(NDFrame):
         """
         return self._numeric_op(right, _get_method_name())
 
-    def __truediv__(self, right):
+    def __truediv__(self, right: "Series") -> "Series":
         """
         Return floating division of series and right, element-wise (binary operator truediv).
 
@@ -743,7 +912,7 @@ class Series(NDFrame):
         """
         return self._numeric_op(right, _get_method_name())
 
-    def __floordiv__(self, right):
+    def __floordiv__(self, right: "Series") -> "Series":
         """
         Return integer division of series and right, element-wise (binary operator floordiv //).
 
@@ -782,7 +951,7 @@ class Series(NDFrame):
         """
         return self._numeric_op(right, _get_method_name())
 
-    def __mod__(self, right):
+    def __mod__(self, right: "Series") -> "Series":
         """
         Return modulo of series and right, element-wise (binary operator mod %).
 
@@ -821,7 +990,7 @@ class Series(NDFrame):
         """
         return self._numeric_op(right, _get_method_name())
 
-    def __mul__(self, right):
+    def __mul__(self, right: "Series") -> "Series":
         """
         Return multiplication of series and right, element-wise (binary operator mul).
 
@@ -860,7 +1029,7 @@ class Series(NDFrame):
         """
         return self._numeric_op(right, _get_method_name())
 
-    def __sub__(self, right):
+    def __sub__(self, right: "Series") -> "Series":
         """
         Return subtraction of series and right, element-wise (binary operator sub).
 
@@ -899,7 +1068,7 @@ class Series(NDFrame):
         """
         return self._numeric_op(right, _get_method_name())
 
-    def __pow__(self, right):
+    def __pow__(self, right: "Series") -> "Series":
         """
         Return exponential power of series and right, element-wise (binary operator pow).
 
@@ -938,7 +1107,7 @@ class Series(NDFrame):
         """
         return self._numeric_op(right, _get_method_name())
 
-    def __radd__(self, left):
+    def __radd__(self, left: "Series") -> "Series":
         """
         Return addition of series and left, element-wise (binary operator add).
 
@@ -970,7 +1139,7 @@ class Series(NDFrame):
         """
         return self._numeric_op(left, _get_method_name())
 
-    def __rtruediv__(self, left):
+    def __rtruediv__(self, left: "Series") -> "Series":
         """
         Return division of series and left, element-wise (binary operator div).
 
@@ -1002,7 +1171,7 @@ class Series(NDFrame):
         """
         return self._numeric_op(left, _get_method_name())
 
-    def __rfloordiv__(self, left):
+    def __rfloordiv__(self, left: "Series") -> "Series":
         """
         Return integer division of series and left, element-wise (binary operator floordiv //).
 
@@ -1034,7 +1203,7 @@ class Series(NDFrame):
         """
         return self._numeric_op(left, _get_method_name())
 
-    def __rmod__(self, left):
+    def __rmod__(self, left: "Series") -> "Series":
         """
         Return modulo of series and left, element-wise (binary operator mod %).
 
@@ -1066,7 +1235,7 @@ class Series(NDFrame):
         """
         return self._numeric_op(left, _get_method_name())
 
-    def __rmul__(self, left):
+    def __rmul__(self, left: "Series") -> "Series":
         """
         Return multiplication of series and left, element-wise (binary operator mul).
 
@@ -1098,7 +1267,7 @@ class Series(NDFrame):
         """
         return self._numeric_op(left, _get_method_name())
 
-    def __rpow__(self, left):
+    def __rpow__(self, left: "Series") -> "Series":
         """
         Return exponential power of series and left, element-wise (binary operator pow).
 
@@ -1120,7 +1289,7 @@ class Series(NDFrame):
         3    2
         4    2
         Name: total_quantity, dtype: int64
-        >>> np.int(2) ** df.total_quantity
+        >>> np.int_(2) ** df.total_quantity
         0    4.0
         1    4.0
         2    4.0
@@ -1130,7 +1299,7 @@ class Series(NDFrame):
         """
         return self._numeric_op(left, _get_method_name())
 
-    def __rsub__(self, left):
+    def __rsub__(self, left: "Series") -> "Series":
         """
         Return subtraction of series and left, element-wise (binary operator sub).
 
@@ -1249,7 +1418,7 @@ class Series(NDFrame):
 
         return series
 
-    def max(self, numeric_only=None):
+    def max(self, numeric_only: Optional[bool] = None) -> pd.Series:
         """
         Return the maximum of the Series values
 
@@ -1273,7 +1442,7 @@ class Series(NDFrame):
         results = super().max(numeric_only=numeric_only)
         return results.squeeze()
 
-    def mean(self, numeric_only=None):
+    def mean(self, numeric_only: Optional[bool] = None) -> pd.Series:
         """
         Return the mean of the Series values
 
@@ -1297,7 +1466,7 @@ class Series(NDFrame):
         results = super().mean(numeric_only=numeric_only)
         return results.squeeze()
 
-    def median(self, numeric_only=None):
+    def median(self, numeric_only: Optional[bool] = None) -> pd.Series:
         """
         Return the median of the Series values
 
@@ -1321,7 +1490,7 @@ class Series(NDFrame):
         results = super().median(numeric_only=numeric_only)
         return results.squeeze()
 
-    def min(self, numeric_only=None):
+    def min(self, numeric_only: Optional[bool] = None) -> pd.Series:
         """
         Return the minimum of the Series values
 
@@ -1345,7 +1514,7 @@ class Series(NDFrame):
         results = super().min(numeric_only=numeric_only)
         return results.squeeze()
 
-    def sum(self, numeric_only=None):
+    def sum(self, numeric_only: Optional[bool] = None) -> pd.Series:
         """
         Return the sum of the Series values
 
@@ -1369,7 +1538,7 @@ class Series(NDFrame):
         results = super().sum(numeric_only=numeric_only)
         return results.squeeze()
 
-    def nunique(self):
+    def nunique(self) -> pd.Series:
         """
         Return the number of unique values in a Series
 
@@ -1391,7 +1560,7 @@ class Series(NDFrame):
         results = super().nunique()
         return results.squeeze()
 
-    def var(self, numeric_only=None):
+    def var(self, numeric_only: Optional[bool] = None) -> pd.Series:
         """
         Return variance for a Series
 
@@ -1413,7 +1582,7 @@ class Series(NDFrame):
         results = super().var(numeric_only=numeric_only)
         return results.squeeze()
 
-    def std(self, numeric_only=None):
+    def std(self, numeric_only: Optional[bool] = None) -> pd.Series:
         """
         Return standard deviation for a Series
 
@@ -1435,7 +1604,7 @@ class Series(NDFrame):
         results = super().std(numeric_only=numeric_only)
         return results.squeeze()
 
-    def mad(self, numeric_only=None):
+    def mad(self, numeric_only: Optional[bool] = None) -> pd.Series:
         """
         Return median absolute deviation for a Series
 
@@ -1478,8 +1647,8 @@ class Series(NDFrame):
 
         Examples
         --------
-        >>> df = ed.DataFrame('localhost', 'flights')
-        >>> df.AvgTicketPrice.describe() # ignoring percentiles as they don't generate consistent results
+        >>> df = ed.DataFrame('localhost', 'flights') # ignoring percentiles as they don't generate consistent results
+        >>> df.AvgTicketPrice.describe()  # doctest: +SKIP
         count    13059.000000
         mean       628.253689
         std        266.386661
@@ -1494,7 +1663,7 @@ class Series(NDFrame):
 
     # def values TODO - not implemented as causes current implementation of query to fail
 
-    def to_numpy(self):
+    def to_numpy(self) -> None:
         """
         Not implemented.
 

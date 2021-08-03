@@ -17,12 +17,15 @@
 
 import sys
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Tuple, Optional
-import pandas as pd
+from typing import TYPE_CHECKING, List, Optional, TextIO, Tuple, Union
+
+import pandas as pd  # type: ignore
+
 from eland.query_compiler import QueryCompiler
 
-
 if TYPE_CHECKING:
+    from elasticsearch import Elasticsearch
+
     from eland.index import Index
 
 """
@@ -54,12 +57,14 @@ only Elasticsearch aggregatable fields can be aggregated or grouped.
 class NDFrame(ABC):
     def __init__(
         self,
-        es_client=None,
-        es_index_pattern=None,
-        columns=None,
-        es_index_field=None,
-        _query_compiler=None,
-    ):
+        es_client: Optional[
+            Union[str, List[str], Tuple[str, ...], "Elasticsearch"]
+        ] = None,
+        es_index_pattern: Optional[str] = None,
+        columns: Optional[List[str]] = None,
+        es_index_field: Optional[str] = None,
+        _query_compiler: Optional[QueryCompiler] = None,
+    ) -> None:
         """
         pandas.DataFrame/Series like API that proxies into Elasticsearch index(es).
 
@@ -132,7 +137,29 @@ class NDFrame(ABC):
         """
         return self._query_compiler.dtypes
 
-    def _build_repr(self, num_rows) -> pd.DataFrame:
+    @property
+    def es_dtypes(self) -> pd.Series:
+        """
+        Return the Elasticsearch dtypes in the index
+
+        Returns
+        -------
+        pandas.Series
+            The data type of each column.
+
+        Examples
+        --------
+        >>> df = ed.DataFrame('localhost', 'flights', columns=['Origin', 'AvgTicketPrice', 'timestamp', 'dayOfWeek'])
+        >>> df.es_dtypes
+        Origin            keyword
+        AvgTicketPrice      float
+        timestamp            date
+        dayOfWeek            byte
+        dtype: object
+        """
+        return self._query_compiler.es_dtypes
+
+    def _build_repr(self, num_rows: int) -> pd.DataFrame:
         # self could be Series or DataFrame
         if len(self.index) <= num_rows:
             return self.to_pandas()
@@ -159,7 +186,7 @@ class NDFrame(ABC):
         """
         return len(self.index)
 
-    def _es_info(self, buf):
+    def _es_info(self, buf: TextIO) -> None:
         self._query_compiler.es_info(buf)
 
     def mean(self, numeric_only: Optional[bool] = None) -> pd.Series:
@@ -187,7 +214,7 @@ class NDFrame(ABC):
         Examples
         --------
         >>> df = ed.DataFrame('localhost', 'flights', columns=["AvgTicketPrice", "Cancelled", "dayOfWeek", "timestamp", "DestCountry"])
-        >>> df.mean()
+        >>> df.mean()  # doctest: +SKIP
         AvgTicketPrice                          628.254
         Cancelled                              0.128494
         dayOfWeek                               2.83598
@@ -200,7 +227,7 @@ class NDFrame(ABC):
         dayOfWeek           2.835975
         dtype: float64
 
-        >>> df.mean(numeric_only=False)
+        >>> df.mean(numeric_only=False)  # doctest: +SKIP
         AvgTicketPrice                          628.254
         Cancelled                              0.128494
         dayOfWeek                               2.83598
@@ -236,7 +263,7 @@ class NDFrame(ABC):
         Examples
         --------
         >>> df = ed.DataFrame('localhost', 'flights', columns=["AvgTicketPrice", "Cancelled", "dayOfWeek", "timestamp", "DestCountry"])
-        >>> df.sum()
+        >>> df.sum()  # doctest: +SKIP
         AvgTicketPrice    8.20436e+06
         Cancelled                1678
         dayOfWeek               37035
@@ -248,7 +275,7 @@ class NDFrame(ABC):
         dayOfWeek         3.703500e+04
         dtype: float64
 
-        >>> df.sum(numeric_only=False)
+        >>> df.sum(numeric_only=False)  # doctest: +SKIP
         AvgTicketPrice    8.20436e+06
         Cancelled                1678
         dayOfWeek               37035
@@ -284,7 +311,7 @@ class NDFrame(ABC):
         Examples
         --------
         >>> df = ed.DataFrame('localhost', 'flights', columns=["AvgTicketPrice", "Cancelled", "dayOfWeek", "timestamp", "DestCountry"])
-        >>> df.min()
+        >>> df.min()  # doctest: +SKIP
         AvgTicketPrice                100.021
         Cancelled                       False
         dayOfWeek                           0
@@ -297,7 +324,7 @@ class NDFrame(ABC):
         dayOfWeek           0.000000
         dtype: float64
 
-        >>> df.min(numeric_only=False)
+        >>> df.min(numeric_only=False)  # doctest: +SKIP
         AvgTicketPrice                100.021
         Cancelled                       False
         dayOfWeek                           0
@@ -331,7 +358,7 @@ class NDFrame(ABC):
         Examples
         --------
         >>> df = ed.DataFrame('localhost', 'flights', columns=["AvgTicketPrice", "Cancelled", "dayOfWeek", "timestamp", "DestCountry"])
-        >>> df.var()
+        >>> df.var()  # doctest: +SKIP
         AvgTicketPrice    70964.570234
         Cancelled             0.111987
         dayOfWeek             3.761279
@@ -343,7 +370,7 @@ class NDFrame(ABC):
         dayOfWeek             3.761279
         dtype: float64
 
-        >>> df.var(numeric_only=False)
+        >>> df.var(numeric_only=False)  # doctest: +SKIP
         AvgTicketPrice     70964.6
         Cancelled         0.111987
         dayOfWeek          3.76128
@@ -377,7 +404,7 @@ class NDFrame(ABC):
         Examples
         --------
         >>> df = ed.DataFrame('localhost', 'flights', columns=["AvgTicketPrice", "Cancelled", "dayOfWeek", "timestamp", "DestCountry"])
-        >>> df.std()
+        >>> df.std()  # doctest: +SKIP
         AvgTicketPrice    266.407061
         Cancelled           0.334664
         dayOfWeek           1.939513
@@ -389,7 +416,7 @@ class NDFrame(ABC):
         dayOfWeek           1.939513
         dtype: float64
 
-        >>> df.std(numeric_only=False)
+        >>> df.std(numeric_only=False)  # doctest: +SKIP
         AvgTicketPrice     266.407
         Cancelled         0.334664
         dayOfWeek          1.93951
@@ -472,7 +499,7 @@ class NDFrame(ABC):
         Examples
         --------
         >>> df = ed.DataFrame('localhost', 'flights', columns=["AvgTicketPrice", "Cancelled", "dayOfWeek", "timestamp", "DestCountry"])
-        >>> df.max()
+        >>> df.max()  # doctest: +SKIP
         AvgTicketPrice                1199.73
         Cancelled                        True
         dayOfWeek                           6
@@ -485,7 +512,7 @@ class NDFrame(ABC):
         dayOfWeek            6.000000
         dtype: float64
 
-        >>> df.max(numeric_only=False)
+        >>> df.max(numeric_only=False)  # doctest: +SKIP
         AvgTicketPrice                1199.73
         Cancelled                        True
         dayOfWeek                           6
@@ -577,7 +604,7 @@ class NDFrame(ABC):
         """
         return self._query_compiler.mad(numeric_only=numeric_only)
 
-    def _hist(self, num_bins):
+    def _hist(self, num_bins: int) -> Tuple[pd.DataFrame, pd.DataFrame]:
         return self._query_compiler._hist(num_bins)
 
     def describe(self) -> pd.DataFrame:
@@ -601,8 +628,8 @@ class NDFrame(ABC):
 
         Examples
         --------
-        >>> df = ed.DataFrame('localhost', 'flights', columns=['AvgTicketPrice', 'FlightDelayMin'])
-        >>> df.describe() # ignoring percentiles as they don't generate consistent results
+        >>> df = ed.DataFrame('localhost', 'flights', columns=['AvgTicketPrice', 'FlightDelayMin']) # ignoring percentiles
+        >>> df.describe() # doctest: +SKIP
                AvgTicketPrice  FlightDelayMin
         count    13059.000000    13059.000000
         mean       628.253689       47.335171
@@ -616,20 +643,25 @@ class NDFrame(ABC):
         return self._query_compiler.describe()
 
     @abstractmethod
-    def to_pandas(self, show_progress=False):
-        pass
+    def to_pandas(self, show_progress: bool = False) -> pd.DataFrame:
+        raise NotImplementedError
 
     @abstractmethod
-    def head(self, n=5):
-        pass
+    def head(self, n: int = 5) -> "NDFrame":
+        raise NotImplementedError
 
     @abstractmethod
-    def tail(self, n=5):
-        pass
+    def tail(self, n: int = 5) -> "NDFrame":
+        raise NotImplementedError
 
     @abstractmethod
-    def sample(self, n=None, frac=None, random_state=None):
-        pass
+    def sample(
+        self,
+        n: Optional[int] = None,
+        frac: Optional[float] = None,
+        random_state: Optional[int] = None,
+    ) -> "NDFrame":
+        raise NotImplementedError
 
     @property
     def shape(self) -> Tuple[int, ...]:

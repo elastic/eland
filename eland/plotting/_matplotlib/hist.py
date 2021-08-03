@@ -15,11 +15,35 @@
 #  specific language governing permissions and limitations
 #  under the License.
 
+from typing import TYPE_CHECKING
+
 import numpy as np
-from pandas.core.dtypes.generic import ABCIndexClass
-from pandas.plotting._matplotlib import converter
-from pandas.plotting._matplotlib.tools import _flatten, _set_ticks_props, _subplots
+from pandas.plotting._matplotlib import converter  # type: ignore
+
+try:
+    # pandas<1.3.0
+    from pandas.core.dtypes.generic import ABCIndexClass as ABCIndex
+except ImportError:
+    # pandas>=1.3.0
+    from pandas.core.dtypes.generic import ABCIndex
+
+try:  # pandas>=1.2.0
+    from pandas.plotting._matplotlib.tools import (  # type: ignore
+        create_subplots,
+        flatten_axes,
+        set_ticks_props,
+    )
+except ImportError:  # pandas<1.2.0
+    from pandas.plotting._matplotlib.tools import (  # type: ignore
+        _flatten as flatten_axes,
+        _set_ticks_props as set_ticks_props,
+        _subplots as create_subplots,
+    )
+
 from eland.utils import try_sort
+
+if TYPE_CHECKING:
+    from numpy.typing import ArrayLike
 
 
 def hist_series(
@@ -34,8 +58,8 @@ def hist_series(
     figsize=None,
     bins=10,
     **kwds,
-):
-    import matplotlib.pyplot as plt
+) -> "ArrayLike":
+    import matplotlib.pyplot as plt  # type: ignore
 
     if by is None:
         if kwds.get("layout", None) is not None:
@@ -62,7 +86,7 @@ def hist_series(
         ax.grid(grid)
         axes = np.array([ax])
 
-        _set_ticks_props(
+        set_ticks_props(
             axes, xlabelsize=xlabelsize, xrot=xrot, ylabelsize=ylabelsize, yrot=yrot
         )
 
@@ -100,7 +124,7 @@ def hist_frame(
         raise NotImplementedError("TODO")
 
     if column is not None:
-        if not isinstance(column, (list, np.ndarray, ABCIndexClass)):
+        if not isinstance(column, (list, np.ndarray, ABCIndex)):
             column = [column]
         ed_df_bins = ed_df_bins[column]
         ed_df_weights = ed_df_weights[column]
@@ -109,7 +133,7 @@ def hist_frame(
     if naxes == 0:
         raise ValueError("hist method requires numerical columns, " "nothing to plot.")
 
-    fig, axes = _subplots(
+    fig, axes = create_subplots(
         naxes=naxes,
         ax=ax,
         squeeze=False,
@@ -118,7 +142,7 @@ def hist_frame(
         figsize=figsize,
         layout=layout,
     )
-    _axes = _flatten(axes)
+    _axes = flatten_axes(axes)
 
     for i, col in enumerate(try_sort(data.columns)):
         ax = _axes[i]
@@ -131,7 +155,7 @@ def hist_frame(
         ax.set_title(col)
         ax.grid(grid)
 
-    _set_ticks_props(
+    set_ticks_props(
         axes, xlabelsize=xlabelsize, xrot=xrot, ylabelsize=ylabelsize, yrot=yrot
     )
     fig.subplots_adjust(wspace=0.3, hspace=0.3)

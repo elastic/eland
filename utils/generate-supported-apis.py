@@ -17,14 +17,15 @@
 
 """Script that is used to create the compatibility matrix in the documentation"""
 
-import re
-import eland
-import pandas
 import inspect
+import re
 from pathlib import Path
 
+import pandas
 
-api_docs_dir = Path(__file__).absolute().parent.parent / "docs/source/reference/api"
+import eland
+
+api_docs_dir = Path(__file__).absolute().parent.parent / "docs/sphinx/reference/api"
 is_supported = []
 supported_attr = re.compile(
     r"(?:[a-zA-Z0-9][a-zA-Z0-9_]*|__[a-zA-Z0-9][a-zA-Z0-9_]*__)"
