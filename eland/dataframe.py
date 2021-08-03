@@ -19,7 +19,7 @@ import re
 import sys
 import warnings
 from io import StringIO
-from typing import TYPE_CHECKING, Any, List, Optional, Sequence, Tuple, Union
+from typing import TYPE_CHECKING, Any, List, Iterator, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import pandas as pd  # type: ignore
@@ -34,7 +34,7 @@ from pandas.io.formats.printing import pprint_thing  # type: ignore
 from pandas.util._validators import validate_bool_kwarg  # type: ignore
 
 import eland.plotting as gfx
-from eland.common import DEFAULT_NUM_ROWS_DISPLAYED, docstring_parameter
+from eland.common import DEFAULT_ES_MAX_RESULT_WINDOW, DEFAULT_NUM_ROWS_DISPLAYED, docstring_parameter
 from eland.filter import BooleanFilter
 from eland.groupby import DataFrameGroupBy
 from eland.ndframe import NDFrame
@@ -1350,6 +1350,16 @@ class DataFrame(NDFrame):
         pandas.DataFrame
         """
         return self._query_compiler.to_pandas(show_progress=show_progress)
+
+    def to_pandas_in_batch(self, show_progress: bool = False, batch_size: int = DEFAULT_ES_MAX_RESULT_WINDOW) -> Iterator:
+        """
+        Utility method to convert eland.Dataframe to pandas.Dataframe Iterator
+
+        Returns
+        -------
+        pandas.Dataframe Iterator
+        """
+        return self._query_compiler.to_pandas_in_batch(show_progress=show_progress, batch_size=batch_size)
 
     def _empty_pd_df(self) -> pd.DataFrame:
         return self._query_compiler._empty_pd_ef()

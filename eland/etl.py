@@ -17,14 +17,14 @@
 
 import csv
 from collections import deque
-from typing import Any, Dict, Generator, List, Mapping, Optional, Tuple, Union
+from typing import Any, Dict, Generator, Iterator, List, Mapping, Optional, Tuple, Union
 
 import pandas as pd  # type: ignore
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import parallel_bulk
 
 from eland import DataFrame
-from eland.common import DEFAULT_CHUNK_SIZE, PANDAS_VERSION, ensure_es_client
+from eland.common import DEFAULT_ES_MAX_RESULT_WINDOW, DEFAULT_CHUNK_SIZE, PANDAS_VERSION, ensure_es_client
 from eland.field_mappings import FieldMappings, verify_mapping_compatibility
 
 try:
@@ -286,6 +286,90 @@ def eland_to_pandas(ed_df: DataFrame, show_progress: bool = False) -> pd.DataFra
     eland.pandas_to_eland: Create an eland.Dataframe from pandas.DataFrame
     """
     return ed_df.to_pandas(show_progress=show_progress)
+
+
+def eland_to_pandas_in_batch(ed_df: DataFrame, show_progress: bool = False, batch_size = DEFAULT_ES_MAX_RESULT_WINDOW) -> Iterator:
+    """
+    Convert an eland.Dataframe to a pandas.DataFrame Iterator
+
+    **Note: this loads the entire Elasticsearch index into in core pandas.DataFrame structures. For large
+    indices this can create significant load on the Elasticsearch cluster and require signficant memory**
+
+    Parameters
+    ----------
+    ed_df: eland.DataFrame
+        The source eland.Dataframe referencing the Elasticsearch index
+    show_progress: bool
+        Output progress of option to stdout? By default False.
+    batch_size: int
+        Size of each pandas.DataFrame iteration
+
+    Returns
+    -------
+    pandas.DataFrame Iterator
+        Use for..in to iterate pandas.DataFrame Iterator
+
+    Examples
+    --------
+    >>> ed_df = ed.DataFrame('localhost', 'flights').head()
+    >>> type(ed_df)
+    <class 'eland.dataframe.DataFrame'>
+    >>> ed_df
+                            server_addr      remote_addr        uri
+    QDrsBXsBRfQVEO7NQQRt  119.26.101.234     49.89.4.210  /mapi/index.php
+    WzrsBXsBRfQVEO7NQQRt  119.26.101.234  39.152.180.178  /mapi/index.php
+    pz39BXsBRfQVEO7NR59I  119.26.101.234   42.236.141.37  /mapi/index.php
+    qj39BXsBRfQVEO7NR59I  119.26.101.234  110.245.198.37  /mapi/index.php
+    xj39BXsBRfQVEO7NR59I  119.26.101.234     112.20.0.34  /mapi/index.php
+    <BLANKLINE>
+    [5 rows x 3 columns]
+
+    Convert `eland.DataFrame` to `pandas.DataFrame Iterator` 
+
+    >>> pd_df_iterator = ed.eland_to_pandas_in_batch(ed_df, batch_size=1000)
+    >>> type(pd_df_iterator)
+    <class 'eland.operations.Operations._es_results.<locals>.PandasDataFrameIterator'>
+    >>> for pd_df in pd_df_iterator:
+    >>>     print(pd_df)
+
+                            server_addr      remote_addr         uri
+    05ZQBnsBRj5bFT-cJMW0  119.26.101.234   223.104.65.125  /mapi/index.php
+    KJZQBnsBRj5bFT-cJMa0  119.26.101.234  123.190.130.218  /mapi/index.php
+    kZdUBnsBRj5bFT-cQp37  119.26.101.234  183.197.135.179  /mapi/index.php
+    BU9UBnsBRfQVEO7NQkD8  119.26.101.234     42.85.16.239  /mapi/index.php
+    z5ZQBnsBRj5bFT-cJMi1  119.26.101.234    27.189.46.135  /mapi/index.php
+    ...                              ...              ...              ...
+    OlJUBnsBf3gkHtZ2R7ds  119.26.101.234   123.118.75.237  /mapi/index.php
+    6k9TBnsBRfQVEO7NVQrM  119.26.101.234       42.6.14.69  /mapi/index.php
+    4JdSBnsBRj5bFT-ccD7W  119.26.101.234     36.128.21.90  /mapi/index.php
+    GJdSBnsBRj5bFT-ccD_W  119.26.101.234       1.61.2.152  /mapi/index.php
+    U5dSBnsBRj5bFT-ccD_W  119.26.101.234  183.194.154.205  /mapi/index.php
+    <BLANKLINE>
+    [1000 rows x 3 columns]
+
+                            server_addr      remote_addr         uri
+    pVJUBnsBf3gkHtZ2Qa22  119.26.101.234     42.85.16.239  /mapi/index.php
+    mE9TBnsBRfQVEO7NVQvM  119.26.101.234    106.84.146.95  /mapi/index.php
+    cVJUBnsBf3gkHtZ2Qa62  119.26.101.234    117.136.58.77  /mapi/index.php
+    fJdUBnsBRj5bFT-cQZOl  119.26.101.234  183.229.158.165  /mapi/index.php
+    3FJUBnsBf3gkHtZ2Qaia  119.26.101.234     36.128.21.90  /mapi/index.php
+    ...                              ...              ...              ...
+    vZdWBnsBRj5bFT-cGOLD  119.26.101.234     39.149.7.221  /mapi/index.php
+    109WBnsBRfQVEO7NGIzM  119.26.101.234  118.115.203.222  /mapi/index.php
+    C09WBnsBRfQVEO7NGIqu  119.26.101.234   122.157.74.184  /mapi/index.php
+    SZdVBnsBRj5bFT-cotX4  119.26.101.234    157.122.64.66  /mapi/index.php
+    wVJVBnsBf3gkHtZ2o_gM  119.26.101.234      49.66.44.22  /mapi/index.php
+    <BLANKLINE>
+    [1000 rows x 3 columns]
+
+    ...... More pd_df, Each pd_df size is 1000 (batch_size)
+
+
+    See Also
+    --------
+    eland.pandas_to_eland: Create an eland.Dataframe from pandas.DataFrame
+    """
+    return ed_df.to_pandas_in_batch(show_progress=show_progress, batch_size=batch_size)
 
 
 def csv_to_eland(  # type: ignore

@@ -34,6 +34,7 @@ import pandas as pd  # type: ignore
 
 from eland.common import (
     DEFAULT_PROGRESS_REPORTING_NUM_ROWS,
+    DEFAULT_ES_MAX_RESULT_WINDOW,
     elasticsearch_date_to_pandas_date,
     ensure_es_client,
 )
@@ -535,6 +536,15 @@ class QueryCompiler:
             Pandas DataFrame
         """
         return self._operations.to_pandas(self, show_progress)
+
+    # To Pandas, Return Iterator
+    def to_pandas_in_batch(self, show_progress=False, batch_size=DEFAULT_ES_MAX_RESULT_WINDOW):
+        """Converts Eland DataFrame to Pandas DataFrame Iterator.
+
+        Returns:
+            Pandas DataFrame Iterator
+        """
+        return self._operations.to_pandas_in_batch(self, show_progress, batch_size)
 
     # To CSV
     def to_csv(self, **kwargs):
