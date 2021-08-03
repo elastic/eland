@@ -17,10 +17,8 @@
 
 # File called _pytest for PyCharm compatability
 import numpy as np
-import pandas as pd
 import pytest
 
-from pytz import timezone
 from datetime import datetime
 
 from eland.tests.common import TestData, assert_pandas_eland_series_equal
