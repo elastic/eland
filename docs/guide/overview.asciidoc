@@ -8,21 +8,14 @@ Source code is available on https://github.com/elastic/eland[GitHub].
 [discrete]
 === Compatibility
 
-The library is compatible with Python 3.6 and later and all
-{es} versions since `7.6.x` but you **have to use a matching major version**:
+The library is compatible with Python 3.7 and later and all
+{es} versions since 7.14 but you **should use a matching major version**:
 
 The recommended way to set your requirements in your `setup.py` or
 `requirements.txt` is::
 
     # Elasticsearch 7.x
     eland>=7,<8
-
-Because Eland uses some experimental APIs for {ml} it
-is also recommended to install the same major and minor for `elasticsearch-py`
-as your cluster. For example if your cluster is v7.8.1 you would install
-like so::
-
-    $ python -m pip install 'eland>=7,<8' 'elasticsearch>=7.8,<7.9'
 
 [discrete]
 === Getting Started
