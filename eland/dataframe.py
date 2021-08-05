@@ -626,7 +626,7 @@ class DataFrame(NDFrame):
         Operations:
          tasks: [('boolean_filter': ('boolean_filter': {'bool': {'must': [{'term': {'OriginAirportID': 'AMS'}}, {'range': {'FlightDelayMin': {'gt': 60}}}]}})), ('tail': ('sort_field': '_doc', 'count': 5))]
          size: 5
-         sort_params: _doc:desc
+         sort_params: {'_doc': 'desc'}
          _source: ['timestamp', 'OriginAirportID', 'DestAirportID', 'FlightDelayMin']
          body: {'query': {'bool': {'must': [{'term': {'OriginAirportID': 'AMS'}}, {'range': {'FlightDelayMin': {'gt': 60}}}]}}}
          post_processing: [('sort_index')]

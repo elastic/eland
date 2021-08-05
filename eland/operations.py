@@ -33,13 +33,15 @@ from typing import (
 
 import numpy as np
 import pandas as pd  # type: ignore
-from elasticsearch.helpers import scan
+from elasticsearch.exceptions import NotFoundError
 
-from eland.actions import PostProcessingAction, SortFieldAction
+from eland.actions import PostProcessingAction
 from eland.common import (
     DEFAULT_CSV_BATCH_OUTPUT_SIZE,
     DEFAULT_ES_MAX_RESULT_WINDOW,
+    DEFAULT_KEEP_ALIVE,
     DEFAULT_PAGINATION_SIZE,
+    DEFAULT_SEARCH_SIZE,
     SortOrder,
     build_pd_series,
     elasticsearch_date_to_pandas_date,
@@ -1224,7 +1226,7 @@ class Operations:
     ) -> None:
         query_params, post_processing = self._resolve_tasks(query_compiler)
 
-        size, sort_params = Operations._query_params_to_size_and_sort(query_params)
+        result_size, sort_params = self._query_params_to_size_and_sort(query_params)
 
         script_fields = query_params.script_fields
         query = Query(query_params.query)
@@ -1233,58 +1235,35 @@ class Operations:
         if script_fields is not None:
             body["script_fields"] = script_fields
 
-        # Only return requested field_names
+        # Only return requested field_names and add them to body
         _source = query_compiler.get_field_names(include_scripted_fields=False)
-        if _source:
-            # For query_compiler._client.search we could add _source
-            # as a parameter, or add this value in body.
-            #
-            # If _source is a parameter it is encoded into to the url.
-            #
-            # If _source is a large number of fields (1000+) then this can result in an
-            # extremely long url and a `too_long_frame_exception`. Therefore, add
-            # _source to the body rather than as a _source parameter
-            body["_source"] = _source
-        else:
-            body["_source"] = False
+        body["_source"] = _source if _source else False
 
-        es_results: Any = None
+        is_pagination_required: bool = False
 
-        # If size=None use scan not search - then post sort results when in df
-        # If size>10000 use scan
-        is_scan = False
-        if size is not None and size <= DEFAULT_ES_MAX_RESULT_WINDOW:
-            if size > 0:
-                es_results = query_compiler._client.search(
-                    index=query_compiler._index_pattern,
-                    size=size,
-                    sort=sort_params,
-                    body=body,
-                )
+        if result_size and (0 <= result_size <= DEFAULT_ES_MAX_RESULT_WINDOW):
+            body["size"] = result_size
         else:
-            is_scan = True
-            es_results = scan(
-                client=query_compiler._client,
-                index=query_compiler._index_pattern,
-                query=body,
+            body["size"] = DEFAULT_SEARCH_SIZE
+            is_pagination_required = True
+
+        if sort_params:
+            body["sort"] = [sort_params]
+
+        es_results = list(
+            search_after_with_pit(
+                query_compiler=query_compiler,
+                body=body,
+                is_pagination_required=is_pagination_required,
             )
-            # create post sort
-            if sort_params is not None:
-                post_processing.append(SortFieldAction(sort_params))
+            # Check result_size to handle df.head(0) and df.tail(0)
+            if result_size != 0
+            else []
+        )
 
-        if is_scan:
-            while True:
-                partial_result, df = query_compiler._es_results_to_pandas(
-                    es_results, collector.batch_size(), collector.show_progress
-                )
-                df = self._apply_df_post_processing(df, post_processing)
-                collector.collect(df)
-                if not partial_result:
-                    break
-        else:
-            partial_result, df = query_compiler._es_results_to_pandas(es_results)
-            df = self._apply_df_post_processing(df, post_processing)
-            collector.collect(df)
+        _, df = query_compiler._es_results_to_pandas(es_results)
+        df = self._apply_df_post_processing(df, post_processing)
+        collector.collect(df)
 
     def index_count(self, query_compiler: "QueryCompiler", field: str) -> int:
         # field is the index field so count values
@@ -1379,13 +1358,12 @@ class Operations:
     @staticmethod
     def _query_params_to_size_and_sort(
         query_params: QueryParams,
-    ) -> Tuple[Optional[int], Optional[str]]:
+    ) -> Tuple[Optional[int], Optional[Dict[str, str]]]:
         sort_params = None
         if query_params.sort_field and query_params.sort_order:
-            sort_params = (
-                f"{query_params.sort_field}:"
-                f"{SortOrder.to_string(query_params.sort_order)}"
-            )
+            sort_params = {
+                query_params.sort_field: SortOrder.to_string(query_params.sort_order)
+            }
         size = query_params.size
         return size, sort_params
 
@@ -1453,7 +1431,7 @@ class Operations:
         buf.write(f" tasks: {self._tasks}\n")
 
         query_params, post_processing = self._resolve_tasks(query_compiler)
-        size, sort_params = Operations._query_params_to_size_and_sort(query_params)
+        size, sort_params = self._query_params_to_size_and_sort(query_params)
         _source = query_compiler._mappings.get_field_names()
 
         script_fields = query_params.script_fields
@@ -1541,3 +1519,63 @@ class PandasDataFrameCollector:
     @property
     def show_progress(self) -> bool:
         return self._show_progress
+
+
+def search_after_with_pit(
+    query_compiler: "QueryCompiler",
+    body: Dict[str, Any],
+    is_pagination_required: bool = True,
+) -> Generator[Dict[str, Any], None, None]:
+    """
+    This is a generator used to initialize point in time API and query the
+    search API and return generator which yields an individual document
+
+    Parameters
+    ----------
+    query_compiler:
+        An instance of query_compiler
+    body:
+        body for search API
+    is_pagination_required: bool
+        set True if size of documents to be queried is greater than 10,000 else False.
+        Defaults to True
+
+    Examples
+    --------
+    results = list(search_after_all(query_compiler, body, True))
+
+    """
+    try:
+        pit_id: str = query_compiler._client.open_point_in_time(
+            index=query_compiler._index_pattern, keep_alive=DEFAULT_KEEP_ALIVE
+        )["id"]
+
+        body["pit"] = {"id": pit_id, "keep_alive": DEFAULT_KEEP_ALIVE}
+        body["track_total_hits"] = False  # To Improve performance
+
+        # Sort is must for pagination
+        if "sort" not in body:
+            body["sort"] = [{"_doc": "asc"}]
+
+        while True:
+            results = query_compiler._client.search(body=body)["hits"]["hits"]
+            # If results is empty, we completed searching
+            if results:
+                for result in results:
+                    yield result
+                if is_pagination_required:
+                    body["search_after"] = results[-1]["sort"]
+                else:
+                    # This is important otherwise it fetches entire index
+                    # if pagination is not required. One search is enough
+                    break
+            else:
+                break
+    finally:
+        try:
+            query_compiler._client.close_point_in_time(body={"id": pit_id})
+        except NotFoundError:
+            # if pit_id is already closed, ES throws NotFoundError
+            # Hopefully It shouldn't come here
+            pass
+        return

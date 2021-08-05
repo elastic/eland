@@ -147,7 +147,7 @@ class QueryCompiler:
 
     def _es_results_to_pandas(
         self,
-        results: Dict[Any, Any],
+        results: List[Dict[str, Any]],
         batch_size: Optional[int] = None,
         show_progress: bool = False,
     ) -> "pd.Dataframe":
@@ -252,7 +252,7 @@ class QueryCompiler:
         rows = []
         index = []
         if isinstance(results, dict):
-            iterator = results["hits"]["hits"]
+            iterator = results
 
             if batch_size is not None:
                 raise NotImplementedError(
@@ -338,10 +338,10 @@ class QueryCompiler:
                     is_source_field = False
                     pd_dtype = "object"
 
-            if not is_source_field and type(x) is dict:
+            if not is_source_field and isinstance(x, dict):
                 for a in x:
                     flatten(x[a], name + a + ".")
-            elif not is_source_field and type(x) is list:
+            elif not is_source_field and isinstance(x, list):
                 for a in x:
                     flatten(a, name)
             elif is_source_field:  # only print source fields from mappings
@@ -357,7 +357,7 @@ class QueryCompiler:
                 # Elasticsearch can have multiple values for a field. These are represented as lists, so
                 # create lists for this pivot (see notes above)
                 if field_name in out:
-                    if type(out[field_name]) is not list:
+                    if not isinstance(out[field_name], list):
                         field_as_list = [out[field_name]]
                         out[field_name] = field_as_list
                     out[field_name].append(x)
