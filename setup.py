@@ -70,7 +70,12 @@ setup(
     classifiers=CLASSIFIERS,
     keywords="elastic eland pandas python",
     packages=find_packages(include=["eland", "eland.*"]),
-    install_requires=["elasticsearch>=7.13", "pandas>=1.2,<1.4", "matplotlib", "numpy"],
+    install_requires=[
+        "elasticsearch>=7.14,<8",
+        "pandas>=1.2,<1.4",
+        "matplotlib",
+        "numpy",
+    ],
     python_requires=">=3.7",
     package_data={"eland": ["py.typed"]},
     include_package_data=True,
