@@ -23,7 +23,6 @@ from typing import (
     Any,
     Dict,
     Generator,
-    Iterator,
     List,
     Optional,
     Sequence,
@@ -1205,19 +1204,6 @@ class Operations:
 
         return collector._df
 
-    def to_pandas_in_batch(
-        self,
-        query_compiler: "QueryCompiler",
-        show_progress: bool = False,
-        batch_size: int = DEFAULT_ES_MAX_RESULT_WINDOW
-    ) -> Iterator:
-
-        collector = PandasDataFrameIteratorCollector(show_progress, batch_size)
-
-        self._es_results(query_compiler, collector)
-
-        return collector._df_iterator
-
     def to_csv(
         self,
         query_compiler: "QueryCompiler",
@@ -1234,7 +1220,7 @@ class Operations:
     def _es_results(
         self,
         query_compiler: "QueryCompiler",
-        collector: Union["PandasToCSVCollector", "PandasDataFrameCollector", "PandasDataFrameIteratorCollector"],
+        collector: Union["PandasToCSVCollector", "PandasDataFrameCollector"],
     ) -> None:
         query_params, post_processing = self._resolve_tasks(query_compiler)
 
@@ -1286,46 +1272,19 @@ class Operations:
             if sort_params is not None:
                 post_processing.append(SortFieldAction(sort_params))
 
-        if isinstance(collector, PandasDataFrameIteratorCollector):
-            batch_size = collector.batch_size()
-            show_progress = collector.show_progress
-
-            class PandasDataFrameIterator:
-                def __init__(self, query_compiler, es_results, batch_size, show_progress, post_processing):
-                    self._query_compiler = query_compiler
-                    self._es_results = es_results
-                    self._batch_size = batch_size
-                    self._show_progress = show_progress
-                    self._post_processing = post_processing
-
-                def __iter__(self):
-                    return self
-
-                def __next__(self):
-                    partial_result, df = self._query_compiler._es_results_to_pandas(
-                        self._es_results, self._batch_size, self._show_progress
-                    )
-                    df = Operations._apply_df_post_processing(df, self._post_processing)
-                    if not partial_result:
-                        raise StopIteration
-                    else:
-                        return df
-
-            collector.collect(PandasDataFrameIterator(query_compiler, es_results, batch_size, show_progress, post_processing))
-        else:
-            if is_scan:
-                while True:
-                    partial_result, df = query_compiler._es_results_to_pandas(
-                        es_results, collector.batch_size(), collector.show_progress
-                    )
-                    df = self._apply_df_post_processing(df, post_processing)
-                    collector.collect(df)
-                    if not partial_result:
-                        break
-            else:
-                partial_result, df = query_compiler._es_results_to_pandas(es_results)
+        if is_scan:
+            while True:
+                partial_result, df = query_compiler._es_results_to_pandas(
+                    es_results, collector.batch_size(), collector.show_progress
+                )
                 df = self._apply_df_post_processing(df, post_processing)
                 collector.collect(df)
+                if not partial_result:
+                    break
+        else:
+            partial_result, df = query_compiler._es_results_to_pandas(es_results)
+            df = self._apply_df_post_processing(df, post_processing)
+            collector.collect(df)
 
     def index_count(self, query_compiler: "QueryCompiler", field: str) -> int:
         # field is the index field so count values
@@ -1581,26 +1540,4 @@ class PandasDataFrameCollector:
 
     @property
     def show_progress(self) -> bool:
-        return self._show_progress
-
-class PandasDataFrameIteratorCollector:
-    def __init__(self, show_progress, batch_size):
-        self._df_iterator = None
-        self._show_progress = show_progress
-        self._batch_size = batch_size
-
-    def collect(self, df_iterator):
-        # This collector return a PandasDataFrameIterator. Therefore, it's support batch data.
-        # This method is only called once.
-        if self._df_iterator is not None:
-            raise RuntimeError(
-                "Logic error in execution, this method must only be called once for this"
-            )
-        self._df_iterator = df_iterator
-
-    def batch_size(self):
-        return self._batch_size
-
-    @property
-    def show_progress(self):
         return self._show_progress

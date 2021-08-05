@@ -19,7 +19,7 @@ import re
 import sys
 import warnings
 from io import StringIO
-from typing import TYPE_CHECKING, Any, List, Iterator, Optional, Sequence, Tuple, Union
+from typing import TYPE_CHECKING, Any, List, Iterable, Hashable, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import pandas as pd  # type: ignore
@@ -34,7 +34,7 @@ from pandas.io.formats.printing import pprint_thing  # type: ignore
 from pandas.util._validators import validate_bool_kwarg  # type: ignore
 
 import eland.plotting as gfx
-from eland.common import DEFAULT_ES_MAX_RESULT_WINDOW, DEFAULT_NUM_ROWS_DISPLAYED, docstring_parameter
+from eland.common import DEFAULT_NUM_ROWS_DISPLAYED, docstring_parameter
 from eland.filter import BooleanFilter
 from eland.groupby import DataFrameGroupBy
 from eland.ndframe import NDFrame
@@ -1351,16 +1351,6 @@ class DataFrame(NDFrame):
         """
         return self._query_compiler.to_pandas(show_progress=show_progress)
 
-    def to_pandas_in_batch(self, show_progress: bool = False, batch_size: int = DEFAULT_ES_MAX_RESULT_WINDOW) -> Iterator:
-        """
-        Utility method to convert eland.Dataframe to pandas.Dataframe Iterator
-
-        Returns
-        -------
-        pandas.Dataframe Iterator
-        """
-        return self._query_compiler.to_pandas_in_batch(show_progress=show_progress, batch_size=batch_size)
-
     def _empty_pd_df(self) -> pd.DataFrame:
         return self._query_compiler._empty_pd_ef()
 
@@ -1455,6 +1445,39 @@ class DataFrame(NDFrame):
             Elasticsearch field names as pandas.Index
         """
         return self.columns
+
+    def iterrows(self) -> Iterable[Tuple[Hashable, Series]]:
+        """
+        Iterate over ed.DataFrame rows as (index, ed.Series) pairs.
+
+        Returns:
+        index : index
+            The index of the row.
+        data : ed.Series
+            The data of the row as a ed.Series.
+        """
+        return self._query_compiler.iterrows()
+
+    def itertuples(
+        self, index: bool = True, name: str | None = "Eland"
+    ) -> Iterable[Tuple[Any, ...]]:
+        """
+        Iterate over ed.DataFrame rows as namedtuples.
+
+        Args:
+            index : bool, default True
+                If True, return the index as the first element of the tuple.
+            name : str or None, default "Eland"
+                The name of the returned namedtuples or None to return regular
+                tuples.
+
+        Returns:
+            iterator
+                An object to iterate over namedtuples for each row in the
+                DataFrame with the first field possibly being the index and
+                following fields being the column values.
+        """
+        return self._query_compiler.itertuples(index=index, name=name)
 
     def aggregate(
         self,

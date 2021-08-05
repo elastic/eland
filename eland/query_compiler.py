@@ -23,6 +23,8 @@ from typing import (
     Dict,
     List,
     Optional,
+    Iterable,
+    Hashable,
     Sequence,
     TextIO,
     Tuple,
@@ -34,13 +36,13 @@ import pandas as pd  # type: ignore
 
 from eland.common import (
     DEFAULT_PROGRESS_REPORTING_NUM_ROWS,
-    DEFAULT_ES_MAX_RESULT_WINDOW,
     elasticsearch_date_to_pandas_date,
     ensure_es_client,
 )
 from eland.field_mappings import FieldMappings
 from eland.filter import BooleanFilter, QueryFilter
 from eland.index import Index
+from eland.series import Series
 from eland.operations import Operations
 
 if TYPE_CHECKING:
@@ -537,15 +539,6 @@ class QueryCompiler:
         """
         return self._operations.to_pandas(self, show_progress)
 
-    # To Pandas, Return Iterator
-    def to_pandas_in_batch(self, show_progress=False, batch_size=DEFAULT_ES_MAX_RESULT_WINDOW):
-        """Converts Eland DataFrame to Pandas DataFrame Iterator.
-
-        Returns:
-            Pandas DataFrame Iterator
-        """
-        return self._operations.to_pandas_in_batch(self, show_progress, batch_size)
-
     # To CSV
     def to_csv(self, **kwargs):
         """Serialises Eland Dataframe to CSV
@@ -554,6 +547,37 @@ class QueryCompiler:
             If path_or_buf is None, returns the resulting csv format as a string. Otherwise returns None.
         """
         return self._operations.to_csv(self, **kwargs)
+
+    def iterrows(self) -> Iterable[Tuple[Hashable, Series]]:
+        """
+        Iterate over ed.DataFrame rows as (index, ed.Series) pairs.
+
+        Returns:
+        index : index
+            The index of the row.
+        data : ed.Series
+            The data of the row as a ed.Series.
+        """
+        return self._operations.iterrows()
+
+    def itertuples(self, index: bool, name: str) -> Iterable[Tuple[Any, ...]]:
+        """
+        Iterate over ed.DataFrame rows as namedtuples.
+
+        Args:
+            index : bool, default True
+                If True, return the index as the first element of the tuple.
+            name : str or None, default "Eland"
+                The name of the returned namedtuples or None to return regular
+                tuples.
+
+        Returns:
+            iterator
+                An object to iterate over namedtuples for each row in the
+                DataFrame with the first field possibly being the index and
+                following fields being the column values.
+        """
+        return self._operations.itertuples(index=index, name=name)
 
     # __getitem__ methods
     def getitem_column_array(self, key, numeric=False):
