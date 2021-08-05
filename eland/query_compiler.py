@@ -154,7 +154,7 @@ class QueryCompiler:
         """
         Parameters
         ----------
-        results: dict
+        results: List[Dict[str, Any]]
             Elasticsearch results from self.client.search
 
         Returns
@@ -251,18 +251,9 @@ class QueryCompiler:
 
         rows = []
         index = []
-        if isinstance(results, dict):
-            iterator = results
-
-            if batch_size is not None:
-                raise NotImplementedError(
-                    "Can not specify batch_size with dict results"
-                )
-        else:
-            iterator = results
 
         i = 0
-        for hit in iterator:
+        for hit in results:
             i = i + 1
 
             if "_source" in hit:

@@ -38,9 +38,8 @@ from elasticsearch.exceptions import NotFoundError
 from eland.actions import PostProcessingAction
 from eland.common import (
     DEFAULT_CSV_BATCH_OUTPUT_SIZE,
-    DEFAULT_ES_MAX_RESULT_WINDOW,
-    DEFAULT_KEEP_ALIVE,
     DEFAULT_PAGINATION_SIZE,
+    DEFAULT_PIT_KEEP_ALIVE,
     DEFAULT_SEARCH_SIZE,
     SortOrder,
     build_pd_series,
@@ -1226,7 +1225,9 @@ class Operations:
     ) -> None:
         query_params, post_processing = self._resolve_tasks(query_compiler)
 
-        result_size, sort_params = self._query_params_to_size_and_sort(query_params)
+        result_size, sort_params = Operations._query_params_to_size_and_sort(
+            query_params
+        )
 
         script_fields = query_params.script_fields
         query = Query(query_params.query)
@@ -1239,13 +1240,7 @@ class Operations:
         _source = query_compiler.get_field_names(include_scripted_fields=False)
         body["_source"] = _source if _source else False
 
-        is_pagination_required: bool = False
-
-        if result_size and (0 <= result_size <= DEFAULT_ES_MAX_RESULT_WINDOW):
-            body["size"] = result_size
-        else:
-            body["size"] = DEFAULT_SEARCH_SIZE
-            is_pagination_required = True
+        body["size"] = result_size
 
         if sort_params:
             body["sort"] = [sort_params]
@@ -1254,11 +1249,7 @@ class Operations:
             search_after_with_pit(
                 query_compiler=query_compiler,
                 body=body,
-                is_pagination_required=is_pagination_required,
             )
-            # Check result_size to handle df.head(0) and df.tail(0)
-            if result_size != 0
-            else []
         )
 
         _, df = query_compiler._es_results_to_pandas(es_results)
@@ -1431,7 +1422,7 @@ class Operations:
         buf.write(f" tasks: {self._tasks}\n")
 
         query_params, post_processing = self._resolve_tasks(query_compiler)
-        size, sort_params = self._query_params_to_size_and_sort(query_params)
+        size, sort_params = Operations._query_params_to_size_and_sort(query_params)
         _source = query_compiler._mappings.get_field_names()
 
         script_fields = query_params.script_fields
@@ -1524,7 +1515,6 @@ class PandasDataFrameCollector:
 def search_after_with_pit(
     query_compiler: "QueryCompiler",
     body: Dict[str, Any],
-    is_pagination_required: bool = True,
 ) -> Generator[Dict[str, Any], None, None]:
     """
     This is a generator used to initialize point in time API and query the
@@ -1542,40 +1532,53 @@ def search_after_with_pit(
 
     Examples
     --------
-    results = list(search_after_all(query_compiler, body, True))
+    >>> results = list(search_after_with_pit(query_compiler, body, True)) # doctest: +SKIP
+    [{'_index': 'flights', '_type': '_doc', '_id': '0', '_score': None, '_source': {...}, 'sort': [...]},
+    {'_index': 'flights', '_type': '_doc', '_id': '1', '_score': None, '_source': {...}, 'sort': [...]}]
 
     """
+    result_size: Optional[int] = body.get("size", None)
+
+    if result_size == 0:
+        return
+    elif result_size is None or int(result_size or 0) > DEFAULT_SEARCH_SIZE:
+        body["size"] = DEFAULT_SEARCH_SIZE
+
+    pit_id: Optional[str] = None
+
     try:
-        pit_id: str = query_compiler._client.open_point_in_time(
-            index=query_compiler._index_pattern, keep_alive=DEFAULT_KEEP_ALIVE
+        pit_id = query_compiler._client.open_point_in_time(
+            index=query_compiler._index_pattern, keep_alive=DEFAULT_PIT_KEEP_ALIVE
         )["id"]
 
-        body["pit"] = {"id": pit_id, "keep_alive": DEFAULT_KEEP_ALIVE}
+        body["pit"] = {"id": pit_id, "keep_alive": DEFAULT_PIT_KEEP_ALIVE}
         body["track_total_hits"] = False  # To Improve performance
 
         # Sort is must for pagination
         if "sort" not in body:
             body["sort"] = [{"_doc": "asc"}]
 
+        i = 0
         while True:
             results = query_compiler._client.search(body=body)["hits"]["hits"]
             # If results is empty, we completed searching
-            if results:
-                for result in results:
-                    yield result
-                if is_pagination_required:
-                    body["search_after"] = results[-1]["sort"]
-                else:
-                    # This is important otherwise it fetches entire index
-                    # if pagination is not required. One search is enough
-                    break
-            else:
+            if not results:
                 break
+
+            body["search_after"] = results[-1]["sort"]
+            for result in results:
+                i += 1
+                yield result
+                if i == result_size:
+                    raise StopIteration
+
+    except StopIteration:
+        pass
     finally:
-        try:
-            query_compiler._client.close_point_in_time(body={"id": pit_id})
-        except NotFoundError:
-            # if pit_id is already closed, ES throws NotFoundError
-            # Hopefully It shouldn't come here
-            pass
-        return
+        if pit_id is not None:
+            try:
+                query_compiler._client.close_point_in_time(body={"id": pit_id})
+            except NotFoundError:
+                # if pit_id is already closed, ES throws NotFoundError
+                # Hopefully It shouldn't come here
+                pass
