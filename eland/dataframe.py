@@ -19,7 +19,7 @@ import re
 import sys
 import warnings
 from io import StringIO
-from typing import TYPE_CHECKING, Any, List, Iterable, Hashable, Optional, Sequence, Tuple, Union
+from typing import TYPE_CHECKING, Any, List, Iterable, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import pandas as pd  # type: ignore
@@ -1446,15 +1446,36 @@ class DataFrame(NDFrame):
         """
         return self.columns
 
-    def iterrows(self) -> Iterable[Tuple[Hashable, Series]]:
+    def iterrows(self) -> Iterable[Tuple[Union[str, Tuple[str, ...]], pd.Series]]:
         """
-        Iterate over ed.DataFrame rows as (index, ed.Series) pairs.
+        Iterate over eland.DataFrame rows as (index, pandas.Series) pairs.
 
-        Returns:
-        index : index
-            The index of the row.
-        data : ed.Series
-            The data of the row as a ed.Series.
+        Yields:
+            index: index
+                The index of the row.
+            data: pandas Series
+                The data of the row as a pandas Series.
+
+        See Also
+        --------
+        eland.DataFrame.itertuples : Iterate over eland.DataFrame rows as namedtuples.
+
+        Examples
+        -----
+        >>> df = ed.DataFrame('localhost:9200', 'flights')
+        >>> df.head()
+            AvgTicketPrice  Cancelled  ... dayOfWeek           timestamp
+        0      841.265642      False  ...         0 2018-01-01 00:00:00
+        1      882.982662      False  ...         0 2018-01-01 18:27:00
+        2      190.636904      False  ...         0 2018-01-01 17:11:14
+        3      181.694216       True  ...         0 2018-01-01 10:33:28
+        4      730.041778      False  ...         0 2018-01-01 05:13:00
+        <BLANKLINE>
+        [5 rows x 27 columns]
+
+        >>> for index, row in df.iterrows()
+        ...     print(row)
+        ...
         """
         return self._query_compiler.iterrows()
 
@@ -1462,20 +1483,60 @@ class DataFrame(NDFrame):
         self, index: bool = True, name: str | None = "Eland"
     ) -> Iterable[Tuple[Any, ...]]:
         """
-        Iterate over ed.DataFrame rows as namedtuples.
+        Iterate over eland.DataFrame rows as namedtuples.
 
         Args:
             index : bool, default True
                 If True, return the index as the first element of the tuple.
             name : str or None, default "Eland"
-                The name of the returned namedtuples or None to return regular
-                tuples.
+                The name of the returned namedtuples or None to return regular tuples.
 
         Returns:
             iterator
                 An object to iterate over namedtuples for each row in the
                 DataFrame with the first field possibly being the index and
                 following fields being the column values.
+
+        See Also
+        --------
+        eland.DataFrame.iterrows : Iterate over eland.DataFrame rows as (index, pandas.Series) pairs.
+
+        Examples
+        --------
+        >>> df = ed.DataFrame('localhost:9200', 'flights')
+        >>> df.head()
+            AvgTicketPrice  Cancelled  ... dayOfWeek           timestamp
+        0      841.265642      False  ...         0 2018-01-01 00:00:00
+        1      882.982662      False  ...         0 2018-01-01 18:27:00
+        2      190.636904      False  ...         0 2018-01-01 17:11:14
+        3      181.694216       True  ...         0 2018-01-01 10:33:28
+        4      730.041778      False  ...         0 2018-01-01 05:13:00
+        <BLANKLINE>
+        [5 rows x 27 columns]
+
+        >>> for row in df.itertuples():
+        ...     print(row)
+        ...
+        Eland(Index='0', AvgTicketPrice=841.265642, Cancelled=False, ..., dayOfWeek=0, timestamp='2018-01-01 00:00:00')
+        Eland(Index='1', AvgTicketPrice=882.982662, Cancelled=False, ..., dayOfWeek=0, timestamp='2018-01-01 18:27:00')
+
+        By setting the `index` parameter to False we can remove the index
+        as the first element of the tuple:
+
+        >>> for row in df.itertuples(index=False):
+        ...     print(row)
+        ...
+        Eland(AvgTicketPrice=841.265642, Cancelled=False, ..., dayOfWeek=0, timestamp='2018-01-01 00:00:00')
+        Eland(AvgTicketPrice=882.982662, Cancelled=False, ..., dayOfWeek=0, timestamp='2018-01-01 18:27:00')
+
+        With the `name` parameter set we set a custom name for the yielded
+        namedtuples:
+
+        >>> for row in df.itertuples(name='Flight'):
+        ...     print(row)
+        ...
+        Flight(Index='0', AvgTicketPrice=841.265642, Cancelled=False, ..., dayOfWeek=0, timestamp='2018-01-01 00:00:00')
+        Flight(Index='1', AvgTicketPrice=882.982662, Cancelled=False, ..., dayOfWeek=0, timestamp='2018-01-01 18:27:00')
         """
         return self._query_compiler.itertuples(index=index, name=name)
 

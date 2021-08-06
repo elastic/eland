@@ -24,7 +24,6 @@ from typing import (
     List,
     Optional,
     Iterable,
-    Hashable,
     Sequence,
     TextIO,
     Tuple,
@@ -42,7 +41,6 @@ from eland.common import (
 from eland.field_mappings import FieldMappings
 from eland.filter import BooleanFilter, QueryFilter
 from eland.index import Index
-from eland.series import Series
 from eland.operations import Operations
 
 if TYPE_CHECKING:
@@ -548,28 +546,27 @@ class QueryCompiler:
         """
         return self._operations.to_csv(self, **kwargs)
 
-    def iterrows(self) -> Iterable[Tuple[Hashable, Series]]:
+    def iterrows(self) -> Iterable[Tuple[Union[str, Tuple[str, ...]], pd.Series]]:
         """
-        Iterate over ed.DataFrame rows as (index, ed.Series) pairs.
+        Iterate over ed.DataFrame rows as (index, pd.Series) pairs.
 
-        Returns:
-        index : index
-            The index of the row.
-        data : ed.Series
-            The data of the row as a ed.Series.
+        Yields:
+            index: index
+                The index of the row.
+            data: pandas Series
+                The data of the row as a pandas Series.
         """
         return self._operations.iterrows()
 
     def itertuples(self, index: bool, name: str) -> Iterable[Tuple[Any, ...]]:
         """
-        Iterate over ed.DataFrame rows as namedtuples.
+        Iterate over eland.DataFrame rows as namedtuples.
 
         Args:
             index : bool, default True
                 If True, return the index as the first element of the tuple.
             name : str or None, default "Eland"
-                The name of the returned namedtuples or None to return regular
-                tuples.
+                The name of the returned namedtuples or None to return regular tuples.
 
         Returns:
             iterator
