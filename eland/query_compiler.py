@@ -797,7 +797,7 @@ class QueryCompiler:
     def get_arithmetic_op_fields(self) -> Optional["ArithmeticOpFieldsTask"]:
         return self._operations.get_arithmetic_op_fields()
 
-    def display_name_to_aggregatable_name(self, display_name: str) -> Optional[str]:
+    def display_name_to_aggregatable_name(self, display_name: str) -> str:
         aggregatable_field_name = self._mappings.aggregatable_field_name(display_name)
         if aggregatable_field_name is None:
             raise ValueError(

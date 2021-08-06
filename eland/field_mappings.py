@@ -591,7 +591,7 @@ class FieldMappings:
         except KeyError:
             raise KeyError(
                 f"Can not get aggregatable field name for invalid display name {display_name}"
-            )
+            ) from None
 
         if mapping is not None and mapping.aggregatable_es_field_name is None:
             warnings.warn(f"Aggregations not supported for '{display_name}'")
