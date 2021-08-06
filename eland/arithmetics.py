@@ -108,12 +108,6 @@ class ArithmeticSeries(ArithmeticObject):
             aggregatable_field_name = query_compiler.display_name_to_aggregatable_name(
                 display_name
             )
-            if aggregatable_field_name is None:
-                raise ValueError(
-                    f"Can not perform arithmetic operations on non aggregatable fields"
-                    f"{display_name} is not aggregatable."
-                )
-
             self._value = f"doc['{aggregatable_field_name}'].value"
             self._tasks = []
             self._dtype = dtype

@@ -799,7 +799,11 @@ class QueryCompiler:
 
     def display_name_to_aggregatable_name(self, display_name: str) -> Optional[str]:
         aggregatable_field_name = self._mappings.aggregatable_field_name(display_name)
-
+        if aggregatable_field_name is None:
+            raise ValueError(
+                f"Can not perform arithmetic operations on non aggregatable fields"
+                f"{display_name} is not aggregatable."
+            )
         return aggregatable_field_name
 
 
