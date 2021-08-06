@@ -558,7 +558,7 @@ class QueryCompiler:
         """
         return self._operations.iterrows()
 
-    def itertuples(self, index: bool, name: str) -> Iterable[Tuple[Any, ...]]:
+    def itertuples(self, index: bool, name: Union[str, None]) -> Iterable[Tuple[Any, ...]]:
         """
         Iterate over eland.DataFrame rows as namedtuples.
 
