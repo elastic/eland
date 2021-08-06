@@ -584,21 +584,19 @@ class FieldMappings:
 
         raise KeyError if the field_name doesn't exist in the mapping, or isn't aggregatable
         """
-        if display_name not in self._mappings_capabilities.index:
+        mapping: Optional[pd.Series] = None
+
+        try:
+            mapping = self._mappings_capabilities.loc[display_name]
+        except KeyError:
             raise KeyError(
                 f"Can not get aggregatable field name for invalid display name {display_name}"
-            )
+            ) from None
 
-        if (
-            self._mappings_capabilities.loc[display_name].aggregatable_es_field_name
-            is None
-        ):
-            warnings.warn(
-                f"Aggregations not supported for '{display_name}' "
-                f"'{self._mappings_capabilities.loc[display_name].es_field_name}'"
-            )
+        if mapping is not None and mapping.aggregatable_es_field_name is None:
+            warnings.warn(f"Aggregations not supported for '{display_name}'")
 
-        return self._mappings_capabilities.loc[display_name].aggregatable_es_field_name
+        return mapping.aggregatable_es_field_name
 
     def aggregatable_field_names(self) -> Dict[str, str]:
         """
