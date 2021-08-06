@@ -1546,7 +1546,7 @@ def search_after_with_pit(
             index=query_compiler._index_pattern, keep_alive=DEFAULT_PIT_KEEP_ALIVE
         )["id"]
 
-        # Modify the search with the point in time ID and keep alive time.
+        # Modify the search with the new point in time ID and keep-alive time.
         body["pit"] = {"id": pit_id, "keep_alive": DEFAULT_PIT_KEEP_ALIVE}
 
         # Use the default search size
@@ -1558,11 +1558,17 @@ def search_after_with_pit(
 
         # Pagination with 'search_after' must have a 'sort' setting.
         # Using '_doc:asc' is the most efficient as reads documents
-        # in the order that they're written in Lucene.
+        # in the order that they're written on disk in Lucene.
         body.setdefault("sort", [{"_doc": "asc"}])
 
         while max_number_of_hits is None or hits_yielded < max_number_of_hits:
-            hits = query_compiler._client.search(body=body)["hits"]["hits"]
+            resp = query_compiler._client.search(body=body)
+            hits: List[Dict[str, Any]] = resp["hits"]["hits"]
+
+            # The point in time ID can change between searches so we
+            # need to keep the next search up-to-date
+            pit_id = resp.get("pit_id", pit_id)
+            body["pit"]["id"] = pit_id
 
             # If we didn't receive any hits it means we've reached the end.
             if not hits:
