@@ -1240,15 +1240,12 @@ class Operations:
         _source = query_compiler.get_field_names(include_scripted_fields=False)
         body["_source"] = _source if _source else False
 
-        body["size"] = result_size
-
         if sort_params:
             body["sort"] = [sort_params]
 
         es_results = list(
             search_after_with_pit(
-                query_compiler=query_compiler,
-                body=body,
+                query_compiler=query_compiler, body=body, max_number_of_hits=result_size
             )
         )
 
@@ -1515,6 +1512,7 @@ class PandasDataFrameCollector:
 def search_after_with_pit(
     query_compiler: "QueryCompiler",
     body: Dict[str, Any],
+    max_number_of_hits: Optional[int],
 ) -> Generator[Dict[str, Any], None, None]:
     """
     This is a generator used to initialize point in time API and query the
@@ -1526,59 +1524,70 @@ def search_after_with_pit(
         An instance of query_compiler
     body:
         body for search API
-    is_pagination_required: bool
-        set True if size of documents to be queried is greater than 10,000 else False.
-        Defaults to True
+    max_number_of_hits: Optional[int]
+        Maximum number of documents to yield, set to 'None' to
+        yield all documents.
 
     Examples
     --------
-    >>> results = list(search_after_with_pit(query_compiler, body, True)) # doctest: +SKIP
+    >>> results = list(search_after_with_pit(query_compiler, body, 2)) # doctest: +SKIP
     [{'_index': 'flights', '_type': '_doc', '_id': '0', '_score': None, '_source': {...}, 'sort': [...]},
     {'_index': 'flights', '_type': '_doc', '_id': '1', '_score': None, '_source': {...}, 'sort': [...]}]
 
     """
-    result_size: Optional[int] = body.get("size", None)
-
-    if result_size == 0:
+    # No documents, no reason to send a search.
+    if max_number_of_hits == 0:
         return
-    elif result_size is None or int(result_size or 0) > DEFAULT_SEARCH_SIZE:
-        body["size"] = DEFAULT_SEARCH_SIZE
 
+    hits_yielded = 0  # Track the total number of hits yielded.
     pit_id: Optional[str] = None
-
     try:
         pit_id = query_compiler._client.open_point_in_time(
             index=query_compiler._index_pattern, keep_alive=DEFAULT_PIT_KEEP_ALIVE
         )["id"]
 
+        # Modify the search with the point in time ID and keep alive time.
         body["pit"] = {"id": pit_id, "keep_alive": DEFAULT_PIT_KEEP_ALIVE}
-        body["track_total_hits"] = False  # To Improve performance
 
-        # Sort is must for pagination
-        if "sort" not in body:
-            body["sort"] = [{"_doc": "asc"}]
+        # Use the default search size
+        body.setdefault("size", DEFAULT_SEARCH_SIZE)
 
-        i = 0
-        while True:
-            results = query_compiler._client.search(body=body)["hits"]["hits"]
-            # If results is empty, we completed searching
-            if not results:
+        # Improves performance by not tracking # of hits. We only
+        # care about the hit itself for these queries.
+        body.setdefault("track_total_hits", False)
+
+        # Pagination with 'search_after' must have a 'sort' setting.
+        # Using '_doc:asc' is the most efficient as reads documents
+        # in the order that they're written in Lucene.
+        body.setdefault("sort", [{"_doc": "asc"}])
+
+        while max_number_of_hits is None or hits_yielded < max_number_of_hits:
+            hits = query_compiler._client.search(body=body)["hits"]["hits"]
+
+            # If we didn't receive any hits it means we've reached the end.
+            if not hits:
                 break
 
-            body["search_after"] = results[-1]["sort"]
-            for result in results:
-                i += 1
-                yield result
-                if i == result_size:
-                    raise StopIteration
+            # Calculate which hits should be yielded from this batch
+            if max_number_of_hits is None:
+                hits_to_yield = len(hits)
+            else:
+                hits_to_yield = min(len(hits), max_number_of_hits - hits_yielded)
 
-    except StopIteration:
-        pass
+            # Yield the hits we need to and then track the total number.
+            yield from hits[:hits_to_yield]
+            hits_yielded += hits_to_yield
+
+            # Set the 'search_after' for the next request
+            # to be the last sort value for this set of hits.
+            body["search_after"] = hits[-1]["sort"]
+
     finally:
+        # We want to cleanup the point in time if we allocated one
+        # to keep our memory footprint low.
         if pit_id is not None:
             try:
                 query_compiler._client.close_point_in_time(body={"id": pit_id})
             except NotFoundError:
-                # if pit_id is already closed, ES throws NotFoundError
-                # Hopefully It shouldn't come here
+                # If a point in time is already closed Elasticsearch throws NotFoundError
                 pass
