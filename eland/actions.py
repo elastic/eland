@@ -16,7 +16,7 @@
 #  under the License.
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, List, Optional, Union
+from typing import TYPE_CHECKING, Dict, List, Optional, Union
 
 from eland import SortOrder
 
@@ -91,17 +91,17 @@ class TailAction(PostProcessingAction):
 
 
 class SortFieldAction(PostProcessingAction):
-    def __init__(self, sort_params_string: str) -> None:
+    def __init__(self, sort_params: Dict[str, str]) -> None:
         super().__init__("sort_field")
 
-        if sort_params_string is None:
-            raise ValueError("Expected valid string")
+        if sort_params is None:
+            raise ValueError("Expected valid dictionary")
 
         # Split string
-        sort_field, _, sort_order = sort_params_string.partition(":")
+        sort_field, sort_order = list(sort_params.items())[0]
         if not sort_field or sort_order not in ("asc", "desc"):
             raise ValueError(
-                f"Expected ES sort params string (e.g. _doc:desc). Got '{sort_params_string}'"
+                f"Expected ES sort params dictionary (e.g. {{'_doc': 'desc'}}). Got '{sort_params}'"
             )
 
         self._sort_field = sort_field

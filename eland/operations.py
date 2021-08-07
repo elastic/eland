@@ -33,13 +33,14 @@ from typing import (
 
 import numpy as np
 import pandas as pd  # type: ignore
-from elasticsearch.helpers import scan
+from elasticsearch.exceptions import NotFoundError
 
-from eland.actions import PostProcessingAction, SortFieldAction
+from eland.actions import PostProcessingAction
 from eland.common import (
     DEFAULT_CSV_BATCH_OUTPUT_SIZE,
-    DEFAULT_ES_MAX_RESULT_WINDOW,
     DEFAULT_PAGINATION_SIZE,
+    DEFAULT_PIT_KEEP_ALIVE,
+    DEFAULT_SEARCH_SIZE,
     SortOrder,
     build_pd_series,
     elasticsearch_date_to_pandas_date,
@@ -1224,7 +1225,9 @@ class Operations:
     ) -> None:
         query_params, post_processing = self._resolve_tasks(query_compiler)
 
-        size, sort_params = Operations._query_params_to_size_and_sort(query_params)
+        result_size, sort_params = Operations._query_params_to_size_and_sort(
+            query_params
+        )
 
         script_fields = query_params.script_fields
         query = Query(query_params.query)
@@ -1233,58 +1236,22 @@ class Operations:
         if script_fields is not None:
             body["script_fields"] = script_fields
 
-        # Only return requested field_names
+        # Only return requested field_names and add them to body
         _source = query_compiler.get_field_names(include_scripted_fields=False)
-        if _source:
-            # For query_compiler._client.search we could add _source
-            # as a parameter, or add this value in body.
-            #
-            # If _source is a parameter it is encoded into to the url.
-            #
-            # If _source is a large number of fields (1000+) then this can result in an
-            # extremely long url and a `too_long_frame_exception`. Therefore, add
-            # _source to the body rather than as a _source parameter
-            body["_source"] = _source
-        else:
-            body["_source"] = False
+        body["_source"] = _source if _source else False
 
-        es_results: Any = None
+        if sort_params:
+            body["sort"] = [sort_params]
 
-        # If size=None use scan not search - then post sort results when in df
-        # If size>10000 use scan
-        is_scan = False
-        if size is not None and size <= DEFAULT_ES_MAX_RESULT_WINDOW:
-            if size > 0:
-                es_results = query_compiler._client.search(
-                    index=query_compiler._index_pattern,
-                    size=size,
-                    sort=sort_params,
-                    body=body,
-                )
-        else:
-            is_scan = True
-            es_results = scan(
-                client=query_compiler._client,
-                index=query_compiler._index_pattern,
-                query=body,
+        es_results = list(
+            search_after_with_pit(
+                query_compiler=query_compiler, body=body, max_number_of_hits=result_size
             )
-            # create post sort
-            if sort_params is not None:
-                post_processing.append(SortFieldAction(sort_params))
+        )
 
-        if is_scan:
-            while True:
-                partial_result, df = query_compiler._es_results_to_pandas(
-                    es_results, collector.batch_size(), collector.show_progress
-                )
-                df = self._apply_df_post_processing(df, post_processing)
-                collector.collect(df)
-                if not partial_result:
-                    break
-        else:
-            partial_result, df = query_compiler._es_results_to_pandas(es_results)
-            df = self._apply_df_post_processing(df, post_processing)
-            collector.collect(df)
+        _, df = query_compiler._es_results_to_pandas(es_results)
+        df = self._apply_df_post_processing(df, post_processing)
+        collector.collect(df)
 
     def index_count(self, query_compiler: "QueryCompiler", field: str) -> int:
         # field is the index field so count values
@@ -1379,13 +1346,12 @@ class Operations:
     @staticmethod
     def _query_params_to_size_and_sort(
         query_params: QueryParams,
-    ) -> Tuple[Optional[int], Optional[str]]:
+    ) -> Tuple[Optional[int], Optional[Dict[str, str]]]:
         sort_params = None
         if query_params.sort_field and query_params.sort_order:
-            sort_params = (
-                f"{query_params.sort_field}:"
-                f"{SortOrder.to_string(query_params.sort_order)}"
-            )
+            sort_params = {
+                query_params.sort_field: SortOrder.to_string(query_params.sort_order)
+            }
         size = query_params.size
         return size, sort_params
 
@@ -1541,3 +1507,93 @@ class PandasDataFrameCollector:
     @property
     def show_progress(self) -> bool:
         return self._show_progress
+
+
+def search_after_with_pit(
+    query_compiler: "QueryCompiler",
+    body: Dict[str, Any],
+    max_number_of_hits: Optional[int],
+) -> Generator[Dict[str, Any], None, None]:
+    """
+    This is a generator used to initialize point in time API and query the
+    search API and return generator which yields an individual document
+
+    Parameters
+    ----------
+    query_compiler:
+        An instance of query_compiler
+    body:
+        body for search API
+    max_number_of_hits: Optional[int]
+        Maximum number of documents to yield, set to 'None' to
+        yield all documents.
+
+    Examples
+    --------
+    >>> results = list(search_after_with_pit(query_compiler, body, 2)) # doctest: +SKIP
+    [{'_index': 'flights', '_type': '_doc', '_id': '0', '_score': None, '_source': {...}, 'sort': [...]},
+    {'_index': 'flights', '_type': '_doc', '_id': '1', '_score': None, '_source': {...}, 'sort': [...]}]
+
+    """
+    # No documents, no reason to send a search.
+    if max_number_of_hits == 0:
+        return
+
+    hits_yielded = 0  # Track the total number of hits yielded.
+    pit_id: Optional[str] = None
+    try:
+        pit_id = query_compiler._client.open_point_in_time(
+            index=query_compiler._index_pattern, keep_alive=DEFAULT_PIT_KEEP_ALIVE
+        )["id"]
+
+        # Modify the search with the new point in time ID and keep-alive time.
+        body["pit"] = {"id": pit_id, "keep_alive": DEFAULT_PIT_KEEP_ALIVE}
+
+        # Use the default search size
+        body.setdefault("size", DEFAULT_SEARCH_SIZE)
+
+        # Improves performance by not tracking # of hits. We only
+        # care about the hit itself for these queries.
+        body.setdefault("track_total_hits", False)
+
+        # Pagination with 'search_after' must have a 'sort' setting.
+        # Using '_doc:asc' is the most efficient as reads documents
+        # in the order that they're written on disk in Lucene.
+        body.setdefault("sort", [{"_doc": "asc"}])
+
+        while max_number_of_hits is None or hits_yielded < max_number_of_hits:
+            resp = query_compiler._client.search(body=body)
+            hits: List[Dict[str, Any]] = resp["hits"]["hits"]
+
+            # The point in time ID can change between searches so we
+            # need to keep the next search up-to-date
+            pit_id = resp.get("pit_id", pit_id)
+            body["pit"]["id"] = pit_id
+
+            # If we didn't receive any hits it means we've reached the end.
+            if not hits:
+                break
+
+            # Calculate which hits should be yielded from this batch
+            if max_number_of_hits is None:
+                hits_to_yield = len(hits)
+            else:
+                hits_to_yield = min(len(hits), max_number_of_hits - hits_yielded)
+
+            # Yield the hits we need to and then track the total number.
+            yield from hits[:hits_to_yield]
+            hits_yielded += hits_to_yield
+
+            # Set the 'search_after' for the next request
+            # to be the last sort value for this set of hits.
+            body["search_after"] = hits[-1]["sort"]
+
+    finally:
+        # We want to cleanup the point in time if we allocated one
+        # to keep our memory footprint low.
+        if pit_id is not None:
+            try:
+                query_compiler._client.close_point_in_time(body={"id": pit_id})
+            except NotFoundError:
+                # If a point in time is already closed Elasticsearch throws NotFoundError
+                pass
