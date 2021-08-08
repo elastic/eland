@@ -8,8 +8,8 @@ Source code is available on https://github.com/elastic/eland[GitHub].
 [discrete]
 === Compatibility
 
-The library is compatible with Python 3.7 and later and all
-{es} versions since 7.14 but you **should use a matching major version**:
+- Supports Python 3.7+ and Pandas 1.3
+- Supports {es} clusters that are 7.11+, recommended 7.14 or later for all features to work.
 
 The recommended way to set your requirements in your `setup.py` or
 `requirements.txt` is::

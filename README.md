@@ -16,8 +16,8 @@
       src="https://clients-ci.elastic.co/buildStatus/icon?job=elastic%2Beland%2Bmaster" alt="Build Status"></a>
   <a href="https://github.com/elastic/eland/blob/master/LICENSE.txt"><img src="https://img.shields.io/pypi/l/eland.svg"
       alt="License"></a>
-  <a href="https://eland.readthedocs.io/en/7.10.0b1/?badge=7.10.0b1"><img
-      src="https://readthedocs.org/projects/eland/badge/?version=7.10.0b1" alt="Documentation Status"></a>
+  <a href="https://eland.readthedocs.io"><img
+      src="https://readthedocs.org/projects/eland/badge/?version=latest" alt="Documentation Status"></a>
 </div>
 
 ## About
@@ -47,10 +47,10 @@ Eland can also be installed from [Conda Forge](https://anaconda.org/conda-forge/
 $ conda install -c conda-forge eland
 ```
 
-### Supported Versions
+### Compatibility
 
 - Supports Python 3.7+ and Pandas 1.3
-- Supports Elasticsearch clusters that are 7.x+, recommended 7.14 or later for all features to work.
+- Supports Elasticsearch clusters that are 7.11+, recommended 7.14 or later for all features to work.
 
 ### Connecting to Elasticsearch 
 
