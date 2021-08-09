@@ -336,7 +336,13 @@ class TestMLModel:
     @pytest.mark.parametrize("compress_model_definition", [True, False])
     @pytest.mark.parametrize(
         "objective",
-        ["reg:squarederror", "reg:squaredlogerror", "reg:linear", "reg:logistic"],
+        [
+            "reg:squarederror",
+            "reg:squaredlogerror",
+            "reg:linear",
+            "reg:logistic",
+            "reg:pseudohubererror",
+        ],
     )
     @pytest.mark.parametrize("booster", ["gbtree", "dart"])
     def test_xgb_regressor(self, compress_model_definition, objective, booster):

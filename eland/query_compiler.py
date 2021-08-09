@@ -148,14 +148,14 @@ class QueryCompiler:
 
     def _es_results_to_pandas(
         self,
-        results: Dict[Any, Any],
+        results: List[Dict[str, Any]],
         batch_size: Optional[int] = None,
         show_progress: bool = False,
     ) -> "pd.Dataframe":
         """
         Parameters
         ----------
-        results: dict
+        results: List[Dict[str, Any]]
             Elasticsearch results from self.client.search
 
         Returns
@@ -252,18 +252,9 @@ class QueryCompiler:
 
         rows = []
         index = []
-        if isinstance(results, dict):
-            iterator = results["hits"]["hits"]
-
-            if batch_size is not None:
-                raise NotImplementedError(
-                    "Can not specify batch_size with dict results"
-                )
-        else:
-            iterator = results
 
         i = 0
-        for hit in iterator:
+        for hit in results:
             i = i + 1
 
             if "_source" in hit:
@@ -339,10 +330,10 @@ class QueryCompiler:
                     is_source_field = False
                     pd_dtype = "object"
 
-            if not is_source_field and type(x) is dict:
+            if not is_source_field and isinstance(x, dict):
                 for a in x:
                     flatten(x[a], name + a + ".")
-            elif not is_source_field and type(x) is list:
+            elif not is_source_field and isinstance(x, list):
                 for a in x:
                     flatten(a, name)
             elif is_source_field:  # only print source fields from mappings
@@ -358,7 +349,7 @@ class QueryCompiler:
                 # Elasticsearch can have multiple values for a field. These are represented as lists, so
                 # create lists for this pivot (see notes above)
                 if field_name in out:
-                    if type(out[field_name]) is not list:
+                    if not isinstance(out[field_name], list):
                         field_as_list = [out[field_name]]
                         out[field_name] = field_as_list
                     out[field_name].append(x)
@@ -828,9 +819,13 @@ class QueryCompiler:
     def get_arithmetic_op_fields(self) -> Optional["ArithmeticOpFieldsTask"]:
         return self._operations.get_arithmetic_op_fields()
 
-    def display_name_to_aggregatable_name(self, display_name: str) -> Optional[str]:
+    def display_name_to_aggregatable_name(self, display_name: str) -> str:
         aggregatable_field_name = self._mappings.aggregatable_field_name(display_name)
-
+        if aggregatable_field_name is None:
+            raise ValueError(
+                f"Can not perform arithmetic operations on non aggregatable fields"
+                f"{display_name} is not aggregatable."
+            )
         return aggregatable_field_name
 
 

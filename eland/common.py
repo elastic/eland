@@ -41,7 +41,8 @@ DEFAULT_NUM_ROWS_DISPLAYED = 60
 DEFAULT_CHUNK_SIZE = 10000
 DEFAULT_CSV_BATCH_OUTPUT_SIZE = 10000
 DEFAULT_PROGRESS_REPORTING_NUM_ROWS = 10000
-DEFAULT_ES_MAX_RESULT_WINDOW = 10000  # index.max_result_window
+DEFAULT_SEARCH_SIZE = 5000
+DEFAULT_PIT_KEEP_ALIVE = "3m"
 DEFAULT_PAGINATION_SIZE = 5000  # for composite aggregations
 PANDAS_VERSION: Tuple[int, ...] = tuple(
     int(part) for part in pd.__version__.split(".") if part.isdigit()
