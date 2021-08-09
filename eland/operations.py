@@ -1594,9 +1594,9 @@ class PandasDataFrameRowsIterator(PandasDataFrameIterator):
         super().__init__(query_compiler, es_results_generator, post_processing)
 
     def __next__(self):
-        es_results = next(self._es_results_generator)
-        if es_results:
-            df = self._es_results_to_pandas([es_results])
+        es_result = next(self._es_results_generator) # This will return one es result in each iteration
+        if es_result:
+            df = self._es_results_to_pandas([es_result]) # So, it need to be converted to list
             return next(df.iterrows())
         else:
             raise StopIteration
@@ -1608,9 +1608,9 @@ class PandasDataFrameTuplesIterator(PandasDataFrameIterator):
         self._name = name
 
     def __next__(self):
-        es_results = next(self._es_results_generator)
-        if es_results:
-            df = self._es_results_to_pandas([es_results])
+        es_result = next(self._es_results_generator) # This will return one es result in each iteration
+        if es_result:
+            df = self._es_results_to_pandas([es_result]) # So, it need to be converted to list
             return next(df.itertuples(index = self._index, name = self._name))
         else:
             raise StopIteration
