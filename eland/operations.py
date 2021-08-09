@@ -18,12 +18,14 @@
 import copy
 import warnings
 from collections import defaultdict
+from abc import ABC, abstractmethod
 from typing import (
     TYPE_CHECKING,
     Any,
     Dict,
     Generator,
     List,
+    Iterable,
     Optional,
     Sequence,
     TextIO,
@@ -1196,6 +1198,66 @@ class Operations:
             ["count", "mean", "std", "min", "25%", "50%", "75%", "max"]
         )
 
+    def iterrows(
+        self,
+        query_compiler: "QueryCompiler"
+    ) -> Iterable[Tuple[Union[str, Tuple[str, ...]], pd.Series]]:
+        query_params, post_processing = self._resolve_tasks(query_compiler)
+        result_size, sort_params = Operations._query_params_to_size_and_sort(
+            query_params
+        )
+
+        script_fields = query_params.script_fields
+        query = Query(query_params.query)
+
+        body = query.to_search_body()
+        if script_fields is not None:
+            body["script_fields"] = script_fields
+
+        # Only return requested field_names and add them to body
+        _source = query_compiler.get_field_names(include_scripted_fields=False)
+        body["_source"] = _source if _source else False
+
+        if sort_params:
+            body["sort"] = [sort_params]
+
+        es_results_generator = search_yield_hits(
+            query_compiler=query_compiler, body=body, max_number_of_hits=result_size
+        )
+
+        return PandasDataFrameRowsIterator(query_compiler, es_results_generator, post_processing)
+
+    def itertuples(
+        self,
+        query_compiler: "QueryCompiler",
+        index: bool,
+        name: Union[str, None]
+    ) -> Iterable[Tuple[Any, ...]]:
+        query_params, post_processing = self._resolve_tasks(query_compiler)
+        result_size, sort_params = Operations._query_params_to_size_and_sort(
+            query_params
+        )
+
+        script_fields = query_params.script_fields
+        query = Query(query_params.query)
+
+        body = query.to_search_body()
+        if script_fields is not None:
+            body["script_fields"] = script_fields
+
+        # Only return requested field_names and add them to body
+        _source = query_compiler.get_field_names(include_scripted_fields=False)
+        body["_source"] = _source if _source else False
+
+        if sort_params:
+            body["sort"] = [sort_params]
+
+        es_results_generator = search_yield_hits(
+            query_compiler=query_compiler, body=body, max_number_of_hits=result_size
+        )
+
+        return PandasDataFrameTuplesIterator(query_compiler, es_results_generator, post_processing, index, name)
+
     def to_pandas(
         self, query_compiler: "QueryCompiler", show_progress: bool = False
     ) -> None:
@@ -1509,6 +1571,49 @@ class PandasDataFrameCollector:
     def show_progress(self) -> bool:
         return self._show_progress
 
+class PandasDataFrameIterator(ABC):
+    def __init__(self, query_compiler, es_results_generator, post_processing):
+        self._query_compiler = query_compiler
+        self._es_results_generator = es_results_generator
+        self._post_processing = post_processing
+
+    def __iter__(self):
+        return self
+
+    @abstractmethod
+    def __next__(self):
+        pass
+
+    def _es_results_to_pandas(self, es_results):
+        _, df = self._query_compiler._es_results_to_pandas(es_results)
+        df = Operations._apply_df_post_processing(df, self._post_processing)
+        return df
+
+class PandasDataFrameRowsIterator(PandasDataFrameIterator):
+    def __init__(self, query_compiler, es_results_generator, post_processing):
+        super().__init__(query_compiler, es_results_generator, post_processing)
+
+    def __next__(self):
+        es_results = next(self._es_results_generator)
+        if es_results:
+            df = self._es_results_to_pandas([es_results])
+            return next(df.iterrows())
+        else:
+            raise StopIteration
+
+class PandasDataFrameTuplesIterator(PandasDataFrameIterator):
+    def __init__(self, query_compiler, es_results_generator, post_processing, index, name):
+        super().__init__(query_compiler, es_results_generator, post_processing)
+        self._index = index
+        self._name = name
+
+    def __next__(self):
+        es_results = next(self._es_results_generator)
+        if es_results:
+            df = self._es_results_to_pandas([es_results])
+            return next(df.itertuples(index = self._index, name = self._name))
+        else:
+            raise StopIteration
 
 def search_yield_hits(
     query_compiler: "QueryCompiler",

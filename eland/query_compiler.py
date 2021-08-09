@@ -547,7 +547,7 @@ class QueryCompiler:
             data: pandas Series
                 The data of the row as a pandas Series.
         """
-        return self._operations.iterrows()
+        return self._operations.iterrows(self)
 
     def itertuples(self, index: bool, name: Union[str, None]) -> Iterable[Tuple[Any, ...]]:
         """
@@ -565,7 +565,7 @@ class QueryCompiler:
                 DataFrame with the first field possibly being the index and
                 following fields being the column values.
         """
-        return self._operations.itertuples(index=index, name=name)
+        return self._operations.itertuples(self, index, name)
 
     # __getitem__ methods
     def getitem_column_array(self, key, numeric=False):
