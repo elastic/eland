@@ -1476,6 +1476,21 @@ class DataFrame(NDFrame):
         >>> for index, row in df.iterrows()
         ...     print(row)
         ...
+        0
+        AvgTicketPrice  841.265642
+        Cancelled       False
+        ...
+        dayOfWeek       0
+        timestamp       2018-01-01 00:00:00
+        Name: 0, dtype: object
+        
+        1
+        AvgTicketPrice  882.982662
+        Cancelled       False
+        ...
+        dayOfWeek       0
+        timestamp       2018-01-01 18:27:00
+        Name: 1, dtype: object
         """
         return self._query_compiler.iterrows()
 
