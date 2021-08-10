@@ -2,6 +2,41 @@
 Changelog
 =========
 
+7.14.0b1 (2021-08-09)
+---------------------
+
+Added
+^^^^^
+
+* Added support for Pandas 1.3.x (`#362`_, contributed by `@V1NAY8`_)
+* Added support for LightGBM 3.x (`#362`_, contributed by `@V1NAY8`_)
+* Added ``DataFrame.idxmax()`` and ``DataFrame.idxmin()`` methods (`#353`_, contributed by `@V1NAY8`_)
+* Added type hints to ``eland.ndframe`` and ``eland.operations`` (`#366`_, contributed by `@V1NAY8`_)
+
+Removed
+^^^^^^^
+
+* Removed support for Pandas <1.2 (`#364`_)
+* Removed support for Python 3.6 to match Pandas (`#364`_)
+
+Changed
+^^^^^^^
+
+* Changed paginated search function to use `Point-in-Time`_ and `Search After`_ features
+  instead of Scroll when connected to Elasticsearch 7.12+ (`#370`_ and `#376`_, contributed by `@V1NAY8`_)
+* Optimized the ``FieldMappings.aggregate_field_name()`` method (`#373`_, contributed by `@V1NAY8`_)
+
+ .. _Point-in-Time: https://www.elastic.co/guide/en/elasticsearch/reference/current/point-in-time-api.html
+ .. _Search After: https://www.elastic.co/guide/en/elasticsearch/reference/7.14/paginate-search-results.html#search-after
+ .. _#353: https://github.com/elastic/eland/pull/353 
+ .. _#362: https://github.com/elastic/eland/pull/362
+ .. _#364: https://github.com/elastic/eland/pull/364
+ .. _#366: https://github.com/elastic/eland/pull/366
+ .. _#370: https://github.com/elastic/eland/pull/370
+ .. _#373: https://github.com/elastic/eland/pull/373
+ .. _#376: https://github.com/elastic/eland/pull/376
+
+
 7.13.0b1 (2021-06-22)
 ---------------------
 
