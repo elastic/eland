@@ -1229,6 +1229,7 @@ class Operations:
         df_generator = query_compiler._es_results_to_pandas(es_results_generator)
 
         for df in df_generator:
+            df = self._apply_df_post_processing(df, post_processing)
             yield next(df.iterrows())
 
     def itertuples(
@@ -1262,6 +1263,7 @@ class Operations:
         df_generator = query_compiler._es_results_to_pandas(es_results_generator)
 
         for df in df_generator:
+            df = self._apply_df_post_processing(df, post_processing)
             yield next(df.itertuples(index=index, name=name))
 
     def to_pandas(
