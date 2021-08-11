@@ -1322,16 +1322,16 @@ class Operations:
         show_progress = collector.show_progress
         batch_size = collector.batch_size()
 
-        i = 0
-        df_results = None
+        # Put it in the list first, and then convert it into a pandas DataFrame 
+        # which is faster than using pandas.DataFrame.append()
+        # https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.append.html
+        df_list = []
 
+        i = 0
         for df in df_generator:
             i = i + 1
 
-            if df_results is None:
-                df_results = df
-            else:
-                df_results.append(df)
+            df_list.append(df)
 
             if show_progress:
                 if i % DEFAULT_PROGRESS_REPORTING_NUM_ROWS == 0:
@@ -1340,6 +1340,7 @@ class Operations:
         if show_progress:
             print(f"{datetime.now()}: read {i} rows")
 
+        df_results = pd.concat(df_list)
         df_results = self._apply_df_post_processing(df_results, post_processing)
         collector.collect(df_results)
 
@@ -1598,49 +1599,6 @@ class PandasDataFrameCollector:
     def show_progress(self) -> bool:
         return self._show_progress
 
-class PandasDataFrameIterator(ABC):
-    def __init__(self, query_compiler, es_results_generator, post_processing):
-        self._query_compiler = query_compiler
-        self._es_results_generator = es_results_generator
-        self._post_processing = post_processing
-
-    def __iter__(self):
-        return self
-
-    @abstractmethod
-    def __next__(self):
-        pass
-
-    def _es_results_to_pandas(self, es_results):
-        _, df = self._query_compiler._es_results_to_pandas(es_results)
-        df = Operations._apply_df_post_processing(df, self._post_processing)
-        return df
-
-class PandasDataFrameRowsIterator(PandasDataFrameIterator):
-    def __init__(self, query_compiler, es_results_generator, post_processing):
-        super().__init__(query_compiler, es_results_generator, post_processing)
-
-    def __next__(self):
-        es_result = next(self._es_results_generator) # This will return one es result in each iteration
-        if es_result:
-            df = self._es_results_to_pandas([es_result]) # So, it need to be converted to list
-            return next(df.iterrows())
-        else:
-            raise StopIteration
-
-class PandasDataFrameTuplesIterator(PandasDataFrameIterator):
-    def __init__(self, query_compiler, es_results_generator, post_processing, index, name):
-        super().__init__(query_compiler, es_results_generator, post_processing)
-        self._index = index
-        self._name = name
-
-    def __next__(self):
-        es_result = next(self._es_results_generator) # This will return one es result in each iteration
-        if es_result:
-            df = self._es_results_to_pandas([es_result]) # So, it need to be converted to list
-            return next(df.itertuples(index = self._index, name = self._name))
-        else:
-            raise StopIteration
 
 def search_yield_hits(
     query_compiler: "QueryCompiler",
