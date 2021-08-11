@@ -16,13 +16,13 @@
 #  under the License.
 
 import copy
-from datetime import datetime
 from typing import (
     TYPE_CHECKING,
     Any,
     Dict,
     List,
     Optional,
+    Generator,
     Iterable,
     Sequence,
     TextIO,
@@ -34,7 +34,6 @@ import numpy as np
 import pandas as pd  # type: ignore
 
 from eland.common import (
-    DEFAULT_PROGRESS_REPORTING_NUM_ROWS,
     elasticsearch_date_to_pandas_date,
     ensure_es_client,
 )
@@ -148,21 +147,19 @@ class QueryCompiler:
 
     def _es_results_to_pandas(
         self,
-        results: List[Dict[str, Any]],
-        batch_size: Optional[int] = None,
-        show_progress: bool = False,
-    ) -> "pd.Dataframe":
+        es_results: Generator[Dict[str, Any], None, None]
+    ) -> Generator["pd.Dataframe", None, None]:
         """
         Parameters
         ----------
-        results: List[Dict[str, Any]]
-            Elasticsearch results from self.client.search
+        es_results: Generator[Dict[str, Any], None, None]
+            Elasticsearch results generator from self.client.search
 
         Returns
         -------
-        df: pandas.DataFrame
+        pandas.DataFrame generator: Generator[pandas.DataFrame, None, None]
             _source values extracted from results and mapped to pandas DataFrame
-            dtypes are mapped via Mapping object
+            dtypes are mapped via Mapping object, return a generator
 
         Notes
         -----
@@ -240,22 +237,15 @@ class QueryCompiler:
             (which isn't great)
         NOTE - using this lists is generally not a good way to use this API
         """
-        partial_result = False
-
-        if results is None:
-            return partial_result, self._empty_pd_ef()
 
         # This is one of the most performance critical areas of eland, and it repeatedly calls
         # self._mappings.field_name_pd_dtype and self._mappings.date_field_format
         # therefore create a simple cache for this data
         field_mapping_cache = FieldMappingCache(self._mappings)
 
-        rows = []
-        index = []
-
-        i = 0
-        for hit in results:
-            i = i + 1
+        for hit in es_results:
+            rows = []
+            index = []
 
             if "_source" in hit:
                 row = hit["_source"]
@@ -278,40 +268,28 @@ class QueryCompiler:
             # flatten row to map correctly to 2D DataFrame
             rows.append(self._flatten_dict(row, field_mapping_cache))
 
-            if batch_size is not None:
-                if i >= batch_size:
-                    partial_result = True
-                    break
+            # Create pandas DataFrame
+            df = pd.DataFrame(data=rows, index=index)
 
-            if show_progress:
-                if i % DEFAULT_PROGRESS_REPORTING_NUM_ROWS == 0:
-                    print(f"{datetime.now()}: read {i} rows")
+            # _source may not contain all field_names in the mapping
+            # therefore, fill in missing field_names
+            # (note this returns self.field_names NOT IN df.columns)
+            missing_field_names = list(
+                set(self.get_field_names(include_scripted_fields=True)) - set(df.columns)
+            )
 
-        # Create pandas DataFrame
-        df = pd.DataFrame(data=rows, index=index)
+            for missing in missing_field_names:
+                pd_dtype = self._mappings.field_name_pd_dtype(missing)
+                df[missing] = pd.Series(dtype=pd_dtype)
 
-        # _source may not contain all field_names in the mapping
-        # therefore, fill in missing field_names
-        # (note this returns self.field_names NOT IN df.columns)
-        missing_field_names = list(
-            set(self.get_field_names(include_scripted_fields=True)) - set(df.columns)
-        )
+            # Rename columns
+            df.rename(columns=self._mappings.get_renames(), inplace=True)
 
-        for missing in missing_field_names:
-            pd_dtype = self._mappings.field_name_pd_dtype(missing)
-            df[missing] = pd.Series(dtype=pd_dtype)
+            # Sort columns in mapping order
+            if len(self.columns) > 1:
+                df = df[self.columns]
 
-        # Rename columns
-        df.rename(columns=self._mappings.get_renames(), inplace=True)
-
-        # Sort columns in mapping order
-        if len(self.columns) > 1:
-            df = df[self.columns]
-
-        if show_progress:
-            print(f"{datetime.now()}: read {i} rows")
-
-        return partial_result, df
+            yield df
 
     def _flatten_dict(self, y, field_mapping_cache: "FieldMappingCache"):
         out = {}

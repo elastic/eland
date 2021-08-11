@@ -16,6 +16,7 @@
 #  under the License.
 
 import copy
+from datetime import datetime
 import warnings
 from collections import defaultdict
 from abc import ABC, abstractmethod
@@ -39,6 +40,7 @@ from elasticsearch.exceptions import NotFoundError
 
 from eland.actions import PostProcessingAction
 from eland.common import (
+    DEFAULT_PROGRESS_REPORTING_NUM_ROWS,
     DEFAULT_CSV_BATCH_OUTPUT_SIZE,
     DEFAULT_PAGINATION_SIZE,
     DEFAULT_PIT_KEEP_ALIVE,
@@ -1224,8 +1226,10 @@ class Operations:
         es_results_generator = search_yield_hits(
             query_compiler=query_compiler, body=body, max_number_of_hits=result_size
         )
+        df_generator = query_compiler._es_results_to_pandas(es_results_generator)
 
-        return PandasDataFrameRowsIterator(query_compiler, es_results_generator, post_processing)
+        for df in df_generator:
+            yield next(df.iterrows())
 
     def itertuples(
         self,
@@ -1255,8 +1259,10 @@ class Operations:
         es_results_generator = search_yield_hits(
             query_compiler=query_compiler, body=body, max_number_of_hits=result_size
         )
+        df_generator = query_compiler._es_results_to_pandas(es_results_generator)
 
-        return PandasDataFrameTuplesIterator(query_compiler, es_results_generator, post_processing, index, name)
+        for df in df_generator:
+            yield next(df.itertuples(index=index, name=name))
 
     def to_pandas(
         self, query_compiler: "QueryCompiler", show_progress: bool = False
@@ -1306,15 +1312,34 @@ class Operations:
         if sort_params:
             body["sort"] = [sort_params]
 
-        es_results = list(
-            search_yield_hits(
-                query_compiler=query_compiler, body=body, max_number_of_hits=result_size
-            )
+        es_results_generator = search_yield_hits(
+            query_compiler=query_compiler, body=body, max_number_of_hits=result_size
         )
+        df_generator = query_compiler._es_results_to_pandas(es_results_generator)
 
-        _, df = query_compiler._es_results_to_pandas(es_results)
-        df = self._apply_df_post_processing(df, post_processing)
-        collector.collect(df)
+        show_progress = collector.show_progress
+        batch_size = collector.batch_size()
+
+        i = 0
+        df_results = None
+
+        for df in df_generator:
+            i = i + 1
+
+            if df_results is None:
+                df_results = df
+            else:
+                df_results.append(df)
+
+            if show_progress:
+                if i % DEFAULT_PROGRESS_REPORTING_NUM_ROWS == 0:
+                    print(f"{datetime.now()}: read {i} rows")
+
+        if show_progress:
+            print(f"{datetime.now()}: read {i} rows")
+
+        df_results = self._apply_df_post_processing(df_results, post_processing)
+        collector.collect(df_results)
 
     def index_count(self, query_compiler: "QueryCompiler", field: str) -> int:
         # field is the index field so count values
