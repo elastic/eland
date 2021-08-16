@@ -19,6 +19,7 @@
 
 import ast
 import time
+from io import StringIO
 
 import pandas as pd
 from pandas.testing import assert_frame_equal
@@ -99,3 +100,24 @@ class TestDataFrameToCSV(TestData):
 
         # clean up index
         ES_TEST_CLIENT.indices.delete(test_index)
+
+    def test_pd_to_csv_without_filepath(self):
+
+        ed_flights = self.ed_flights()
+        pd_flights = self.pd_flights()
+
+        ret = ed_flights.to_csv()
+        results = StringIO(ret)
+        # Converting back from csv is messy as pd_flights is created from a json file
+        pd_from_csv = pd.read_csv(
+            results,
+            index_col=0,
+            converters={
+                "DestLocation": lambda x: ast.literal_eval(x),
+                "OriginLocation": lambda x: ast.literal_eval(x),
+            },
+        )
+        pd_from_csv.index = pd_from_csv.index.map(str)
+        pd_from_csv.timestamp = pd.to_datetime(pd_from_csv.timestamp)
+
+        assert_frame_equal(pd_flights, pd_from_csv)

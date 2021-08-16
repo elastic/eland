@@ -526,29 +526,18 @@ def csv_to_eland(  # type: ignore
 
     first_write = True
     for chunk in reader:
-        if first_write:
-            pandas_to_eland(
-                chunk,
-                es_client,
-                es_dest_index,
-                es_if_exists=es_if_exists,
-                chunksize=chunksize,
-                es_refresh=es_refresh,
-                es_dropna=es_dropna,
-                es_type_overrides=es_type_overrides,
-            )
-            first_write = False
-        else:
-            pandas_to_eland(
-                chunk,
-                es_client,
-                es_dest_index,
-                es_if_exists="append",
-                chunksize=chunksize,
-                es_refresh=es_refresh,
-                es_dropna=es_dropna,
-                es_type_overrides=es_type_overrides,
-            )
+        pandas_to_eland(
+            chunk,
+            es_client,
+            es_dest_index,
+            chunksize=chunksize,
+            es_refresh=es_refresh,
+            es_dropna=es_dropna,
+            es_type_overrides=es_type_overrides,
+            # es_if_exists should be 'append' except on the first call to pandas_to_eland()
+            es_if_exists=(es_if_exists if first_write else "append"),
+        )
+        first_write = False
 
     # Now create an eland.DataFrame that references the new index
     return DataFrame(es_client, es_index_pattern=es_dest_index)

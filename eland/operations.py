@@ -37,7 +37,6 @@ from elasticsearch.exceptions import NotFoundError
 
 from eland.actions import PostProcessingAction
 from eland.common import (
-    DEFAULT_CSV_BATCH_OUTPUT_SIZE,
     DEFAULT_PAGINATION_SIZE,
     DEFAULT_PIT_KEEP_ALIVE,
     DEFAULT_SEARCH_SIZE,
@@ -1198,32 +1197,23 @@ class Operations:
 
     def to_pandas(
         self, query_compiler: "QueryCompiler", show_progress: bool = False
-    ) -> None:
+    ) -> pd.DataFrame:
+        df = self._es_results(query_compiler, show_progress)
 
-        collector = PandasDataFrameCollector(show_progress)
-
-        self._es_results(query_compiler, collector)
-
-        return collector._df
+        return df
 
     def to_csv(
         self,
         query_compiler: "QueryCompiler",
         show_progress: bool = False,
         **kwargs: Union[bool, str],
-    ) -> None:
-
-        collector = PandasToCSVCollector(show_progress, **kwargs)
-
-        self._es_results(query_compiler, collector)
-
-        return collector._ret
+    ) -> Optional[str]:
+        df = self._es_results(query_compiler, show_progress)
+        return df.to_csv(**kwargs)  # type: ignore[no-any-return]
 
     def _es_results(
-        self,
-        query_compiler: "QueryCompiler",
-        collector: Union["PandasToCSVCollector", "PandasDataFrameCollector"],
-    ) -> None:
+        self, query_compiler: "QueryCompiler", show_progress: bool = False
+    ) -> pd.DataFrame:
         query_params, post_processing = self._resolve_tasks(query_compiler)
 
         result_size, sort_params = Operations._query_params_to_size_and_sort(
@@ -1250,9 +1240,11 @@ class Operations:
             )
         )
 
-        _, df = query_compiler._es_results_to_pandas(es_results)
+        _, df = query_compiler._es_results_to_pandas(
+            results=es_results, show_progress=show_progress
+        )
         df = self._apply_df_post_processing(df, post_processing)
-        collector.collect(df)
+        return df
 
     def index_count(self, query_compiler: "QueryCompiler", field: str) -> int:
         # field is the index field so count values
@@ -1453,61 +1445,6 @@ def quantile_to_percentile(quantile: Union[int, float]) -> float:
     # quantile * 100 = percentile
     # return float(...) because min(1.0) gives 1
     return float(min(100, max(0, quantile * 100)))
-
-
-class PandasToCSVCollector:
-    def __init__(self, show_progress: bool, **kwargs: Union[bool, str]) -> None:
-        self._args = kwargs
-        self._show_progress = show_progress
-        self._ret = None
-        self._first_time = True
-
-    def collect(self, df: "pd.DataFrame") -> None:
-        # If this is the first time we collect results, then write header, otherwise don't write header
-        # and append results
-        if self._first_time:
-            self._first_time = False
-            df.to_csv(**self._args)
-        else:
-            # Don't write header, and change mode to append
-            self._args["header"] = False
-            self._args["mode"] = "a"
-            df.to_csv(**self._args)
-
-    @staticmethod
-    def batch_size() -> int:
-        # By default read n docs and then dump to csv
-        batch_size: int = DEFAULT_CSV_BATCH_OUTPUT_SIZE
-        return batch_size
-
-    @property
-    def show_progress(self) -> bool:
-        return self._show_progress
-
-
-class PandasDataFrameCollector:
-    def __init__(self, show_progress: bool) -> None:
-        self._df = None
-        self._show_progress = show_progress
-
-    def collect(self, df: "pd.DataFrame") -> None:
-        # This collector does not batch data on output. Therefore, batch_size is fixed to None and this method
-        # is only called once.
-        if self._df is not None:
-            raise RuntimeError(
-                "Logic error in execution, this method must only be called once for this"
-                "collector - batch_size == None"
-            )
-        self._df = df
-
-    @staticmethod
-    def batch_size() -> None:
-        # Do not change (see notes on collect)
-        return None
-
-    @property
-    def show_progress(self) -> bool:
-        return self._show_progress
 
 
 def search_yield_hits(
