@@ -528,7 +528,7 @@ class QueryCompiler:
         return self._operations.to_pandas(self, show_progress)
 
     # To CSV
-    def to_csv(self, **kwargs):
+    def to_csv(self, **kwargs) -> Optional[str]:
         """Serialises Eland Dataframe to CSV
 
         Returns:
