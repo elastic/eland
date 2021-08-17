@@ -1310,7 +1310,7 @@ class DataFrame(NDFrame):
         doublequote=True,
         escapechar=None,
         decimal=".",
-    ):
+    ) -> Optional[str]:
         """
         Write Elasticsearch data to a comma-separated values (csv) file.
 
