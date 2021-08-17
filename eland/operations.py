@@ -1228,7 +1228,7 @@ class Operations:
 
         for df in df_generator:
             df = self._apply_df_post_processing(df, post_processing)
-            yield next(df.iterrows())
+            yield from df.iterrows()
 
     def itertuples(
         self,
@@ -1262,7 +1262,7 @@ class Operations:
 
         for df in df_generator:
             df = self._apply_df_post_processing(df, post_processing)
-            yield next(df.itertuples(index=index, name=name))
+            yield from df.itertuples(index=index, name=name)
 
     def to_pandas(
         self, query_compiler: "QueryCompiler", show_progress: bool = False
@@ -1315,7 +1315,7 @@ class Operations:
 
         i = 0
         for df in df_generator:
-            i = i + 1
+            i = i + len(df)
 
             df_list.append(df)
 

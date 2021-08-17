@@ -34,6 +34,7 @@ import numpy as np
 import pandas as pd  # type: ignore
 
 from eland.common import (
+    DEFAULT_PROGRESS_REPORTING_NUM_ROWS,
     elasticsearch_date_to_pandas_date,
     ensure_es_client,
 )
@@ -243,9 +244,12 @@ class QueryCompiler:
         # therefore create a simple cache for this data
         field_mapping_cache = FieldMappingCache(self._mappings)
 
+        rows = []
+        index = []
+
+        i = 0
         for hit in es_results:
-            rows = []
-            index = []
+            i = i + 1
 
             if "_source" in hit:
                 row = hit["_source"]
@@ -268,28 +272,42 @@ class QueryCompiler:
             # flatten row to map correctly to 2D DataFrame
             rows.append(self._flatten_dict(row, field_mapping_cache))
 
-            # Create pandas DataFrame
-            df = pd.DataFrame(data=rows, index=index)
+            if i % DEFAULT_PROGRESS_REPORTING_NUM_ROWS == 0:
+                # Create pandas DataFrame
+                df = pd.DataFrame(data=rows, index=index)
+                df = self._dataframe_post_processing(df)
 
-            # _source may not contain all field_names in the mapping
-            # therefore, fill in missing field_names
-            # (note this returns self.field_names NOT IN df.columns)
-            missing_field_names = list(
-                set(self.get_field_names(include_scripted_fields=True)) - set(df.columns)
-            )
+                # Yield dataframe and Reset rows,index
+                rows = []
+                index = []
 
-            for missing in missing_field_names:
-                pd_dtype = self._mappings.field_name_pd_dtype(missing)
-                df[missing] = pd.Series(dtype=pd_dtype)
+                yield df
 
-            # Rename columns
-            df.rename(columns=self._mappings.get_renames(), inplace=True)
+        df = pd.DataFrame(data=rows, index=index)
+        df = self._dataframe_post_processing(df)
+        yield df
 
-            # Sort columns in mapping order
-            if len(self.columns) > 1:
-                df = df[self.columns]
 
-            yield df
+    def _dataframe_post_processing(self, df: "pd.Dataframe"):
+        # _source may not contain all field_names in the mapping
+        # therefore, fill in missing field_names
+        # (note this returns self.field_names NOT IN df.columns)
+        missing_field_names = list(
+            set(self.get_field_names(include_scripted_fields=True)) - set(df.columns)
+        )
+
+        for missing in missing_field_names:
+            pd_dtype = self._mappings.field_name_pd_dtype(missing)
+            df[missing] = pd.Series(dtype=pd_dtype)
+
+        # Rename columns
+        df.rename(columns=self._mappings.get_renames(), inplace=True)
+
+        # Sort columns in mapping order
+        if len(self.columns) > 1:
+            df = df[self.columns]
+
+        return df
 
     def _flatten_dict(self, y, field_mapping_cache: "FieldMappingCache"):
         out = {}
