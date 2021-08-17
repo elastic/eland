@@ -148,7 +148,6 @@ class QueryCompiler:
     def _es_results_to_pandas(
         self,
         results: List[Dict[str, Any]],
-        batch_size: Optional[int] = None,
         show_progress: bool = False,
     ) -> "pd.Dataframe":
         """
@@ -239,10 +238,8 @@ class QueryCompiler:
             (which isn't great)
         NOTE - using this lists is generally not a good way to use this API
         """
-        partial_result = False
-
-        if results is None:
-            return partial_result, self._empty_pd_ef()
+        if not results:
+            return self._empty_pd_ef()
 
         # This is one of the most performance critical areas of eland, and it repeatedly calls
         # self._mappings.field_name_pd_dtype and self._mappings.date_field_format
@@ -253,8 +250,7 @@ class QueryCompiler:
         index = []
 
         i = 0
-        for hit in results:
-            i = i + 1
+        for i, hit in enumerate(results, 1):
 
             if "_source" in hit:
                 row = hit["_source"]
@@ -276,11 +272,6 @@ class QueryCompiler:
 
             # flatten row to map correctly to 2D DataFrame
             rows.append(self._flatten_dict(row, field_mapping_cache))
-
-            if batch_size is not None:
-                if i >= batch_size:
-                    partial_result = True
-                    break
 
             if show_progress:
                 if i % DEFAULT_PROGRESS_REPORTING_NUM_ROWS == 0:
@@ -310,7 +301,7 @@ class QueryCompiler:
         if show_progress:
             print(f"{datetime.now()}: read {i} rows")
 
-        return partial_result, df
+        return df
 
     def _flatten_dict(self, y, field_mapping_cache: "FieldMappingCache"):
         out = {}
