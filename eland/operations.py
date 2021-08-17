@@ -39,11 +39,7 @@ from elasticsearch.exceptions import NotFoundError
 
 from eland.actions import PostProcessingAction
 from eland.common import (
-<<<<<<< HEAD
     DEFAULT_PROGRESS_REPORTING_NUM_ROWS,
-    DEFAULT_CSV_BATCH_OUTPUT_SIZE,
-=======
->>>>>>> 011bf2981661e499ad0caf2dc14c476c95dba265
     DEFAULT_PAGINATION_SIZE,
     DEFAULT_PIT_KEEP_ALIVE,
     DEFAULT_SEARCH_SIZE,
