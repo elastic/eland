@@ -1197,8 +1197,7 @@ class Operations:
         )
 
     def iterrows(
-        self,
-        query_compiler: "QueryCompiler"
+        self, query_compiler: "QueryCompiler"
     ) -> Iterable[Tuple[Union[str, Tuple[str, ...]], pd.Series]]:
         query_params, post_processing = self._resolve_tasks(query_compiler)
         result_size, sort_params = Operations._query_params_to_size_and_sort(
@@ -1220,19 +1219,14 @@ class Operations:
             body["sort"] = [sort_params]
 
         for hits in _search_yield_hits(
-            query_compiler=query_compiler,
-            body=body,
-            max_number_of_hits=result_size
+            query_compiler=query_compiler, body=body, max_number_of_hits=result_size
         ):
             df = query_compiler._es_results_to_pandas(hits)
             df = self._apply_df_post_processing(df, post_processing)
             yield from df.iterrows()
 
     def itertuples(
-        self,
-        query_compiler: "QueryCompiler",
-        index: bool,
-        name: Union[str, None]
+        self, query_compiler: "QueryCompiler", index: bool, name: Union[str, None]
     ) -> Iterable[Tuple[Any, ...]]:
         query_params, post_processing = self._resolve_tasks(query_compiler)
         result_size, sort_params = Operations._query_params_to_size_and_sort(
@@ -1254,9 +1248,7 @@ class Operations:
             body["sort"] = [sort_params]
 
         for hits in _search_yield_hits(
-            query_compiler=query_compiler,
-            body=body,
-            max_number_of_hits=result_size
+            query_compiler=query_compiler, body=body, max_number_of_hits=result_size
         ):
             df = query_compiler._es_results_to_pandas(hits)
             df = self._apply_df_post_processing(df, post_processing)

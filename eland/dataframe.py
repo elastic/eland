@@ -1481,7 +1481,7 @@ class DataFrame(NDFrame):
         dayOfWeek       0
         timestamp       2018-01-01 00:00:00
         Name: 0, dtype: object
-        
+
         AvgTicketPrice  882.982662
         Cancelled       False
         dayOfWeek       0
