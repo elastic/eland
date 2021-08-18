@@ -1461,7 +1461,7 @@ class DataFrame(NDFrame):
         eland.DataFrame.itertuples: Iterate over eland.DataFrame rows as namedtuples.
 
         Examples
-        -----
+        --------
         >>> df = ed.DataFrame('localhost:9200', 'flights')
         >>> df.head()
             AvgTicketPrice  Cancelled  ... dayOfWeek           timestamp
@@ -1475,19 +1475,15 @@ class DataFrame(NDFrame):
 
         >>> for index, row in df.iterrows()
         ...     print(row)
-        ...
-        0
+
         AvgTicketPrice  841.265642
         Cancelled       False
-        ...
         dayOfWeek       0
         timestamp       2018-01-01 00:00:00
         Name: 0, dtype: object
         
-        1
         AvgTicketPrice  882.982662
         Cancelled       False
-        ...
         dayOfWeek       0
         timestamp       2018-01-01 18:27:00
         Name: 1, dtype: object
@@ -1531,23 +1527,18 @@ class DataFrame(NDFrame):
 
         >>> for row in df.itertuples():
         ...     print(row)
-        ...
         Eland(Index='0', AvgTicketPrice=841.265642, Cancelled=False, ..., dayOfWeek=0, timestamp='2018-01-01 00:00:00')
         Eland(Index='1', AvgTicketPrice=882.982662, Cancelled=False, ..., dayOfWeek=0, timestamp='2018-01-01 18:27:00')
 
         By setting the `index` parameter to False we can remove the index as the first element of the tuple:
-
         >>> for row in df.itertuples(index=False):
         ...     print(row)
-        ...
         Eland(AvgTicketPrice=841.265642, Cancelled=False, ..., dayOfWeek=0, timestamp='2018-01-01 00:00:00')
         Eland(AvgTicketPrice=882.982662, Cancelled=False, ..., dayOfWeek=0, timestamp='2018-01-01 18:27:00')
 
         With the `name` parameter set we set a custom name for the yielded namedtuples:
-
         >>> for row in df.itertuples(name='Flight'):
         ...     print(row)
-        ...
         Flight(Index='0', AvgTicketPrice=841.265642, Cancelled=False, ..., dayOfWeek=0, timestamp='2018-01-01 00:00:00')
         Flight(Index='1', AvgTicketPrice=882.982662, Cancelled=False, ..., dayOfWeek=0, timestamp='2018-01-01 18:27:00')
         """
