@@ -17,8 +17,9 @@
 
 # File called _pytest for PyCharm compatability
 
-from tests.common import TestData
 from pandas.testing import assert_index_equal, assert_series_equal
+
+from tests.common import TestData
 
 
 class TestDataFrameIterrowsItertuples(TestData):

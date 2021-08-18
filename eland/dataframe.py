@@ -19,7 +19,7 @@ import re
 import sys
 import warnings
 from io import StringIO
-from typing import TYPE_CHECKING, Any, List, Iterable, Optional, Sequence, Tuple, Union
+from typing import TYPE_CHECKING, Any, Iterable, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import pandas as pd  # type: ignore
