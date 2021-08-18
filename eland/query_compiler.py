@@ -156,11 +156,13 @@ class QueryCompiler:
         ----------
         results: List[Dict[str, Any]]
             Elasticsearch results from self.client.search
+
         Returns
         -------
         df: pandas.DataFrame
             _source values extracted from results and mapped to pandas DataFrame
             dtypes are mapped via Mapping object
+
         Notes
         -----
         Fields containing lists in Elasticsearch don't map easily to pandas.DataFrame
@@ -211,6 +213,7 @@ class QueryCompiler:
         }
         ```
         When mapping this a pandas data frame we mimic this transformation.
+
         Similarly, if a list is added to Elasticsearch:
         ```
         PUT my_index/_doc/1

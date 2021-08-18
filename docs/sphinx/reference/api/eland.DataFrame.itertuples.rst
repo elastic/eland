@@ -1,5 +1,5 @@
 eland.DataFrame.itertuples
-======================
+==========================
 
 .. currentmodule:: eland
 
