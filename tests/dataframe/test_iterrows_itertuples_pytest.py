@@ -35,8 +35,8 @@ class TestDataFrameIterrowsItertuples(TestData):
             assert_series_equal(ed_row, pd_row)
 
     def test_itertuples(self):
-        ed_flights_itertuples = self.ed_flights().itertuples()
-        pd_flights_itertuples = self.pd_flights().itertuples()
+        ed_flights_itertuples = self.ed_flights().itertuples(name=None)
+        pd_flights_itertuples = self.pd_flights().itertuples(name=None)
         assert len(ed_flights_itertuples) == len(pd_flights_itertuples)
 
         for i in len(ed_flights_itertuples):
