@@ -16,13 +16,13 @@
 #  under the License.
 
 import copy
+from datetime import datetime
 from typing import (
     TYPE_CHECKING,
     Any,
     Dict,
     List,
     Optional,
-    Generator,
     Iterable,
     Sequence,
     TextIO,
@@ -148,20 +148,19 @@ class QueryCompiler:
 
     def _es_results_to_pandas(
         self,
-        es_results: Generator[Dict[str, Any], None, None]
-    ) -> Generator["pd.Dataframe", None, None]:
+        results: List[Dict[str, Any]],
+        show_progress: bool = False,
+    ) -> "pd.Dataframe":
         """
         Parameters
         ----------
-        es_results: Generator[Dict[str, Any], None, None]
-            Elasticsearch results generator from self.client.search
-
+        results: List[Dict[str, Any]]
+            Elasticsearch results from self.client.search
         Returns
         -------
-        pandas.DataFrame generator: Generator[pandas.DataFrame, None, None]
+        df: pandas.DataFrame
             _source values extracted from results and mapped to pandas DataFrame
-            dtypes are mapped via Mapping object, return a generator
-
+            dtypes are mapped via Mapping object
         Notes
         -----
         Fields containing lists in Elasticsearch don't map easily to pandas.DataFrame
@@ -212,7 +211,6 @@ class QueryCompiler:
         }
         ```
         When mapping this a pandas data frame we mimic this transformation.
-
         Similarly, if a list is added to Elasticsearch:
         ```
         PUT my_index/_doc/1
@@ -238,6 +236,8 @@ class QueryCompiler:
             (which isn't great)
         NOTE - using this lists is generally not a good way to use this API
         """
+        if not results:
+            return self._empty_pd_ef()
 
         # This is one of the most performance critical areas of eland, and it repeatedly calls
         # self._mappings.field_name_pd_dtype and self._mappings.date_field_format
@@ -248,8 +248,7 @@ class QueryCompiler:
         index = []
 
         i = 0
-        for hit in es_results:
-            i = i + 1
+        for i, hit in enumerate(results, 1):
 
             if "_source" in hit:
                 row = hit["_source"]
@@ -272,23 +271,13 @@ class QueryCompiler:
             # flatten row to map correctly to 2D DataFrame
             rows.append(self._flatten_dict(row, field_mapping_cache))
 
-            if i % DEFAULT_PROGRESS_REPORTING_NUM_ROWS == 0:
-                # Create pandas DataFrame
-                df = pd.DataFrame(data=rows, index=index)
-                df = self._dataframe_post_processing(df)
+            if show_progress:
+                if i % DEFAULT_PROGRESS_REPORTING_NUM_ROWS == 0:
+                    print(f"{datetime.now()}: read {i} rows")
 
-                # Yield dataframe and Reset rows,index
-                rows = []
-                index = []
-
-                yield df
-
+        # Create pandas DataFrame
         df = pd.DataFrame(data=rows, index=index)
-        df = self._dataframe_post_processing(df)
-        yield df
 
-
-    def _dataframe_post_processing(self, df: "pd.Dataframe"):
         # _source may not contain all field_names in the mapping
         # therefore, fill in missing field_names
         # (note this returns self.field_names NOT IN df.columns)
@@ -306,6 +295,9 @@ class QueryCompiler:
         # Sort columns in mapping order
         if len(self.columns) > 1:
             df = df[self.columns]
+
+        if show_progress:
+            print(f"{datetime.now()}: read {i} rows")
 
         return df
 
