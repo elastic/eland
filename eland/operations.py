@@ -16,7 +16,6 @@
 #  under the License.
 
 import copy
-from datetime import datetime
 import warnings
 from collections import defaultdict
 from typing import (
@@ -39,7 +38,6 @@ from elasticsearch.exceptions import NotFoundError
 
 from eland.actions import PostProcessingAction
 from eland.common import (
-    DEFAULT_PROGRESS_REPORTING_NUM_ROWS,
     DEFAULT_PAGINATION_SIZE,
     DEFAULT_PIT_KEEP_ALIVE,
     DEFAULT_SEARCH_SIZE,
@@ -1221,12 +1219,12 @@ class Operations:
         if sort_params:
             body["sort"] = [sort_params]
 
-        es_results_generator = search_yield_hits(
-            query_compiler=query_compiler, body=body, max_number_of_hits=result_size
-        )
-        df_generator = query_compiler._es_results_to_pandas(es_results_generator)
-
-        for df in df_generator:
+        for hits in _search_yield_hits(
+            query_compiler=query_compiler,
+            body=body,
+            max_number_of_hits=result_size
+        ):
+            df = query_compiler._es_results_to_pandas(hits)
             df = self._apply_df_post_processing(df, post_processing)
             yield from df.iterrows()
 
@@ -1255,12 +1253,12 @@ class Operations:
         if sort_params:
             body["sort"] = [sort_params]
 
-        es_results_generator = search_yield_hits(
-            query_compiler=query_compiler, body=body, max_number_of_hits=result_size
-        )
-        df_generator = query_compiler._es_results_to_pandas(es_results_generator)
-
-        for df in df_generator:
+        for hits in _search_yield_hits(
+            query_compiler=query_compiler,
+            body=body,
+            max_number_of_hits=result_size
+        ):
+            df = query_compiler._es_results_to_pandas(hits)
             df = self._apply_df_post_processing(df, post_processing)
             yield from df.itertuples(index=index, name=name)
 
@@ -1303,32 +1301,18 @@ class Operations:
         if sort_params:
             body["sort"] = [sort_params]
 
-        es_results_generator = search_yield_hits(
-            query_compiler=query_compiler, body=body, max_number_of_hits=result_size
+        es_results: List[Dict[str, Any]] = sum(
+            _search_yield_hits(
+                query_compiler=query_compiler, body=body, max_number_of_hits=result_size
+            ),
+            [],
         )
-        df_generator = query_compiler._es_results_to_pandas(es_results_generator)
 
-        # Put it in the list first, and then convert it into a pandas DataFrame 
-        # which is faster than using pandas.DataFrame.append()
-        # https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.append.html
-        df_list = []
-
-        i = 0
-        for df in df_generator:
-            i = i + len(df)
-
-            df_list.append(df)
-
-            if show_progress:
-                if i % DEFAULT_PROGRESS_REPORTING_NUM_ROWS == 0:
-                    print(f"{datetime.now()}: read {i} rows")
-
-        if show_progress:
-            print(f"{datetime.now()}: read {i} rows")
-
-        df_results = pd.concat(df_list)
-        df_results = self._apply_df_post_processing(df_results, post_processing)
-        return df_results
+        df = query_compiler._es_results_to_pandas(
+            results=es_results, show_progress=show_progress
+        )
+        df = self._apply_df_post_processing(df, post_processing)
+        return df
 
     def index_count(self, query_compiler: "QueryCompiler", field: str) -> int:
         # field is the index field so count values
@@ -1531,14 +1515,16 @@ def quantile_to_percentile(quantile: Union[int, float]) -> float:
     return float(min(100, max(0, quantile * 100)))
 
 
-def search_yield_hits(
+def _search_yield_hits(
     query_compiler: "QueryCompiler",
     body: Dict[str, Any],
     max_number_of_hits: Optional[int],
-) -> Generator[Dict[str, Any], None, None]:
+) -> Generator[List[Dict[str, Any]], None, None]:
     """
     This is a generator used to initialize point in time API and query the
-    search API and return generator which yields an individual documents
+    search API and return generator which yields batches of hits as they
+    come in. No empty batches will be yielded, if there are no hits then
+    no batches will be yielded instead.
 
     Parameters
     ----------
@@ -1553,8 +1539,8 @@ def search_yield_hits(
     Examples
     --------
     >>> results = list(search_yield_hits(query_compiler, body, 2)) # doctest: +SKIP
-    [{'_index': 'flights', '_type': '_doc', '_id': '0', '_score': None, '_source': {...}, 'sort': [...]},
-    {'_index': 'flights', '_type': '_doc', '_id': '1', '_score': None, '_source': {...}, 'sort': [...]}]
+    [[{'_index': 'flights', '_type': '_doc', '_id': '0', '_score': None, '_source': {...}, 'sort': [...]},
+      {'_index': 'flights', '_type': '_doc', '_id': '1', '_score': None, '_source': {...}, 'sort': [...]}]]
     """
     # Make a copy of 'body' to avoid mutating it outside this function.
     body = body.copy()
@@ -1584,7 +1570,7 @@ def _search_with_scroll(
     query_compiler: "QueryCompiler",
     body: Dict[str, Any],
     max_number_of_hits: Optional[int],
-) -> Generator[Dict[str, Any], None, None]:
+) -> Generator[List[Dict[str, Any]], None, None]:
     # No documents, no reason to send a search.
     if max_number_of_hits == 0:
         return
@@ -1617,8 +1603,11 @@ def _search_with_scroll(
                 hits_to_yield = min(len(hits), max_number_of_hits - hits_yielded)
 
             # Yield the hits we need to and then track the total number.
-            yield from hits[:hits_to_yield]
-            hits_yielded += hits_to_yield
+            # Never yield an empty list as that makes things simpler for
+            # downstream consumers.
+            if hits and hits_to_yield > 0:
+                yield hits[:hits_to_yield]
+                hits_yielded += hits_to_yield
 
             # Retrieve the next set of results
             resp = client.scroll(
@@ -1639,7 +1628,7 @@ def _search_with_pit_and_search_after(
     query_compiler: "QueryCompiler",
     body: Dict[str, Any],
     max_number_of_hits: Optional[int],
-) -> Generator[Dict[str, Any], None, None]:
+) -> Generator[List[Dict[str, Any]], None, None]:
 
     # No documents, no reason to send a search.
     if max_number_of_hits == 0:
@@ -1686,8 +1675,11 @@ def _search_with_pit_and_search_after(
                 hits_to_yield = min(len(hits), max_number_of_hits - hits_yielded)
 
             # Yield the hits we need to and then track the total number.
-            yield from hits[:hits_to_yield]
-            hits_yielded += hits_to_yield
+            # Never yield an empty list as that makes things simpler for
+            # downstream consumers.
+            if hits and hits_to_yield > 0:
+                yield hits[:hits_to_yield]
+                hits_yielded += hits_to_yield
 
             # Set the 'search_after' for the next request
             # to be the last sort value for this set of hits.
