@@ -38,6 +38,8 @@ Indexing, Iteration
    DataFrame.get
    DataFrame.query
    DataFrame.sample
+   DataFrame.iterrows
+   DataFrame.itertuples
 
 Function Application, GroupBy & Window
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
