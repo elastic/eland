@@ -1450,7 +1450,8 @@ class DataFrame(NDFrame):
         """
         Iterate over eland.DataFrame rows as (index, pandas.Series) pairs.
 
-        Yields:
+        Yields
+        ------
             index: index
                 The index of the row.
             data: pandas Series
@@ -1488,7 +1489,8 @@ class DataFrame(NDFrame):
         timestamp       2018-01-01 18:27:00
         Name: 1, dtype: object
         """
-        return self._query_compiler.iterrows()
+        for df in self._query_compiler.yield_pandas_dataframe():
+            yield from df.iterrows()
 
     def itertuples(
         self, index: bool = True, name: Union[str, None] = "Eland"
@@ -1496,13 +1498,15 @@ class DataFrame(NDFrame):
         """
         Iterate over eland.DataFrame rows as namedtuples.
 
-        Args:
+        Args
+        ----
             index: bool, default True
                 If True, return the index as the first element of the tuple.
             name: str or None, default "Eland"
                 The name of the returned namedtuples or None to return regular tuples.
 
-        Returns:
+        Returns
+        -------
             iterator
                 An object to iterate over namedtuples for each row in the
                 DataFrame with the first field possibly being the index and
@@ -1542,7 +1546,8 @@ class DataFrame(NDFrame):
         Flight(Index='0', AvgTicketPrice=841.265642, Cancelled=False, ..., dayOfWeek=0, timestamp='2018-01-01 00:00:00')
         Flight(Index='1', AvgTicketPrice=882.982662, Cancelled=False, ..., dayOfWeek=0, timestamp='2018-01-01 18:27:00')
         """
-        return self._query_compiler.itertuples(index=index, name=name)
+        for df in self._query_compiler.yield_pandas_dataframe():
+            yield from df.itertuples(index=index, name=name)
 
     def aggregate(
         self,
