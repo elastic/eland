@@ -18,7 +18,7 @@
 # File called _pytest for PyCharm compatability
 
 import pytest
-from pandas.testing import assert_index_equal, assert_series_equal
+from pandas.testing import assert_series_equal
 
 from tests.common import TestData
 
@@ -34,7 +34,7 @@ class TestDataFrameIterrowsItertuples(TestData):
         for ed_index, ed_row in ed_flights_iterrows:
             pd_index, pd_row = next(pd_flights_iterrows)
 
-            assert_index_equal(ed_index, pd_index)
+            assert ed_index == pd_index
             assert_series_equal(ed_row, pd_row)
 
         # Assert that both are the same length and are exhausted.
@@ -50,4 +50,15 @@ class TestDataFrameIterrowsItertuples(TestData):
         ed_flights_itertuples = list(ed_flights.itertuples(name=None))
         pd_flights_itertuples = list(pd_flights.itertuples(name=None))
 
-        assert ed_flights_itertuples == pd_flights_itertuples
+        def assert_tuples_almost_equal(left, right):
+            # Shim which uses pytest.approx() for floating point values inside tuples.
+            assert len(left) == len(right)
+            assert all(
+                (lt == rt)  # Not floats? Use ==
+                if not isinstance(lt, float) and not isinstance(rt, float)
+                else (lt == pytest.approx(rt))  # If both are floats use pytest.approx()
+                for lt, rt in zip(left, right)
+            )
+
+        for ed_tuple, pd_tuple in zip(ed_flights_itertuples, pd_flights_itertuples):
+            assert_tuples_almost_equal(ed_tuple, pd_tuple)
