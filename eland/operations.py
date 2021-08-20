@@ -1211,7 +1211,7 @@ class Operations:
         df = self._es_results(query_compiler, show_progress)
         return df.to_csv(**kwargs)  # type: ignore[no-any-return]
 
-    def search_yield_pandas_dataframe(
+    def search_yield_pandas_dataframes(
         self, query_compiler: "QueryCompiler"
     ) -> Generator["pd.DataFrame", None, None]:
         query_params, post_processing = self._resolve_tasks(query_compiler)
