@@ -17,6 +17,7 @@
 
 # File called _pytest for PyCharm compatability
 
+import pytest
 from pandas.testing import assert_index_equal, assert_series_equal
 
 from tests.common import TestData
