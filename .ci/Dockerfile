@@ -1,10 +1,7 @@
-ARG PYTHON_VERSION=3.7
+ARG PYTHON_VERSION=3.9
 FROM python:${PYTHON_VERSION}
 
 WORKDIR /code/eland
-COPY requirements-dev.txt .
-RUN pip install -r requirements-dev.txt
+RUN python -m pip install nox
 
 COPY . .
-
-
