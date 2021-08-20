@@ -19,7 +19,7 @@ import re
 import sys
 import warnings
 from io import StringIO
-from typing import TYPE_CHECKING, Any, List, Optional, Sequence, Tuple, Union
+from typing import TYPE_CHECKING, Any, Iterable, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import pandas as pd  # type: ignore
@@ -1445,6 +1445,121 @@ class DataFrame(NDFrame):
             Elasticsearch field names as pandas.Index
         """
         return self.columns
+
+    def iterrows(self) -> Iterable[Tuple[Union[str, Tuple[str, ...]], pd.Series]]:
+        """
+        Iterate over eland.DataFrame rows as (index, pandas.Series) pairs.
+
+        Yields
+        ------
+            index: index
+                The index of the row.
+            data: pandas Series
+                The data of the row as a pandas Series.
+
+        See Also
+        --------
+        eland.DataFrame.itertuples: Iterate over eland.DataFrame rows as namedtuples.
+
+        Examples
+        --------
+        >>> df = ed.DataFrame('localhost:9200', 'flights', columns=['AvgTicketPrice', 'Cancelled']).head()
+        >>> df
+           AvgTicketPrice  Cancelled
+        0      841.265642      False
+        1      882.982662      False
+        2      190.636904      False
+        3      181.694216       True
+        4      730.041778      False
+        <BLANKLINE>
+        [5 rows x 2 columns]
+
+        >>> for index, row in df.iterrows():
+        ...     print(row)
+        AvgTicketPrice    841.265642
+        Cancelled              False
+        Name: 0, dtype: object
+        AvgTicketPrice    882.982662
+        Cancelled              False
+        Name: 1, dtype: object
+        AvgTicketPrice    190.636904
+        Cancelled              False
+        Name: 2, dtype: object
+        AvgTicketPrice    181.694216
+        Cancelled               True
+        Name: 3, dtype: object
+        AvgTicketPrice    730.041778
+        Cancelled              False
+        Name: 4, dtype: object
+        """
+        for df in self._query_compiler.search_yield_pandas_dataframes():
+            yield from df.iterrows()
+
+    def itertuples(
+        self, index: bool = True, name: Union[str, None] = "Eland"
+    ) -> Iterable[Tuple[Any, ...]]:
+        """
+        Iterate over eland.DataFrame rows as namedtuples.
+
+        Args
+        ----
+            index: bool, default True
+                If True, return the index as the first element of the tuple.
+            name: str or None, default "Eland"
+                The name of the returned namedtuples or None to return regular tuples.
+
+        Returns
+        -------
+            iterator
+                An object to iterate over namedtuples for each row in the
+                DataFrame with the first field possibly being the index and
+                following fields being the column values.
+
+        See Also
+        --------
+        eland.DataFrame.iterrows: Iterate over eland.DataFrame rows as (index, pandas.Series) pairs.
+
+        Examples
+        --------
+        >>> df = ed.DataFrame('localhost:9200', 'flights', columns=['AvgTicketPrice', 'Cancelled']).head()
+        >>> df
+           AvgTicketPrice  Cancelled
+        0      841.265642      False
+        1      882.982662      False
+        2      190.636904      False
+        3      181.694216       True
+        4      730.041778      False
+        <BLANKLINE>
+        [5 rows x 2 columns]
+
+        >>> for row in df.itertuples():
+        ...     print(row)
+        Eland(Index='0', AvgTicketPrice=841.2656419677076, Cancelled=False)
+        Eland(Index='1', AvgTicketPrice=882.9826615595518, Cancelled=False)
+        Eland(Index='2', AvgTicketPrice=190.6369038508356, Cancelled=False)
+        Eland(Index='3', AvgTicketPrice=181.69421554118, Cancelled=True)
+        Eland(Index='4', AvgTicketPrice=730.041778346198, Cancelled=False)
+
+        By setting the `index` parameter to False we can remove the index as the first element of the tuple:
+        >>> for row in df.itertuples(index=False):
+        ...     print(row)
+        Eland(AvgTicketPrice=841.2656419677076, Cancelled=False)
+        Eland(AvgTicketPrice=882.9826615595518, Cancelled=False)
+        Eland(AvgTicketPrice=190.6369038508356, Cancelled=False)
+        Eland(AvgTicketPrice=181.69421554118, Cancelled=True)
+        Eland(AvgTicketPrice=730.041778346198, Cancelled=False)
+
+        With the `name` parameter set we set a custom name for the yielded namedtuples:
+        >>> for row in df.itertuples(name='Flight'):
+        ...     print(row)
+        Flight(Index='0', AvgTicketPrice=841.2656419677076, Cancelled=False)
+        Flight(Index='1', AvgTicketPrice=882.9826615595518, Cancelled=False)
+        Flight(Index='2', AvgTicketPrice=190.6369038508356, Cancelled=False)
+        Flight(Index='3', AvgTicketPrice=181.69421554118, Cancelled=True)
+        Flight(Index='4', AvgTicketPrice=730.041778346198, Cancelled=False)
+        """
+        for df in self._query_compiler.search_yield_pandas_dataframes():
+            yield from df.itertuples(index=index, name=name)
 
     def aggregate(
         self,
