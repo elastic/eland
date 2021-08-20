@@ -1463,31 +1463,34 @@ class DataFrame(NDFrame):
 
         Examples
         --------
-        >>> df = ed.DataFrame('localhost:9200', 'flights')
-        >>> df.head()
-            AvgTicketPrice  Cancelled  ... dayOfWeek           timestamp
-        0      841.265642      False  ...         0 2018-01-01 00:00:00
-        1      882.982662      False  ...         0 2018-01-01 18:27:00
-        2      190.636904      False  ...         0 2018-01-01 17:11:14
-        3      181.694216       True  ...         0 2018-01-01 10:33:28
-        4      730.041778      False  ...         0 2018-01-01 05:13:00
+        >>> df = ed.DataFrame('localhost:9200', 'flights', columns=['AvgTicketPrice', 'Cancelled']).head()
+        >>> df
+           AvgTicketPrice  Cancelled
+        0      841.265642      False
+        1      882.982662      False
+        2      190.636904      False
+        3      181.694216       True
+        4      730.041778      False
         <BLANKLINE>
-        [5 rows x 27 columns]
+        [5 rows x 2 columns]
 
-        >>> for index, row in df.iterrows()
+        >>> for index, row in df.iterrows():
         ...     print(row)
-
-        AvgTicketPrice  841.265642
-        Cancelled       False
-        dayOfWeek       0
-        timestamp       2018-01-01 00:00:00
+        AvgTicketPrice    841.265642
+        Cancelled              False
         Name: 0, dtype: object
-
-        AvgTicketPrice  882.982662
-        Cancelled       False
-        dayOfWeek       0
-        timestamp       2018-01-01 18:27:00
+        AvgTicketPrice    882.982662
+        Cancelled              False
         Name: 1, dtype: object
+        AvgTicketPrice    190.636904
+        Cancelled              False
+        Name: 2, dtype: object
+        AvgTicketPrice    181.694216
+        Cancelled               True
+        Name: 3, dtype: object
+        AvgTicketPrice    730.041778
+        Cancelled              False
+        Name: 4, dtype: object
         """
         for df in self._query_compiler.yield_pandas_dataframe():
             yield from df.iterrows()
@@ -1518,33 +1521,42 @@ class DataFrame(NDFrame):
 
         Examples
         --------
-        >>> df = ed.DataFrame('localhost:9200', 'flights')
-        >>> df.head()
-            AvgTicketPrice  Cancelled  ... dayOfWeek           timestamp
-        0      841.265642      False  ...         0 2018-01-01 00:00:00
-        1      882.982662      False  ...         0 2018-01-01 18:27:00
-        2      190.636904      False  ...         0 2018-01-01 17:11:14
-        3      181.694216       True  ...         0 2018-01-01 10:33:28
-        4      730.041778      False  ...         0 2018-01-01 05:13:00
+        >>> df = ed.DataFrame('localhost:9200', 'flights', columns=['AvgTicketPrice', 'Cancelled']).head()
+        >>> df
+           AvgTicketPrice  Cancelled
+        0      841.265642      False
+        1      882.982662      False
+        2      190.636904      False
+        3      181.694216       True
+        4      730.041778      False
         <BLANKLINE>
-        [5 rows x 27 columns]
+        [5 rows x 2 columns]
 
         >>> for row in df.itertuples():
         ...     print(row)
-        Eland(Index='0', AvgTicketPrice=841.265642, Cancelled=False, ..., dayOfWeek=0, timestamp='2018-01-01 00:00:00')
-        Eland(Index='1', AvgTicketPrice=882.982662, Cancelled=False, ..., dayOfWeek=0, timestamp='2018-01-01 18:27:00')
+        Eland(Index='0', AvgTicketPrice=841.2656419677076, Cancelled=False)
+        Eland(Index='1', AvgTicketPrice=882.9826615595518, Cancelled=False)
+        Eland(Index='2', AvgTicketPrice=190.6369038508356, Cancelled=False)
+        Eland(Index='3', AvgTicketPrice=181.69421554118, Cancelled=True)
+        Eland(Index='4', AvgTicketPrice=730.041778346198, Cancelled=False)
 
         By setting the `index` parameter to False we can remove the index as the first element of the tuple:
         >>> for row in df.itertuples(index=False):
         ...     print(row)
-        Eland(AvgTicketPrice=841.265642, Cancelled=False, ..., dayOfWeek=0, timestamp='2018-01-01 00:00:00')
-        Eland(AvgTicketPrice=882.982662, Cancelled=False, ..., dayOfWeek=0, timestamp='2018-01-01 18:27:00')
+        Eland(AvgTicketPrice=841.2656419677076, Cancelled=False)
+        Eland(AvgTicketPrice=882.9826615595518, Cancelled=False)
+        Eland(AvgTicketPrice=190.6369038508356, Cancelled=False)
+        Eland(AvgTicketPrice=181.69421554118, Cancelled=True)
+        Eland(AvgTicketPrice=730.041778346198, Cancelled=False)
 
         With the `name` parameter set we set a custom name for the yielded namedtuples:
         >>> for row in df.itertuples(name='Flight'):
         ...     print(row)
-        Flight(Index='0', AvgTicketPrice=841.265642, Cancelled=False, ..., dayOfWeek=0, timestamp='2018-01-01 00:00:00')
-        Flight(Index='1', AvgTicketPrice=882.982662, Cancelled=False, ..., dayOfWeek=0, timestamp='2018-01-01 18:27:00')
+        Flight(Index='0', AvgTicketPrice=841.2656419677076, Cancelled=False)
+        Flight(Index='1', AvgTicketPrice=882.9826615595518, Cancelled=False)
+        Flight(Index='2', AvgTicketPrice=190.6369038508356, Cancelled=False)
+        Flight(Index='3', AvgTicketPrice=181.69421554118, Cancelled=True)
+        Flight(Index='4', AvgTicketPrice=730.041778346198, Cancelled=False)
         """
         for df in self._query_compiler.yield_pandas_dataframe():
             yield from df.itertuples(index=index, name=name)
