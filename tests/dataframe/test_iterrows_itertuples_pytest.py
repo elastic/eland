@@ -30,39 +30,23 @@ class TestDataFrameIterrowsItertuples(TestData):
         ed_flights_iterrows = ed_flights.iterrows()
         pd_flights_iterrows = pd_flights.iterrows()
 
-        assert len(list(ed_flights_iterrows)) == len(list(pd_flights_iterrows))
-
         for ed_index, ed_row in ed_flights_iterrows:
-
             pd_index, pd_row = next(pd_flights_iterrows)
 
             assert_index_equal(ed_index, pd_index)
             assert_series_equal(ed_row, pd_row)
 
-        for pd_index, pd_row in pd_flights_iterrows:
-
-            ed_index, ed_row = next(ed_flights_iterrows)
-
-            assert_index_equal(pd_index, ed_index)
-            assert_series_equal(pd_row, ed_row)
+        # Assert that both are the same length and are exhausted.
+        with pytest.raises(StopIteration):
+            next(ed_flights_iterrows)
+        with pytest.raises(StopIteration):
+            next(pd_flights_iterrows)
 
     def test_itertuples(self):
         ed_flights = self.ed_flights()
         pd_flights = self.pd_flights()
 
-        ed_flights_itertuples = ed_flights.itertuples(name=None)
-        pd_flights_itertuples = pd_flights.itertuples(name=None)
+        ed_flights_itertuples = list(ed_flights.itertuples(name=None))
+        pd_flights_itertuples = list(pd_flights.itertuples(name=None))
 
-        assert len(list(ed_flights_itertuples)) == len(list(pd_flights_itertuples))
-
-        for ed_row in ed_flights_itertuples:
-
-            pd_row = next(pd_flights_itertuples)
-
-            assert ed_row == pd_row
-
-        for pd_row in pd_flights_itertuples:
-
-            ed_row = next(ed_flights_itertuples)
-
-            assert pd_row == ed_row
+        assert ed_flights_itertuples == pd_flights_itertuples
