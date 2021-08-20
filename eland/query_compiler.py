@@ -528,8 +528,8 @@ class QueryCompiler:
         """
         return self._operations.to_csv(self, **kwargs)
 
-    def yield_pandas_dataframe(self) -> Generator["pd.DataFrame", None, None]:
-        return self._operations.search_yield_pandas_dataframe(self)
+    def search_yield_pandas_dataframes(self) -> Generator["pd.DataFrame", None, None]:
+        return self._operations.search_yield_pandas_dataframes(self)
 
     # __getitem__ methods
     def getitem_column_array(self, key, numeric=False):
