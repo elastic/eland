@@ -1492,7 +1492,7 @@ class DataFrame(NDFrame):
         Cancelled              False
         Name: 4, dtype: object
         """
-        for df in self._query_compiler.yield_pandas_dataframe():
+        for df in self._query_compiler.search_yield_pandas_dataframes():
             yield from df.iterrows()
 
     def itertuples(
@@ -1558,7 +1558,7 @@ class DataFrame(NDFrame):
         Flight(Index='3', AvgTicketPrice=181.69421554118, Cancelled=True)
         Flight(Index='4', AvgTicketPrice=730.041778346198, Cancelled=False)
         """
-        for df in self._query_compiler.yield_pandas_dataframe():
+        for df in self._query_compiler.search_yield_pandas_dataframes():
             yield from df.itertuples(index=index, name=name)
 
     def aggregate(
