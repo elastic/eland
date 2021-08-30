@@ -25,9 +25,6 @@ or give a thumbs up to already created issues. Contributions are also welcome!
     processing. Functions like ``DataFrame.iloc[i]`` or ``DataFrame.transpose()``
     likely won't be implementable in Eland due to this constraint.
 
-There is a `list of methods gathered from Kaggle <https://github.com/adgirish/kaggleScape/blob/master/results/annotResults.csv>`_
-in order of usage for prioritization purposes.
-
 This list should be automatically generated with ``utils/generate-supported-apis.py``
 script instead of being modified manually.
 
@@ -208,9 +205,9 @@ script instead of being modified manually.
 +---------------------------------------+------------+
 | ``ed.DataFrame.iteritems()``          | No         |
 +---------------------------------------+------------+
-| ``ed.DataFrame.iterrows()``           | No         |
+| ``ed.DataFrame.iterrows()``           | **Yes**    |
 +---------------------------------------+------------+
-| ``ed.DataFrame.itertuples()``         | No         |
+| ``ed.DataFrame.itertuples()``         | **Yes**    |
 +---------------------------------------+------------+
 | ``ed.DataFrame.join()``               | No         |
 +---------------------------------------+------------+

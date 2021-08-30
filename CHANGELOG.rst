@@ -2,6 +2,26 @@
 Changelog
 =========
 
+7.14.1b1 (2021-08-30)
+---------------------
+
+Added
+^^^^^
+
+* Added support for ``DataFrame.iterrows()`` and ``DataFrame.itertuples()`` (`#380`_, contributed by `@kxbin`_)
+
+Performance
+^^^^^^^^^^^
+
+* Simplified result collectors to increase performance transforming Elasticsearch results to pandas (`#378`_, contributed by `@V1NAY8`_)
+* Changed search pagination function to yield batches of hits (`#379`_)
+
+ .. _@kxbin: https://github.com/kxbin
+.. _#378: https://github.com/elastic/eland/pull/378
+.. _#379: https://github.com/elastic/eland/pull/379
+.. _#380: https://github.com/elastic/eland/pull/380
+
+
 7.14.0b1 (2021-08-09)
 ---------------------
 
