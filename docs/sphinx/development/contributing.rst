@@ -101,7 +101,7 @@ Once your changes and tests are ready to submit for review:
 3. Rebase your changes
 
    Update your local repository with the most recent code from the main
-   eland repository, and rebase your branch on top of the latest master
+   eland repository, and rebase your branch on top of the latest main
    branch. We prefer your initial changes to be squashed into a single
    commit. Later, if we ask you to make changes, add them as separate
    commits. This makes them easier to review. As a final step before
@@ -126,8 +126,8 @@ Please adhere to the general guideline that you should never force push
 to a publicly shared branch. Once you have opened your pull request, you
 should consider your branch publicly shared. Instead of force pushing
 you can just add incremental commits; this is generally easier on your
-reviewers. If you need to pick up changes from master, you can merge
-master into your branch. A reviewer might ask you to rebase a
+reviewers. If you need to pick up changes from main, you can merge
+main into your branch. A reviewer might ask you to rebase a
 long-running pull request in which case force pushing is okay for that
 request. Note that squashing at the end of the review process should
 also not be done, that can be done when the pull request is `integrated

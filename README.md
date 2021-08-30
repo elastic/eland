@@ -1,6 +1,6 @@
 <div align="center">
   <a href="https://github.com/elastic/eland">
-    <img src="https://raw.githubusercontent.com/elastic/eland/master/docs/sphinx/logo/eland.png" width="30%"
+    <img src="https://raw.githubusercontent.com/elastic/eland/main/docs/sphinx/logo/eland.png" width="30%"
       alt="Eland" />
   </a>
 </div>
@@ -12,9 +12,9 @@
   <a href="https://pepy.tech/project/eland"><img src="https://pepy.tech/badge/eland" alt="Downloads"></a>
   <a href="https://pypi.org/project/eland"><img src="https://img.shields.io/pypi/status/eland.svg"
       alt="Package Status"></a>
-  <a href="https://clients-ci.elastic.co/job/elastic+eland+master"><img
-      src="https://clients-ci.elastic.co/buildStatus/icon?job=elastic%2Beland%2Bmaster" alt="Build Status"></a>
-  <a href="https://github.com/elastic/eland/blob/master/LICENSE.txt"><img src="https://img.shields.io/pypi/l/eland.svg"
+  <a href="https://clients-ci.elastic.co/job/elastic+eland+main"><img
+      src="https://clients-ci.elastic.co/buildStatus/icon?job=elastic%2Beland%2Bmain" alt="Build Status"></a>
+  <a href="https://github.com/elastic/eland/blob/main/LICENSE.txt"><img src="https://img.shields.io/pypi/l/eland.svg"
       alt="License"></a>
   <a href="https://eland.readthedocs.io"><img
       src="https://readthedocs.org/projects/eland/badge/?version=latest" alt="Documentation Status"></a>
@@ -55,7 +55,7 @@ $ conda install -c conda-forge eland
 ### Connecting to Elasticsearch 
 
 Eland uses the [Elasticsearch low level client](https://elasticsearch-py.readthedocs.io) to connect to Elasticsearch. 
-This client supports a range of [connection options and authentication options](https://elasticsearch-py.readthedocs.io/en/master/api.html#elasticsearch). 
+This client supports a range of [connection options and authentication options](https://elasticsearch-py.readthedocs.io/en/stable/api.html#elasticsearch). 
 
 You can pass either an instance of `elasticsearch.Elasticsearch` to Eland APIs
 or a string containing the host to connect to:

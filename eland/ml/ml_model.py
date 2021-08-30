@@ -56,7 +56,7 @@ if TYPE_CHECKING:
 class MLModel:
     """
     A machine learning model managed by Elasticsearch.
-    (See https://www.elastic.co/guide/en/elasticsearch/reference/master/put-inference.html)
+    (See https://www.elastic.co/guide/en/elasticsearch/reference/current/put-inference.html)
 
     These models can be created by Elastic ML, or transformed from supported Python formats
     such as scikit-learn or xgboost and imported into Elasticsearch.
