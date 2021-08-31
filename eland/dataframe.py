@@ -1551,7 +1551,7 @@ class DataFrame(NDFrame):
         Eland(AvgTicketPrice=730.041778346198, Cancelled=False)
 
         With the `name` parameter set we set a custom name for the yielded namedtuples:
-        
+
         >>> for row in df.itertuples(name='Flight'):
         ...     print(row)
         Flight(Index='0', AvgTicketPrice=841.2656419677076, Cancelled=False)
