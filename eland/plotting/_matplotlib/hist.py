@@ -27,18 +27,11 @@ except ImportError:
     # pandas>=1.3.0
     from pandas.core.dtypes.generic import ABCIndex
 
-try:  # pandas>=1.2.0
-    from pandas.plotting._matplotlib.tools import (  # type: ignore
-        create_subplots,
-        flatten_axes,
-        set_ticks_props,
-    )
-except ImportError:  # pandas<1.2.0
-    from pandas.plotting._matplotlib.tools import (  # type: ignore
-        _flatten as flatten_axes,
-        _set_ticks_props as set_ticks_props,
-        _subplots as create_subplots,
-    )
+from pandas.plotting._matplotlib.tools import (  # type: ignore
+    create_subplots,
+    flatten_axes,
+    set_ticks_props,
+)
 
 from eland.utils import try_sort
 

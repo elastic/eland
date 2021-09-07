@@ -110,6 +110,7 @@ def test(session, pandas_version: str):
         "--cov-report",
         "term-missing",
         "--cov=eland/",
+        "--cov-config=setup.cfg",
         "--doctest-modules",
         "--nbval",
         *(session.posargs or ("eland/", "tests/")),
