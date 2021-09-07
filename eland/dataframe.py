@@ -1452,10 +1452,10 @@ class DataFrame(NDFrame):
 
         Yields
         ------
-            index: index
-                The index of the row.
-            data: pandas Series
-                The data of the row as a pandas Series.
+        index: index
+            The index of the row.
+        data: pandas Series
+            The data of the row as a pandas Series.
 
         See Also
         --------
@@ -1501,19 +1501,19 @@ class DataFrame(NDFrame):
         """
         Iterate over eland.DataFrame rows as namedtuples.
 
-        Args
-        ----
-            index: bool, default True
-                If True, return the index as the first element of the tuple.
-            name: str or None, default "Eland"
-                The name of the returned namedtuples or None to return regular tuples.
+        Parameters
+        ----------
+        index: bool, default True
+            If True, return the index as the first element of the tuple.
+        name: str or None, default "Eland"
+            The name of the returned namedtuples or None to return regular tuples.
 
         Returns
         -------
-            iterator
-                An object to iterate over namedtuples for each row in the
-                DataFrame with the first field possibly being the index and
-                following fields being the column values.
+        iterator
+            An object to iterate over namedtuples for each row in the
+            DataFrame with the first field possibly being the index and
+            following fields being the column values.
 
         See Also
         --------
@@ -1541,6 +1541,7 @@ class DataFrame(NDFrame):
         Eland(Index='4', AvgTicketPrice=730.041778346198, Cancelled=False)
 
         By setting the `index` parameter to False we can remove the index as the first element of the tuple:
+
         >>> for row in df.itertuples(index=False):
         ...     print(row)
         Eland(AvgTicketPrice=841.2656419677076, Cancelled=False)
@@ -1550,6 +1551,7 @@ class DataFrame(NDFrame):
         Eland(AvgTicketPrice=730.041778346198, Cancelled=False)
 
         With the `name` parameter set we set a custom name for the yielded namedtuples:
+
         >>> for row in df.itertuples(name='Flight'):
         ...     print(row)
         Flight(Index='0', AvgTicketPrice=841.2656419677076, Cancelled=False)
