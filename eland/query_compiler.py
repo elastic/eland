@@ -81,17 +81,20 @@ class QueryCompiler:
             Union[str, List[str], Tuple[str, ...], "Elasticsearch"]
         ] = None,
         index_pattern: Optional[str] = None,
-        display_names=None,
-        index_field=None,
-        to_copy=None,
+        display_names: Optional[List[str]] = None,
+        index_field: Optional[str] = None,
+        to_copy: Optional["QueryCompiler"] = None,
     ) -> None:
         # Implement copy as we don't deep copy the client
         if to_copy is not None:
-            self._client = to_copy._client
-            self._index_pattern = to_copy._index_pattern
+            self._client: "Elasticsearch" = to_copy._client
+            self._index_pattern: Optional[str] = to_copy._index_pattern
             self._index: "Index" = Index(self, to_copy._index.es_index_field)
             self._operations: "Operations" = copy.deepcopy(to_copy._operations)
             self._mappings: FieldMappings = copy.deepcopy(to_copy._mappings)
+            self._field_mapping_cache: Optional["FieldMappingCache"] = copy.deepcopy(
+                to_copy._field_mapping_cache
+            )
         else:
             self._client = ensure_es_client(client)
             self._index_pattern = index_pattern
@@ -104,6 +107,8 @@ class QueryCompiler:
             )
             self._index = Index(self, index_field)
             self._operations = Operations()
+            # This should only be initialized when ETL is done
+            self._field_mapping_cache = None
 
     @property
     def index(self) -> Index:
@@ -239,7 +244,8 @@ class QueryCompiler:
         # This is one of the most performance critical areas of eland, and it repeatedly calls
         # self._mappings.field_name_pd_dtype and self._mappings.date_field_format
         # therefore create a simple cache for this data
-        field_mapping_cache = FieldMappingCache(self._mappings)
+        if self._field_mapping_cache is None:
+            self._field_mapping_cache = FieldMappingCache(self._mappings)
 
         rows = []
         index = []
@@ -266,7 +272,7 @@ class QueryCompiler:
             index.append(index_field)
 
             # flatten row to map correctly to 2D DataFrame
-            rows.append(self._flatten_dict(row, field_mapping_cache))
+            rows.append(self._flatten_dict(row))
 
         # Create pandas DataFrame
         df = pd.DataFrame(data=rows, index=index)
@@ -279,7 +285,7 @@ class QueryCompiler:
         )
 
         for missing in missing_field_names:
-            pd_dtype = self._mappings.field_name_pd_dtype(missing)
+            _, pd_dtype = self._field_mapping_cache.field_name_pd_dtype(missing)
             df[missing] = pd.Series(dtype=pd_dtype)
 
         # Rename columns
@@ -291,7 +297,7 @@ class QueryCompiler:
 
         return df
 
-    def _flatten_dict(self, y, field_mapping_cache: "FieldMappingCache"):
+    def _flatten_dict(self, y):
         out = {}
 
         def flatten(x, name=""):
@@ -301,12 +307,10 @@ class QueryCompiler:
                 is_source_field = False
                 pd_dtype = "object"
             else:
-                try:
-                    pd_dtype = field_mapping_cache.field_name_pd_dtype(name[:-1])
-                    is_source_field = True
-                except KeyError:
-                    is_source_field = False
-                    pd_dtype = "object"
+                (
+                    is_source_field,
+                    pd_dtype,
+                ) = self._field_mapping_cache.field_name_pd_dtype(name[:-1])
 
             if not is_source_field and isinstance(x, dict):
                 for a in x:
@@ -321,7 +325,7 @@ class QueryCompiler:
                 # Coerce types - for now just datetime
                 if pd_dtype == "datetime64[ns]":
                     x = elasticsearch_date_to_pandas_date(
-                        x, field_mapping_cache.date_field_format(field_name)
+                        x, self._field_mapping_cache.date_field_format(field_name)
                     )
 
                 # Elasticsearch can have multiple values for a field. These are represented as lists, so
@@ -791,28 +795,21 @@ class FieldMappingCache:
 
     def __init__(self, mappings: "FieldMappings") -> None:
         self._mappings = mappings
+        # This returns all the es_field_names
+        self._es_field_names: List[str] = mappings.get_field_names()
+        # Cache these to re-use later
+        self._field_name_pd_dtype: Dict[str, Tuple[bool, Optional[str]]] = {
+            i: mappings.field_name_pd_dtype(i) for i in self._es_field_names
+        }
+        self._date_field_format: Dict[str, str] = {
+            i: mappings.date_field_format(i) for i in self._es_field_names
+        }
 
-        self._field_name_pd_dtype: Dict[str, str] = dict()
-        self._date_field_format: Dict[str, str] = dict()
-
-    def field_name_pd_dtype(self, es_field_name: str) -> str:
-        if es_field_name in self._field_name_pd_dtype:
+    def field_name_pd_dtype(self, es_field_name: str) -> Tuple[bool, Optional[str]]:
+        if es_field_name not in self._field_name_pd_dtype:
+            return False, "object"
+        else:
             return self._field_name_pd_dtype[es_field_name]
 
-        pd_dtype = self._mappings.field_name_pd_dtype(es_field_name)
-
-        # cache this
-        self._field_name_pd_dtype[es_field_name] = pd_dtype
-
-        return pd_dtype
-
     def date_field_format(self, es_field_name: str) -> str:
-        if es_field_name in self._date_field_format:
-            return self._date_field_format[es_field_name]
-
-        es_date_field_format = self._mappings.date_field_format(es_field_name)
-
-        # cache this
-        self._date_field_format[es_field_name] = es_date_field_format
-
-        return es_date_field_format
+        return self._date_field_format[es_field_name]

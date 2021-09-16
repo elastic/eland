@@ -653,7 +653,7 @@ class FieldMappings:
             self._mappings_capabilities.es_field_name == es_field_name
         ].es_date_format.squeeze()
 
-    def field_name_pd_dtype(self, es_field_name: str) -> str:
+    def field_name_pd_dtype(self, es_field_name: str) -> Tuple[bool, Optional[str]]:
         """
         Parameters
         ----------
@@ -661,21 +661,17 @@ class FieldMappings:
 
         Returns
         -------
-        pd_dtype: str
-            The pandas data type we map to
+        Tuple[bool, Optional[str]]
+            If es_field_name is source field and the pandas data type we map to
 
-        Raises
-        ------
-        KeyError
-            If es_field_name does not exist in mapping
         """
         if es_field_name not in self._mappings_capabilities.es_field_name:
-            raise KeyError(f"es_field_name {es_field_name} does not exist")
+            return False, "object"
 
-        pd_dtype = self._mappings_capabilities.loc[
+        df: pd.DataFrame = self._mappings_capabilities.loc[
             self._mappings_capabilities.es_field_name == es_field_name
-        ].pd_dtype.squeeze()
-        return pd_dtype
+        ]
+        return df.is_source.squeeze(), df.pd_dtype.squeeze()
 
     def add_scripted_field(
         self, scripted_field_name: str, display_name: str, pd_dtype: str
