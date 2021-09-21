@@ -889,10 +889,7 @@ class DataFrame(NDFrame):
                 counts = self.count()
                 if len(cols) != len(counts):  # pragma: no cover
                     raise AssertionError(
-                        "Columns must equal counts "
-                        "({cols:d} != {counts:d})".format(
-                            cols=len(cols), counts=len(counts)
-                        )
+                        f"Columns must equal counts ({len(cols):d} != {len(counts):d})"
                     )
                 count_header = "Non-Null Count"
                 len_count = len(count_header)

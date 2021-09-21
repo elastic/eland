@@ -55,10 +55,11 @@ TYPED_FILES = (
 
 @nox.session(reuse_venv=True)
 def format(session):
-    session.install("black", "isort")
+    session.install("black", "isort", "flynt")
     session.run("python", "utils/license-headers.py", "fix", *SOURCE_FILES)
+    session.run("flynt", *SOURCE_FILES)
     session.run("black", "--target-version=py37", *SOURCE_FILES)
-    session.run("isort", *SOURCE_FILES)
+    session.run("isort", "--profile=black", *SOURCE_FILES)
     lint(session)
 
 
@@ -70,7 +71,7 @@ def lint(session):
     session.install("--pre", "elasticsearch")
     session.run("python", "utils/license-headers.py", "check", *SOURCE_FILES)
     session.run("black", "--check", "--target-version=py37", *SOURCE_FILES)
-    session.run("isort", "--check", *SOURCE_FILES)
+    session.run("isort", "--check", "--profile=black", *SOURCE_FILES)
     session.run("flake8", "--ignore=E501,W503,E402,E712,E203", *SOURCE_FILES)
 
     # TODO: When all files are typed we can change this to .run("mypy", "--strict", "eland/")
@@ -107,8 +108,7 @@ def test(session, pandas_version: str):
         "python",
         "-m",
         "pytest",
-        "--cov-report",
-        "term-missing",
+        "--cov-report=term-missing",
         "--cov=eland/",
         "--cov-config=setup.cfg",
         "--doctest-modules",
