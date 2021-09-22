@@ -848,41 +848,41 @@ class DataFrame(NDFrame):
 
         lines = [str(type(self)), self._index_summary()]
 
-        cols: pd.Index = self.columns
-        col_count: int = len(cols)
+        columns: pd.Index = self.columns
+        number_of_columns: int = len(columns)
 
-        if col_count == 0:
+        if number_of_columns == 0:
             lines.append(f"Empty {type(self).__name__}")
             fmt.buffer_put_lines(buf, lines)
             return
 
         # hack
         if max_cols is None:
-            max_cols = pd.get_option("display.max_info_columns", col_count + 1)
+            max_cols = pd.get_option("display.max_info_columns", number_of_columns + 1)
 
         max_rows = pd.get_option("display.max_info_rows", len(self) + 1)
 
         if show_counts is None:
-            show_counts = (col_count <= max_cols) and (len(self) < max_rows)
+            show_counts = (number_of_columns <= max_cols) and (len(self) < max_rows)
 
-        exceeds_info_cols = col_count > max_cols
+        exceeds_info_cols = number_of_columns > max_cols
 
         # From pandas.DataFrame
         def _put_str(s, space) -> str:
             return f"{s}"[:space].ljust(space)
 
-        def _verbose_repr() -> None:
-            lines.append(f"Data columns (total {len(cols)} columns):")
+        def _verbose_repr(number_of_columns: int) -> None:
+            lines.append(f"Data columns (total {number_of_columns} columns):")
 
             id_head = " # "
             column_head = "Column"
             col_space = 2
 
-            max_col = max(len(pprint_thing(k)) for k in cols)
+            max_col = max(len(pprint_thing(k)) for k in columns)
             len_column = len(pprint_thing(column_head))
             space = max(max_col, len_column) + col_space
 
-            max_id = len(pprint_thing(col_count))
+            max_id = len(pprint_thing(number_of_columns))
             len_id = len(pprint_thing(id_head))
             space_num = max(max_id, len_id) + col_space
             counts = None
@@ -890,9 +890,9 @@ class DataFrame(NDFrame):
             header = _put_str(id_head, space_num) + _put_str(column_head, space)
             if show_counts:
                 counts = self.count()
-                if len(cols) != len(counts):  # pragma: no cover
+                if number_of_columns != len(counts):  # pragma: no cover
                     raise AssertionError(
-                        f"Columns must equal counts ({len(cols):d} != {len(counts):d})"
+                        f"Columns must equal counts ({number_of_columns:d} != {len(counts):d})"
                     )
                 count_header = "Non-Null Count"
                 len_count = len(count_header)
@@ -923,7 +923,7 @@ class DataFrame(NDFrame):
             )
 
             dtypes = self.dtypes
-            for i, col in enumerate(cols):
+            for i, col in enumerate(columns):
                 dtype = dtypes.iloc[i]
                 col = pprint_thing(col)
 
@@ -941,7 +941,7 @@ class DataFrame(NDFrame):
                 )
 
         def _non_verbose_repr() -> None:
-            lines.append(cols._summary(name="Columns"))
+            lines.append(columns._summary(name="Columns"))
 
         def _sizeof_fmt(num: float, size_qualifier: str) -> str:
             # returns size in human readable format
@@ -952,11 +952,13 @@ class DataFrame(NDFrame):
             return f"{num:3.3f}{size_qualifier} PB"
 
         if verbose:
-            _verbose_repr()
+            _verbose_repr(number_of_columns)
         elif verbose is False:  # specifically set to False, not nesc None
             _non_verbose_repr()
         else:
-            _non_verbose_repr() if exceeds_info_cols else _verbose_repr()
+            _non_verbose_repr() if exceeds_info_cols else _verbose_repr(
+                number_of_columns
+            )
 
         # pandas 0.25.1 uses get_dtype_counts() here. This
         # returns a Series with strings as the index NOT dtypes.
