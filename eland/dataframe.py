@@ -154,7 +154,8 @@ class DataFrame(NDFrame):
             _query_compiler=_query_compiler,
         )
 
-    def _get_columns(self) -> pd.Index:
+    @property
+    def columns(self) -> pd.Index:
         """
         The column labels of the DataFrame.
 
@@ -181,8 +182,6 @@ class DataFrame(NDFrame):
         ...   dtype='object')
         """
         return self._query_compiler.columns
-
-    columns = property(_get_columns)
 
     @property
     def empty(self) -> bool:
@@ -808,7 +807,12 @@ class DataFrame(NDFrame):
         return f"{name}: {len(self)} entries{index_summary}"
 
     def info(
-        self, verbose=None, buf=None, max_cols=None, memory_usage=None, null_counts=None
+        self,
+        verbose: Optional[bool] = None,
+        buf: Optional[StringIO] = None,
+        max_cols: Optional[int] = None,
+        memory_usage: Optional[bool] = None,
+        show_counts: Optional[bool] = None,
     ) -> None:
         """
         Print a concise summary of a DataFrame.
@@ -844,32 +848,31 @@ class DataFrame(NDFrame):
 
         lines = [str(type(self)), self._index_summary()]
 
-        if len(self.columns) == 0:
+        cols: pd.Index = self.columns
+        col_count: int = len(cols)
+
+        if col_count == 0:
             lines.append(f"Empty {type(self).__name__}")
             fmt.buffer_put_lines(buf, lines)
             return
 
-        cols = self.columns
-        col_count = len(self.columns)
-
         # hack
         if max_cols is None:
-            max_cols = pd.get_option("display.max_info_columns", len(self.columns) + 1)
+            max_cols = pd.get_option("display.max_info_columns", col_count + 1)
 
         max_rows = pd.get_option("display.max_info_rows", len(self) + 1)
 
-        if null_counts is None:
-            show_counts = (len(self.columns) <= max_cols) and (len(self) < max_rows)
-        else:
-            show_counts = null_counts
-        exceeds_info_cols = len(self.columns) > max_cols
+        if show_counts is None:
+            show_counts = (col_count <= max_cols) and (len(self) < max_rows)
+
+        exceeds_info_cols = col_count > max_cols
 
         # From pandas.DataFrame
         def _put_str(s, space) -> str:
             return f"{s}"[:space].ljust(space)
 
         def _verbose_repr() -> None:
-            lines.append(f"Data columns (total {len(self.columns)} columns):")
+            lines.append(f"Data columns (total {len(cols)} columns):")
 
             id_head = " # "
             column_head = "Column"
@@ -920,7 +923,7 @@ class DataFrame(NDFrame):
             )
 
             dtypes = self.dtypes
-            for i, col in enumerate(self.columns):
+            for i, col in enumerate(cols):
                 dtype = dtypes.iloc[i]
                 col = pprint_thing(col)
 
@@ -938,7 +941,7 @@ class DataFrame(NDFrame):
                 )
 
         def _non_verbose_repr() -> None:
-            lines.append(self.columns._summary(name="Columns"))
+            lines.append(cols._summary(name="Columns"))
 
         def _sizeof_fmt(num: float, size_qualifier: str) -> str:
             # returns size in human readable format
@@ -953,10 +956,7 @@ class DataFrame(NDFrame):
         elif verbose is False:  # specifically set to False, not nesc None
             _non_verbose_repr()
         else:
-            if exceeds_info_cols:
-                _non_verbose_repr()
-            else:
-                _verbose_repr()
+            _non_verbose_repr() if exceeds_info_cols else _verbose_repr()
 
         # pandas 0.25.1 uses get_dtype_counts() here. This
         # returns a Series with strings as the index NOT dtypes.
