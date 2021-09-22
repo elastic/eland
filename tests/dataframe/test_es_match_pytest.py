@@ -17,14 +17,17 @@
 
 # File called _pytest for PyCharm compatability
 
+import pytest
+
 from tests.common import TestData
 
 
 class TestEsMatch(TestData):
-    def test_match(self):
+    @pytest.mark.parametrize("columns", [None, ["category"], "category"])
+    def test_match(self, columns):
         df = self.ed_ecommerce()
 
-        categories = list(df.es_match("Men's").category.to_pandas())
+        categories = list(df.es_match("Men's", columns=columns).category.to_pandas())
         assert len(categories) > 0
         assert all(any("Men's" in y for y in x) for x in categories)
 
@@ -39,3 +42,9 @@ class TestEsMatch(TestData):
         assert len(categories) > 0
         assert all(all("Men's" not in y for y in x) for x in categories)
         assert all(any("Women's" in y for y in x) for x in categories)
+
+    def test_match_raises(self):
+        df = self.ed_ecommerce()
+
+        with pytest.raises(ValueError, match="columns can't be empty"):
+            df.es_match("Men's", columns=[])
