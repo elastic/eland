@@ -26,7 +26,7 @@ class TestDataFrameDrop(TestData):
         df.drop(labels=["Carrier", "DestCityName"], axis=1)
         df.drop(columns=["Carrier", "DestCityName"])
 
-        df.drop(labels=["1", "2"])
+        df.drop(["1", "2"])
         df.drop(labels=["1", "2"], axis=0)
         df.drop(index=["1", "2"])
         df.drop(labels="3", axis=0)
@@ -67,6 +67,10 @@ class TestDataFrameDrop(TestData):
             ed_flights.drop(
                 labels=["Carrier", "DestCityName"], columns=["Carrier", "DestCityName"]
             )
+
+        with pytest.raises(
+            ValueError, match="Cannot specify both 'labels' and 'index'/'columns'"
+        ):
             ed_flights.drop(labels=["Carrier", "DestCityName"], index=[0, 1, 2])
 
         with pytest.raises(
