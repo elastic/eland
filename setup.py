@@ -75,6 +75,7 @@ setup(
         "pandas>=1.2,<1.4",
         "matplotlib",
         "numpy",
+        "tqdm",
     ],
     python_requires=">=3.7",
     package_data={"eland": ["py.typed"]},
