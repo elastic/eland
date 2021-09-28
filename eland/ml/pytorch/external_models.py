@@ -34,7 +34,7 @@ from transformers import (
 
 DEFAULT_OUTPUT_KEY = "sentence_embedding"
 SUPPORTED_TASK_TYPES = {"fill_mask", "ner", "text_classification", "text_embedding"}
-SUPPORTED_TASK_TYPES_NAMES = ", ".join(list(SUPPORTED_TASK_TYPES).sorted())
+SUPPORTED_TASK_TYPES_NAMES = ", ".join(list(SUPPORTED_TASK_TYPES).sort())
 SUPPORTED_TOKENIZERS = (
     transformers.BertTokenizer,
     transformers.BertTokenizerFast,
@@ -51,7 +51,7 @@ SUPPORTED_TOKENIZERS = (
     transformers.RetriBertTokenizer,
     transformers.RetriBertTokenizerFast,
 )
-SUPPORTED_TOKENIZERS_NAMES = ", ".join([str(x) for x in SUPPORTED_TOKENIZERS].sorted())
+SUPPORTED_TOKENIZERS_NAMES = ", ".join([str(x) for x in SUPPORTED_TOKENIZERS].sort())
 
 TracedModelTypes = Union[
     torch.nn.Module,
