@@ -363,7 +363,7 @@ class HuggingFaceTransformerModel:
 
     @staticmethod
     def dict_to_ordered_list(
-        dict: Dict[Any, Any], sort_by_key: bool = False, sort_by_value: bool = False
+        input_dict: Dict[Any, Any], sort_by_key: bool = False, sort_by_value: bool = False
     ) -> List[Any]:
         assert not (sort_by_key and sort_by_value)
         assert sort_by_key or sort_by_value
@@ -375,7 +375,7 @@ class HuggingFaceTransformerModel:
             sort_index = 1
             select_index = 0
 
-        items = list(dict.items())
+        items = list(input_dict.items())
         items.sort(key=lambda x: x[sort_index])
         new_list = [x[select_index] for x in items]
         return new_list
