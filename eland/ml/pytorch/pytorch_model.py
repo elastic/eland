@@ -21,6 +21,7 @@ import math
 import os
 from typing import TYPE_CHECKING, Any, Dict, List, Tuple, Union
 
+import elasticsearch
 from tqdm.auto import tqdm
 
 from eland.common import ensure_es_client
@@ -31,6 +32,7 @@ if TYPE_CHECKING:
 DEFAULT_CHUNK_SIZE = 4 * 1024 * 1024  # 4MB
 QUEUE_SIZE = 4
 THREAD_COUNT = 4
+DEFAULT_TIMEOUT = "60s"
 
 
 class PyTorchModel:
@@ -114,19 +116,25 @@ class PyTorchModel:
             and self._upload_model(model_path, chunk_size)
         )
 
-    def start(self) -> bool:
+    def start(self, timeout: str = DEFAULT_TIMEOUT) -> bool:
         return self._client.transport.perform_request(
             method="POST",
             url=f"/_ml/trained_models/{self.model_id}/deployment/_start",
-            params={"timeout": "60s", "wait_for": "started"},
+            params={"timeout": timeout, "wait_for": "started"},
         )
 
     def stop(self) -> bool:
-        return self._client.transport.perform_request(
-            method="POST",
-            url=f"/_ml/trained_models/{self.model_id}/deployment/_stop",
-            params={"ignore": 404},
-        )
+        try:
+            return self._client.transport.perform_request(
+                method="POST",
+                url=f"/_ml/trained_models/{self.model_id}/deployment/_stop",
+                params={"ignore": 404},
+            )
+        except elasticsearch.NotFoundError:
+            pass
 
     def delete(self) -> Dict[str, Any]:
-        return self._client.ml.delete_trained_model(self.model_id, ignore=404)
+        try:
+            return self._client.ml.delete_trained_model(self.model_id, ignore=(404,))
+        except elasticsearch.NotFoundError:
+            pass
