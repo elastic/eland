@@ -19,9 +19,11 @@ import base64
 import json
 import math
 import os
-from eland.common import ensure_es_client
-from tqdm.auto import tqdm
 from typing import TYPE_CHECKING, Any, Dict, List, Tuple, Union
+
+from tqdm.auto import tqdm
+
+from eland.common import ensure_es_client
 
 if TYPE_CHECKING:
     from elasticsearch import Elasticsearch
@@ -50,60 +52,80 @@ class PyTorchModel:
 
     @staticmethod
     def _load_json(path: str) -> Dict[str, Any]:
-        with open(path, 'r') as infile:
+        with open(path, "r") as infile:
             return json.load(infile)
 
     def _upload_config(self, path: str) -> bool:
         config = PyTorchModel._load_json(path)
-        response = self._client.ml.put_trained_model(model_id=self.model_id, body=config)
+        response = self._client.ml.put_trained_model(
+            model_id=self.model_id, body=config
+        )
         return response is not None
 
     def _upload_vocab(self, path: str) -> bool:
         vocab = PyTorchModel._load_json(path)
         return self._client.transport.perform_request(
-            method='PUT', url=f'/_ml/trained_models/{self.model_id}/vocabulary', body=vocab)
+            method="PUT",
+            url=f"/_ml/trained_models/{self.model_id}/vocabulary",
+            body=vocab,
+        )
 
-    def _upload_model(self, model_path: str, chunk_size: int = DEFAULT_CHUNK_SIZE) -> bool:
+    def _upload_model(
+        self, model_path: str, chunk_size: int = DEFAULT_CHUNK_SIZE
+    ) -> bool:
         file_stats = os.stat(model_path)
         total_parts = math.ceil(file_stats.st_size / chunk_size)
 
         def model_file_chunk_generator():
-            with open(model_path, 'rb') as f:
+            with open(model_path, "rb") as f:
                 while True:
                     data = f.read(chunk_size)
                     if not data:
                         break
                     yield base64.b64encode(data).decode()
 
-        for i, data in tqdm(enumerate(model_file_chunk_generator(), start=0), total=total_parts):
+        for i, data in tqdm(
+            enumerate(model_file_chunk_generator(), start=0), total=total_parts
+        ):
             body = {
-                'total_definition_length': file_stats.st_size,
-                'total_parts': total_parts,
-                'definition': data,
+                "total_definition_length": file_stats.st_size,
+                "total_parts": total_parts,
+                "definition": data,
             }
             self._client.transport.perform_request(
-                method='PUT', url=f'/_ml/trained_models/{self.model_id}/definition/{i}', body=body)
+                method="PUT",
+                url=f"/_ml/trained_models/{self.model_id}/definition/{i}",
+                body=body,
+            )
 
         return True
 
-    def upload(self, model_path: str, config_path: str, vocab_path: str, chunk_size: int = DEFAULT_CHUNK_SIZE) -> bool:
+    def upload(
+        self,
+        model_path: str,
+        config_path: str,
+        vocab_path: str,
+        chunk_size: int = DEFAULT_CHUNK_SIZE,
+    ) -> bool:
         # TODO: Implement some pre-flight checks on config, vocab, and model
-        return self._upload_config(config_path) and \
-               self._upload_vocab(vocab_path) and \
-               self._upload_model(model_path, chunk_size)
+        return (
+            self._upload_config(config_path)
+            and self._upload_vocab(vocab_path)
+            and self._upload_model(model_path, chunk_size)
+        )
 
     def start(self) -> bool:
         return self._client.transport.perform_request(
-            method='POST',
-            url=f'/_ml/trained_models/{self.model_id}/deployment/_start',
-            params={'timeout': '60s', 'wait_for': 'started'}
+            method="POST",
+            url=f"/_ml/trained_models/{self.model_id}/deployment/_start",
+            params={"timeout": "60s", "wait_for": "started"},
         )
 
     def stop(self) -> bool:
         return self._client.transport.perform_request(
-            method='POST',
-            url=f'/_ml/trained_models/{self.model_id}/deployment/_stop',
-            params={'ignore': 404},
+            method="POST",
+            url=f"/_ml/trained_models/{self.model_id}/deployment/_stop",
+            params={"ignore": 404},
         )
 
     def delete(self) -> Dict[str, Any]:

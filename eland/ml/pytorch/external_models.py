@@ -17,17 +17,24 @@
 
 import json
 import os.path
-import torch
-import transformers
 from abc import ABC, abstractmethod
-from sentence_transformers import SentenceTransformer
-from torch import nn, Tensor
-from transformers import AutoConfig, AutoModel, PreTrainedModel, PreTrainedTokenizer, PreTrainedTokenizerFast
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-DEFAULT_OUTPUT_KEY = 'sentence_embedding'
-SUPPORTED_TASK_TYPES = {'fill_mask', 'ner', 'text_classification', 'text_embedding'}
-SUPPORTED_TASK_TYPES_NAMES = ', '.join(list(SUPPORTED_TASK_TYPES).sorted())
+import torch
+import transformers
+from sentence_transformers import SentenceTransformer
+from torch import Tensor, nn
+from transformers import (
+    AutoConfig,
+    AutoModel,
+    PreTrainedModel,
+    PreTrainedTokenizer,
+    PreTrainedTokenizerFast,
+)
+
+DEFAULT_OUTPUT_KEY = "sentence_embedding"
+SUPPORTED_TASK_TYPES = {"fill_mask", "ner", "text_classification", "text_embedding"}
+SUPPORTED_TASK_TYPES_NAMES = ", ".join(list(SUPPORTED_TASK_TYPES).sorted())
 SUPPORTED_TOKENIZERS = (
     transformers.BertTokenizer,
     transformers.BertTokenizerFast,
@@ -44,9 +51,14 @@ SUPPORTED_TOKENIZERS = (
     transformers.RetriBertTokenizer,
     transformers.RetriBertTokenizerFast,
 )
-SUPPORTED_TOKENIZERS_NAMES = ', '.join([str(x) for x in SUPPORTED_TOKENIZERS].sorted())
+SUPPORTED_TOKENIZERS_NAMES = ", ".join([str(x) for x in SUPPORTED_TOKENIZERS].sorted())
 
-TracedModelTypes = Union[torch.nn.Module, torch.ScriptModule, torch.jit.ScriptModule, torch.jit.TopLevelTracedModule]
+TracedModelTypes = Union[
+    torch.nn.Module,
+    torch.ScriptModule,
+    torch.jit.ScriptModule,
+    torch.jit.TopLevelTracedModule,
+]
 
 
 class DistilBertWrapper(nn.Module):
@@ -62,8 +74,13 @@ class DistilBertWrapper(nn.Module):
         else:
             return model
 
-    def forward(self, input_ids: Tensor, attention_mask: Tensor,
-                token_type_ids: Tensor, position_ids: Tensor) -> Tensor:
+    def forward(
+        self,
+        input_ids: Tensor,
+        attention_mask: Tensor,
+        token_type_ids: Tensor,
+        position_ids: Tensor,
+    ) -> Tensor:
         """Wrap the input and output to conform to the native process interface."""
 
         return self._model(input_ids=input_ids, attention_mask=attention_mask)
@@ -80,8 +97,10 @@ class SentenceTransformerWrapper(nn.Module):
         self._replace_transformer_layer()
 
     @staticmethod
-    def from_pretrained(model_id: str, output_key: str = DEFAULT_OUTPUT_KEY) -> Optional[Any]:
-        if model_id.startswith('sentence-transformers/'):
+    def from_pretrained(
+        model_id: str, output_key: str = DEFAULT_OUTPUT_KEY
+    ) -> Optional[Any]:
+        if model_id.startswith("sentence-transformers/"):
             model = AutoModel.from_pretrained(model_id, torchscript=True)
             return SentenceTransformerWrapper(model, output_key)
         else:
@@ -97,7 +116,7 @@ class SentenceTransformerWrapper(nn.Module):
         the layer if we can.
         """
 
-        if hasattr(self._hf_model, 'pooler'):
+        if hasattr(self._hf_model, "pooler"):
             self._hf_model.pooler = None
 
     def _replace_transformer_layer(self):
@@ -107,22 +126,27 @@ class SentenceTransformerWrapper(nn.Module):
         was loaded ready for TorchScript export.
         """
 
-        self._st_model._modules['0'].auto_model = self._hf_model
+        self._st_model._modules["0"].auto_model = self._hf_model
 
-    def forward(self, input_ids: Tensor, attention_mask: Tensor,
-                token_type_ids: Tensor, position_ids: Tensor) -> Tensor:
+    def forward(
+        self,
+        input_ids: Tensor,
+        attention_mask: Tensor,
+        token_type_ids: Tensor,
+        position_ids: Tensor,
+    ) -> Tensor:
         """Wrap the input and output to conform to the native process interface."""
 
         inputs = {
-            'input_ids': input_ids,
-            'attention_mask': attention_mask,
-            'token_type_ids': token_type_ids,
-            'position_ids': position_ids,
+            "input_ids": input_ids,
+            "attention_mask": attention_mask,
+            "token_type_ids": token_type_ids,
+            "position_ids": position_ids,
         }
 
         # remove inputs for specific model types
         if isinstance(self._hf_model.config, transformers.DistilBertConfig):
-            del inputs['token_type_ids']
+            del inputs["token_type_ids"]
 
         return self._st_model(inputs)[self._output_key]
 
@@ -133,13 +157,17 @@ class DPREncoderWrapper(nn.Module):
     a workaround.
     See: https://github.com/huggingface/transformers/issues/13670
     """
+
     _SUPPORTED_MODELS = {
         transformers.DPRContextEncoder,
         transformers.DPRQuestionEncoder,
     }
     _SUPPORTED_MODELS_NAMES = set([x.__name__ for x in _SUPPORTED_MODELS])
 
-    def __init__(self, model: Union[transformers.DPRContextEncoder, transformers.DPRQuestionEncoder]):
+    def __init__(
+        self,
+        model: Union[transformers.DPRContextEncoder, transformers.DPRQuestionEncoder],
+    ):
         super().__init__()
         self._model = model
 
@@ -149,34 +177,51 @@ class DPREncoderWrapper(nn.Module):
         config = AutoConfig.from_pretrained(model_id)
 
         def is_compatible() -> bool:
-            is_dpr_model = config.model_type == 'dpr'
+            is_dpr_model = config.model_type == "dpr"
             has_architectures = len(config.architectures) == 1
-            is_supported_architecture = config.architectures[0] in DPREncoderWrapper._SUPPORTED_MODELS_NAMES
+            is_supported_architecture = (
+                config.architectures[0] in DPREncoderWrapper._SUPPORTED_MODELS_NAMES
+            )
             return is_dpr_model and has_architectures and is_supported_architecture
 
         if is_compatible():
-            model = getattr(transformers, config.architectures[0]).from_pretrained(model_id, torchscript=True)
+            model = getattr(transformers, config.architectures[0]).from_pretrained(
+                model_id, torchscript=True
+            )
             return DPREncoderWrapper(model)
         else:
             return None
 
-    def forward(self, input_ids: Tensor, attention_mask: Tensor,
-                token_type_ids: Tensor, position_ids: Tensor) -> Tensor:
+    def forward(
+        self,
+        input_ids: Tensor,
+        attention_mask: Tensor,
+        token_type_ids: Tensor,
+        position_ids: Tensor,
+    ) -> Tensor:
         """Wrap the input and output to conform to the native process interface."""
 
-        return self._model(**{
-            'input_ids': input_ids,
-            'attention_mask': attention_mask,
-            'token_type_ids': token_type_ids,
-        })
+        return self._model(
+            **{
+                "input_ids": input_ids,
+                "attention_mask": attention_mask,
+                "token_type_ids": token_type_ids,
+            }
+        )
 
 
 class TraceableHFTModel(ABC):
     """A base class representing a HuggingFace transformer model that can be traced."""
+
     def __init__(
-            self,
-            tokenizer: Union[PreTrainedTokenizer, PreTrainedTokenizerFast],
-            model: Union[PreTrainedModel, SentenceTransformerWrapper, DPREncoderWrapper, DistilBertWrapper]
+        self,
+        tokenizer: Union[PreTrainedTokenizer, PreTrainedTokenizerFast],
+        model: Union[
+            PreTrainedModel,
+            SentenceTransformerWrapper,
+            DPREncoderWrapper,
+            DistilBertWrapper,
+        ],
     ):
         self._tokenizer = tokenizer
         self._model = model
@@ -191,9 +236,11 @@ class TraceableHFTModel(ABC):
 
 class TraceableClassificationHFTModel(TraceableHFTModel, ABC):
     def classification_labels(self) -> Optional[List[str]]:
-        labels = HuggingFaceTransformerModel.dict_to_ordered_list(self._model.config.id2label, sort_by_key=True)
+        labels = HuggingFaceTransformerModel.dict_to_ordered_list(
+            self._model.config.id2label, sort_by_key=True
+        )
         # Make classes like I-PER into I_PER which fits Java enumerations
-        return [x.replace('-', '_') for x in labels]
+        return [x.replace("-", "_") for x in labels]
 
 
 class FillMaskHFTModel(TraceableHFTModel):
@@ -215,7 +262,9 @@ class FillMaskHFTModel(TraceableHFTModel):
         segments_tensors = torch.tensor([segments_ids])
         position_ids = torch.arange(tokens_tensor.size(1))
 
-        return torch.jit.trace(self._model, (tokens_tensor, attention_mask, segments_tensors, position_ids))
+        return torch.jit.trace(
+            self._model, (tokens_tensor, attention_mask, segments_tensors, position_ids)
+        )
 
 
 class NerHFTModel(TraceableClassificationHFTModel):
@@ -224,8 +273,10 @@ class NerHFTModel(TraceableClassificationHFTModel):
         self._model.eval()
 
         # tokenizing dummy input text
-        text = "Hugging Face Inc. is a company based in New York City. Its headquarters are in DUMBO, therefore very" \
-               "close to the Manhattan Bridge."
+        text = (
+            "Hugging Face Inc. is a company based in New York City. Its headquarters are in DUMBO, therefore very"
+            "close to the Manhattan Bridge."
+        )
         tokenized_text = self._tokenizer.tokenize(text)
 
         # create token IDs
@@ -237,7 +288,9 @@ class NerHFTModel(TraceableClassificationHFTModel):
         token_type_ids = torch.zeros(tokens_tensor.size(), dtype=torch.long)
         position_ids = torch.arange(tokens_tensor.size(1), dtype=torch.long)
 
-        return torch.jit.trace(self._model, (tokens_tensor, attention_mask, token_type_ids, position_ids))
+        return torch.jit.trace(
+            self._model, (tokens_tensor, attention_mask, token_type_ids, position_ids)
+        )
 
 
 class TextClassificationHFTModel(TraceableClassificationHFTModel):
@@ -258,7 +311,9 @@ class TextClassificationHFTModel(TraceableClassificationHFTModel):
         token_type_ids = torch.zeros(tokens_tensor.size(), dtype=torch.long)
         position_ids = torch.arange(tokens_tensor.size(1), dtype=torch.long)
 
-        return torch.jit.trace(self._model, (tokens_tensor, attention_mask, token_type_ids, position_ids))
+        return torch.jit.trace(
+            self._model, (tokens_tensor, attention_mask, token_type_ids, position_ids)
+        )
 
 
 class TextEmbeddingHFTModel(TraceableHFTModel):
@@ -279,23 +334,27 @@ class TextEmbeddingHFTModel(TraceableHFTModel):
         token_type_ids = torch.zeros(tokens_tensor.size(), dtype=torch.long)
         position_ids = torch.arange(tokens_tensor.size(1), dtype=torch.long)
 
-        return torch.jit.trace(self._model, (tokens_tensor, attention_mask, token_type_ids, position_ids))
+        return torch.jit.trace(
+            self._model, (tokens_tensor, attention_mask, token_type_ids, position_ids)
+        )
 
 
 class HuggingFaceTransformerModel:
     def __init__(self, model_id: str, task_type: str):
         self._model_id = model_id
-        self._task_type = task_type.replace('-', '_')
+        self._task_type = task_type.replace("-", "_")
 
         # Elasticsearch model IDs need to be a specific format: no special chars, all lowercase, max 64 chars
-        self.es_model_id = self._model_id.replace('/', '__').lower()[:64]
+        self.es_model_id = self._model_id.replace("/", "__").lower()[:64]
 
         # load Hugging Face model and tokenizer
         self._tokenizer = transformers.AutoTokenizer.from_pretrained(self._model_id)
 
         # check for a supported tokenizer
         if not isinstance(self._tokenizer, SUPPORTED_TOKENIZERS):
-            raise TypeError(f"Tokenizer type {self._tokenizer} not supported, must be one of: {SUPPORTED_TOKENIZERS_NAMES}")
+            raise TypeError(
+                f"Tokenizer type {self._tokenizer} not supported, must be one of: {SUPPORTED_TOKENIZERS_NAMES}"
+            )
 
         self._traceable_model = self._create_traceable_model()
         self._traced_model = self._traceable_model.trace()
@@ -303,7 +362,9 @@ class HuggingFaceTransformerModel:
         self._config = self._create_config()
 
     @staticmethod
-    def dict_to_ordered_list(dict: Dict[Any, Any], sort_by_key: bool = False, sort_by_value: bool = False) -> List[Any]:
+    def dict_to_ordered_list(
+        dict: Dict[Any, Any], sort_by_key: bool = False, sort_by_value: bool = False
+    ) -> List[Any]:
         assert not (sort_by_key and sort_by_value)
         assert sort_by_key or sort_by_value
 
@@ -320,79 +381,103 @@ class HuggingFaceTransformerModel:
         return new_list
 
     def _load_vocab(self):
-        vocabulary = HuggingFaceTransformerModel.dict_to_ordered_list(self._tokenizer.get_vocab(), sort_by_value=True)
+        vocabulary = HuggingFaceTransformerModel.dict_to_ordered_list(
+            self._tokenizer.get_vocab(), sort_by_value=True
+        )
         return {
-            'vocabulary': vocabulary,
+            "vocabulary": vocabulary,
         }
 
     def _create_config(self):
         inference_config = {
             self._task_type: {
-                'tokenization': {
-                    'bert': {
-                        'do_lower_case': getattr(self._tokenizer, 'do_lower_case', False),
+                "tokenization": {
+                    "bert": {
+                        "do_lower_case": getattr(
+                            self._tokenizer, "do_lower_case", False
+                        ),
                     }
                 }
             }
         }
 
-        if hasattr(self._tokenizer, 'max_model_input_sizes'):
-            max_sequence_length = self._tokenizer.max_model_input_sizes.get(self._model_id)
+        if hasattr(self._tokenizer, "max_model_input_sizes"):
+            max_sequence_length = self._tokenizer.max_model_input_sizes.get(
+                self._model_id
+            )
             if max_sequence_length:
-                inference_config[self._task_type]['tokenization']['bert']['max_sequence_length'] = max_sequence_length
+                inference_config[self._task_type]["tokenization"]["bert"][
+                    "max_sequence_length"
+                ] = max_sequence_length
 
         if self._traceable_model.classification_labels():
-            inference_config[self._task_type]['classification_labels'] = self._traceable_model.classification_labels()
+            inference_config[self._task_type][
+                "classification_labels"
+            ] = self._traceable_model.classification_labels()
 
         return {
-            'description': f"Model {self._model_id} for task type '{self._task_type}'",
-            'model_type': 'pytorch',
-            'inference_config': inference_config,
-            'input': {
-                'field_names': ['text_field'],
-            }
+            "description": f"Model {self._model_id} for task type '{self._task_type}'",
+            "model_type": "pytorch",
+            "inference_config": inference_config,
+            "input": {
+                "field_names": ["text_field"],
+            },
         }
 
     def _create_traceable_model(self) -> TraceableHFTModel:
-        if self._task_type == 'fill_mask':
-            model = transformers.AutoModelForMaskedLM.from_pretrained(self._model_id, torchscript=True)
+        if self._task_type == "fill_mask":
+            model = transformers.AutoModelForMaskedLM.from_pretrained(
+                self._model_id, torchscript=True
+            )
             model = DistilBertWrapper.try_wrapping(model)
             return HuggingFaceTransformerModel.FillMaskModel(self._tokenizer, model)
 
-        elif self._task_type == 'ner':
-            model = transformers.AutoModelForTokenClassification.from_pretrained(self._model_id, torchscript=True)
+        elif self._task_type == "ner":
+            model = transformers.AutoModelForTokenClassification.from_pretrained(
+                self._model_id, torchscript=True
+            )
             model = DistilBertWrapper.try_wrapping(model)
             return HuggingFaceTransformerModel.NerModel(self._tokenizer, model)
 
-        elif self._task_type == 'text_classification':
-            model = transformers.AutoModelForSequenceClassification.from_pretrained(self._model_id, torchscript=True)
+        elif self._task_type == "text_classification":
+            model = transformers.AutoModelForSequenceClassification.from_pretrained(
+                self._model_id, torchscript=True
+            )
             model = DistilBertWrapper.try_wrapping(model)
-            return HuggingFaceTransformerModel.TextClassificationModel(self._tokenizer, model)
+            return HuggingFaceTransformerModel.TextClassificationModel(
+                self._tokenizer, model
+            )
 
-        elif self._task_type == 'text_embedding':
+        elif self._task_type == "text_embedding":
             model = SentenceTransformerWrapper.from_pretrained(self._model_id)
             if not model:
                 model = DPREncoderWrapper.from_pretrained(self._model_id)
             if not model:
-                model = transformers.AutoModel.from_pretrained(self._model_id, torchscript=True)
-            return HuggingFaceTransformerModel.TextEmbeddingModel(self._tokenizer, model)
+                model = transformers.AutoModel.from_pretrained(
+                    self._model_id, torchscript=True
+                )
+            return HuggingFaceTransformerModel.TextEmbeddingModel(
+                self._tokenizer, model
+            )
 
         else:
-            raise TypeError(f"Unknown task type {self._task_type}, must be one of: {SUPPORTED_TASK_TYPES_NAMES}")
+            raise TypeError(
+                f"Unknown task type {self._task_type}, must be one of: {SUPPORTED_TASK_TYPES_NAMES}"
+            )
 
     def save(self, path: str) -> Tuple[str, str, str]:
         # save traced model
-        model_path = os.path.join(path, 'traced_pytorch_model.pt')
+        model_path = os.path.join(path, "traced_pytorch_model.pt")
         torch.jit.save(self._traced_model, model_path)
 
         # save configuration
-        config_path = os.path.join(path, 'config.json')
-        with open(config_path, 'w') as outfile:
+        config_path = os.path.join(path, "config.json")
+        with open(config_path, "w") as outfile:
             json.dump(self._config, outfile)
 
         # save vocabulary
-        vocab_path = os.path.join(path, 'vocabulary.json')
-        with open(vocab_path, 'w') as outfile:
+        vocab_path = os.path.join(path, "vocabulary.json")
+        with open(vocab_path, "w") as outfile:
             json.dump(self._vocab, outfile)
 
         return model_path, config_path, vocab_path

@@ -89,6 +89,6 @@ setup(
             "sentence-transformers>=2.0.0,<3",
             "torch>=1.9.0,<2",
             "transformers[torch]>=4.10.2<5",
-        ]
+        ],
     },
 )
