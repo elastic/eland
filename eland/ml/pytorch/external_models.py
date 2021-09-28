@@ -27,7 +27,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 DEFAULT_OUTPUT_KEY = 'sentence_embedding'
 SUPPORTED_TASK_TYPES = {'fill_mask', 'ner', 'text_classification', 'text_embedding'}
-SUPPORTED_TASK_TYPES_STR = ', '.join(SUPPORTED_TASK_TYPES)
+SUPPORTED_TASK_TYPES_NAMES = ', '.join(list(SUPPORTED_TASK_TYPES).sorted())
 SUPPORTED_TOKENIZERS = (
     transformers.BertTokenizer,
     transformers.BertTokenizerFast,
@@ -44,14 +44,14 @@ SUPPORTED_TOKENIZERS = (
     transformers.RetriBertTokenizer,
     transformers.RetriBertTokenizerFast,
 )
-SUPPORTED_TOKENIZERS_STR = ', '.join([str(x) for x in SUPPORTED_TOKENIZERS])
+SUPPORTED_TOKENIZERS_NAMES = ', '.join([str(x) for x in SUPPORTED_TOKENIZERS].sorted())
 
 TracedModelTypes = Union[torch.nn.Module, torch.ScriptModule, torch.jit.ScriptModule, torch.jit.TopLevelTracedModule]
 
 
 class DistilBertWrapper(nn.Module):
     def __init__(self, model: transformers.DistilBertModel):
-        super(DistilBertWrapper, self).__init__()
+        super().__init__()
         self._model = model
         self.config = model.config
 
@@ -71,7 +71,7 @@ class DistilBertWrapper(nn.Module):
 
 class SentenceTransformerWrapper(nn.Module):
     def __init__(self, model: PreTrainedModel, output_key: str = DEFAULT_OUTPUT_KEY):
-        super(SentenceTransformerWrapper, self).__init__()
+        super().__init__()
         self._hf_model = model
         self._st_model = SentenceTransformer(model.name_or_path)
         self._output_key = output_key
@@ -97,7 +97,7 @@ class SentenceTransformerWrapper(nn.Module):
         the layer if we can.
         """
 
-        if getattr(self._hf_model, 'pooler', lambda: None):
+        if hasattr(self._hf_model, 'pooler'):
             self._hf_model.pooler = None
 
     def _replace_transformer_layer(self):
@@ -137,10 +137,10 @@ class DPREncoderWrapper(nn.Module):
         transformers.DPRContextEncoder,
         transformers.DPRQuestionEncoder,
     }
-    _SUPPORTED_MODELS_STR = set([x.__name__ for x in _SUPPORTED_MODELS])
+    _SUPPORTED_MODELS_NAMES = set([x.__name__ for x in _SUPPORTED_MODELS])
 
     def __init__(self, model: Union[transformers.DPRContextEncoder, transformers.DPRQuestionEncoder]):
-        super(DPREncoderWrapper, self).__init__()
+        super().__init__()
         self._model = model
 
     @staticmethod
@@ -151,7 +151,7 @@ class DPREncoderWrapper(nn.Module):
         def is_compatible() -> bool:
             is_dpr_model = config.model_type == 'dpr'
             has_architectures = len(config.architectures) == 1
-            is_supported_architecture = config.architectures[0] in DPREncoderWrapper._SUPPORTED_MODELS_STR
+            is_supported_architecture = config.architectures[0] in DPREncoderWrapper._SUPPORTED_MODELS_NAMES
             return is_dpr_model and has_architectures and is_supported_architecture
 
         if is_compatible():
@@ -171,125 +171,131 @@ class DPREncoderWrapper(nn.Module):
         })
 
 
+class TraceableHFTModel(ABC):
+    """A base class representing a HuggingFace transformer model that can be traced."""
+    def __init__(
+            self,
+            tokenizer: Union[PreTrainedTokenizer, PreTrainedTokenizerFast],
+            model: Union[PreTrainedModel, SentenceTransformerWrapper, DPREncoderWrapper, DistilBertWrapper]
+    ):
+        self._tokenizer = tokenizer
+        self._model = model
+
+    def classification_labels(self) -> Optional[List[str]]:
+        return None
+
+    @abstractmethod
+    def trace(self) -> TracedModelTypes:
+        ...
+
+
+class TraceableClassificationHFTModel(TraceableHFTModel, ABC):
+    def classification_labels(self) -> Optional[List[str]]:
+        labels = HuggingFaceTransformerModel.dict_to_ordered_list(self._model.config.id2label, sort_by_key=True)
+        # Make classes like I-PER into I_PER which fits Java enumerations
+        return [x.replace('-', '_') for x in labels]
+
+
+class FillMaskHFTModel(TraceableHFTModel):
+    def trace(self) -> TracedModelTypes:
+        # model needs to be in evaluate mode
+        self._model.eval()
+
+        # tokenizing dummy input text
+        text = "[CLS] Who was Jim Henson ? [SEP] [MASK] Henson was a puppeteer [SEP]"
+        tokenized_text = self._tokenizer.tokenize(text)
+
+        # create token and segment IDs
+        indexed_tokens = self._tokenizer.convert_tokens_to_ids(tokenized_text)
+        segments_ids = [0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1]
+
+        # prepare dummy input tensors
+        tokens_tensor = torch.tensor([indexed_tokens])
+        attention_mask = torch.ones(tokens_tensor.size())
+        segments_tensors = torch.tensor([segments_ids])
+        position_ids = torch.arange(tokens_tensor.size(1))
+
+        return torch.jit.trace(self._model, (tokens_tensor, attention_mask, segments_tensors, position_ids))
+
+
+class NerHFTModel(TraceableClassificationHFTModel):
+    def trace(self) -> TracedModelTypes:
+        # model needs to be in evaluate mode
+        self._model.eval()
+
+        # tokenizing dummy input text
+        text = "Hugging Face Inc. is a company based in New York City. Its headquarters are in DUMBO, therefore very" \
+               "close to the Manhattan Bridge."
+        tokenized_text = self._tokenizer.tokenize(text)
+
+        # create token IDs
+        indexed_tokens = self._tokenizer.convert_tokens_to_ids(tokenized_text)
+
+        # prepare dummy input tensors
+        tokens_tensor = torch.tensor([indexed_tokens])
+        attention_mask = torch.ones(tokens_tensor.size())
+        token_type_ids = torch.zeros(tokens_tensor.size(), dtype=torch.long)
+        position_ids = torch.arange(tokens_tensor.size(1), dtype=torch.long)
+
+        return torch.jit.trace(self._model, (tokens_tensor, attention_mask, token_type_ids, position_ids))
+
+
+class TextClassificationHFTModel(TraceableClassificationHFTModel):
+    def trace(self) -> TracedModelTypes:
+        # model needs to be in evaluate mode
+        self._model.eval()
+
+        # tokenizing dummy input text
+        text = "The cat was sick on the bed."
+        tokenized_text = self._tokenizer.tokenize(text)
+
+        # create token IDs
+        indexed_tokens = self._tokenizer.convert_tokens_to_ids(tokenized_text)
+
+        # prepare dummy input tensors
+        tokens_tensor = torch.tensor([indexed_tokens])
+        attention_mask = torch.ones(tokens_tensor.size())
+        token_type_ids = torch.zeros(tokens_tensor.size(), dtype=torch.long)
+        position_ids = torch.arange(tokens_tensor.size(1), dtype=torch.long)
+
+        return torch.jit.trace(self._model, (tokens_tensor, attention_mask, token_type_ids, position_ids))
+
+
+class TextEmbeddingHFTModel(TraceableHFTModel):
+    def trace(self) -> TracedModelTypes:
+        # model needs to be in evaluate mode
+        self._model.eval()
+
+        # tokenizing dummy input text
+        text = "This is an example sentence"
+        tokenized_text = self._tokenizer.tokenize(text)
+
+        # create token IDs
+        indexed_tokens = self._tokenizer.convert_tokens_to_ids(tokenized_text)
+
+        # prepare dummy input tensors
+        tokens_tensor = torch.tensor([indexed_tokens])
+        attention_mask = torch.ones(tokens_tensor.size())
+        token_type_ids = torch.zeros(tokens_tensor.size(), dtype=torch.long)
+        position_ids = torch.arange(tokens_tensor.size(1), dtype=torch.long)
+
+        return torch.jit.trace(self._model, (tokens_tensor, attention_mask, token_type_ids, position_ids))
+
+
 class HuggingFaceTransformerModel:
-
-    class TraceableModel(ABC):
-        def __init__(
-                self,
-                tokenizer: Union[PreTrainedTokenizer, PreTrainedTokenizerFast],
-                model: Union[PreTrainedModel, SentenceTransformerWrapper, DPREncoderWrapper, DistilBertWrapper]
-        ):
-            self._tokenizer = tokenizer
-            self._model = model
-
-        def classification_labels(self) -> Optional[List[str]]:
-            return None
-
-        @abstractmethod
-        def trace(self) -> TracedModelTypes:
-            ...
-
-    class TraceableClassificationModel(TraceableModel, ABC):
-        def classification_labels(self) -> Optional[List[str]]:
-            labels = HuggingFaceTransformerModel._dict_to_ordered_list(self._model.config.id2label, sort_by_key=True)
-            # Make classes like I-PER into I_PER which fits Java enumerations
-            return [x.replace('-', '_') for x in labels]
-
-    class FillMaskModel(TraceableModel):
-        def trace(self) -> TracedModelTypes:
-            # model needs to be in evaluate mode
-            self._model.eval()
-
-            # tokenizing dummy input text
-            text = "[CLS] Who was Jim Henson ? [SEP] [MASK] Henson was a puppeteer [SEP]"
-            tokenized_text = self._tokenizer.tokenize(text)
-
-            # create token and segment IDs
-            indexed_tokens = self._tokenizer.convert_tokens_to_ids(tokenized_text)
-            segments_ids = [0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1]
-
-            # prepare dummy input tensors
-            tokens_tensor = torch.tensor([indexed_tokens])
-            attention_mask = torch.ones(tokens_tensor.size())
-            segments_tensors = torch.tensor([segments_ids])
-            position_ids = torch.arange(tokens_tensor.size(1))
-
-            return torch.jit.trace(self._model, (tokens_tensor, attention_mask, segments_tensors, position_ids))
-
-    class NerModel(TraceableClassificationModel):
-        def trace(self) -> TracedModelTypes:
-            # model needs to be in evaluate mode
-            self._model.eval()
-
-            # tokenizing dummy input text
-            text = "Hugging Face Inc. is a company based in New York City. Its headquarters are in DUMBO, therefore very" \
-                   "close to the Manhattan Bridge."
-            tokenized_text = self._tokenizer.tokenize(text)
-
-            # create token IDs
-            indexed_tokens = self._tokenizer.convert_tokens_to_ids(tokenized_text)
-
-            # prepare dummy input tensors
-            tokens_tensor = torch.tensor([indexed_tokens])
-            attention_mask = torch.ones(tokens_tensor.size())
-            token_type_ids = torch.zeros(tokens_tensor.size(), dtype=torch.long)
-            position_ids = torch.arange(tokens_tensor.size(1), dtype=torch.long)
-
-            return torch.jit.trace(self._model, (tokens_tensor, attention_mask, token_type_ids, position_ids))
-
-    class TextClassificationModel(TraceableClassificationModel):
-        def trace(self) -> TracedModelTypes:
-            # model needs to be in evaluate mode
-            self._model.eval()
-
-            # tokenizing dummy input text
-            text = "The cat was sick on the bed."
-            tokenized_text = self._tokenizer.tokenize(text)
-
-            # create token IDs
-            indexed_tokens = self._tokenizer.convert_tokens_to_ids(tokenized_text)
-
-            # prepare dummy input tensors
-            tokens_tensor = torch.tensor([indexed_tokens])
-            attention_mask = torch.ones(tokens_tensor.size())
-            token_type_ids = torch.zeros(tokens_tensor.size(), dtype=torch.long)
-            position_ids = torch.arange(tokens_tensor.size(1), dtype=torch.long)
-
-            return torch.jit.trace(self._model, (tokens_tensor, attention_mask, token_type_ids, position_ids))
-
-    class TextEmbeddingModel(TraceableModel):
-        def trace(self) -> TracedModelTypes:
-            # model needs to be in evaluate mode
-            self._model.eval()
-
-            # tokenizing dummy input text
-            text = "This is an example sentence"
-            tokenized_text = self._tokenizer.tokenize(text)
-
-            # create token IDs
-            indexed_tokens = self._tokenizer.convert_tokens_to_ids(tokenized_text)
-
-            # prepare dummy input tensors
-            tokens_tensor = torch.tensor([indexed_tokens])
-            attention_mask = torch.ones(tokens_tensor.size())
-            token_type_ids = torch.zeros(tokens_tensor.size(), dtype=torch.long)
-            position_ids = torch.arange(tokens_tensor.size(1), dtype=torch.long)
-
-            return torch.jit.trace(self._model, (tokens_tensor, attention_mask, token_type_ids, position_ids))
-
     def __init__(self, model_id: str, task_type: str):
         self._model_id = model_id
         self._task_type = task_type.replace('-', '_')
 
         # Elasticsearch model IDs need to be a specific format: no special chars, all lowercase, max 64 chars
-        self._es_model_id = self._model_id.replace('/', '__').lower()[:64]
+        self.es_model_id = self._model_id.replace('/', '__').lower()[:64]
 
         # load Hugging Face model and tokenizer
         self._tokenizer = transformers.AutoTokenizer.from_pretrained(self._model_id)
 
         # check for a supported tokenizer
         if not isinstance(self._tokenizer, SUPPORTED_TOKENIZERS):
-            raise TypeError(f"Tokenizer type {self._tokenizer} not supported, must be one of: {SUPPORTED_TOKENIZERS_STR}")
+            raise TypeError(f"Tokenizer type {self._tokenizer} not supported, must be one of: {SUPPORTED_TOKENIZERS_NAMES}")
 
         self._traceable_model = self._create_traceable_model()
         self._traced_model = self._traceable_model.trace()
@@ -297,7 +303,7 @@ class HuggingFaceTransformerModel:
         self._config = self._create_config()
 
     @staticmethod
-    def _dict_to_ordered_list(dict: Dict[Any, Any], sort_by_key: bool = False, sort_by_value: bool = False) -> List[Any]:
+    def dict_to_ordered_list(dict: Dict[Any, Any], sort_by_key: bool = False, sort_by_value: bool = False) -> List[Any]:
         assert not (sort_by_key and sort_by_value)
         assert sort_by_key or sort_by_value
 
@@ -314,19 +320,17 @@ class HuggingFaceTransformerModel:
         return new_list
 
     def _load_vocab(self):
-        vocabulary = HuggingFaceTransformerModel._dict_to_ordered_list(self._tokenizer.get_vocab(), sort_by_value=True)
+        vocabulary = HuggingFaceTransformerModel.dict_to_ordered_list(self._tokenizer.get_vocab(), sort_by_value=True)
         return {
             'vocabulary': vocabulary,
         }
 
     def _create_config(self):
-        do_lower_case = hasattr(self._tokenizer, 'do_lower_case') and self._tokenizer.do_lower_case
-
         inference_config = {
             self._task_type: {
                 'tokenization': {
                     'bert': {
-                        'do_lower_case': do_lower_case,
+                        'do_lower_case': getattr(self._tokenizer, 'do_lower_case', False),
                     }
                 }
             }
@@ -349,20 +353,22 @@ class HuggingFaceTransformerModel:
             }
         }
 
-    def _create_traceable_model(self) -> TraceableModel:
-
+    def _create_traceable_model(self) -> TraceableHFTModel:
         if self._task_type == 'fill_mask':
             model = transformers.AutoModelForMaskedLM.from_pretrained(self._model_id, torchscript=True)
             model = DistilBertWrapper.try_wrapping(model)
             return HuggingFaceTransformerModel.FillMaskModel(self._tokenizer, model)
+
         elif self._task_type == 'ner':
             model = transformers.AutoModelForTokenClassification.from_pretrained(self._model_id, torchscript=True)
             model = DistilBertWrapper.try_wrapping(model)
             return HuggingFaceTransformerModel.NerModel(self._tokenizer, model)
+
         elif self._task_type == 'text_classification':
             model = transformers.AutoModelForSequenceClassification.from_pretrained(self._model_id, torchscript=True)
             model = DistilBertWrapper.try_wrapping(model)
             return HuggingFaceTransformerModel.TextClassificationModel(self._tokenizer, model)
+
         elif self._task_type == 'text_embedding':
             model = SentenceTransformerWrapper.from_pretrained(self._model_id)
             if not model:
@@ -370,8 +376,9 @@ class HuggingFaceTransformerModel:
             if not model:
                 model = transformers.AutoModel.from_pretrained(self._model_id, torchscript=True)
             return HuggingFaceTransformerModel.TextEmbeddingModel(self._tokenizer, model)
+
         else:
-            raise TypeError(f"Unknown task type {self._task_type}, must be one of: {SUPPORTED_TASK_TYPES_STR}")
+            raise TypeError(f"Unknown task type {self._task_type}, must be one of: {SUPPORTED_TASK_TYPES_NAMES}")
 
     def save(self, path: str) -> Tuple[str, str, str]:
         # save traced model

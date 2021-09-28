@@ -1,5 +1,3 @@
-#!venv/bin/python
-
 #  Licensed to Elasticsearch B.V. under one or more contributor
 #  license agreements. See the NOTICE file distributed with
 #  this work for additional information regarding copyright
@@ -61,9 +59,9 @@ def main():
         hftm = HuggingFaceTransformerModel(args.model_id, args.task_type)
         model_path, config_path, vocab_path = hftm.save(tmp_dir)
 
-        ptm = PyTorchModel(es, args.model_id)
-        ptm.stop(ignore_not_found=True)
-        ptm.delete(ignore_not_found=True)
+        ptm = PyTorchModel(es, hftm.es_model_id)
+        ptm.stop()
+        ptm.delete()
         print("Uploading model")
         ptm.upload(model_path, config_path, vocab_path)
 

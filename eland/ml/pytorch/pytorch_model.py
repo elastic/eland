@@ -20,7 +20,7 @@ import json
 import math
 import os
 from eland.common import ensure_es_client
-from tqdm import tqdm
+from tqdm.auto import tqdm
 from typing import TYPE_CHECKING, Any, Dict, List, Tuple, Union
 
 if TYPE_CHECKING:
@@ -46,8 +46,7 @@ class PyTorchModel:
         model_id: str,
     ):
         self._client = ensure_es_client(es_client)
-        # Elasticsearch model IDs need to be a specific format: no special chars, all lowercase, max 64 chars
-        self.model_id = model_id.replace('/', '__').lower()[:64]
+        self.model_id = model_id
 
     @staticmethod
     def _load_json(path: str) -> Dict[str, Any]:
@@ -57,7 +56,6 @@ class PyTorchModel:
     def _upload_config(self, path: str) -> bool:
         config = PyTorchModel._load_json(path)
         response = self._client.ml.put_trained_model(model_id=self.model_id, body=config)
-        # TODO: Check actual result code in response
         return response is not None
 
     def _upload_vocab(self, path: str) -> bool:
@@ -101,22 +99,12 @@ class PyTorchModel:
             params={'timeout': '60s', 'wait_for': 'started'}
         )
 
-    def stop(self, ignore_not_found=False) -> bool:
-        if ignore_not_found:
-            ignorables = 404
-        else:
-            ignorables = ()
-
+    def stop(self) -> bool:
         return self._client.transport.perform_request(
             method='POST',
             url=f'/_ml/trained_models/{self.model_id}/deployment/_stop',
-            params={'ignore': ignorables},
+            params={'ignore': 404},
         )
 
-    def delete(self, ignore_not_found=False) -> Dict[str, Any]:
-        if ignore_not_found:
-            ignorables = 404
-        else:
-            ignorables = ()
-
-        return self._client.ml.delete_trained_model(self.model_id, ignore=ignorables)
+    def delete(self) -> Dict[str, Any]:
+        return self._client.ml.delete_trained_model(self.model_id, ignore=404)
