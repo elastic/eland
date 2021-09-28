@@ -363,7 +363,9 @@ class HuggingFaceTransformerModel:
 
     @staticmethod
     def dict_to_ordered_list(
-        input_dict: Dict[Any, Any], sort_by_key: bool = False, sort_by_value: bool = False
+        input_dict: Dict[Any, Any],
+        sort_by_key: bool = False,
+        sort_by_value: bool = False,
     ) -> List[Any]:
         assert not (sort_by_key and sort_by_value)
         assert sort_by_key or sort_by_value
