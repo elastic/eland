@@ -223,23 +223,32 @@ class TestDataFrameRepr(TestData):
         assert pd.get_option("display.max_rows") == 60
 
         show_dimensions = pd.get_option("display.show_dimensions")
+        try:
+            # TODO - there is a bug in 'show_dimensions' as it gets added after the last </div>
+            # For now test without this
+            pd.set_option("display.show_dimensions", False)
 
-        # TODO - there is a bug in 'show_dimensions' as it gets added after the last </div>
-        # For now test without this
-        pd.set_option("display.show_dimensions", False)
+            # Test eland.DataFrame.to_string vs pandas.DataFrame.to_string
+            # In pandas calling 'to_string' without max_rows set, will dump ALL rows
 
-        # Test eland.DataFrame.to_string vs pandas.DataFrame.to_string
-        # In pandas calling 'to_string' without max_rows set, will dump ALL rows
+            # Test n-1, n, n+1 for edge cases
+            self.num_rows_repr_html(pd.get_option("display.max_rows") - 1)
+            self.num_rows_repr_html(pd.get_option("display.max_rows"))
+            self.num_rows_repr_html(
+                pd.get_option("display.max_rows") + 1, pd.get_option("display.max_rows")
+            )
+        finally:
+            # Restore default
+            pd.set_option("display.show_dimensions", show_dimensions)
 
-        # Test n-1, n, n+1 for edge cases
-        self.num_rows_repr_html(pd.get_option("display.max_rows") - 1)
-        self.num_rows_repr_html(pd.get_option("display.max_rows"))
-        self.num_rows_repr_html(
-            pd.get_option("display.max_rows") + 1, pd.get_option("display.max_rows")
-        )
-
-        # Restore default
-        pd.set_option("display.show_dimensions", show_dimensions)
+    def test_num_rows_repr_html_display_none(self):
+        display = pd.get_option("display.notebook_repr_html")
+        try:
+            pd.set_option("display.notebook_repr_html", False)
+            self.num_rows_repr_html(pd.get_option("display.max_rows"))
+        finally:
+            # Restore default
+            pd.set_option("display.notebook_repr_html", display)
 
     def num_rows_repr_html(self, rows, max_rows=None):
         ed_flights = self.ed_flights()
@@ -251,34 +260,34 @@ class TestDataFrameRepr(TestData):
         ed_head_str = ed_head._repr_html_()
         pd_head_str = pd_head._repr_html_()
 
-        # print(ed_head_str)
-        # print(pd_head_str)
-
         assert pd_head_str == ed_head_str
 
     def test_empty_dataframe_repr_html(self):
         # TODO - there is a bug in 'show_dimensions' as it gets added after the last </div>
         # For now test without this
         show_dimensions = pd.get_option("display.show_dimensions")
-        pd.set_option("display.show_dimensions", False)
+        try:
+            pd.set_option("display.show_dimensions", False)
 
-        ed_ecom = self.ed_ecommerce()
-        pd_ecom = self.pd_ecommerce()
+            ed_ecom = self.ed_ecommerce()
+            pd_ecom = self.pd_ecommerce()
 
-        ed_ecom_rh = ed_ecom[ed_ecom["currency"] == "USD"]._repr_html_()
-        pd_ecom_rh = pd_ecom[pd_ecom["currency"] == "USD"]._repr_html_()
+            ed_ecom_rh = ed_ecom[ed_ecom["currency"] == "USD"]._repr_html_()
+            pd_ecom_rh = pd_ecom[pd_ecom["currency"] == "USD"]._repr_html_()
 
-        # Restore default
-        pd.set_option("display.show_dimensions", show_dimensions)
-
-        assert ed_ecom_rh == pd_ecom_rh
+            assert ed_ecom_rh == pd_ecom_rh
+        finally:
+            # Restore default
+            pd.set_option("display.show_dimensions", show_dimensions)
 
     def test_dataframe_repr_pd_get_option_none(self):
         show_dimensions = pd.get_option("display.show_dimensions")
         show_rows = pd.get_option("display.max_rows")
+        expand_frame = pd.get_option("display.expand_frame_repr")
         try:
             pd.set_option("display.show_dimensions", False)
             pd.set_option("display.max_rows", None)
+            pd.set_option("display.expand_frame_repr", False)
 
             columns = [
                 "AvgTicketPrice",
@@ -296,3 +305,4 @@ class TestDataFrameRepr(TestData):
             # Restore default
             pd.set_option("display.max_rows", show_rows)
             pd.set_option("display.show_dimensions", show_dimensions)
+            pd.set_option("display.expand_frame_repr", expand_frame)

@@ -41,17 +41,26 @@ class TestDataFrameSample(TestData):
             eland_to_pandas(first_sample), eland_to_pandas(second_sample)
         )
 
-    def test_sample_raises(self):
+    @pytest.mark.parametrize(
+        ["opts", "message"],
+        [
+            (
+                {"n": 10, "frac": 0.1},
+                "Please enter a value for `frac` OR `n`, not both",
+            ),
+            ({"frac": 1.5}, "`frac` must be between 0. and 1."),
+            (
+                {"n": -1},
+                "A negative number of rows requested. Please provide positive value.",
+            ),
+            ({"n": 1.5}, "Only integers accepted as `n` values"),
+        ],
+    )
+    def test_sample_raises(self, opts, message):
         ed_flights_small = self.ed_flights_small()
 
-        with pytest.raises(ValueError):
-            ed_flights_small.sample(n=10, frac=0.1)
-
-        with pytest.raises(ValueError):
-            ed_flights_small.sample(frac=1.5)
-
-        with pytest.raises(ValueError):
-            ed_flights_small.sample(n=-1)
+        with pytest.raises(ValueError, match=message):
+            ed_flights_small.sample(**opts)
 
     def test_sample_basic(self):
         ed_flights_small = self.ed_flights_small()
