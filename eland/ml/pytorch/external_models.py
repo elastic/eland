@@ -375,9 +375,9 @@ class HuggingFaceTransformerModel:
             sort_index = 1
             select_index = 0
 
-        l = list(dict.items())
-        l.sort(key=lambda x: x[sort_index])
-        new_list = [x[select_index] for x in l]
+        items = list(dict.items())
+        items.sort(key=lambda x: x[sort_index])
+        new_list = [x[select_index] for x in items]
         return new_list
 
     def _load_vocab(self):
