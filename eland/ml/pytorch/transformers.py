@@ -15,10 +15,15 @@
 #  specific language governing permissions and limitations
 #  under the License.
 
+"""
+Support for and interoperability with HuggingFace transformers and related
+libraries such as sentence-transformers.
+"""
+
 import json
 import os.path
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, List, Optional, Tuple, Union
 
 import torch
 import transformers
@@ -61,7 +66,12 @@ TracedModelTypes = Union[
 ]
 
 
-class DistilBertWrapper(nn.Module):
+class _DistilBertWrapper(nn.Module):
+    """
+    A simple wrapper around DistilBERT model which makes the model inputs
+    conform to Elasticsearch's native inference processor interface.
+    """
+
     def __init__(self, model: transformers.DistilBertModel):
         super().__init__()
         self._model = model
@@ -70,7 +80,7 @@ class DistilBertWrapper(nn.Module):
     @staticmethod
     def try_wrapping(model: PreTrainedModel) -> Optional[Any]:
         if isinstance(model.config, transformers.DistilBertConfig):
-            return DistilBertWrapper(model)
+            return _DistilBertWrapper(model)
         else:
             return model
 
@@ -86,7 +96,13 @@ class DistilBertWrapper(nn.Module):
         return self._model(input_ids=input_ids, attention_mask=attention_mask)
 
 
-class SentenceTransformerWrapper(nn.Module):
+class _SentenceTransformerWrapper(nn.Module):
+    """
+    A wrapper around sentence-transformer models to provide pooling,
+    normalization and other graph layers that are not defined in the base
+    HuggingFace transformer model.
+    """
+
     def __init__(self, model: PreTrainedModel, output_key: str = DEFAULT_OUTPUT_KEY):
         super().__init__()
         self._hf_model = model
@@ -102,7 +118,7 @@ class SentenceTransformerWrapper(nn.Module):
     ) -> Optional[Any]:
         if model_id.startswith("sentence-transformers/"):
             model = AutoModel.from_pretrained(model_id, torchscript=True)
-            return SentenceTransformerWrapper(model, output_key)
+            return _SentenceTransformerWrapper(model, output_key)
         else:
             return None
 
@@ -151,10 +167,10 @@ class SentenceTransformerWrapper(nn.Module):
         return self._st_model(inputs)[self._output_key]
 
 
-class DPREncoderWrapper(nn.Module):
+class _DPREncoderWrapper(nn.Module):
     """
     AutoModel loading does not work for DPRContextEncoders, this only exists as
-    a workaround.
+    a workaround. This may never be fixed so this is likely permanent.
     See: https://github.com/huggingface/transformers/issues/13670
     """
 
@@ -180,7 +196,7 @@ class DPREncoderWrapper(nn.Module):
             is_dpr_model = config.model_type == "dpr"
             has_architectures = len(config.architectures) == 1
             is_supported_architecture = (
-                config.architectures[0] in DPREncoderWrapper._SUPPORTED_MODELS_NAMES
+                config.architectures[0] in _DPREncoderWrapper._SUPPORTED_MODELS_NAMES
             )
             return is_dpr_model and has_architectures and is_supported_architecture
 
@@ -188,7 +204,7 @@ class DPREncoderWrapper(nn.Module):
             model = getattr(transformers, config.architectures[0]).from_pretrained(
                 model_id, torchscript=True
             )
-            return DPREncoderWrapper(model)
+            return _DPREncoderWrapper(model)
         else:
             return None
 
@@ -202,15 +218,13 @@ class DPREncoderWrapper(nn.Module):
         """Wrap the input and output to conform to the native process interface."""
 
         return self._model(
-            **{
-                "input_ids": input_ids,
-                "attention_mask": attention_mask,
-                "token_type_ids": token_type_ids,
-            }
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            token_type_ids=token_type_ids,
         )
 
 
-class TraceableHFTModel(ABC):
+class _TraceableModel(ABC):
     """A base class representing a HuggingFace transformer model that can be traced."""
 
     def __init__(
@@ -218,9 +232,9 @@ class TraceableHFTModel(ABC):
         tokenizer: Union[PreTrainedTokenizer, PreTrainedTokenizerFast],
         model: Union[
             PreTrainedModel,
-            SentenceTransformerWrapper,
-            DPREncoderWrapper,
-            DistilBertWrapper,
+            _SentenceTransformerWrapper,
+            _DPREncoderWrapper,
+            _DistilBertWrapper,
         ],
     ):
         self._tokenizer = tokenizer
@@ -234,16 +248,16 @@ class TraceableHFTModel(ABC):
         ...
 
 
-class TraceableClassificationHFTModel(TraceableHFTModel, ABC):
+class _TraceableClassificationModel(_TraceableModel, ABC):
     def classification_labels(self) -> Optional[List[str]]:
-        labels = HuggingFaceTransformerModel.dict_to_ordered_list(
-            self._model.config.id2label, sort_by_key=True
-        )
+        id_label_items = self._model.config.id2label.items()
+        labels = [v for _, v in sorted(id_label_items, key=lambda kv: kv[0])]
+
         # Make classes like I-PER into I_PER which fits Java enumerations
-        return [x.replace("-", "_") for x in labels]
+        return [label.replace("-", "_") for label in labels]
 
 
-class FillMaskHFTModel(TraceableHFTModel):
+class _TraceableFillMaskModel(_TraceableModel):
     def trace(self) -> TracedModelTypes:
         # model needs to be in evaluate mode
         self._model.eval()
@@ -267,7 +281,7 @@ class FillMaskHFTModel(TraceableHFTModel):
         )
 
 
-class NerHFTModel(TraceableClassificationHFTModel):
+class _TraceableNerModel(_TraceableClassificationModel):
     def trace(self) -> TracedModelTypes:
         # model needs to be in evaluate mode
         self._model.eval()
@@ -293,7 +307,7 @@ class NerHFTModel(TraceableClassificationHFTModel):
         )
 
 
-class TextClassificationHFTModel(TraceableClassificationHFTModel):
+class _TraceableTextClassificationModel(_TraceableClassificationModel):
     def trace(self) -> TracedModelTypes:
         # model needs to be in evaluate mode
         self._model.eval()
@@ -316,7 +330,7 @@ class TextClassificationHFTModel(TraceableClassificationHFTModel):
         )
 
 
-class TextEmbeddingHFTModel(TraceableHFTModel):
+class _TraceableTextEmbeddingModel(_TraceableModel):
     def trace(self) -> TracedModelTypes:
         # model needs to be in evaluate mode
         self._model.eval()
@@ -339,7 +353,7 @@ class TextEmbeddingHFTModel(TraceableHFTModel):
         )
 
 
-class HuggingFaceTransformerModel:
+class TransformerModel:
     def __init__(self, model_id: str, task_type: str):
         self._model_id = model_id
         self._task_type = task_type.replace("-", "_")
@@ -361,31 +375,9 @@ class HuggingFaceTransformerModel:
         self._vocab = self._load_vocab()
         self._config = self._create_config()
 
-    @staticmethod
-    def dict_to_ordered_list(
-        input_dict: Dict[Any, Any],
-        sort_by_key: bool = False,
-        sort_by_value: bool = False,
-    ) -> List[Any]:
-        assert not (sort_by_key and sort_by_value)
-        assert sort_by_key or sort_by_value
-
-        if sort_by_key:
-            sort_index = 0
-            select_index = 1
-        else:
-            sort_index = 1
-            select_index = 0
-
-        items = list(input_dict.items())
-        items.sort(key=lambda x: x[sort_index])
-        new_list = [x[select_index] for x in items]
-        return new_list
-
     def _load_vocab(self):
-        vocabulary = HuggingFaceTransformerModel.dict_to_ordered_list(
-            self._tokenizer.get_vocab(), sort_by_value=True
-        )
+        vocab_items = self._tokenizer.get_vocab().items()
+        vocabulary = [k for k, _ in sorted(vocab_items, key=lambda kv: kv[1])]
         return {
             "vocabulary": vocabulary,
         }
@@ -426,41 +418,37 @@ class HuggingFaceTransformerModel:
             },
         }
 
-    def _create_traceable_model(self) -> TraceableHFTModel:
+    def _create_traceable_model(self) -> _TraceableModel:
         if self._task_type == "fill_mask":
             model = transformers.AutoModelForMaskedLM.from_pretrained(
                 self._model_id, torchscript=True
             )
-            model = DistilBertWrapper.try_wrapping(model)
-            return HuggingFaceTransformerModel.FillMaskModel(self._tokenizer, model)
+            model = _DistilBertWrapper.try_wrapping(model)
+            return _TraceableFillMaskModel(self._tokenizer, model)
 
         elif self._task_type == "ner":
             model = transformers.AutoModelForTokenClassification.from_pretrained(
                 self._model_id, torchscript=True
             )
-            model = DistilBertWrapper.try_wrapping(model)
-            return HuggingFaceTransformerModel.NerModel(self._tokenizer, model)
+            model = _DistilBertWrapper.try_wrapping(model)
+            return _TraceableNerModel(self._tokenizer, model)
 
         elif self._task_type == "text_classification":
             model = transformers.AutoModelForSequenceClassification.from_pretrained(
                 self._model_id, torchscript=True
             )
-            model = DistilBertWrapper.try_wrapping(model)
-            return HuggingFaceTransformerModel.TextClassificationModel(
-                self._tokenizer, model
-            )
+            model = _DistilBertWrapper.try_wrapping(model)
+            return _TraceableTextClassificationModel(self._tokenizer, model)
 
         elif self._task_type == "text_embedding":
-            model = SentenceTransformerWrapper.from_pretrained(self._model_id)
+            model = _SentenceTransformerWrapper.from_pretrained(self._model_id)
             if not model:
-                model = DPREncoderWrapper.from_pretrained(self._model_id)
+                model = _DPREncoderWrapper.from_pretrained(self._model_id)
             if not model:
                 model = transformers.AutoModel.from_pretrained(
                     self._model_id, torchscript=True
                 )
-            return HuggingFaceTransformerModel.TextEmbeddingModel(
-                self._tokenizer, model
-            )
+            return _TraceableTextEmbeddingModel(self._tokenizer, model)
 
         else:
             raise TypeError(

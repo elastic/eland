@@ -17,22 +17,18 @@
 
 """
 Copies a model from the Hugging Face model hub into an Elasticsearch cluster.
-This will create local cached copies that will be traced (necessary) and
-optionally quantized before uploading to Elasticsearch. This will also check
-the task type is supported as well as the model and tokenizer types. All
-necessary configuration is uploaded along with the model.
+This will create local cached copies that will be traced (necessary) before
+uploading to Elasticsearch. This will also check that the task type is supported
+as well as the model and tokenizer types. All necessary configuration is
+uploaded along with the model.
 """
 
 import argparse
 import elasticsearch
-import os
-import sys
 import tempfile
 
-# project library
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from eland.ml.pytorch.external_models import *
-from eland.ml.pytorch.pytorch_model import *
+from eland.ml.pytorch.transformers import SUPPORTED_TASK_TYPES, TransformerModel
+from eland.ml.pytorch import PyTorchModel
 
 DEFAULT_URL = 'http://elastic:changeme@localhost:9200'
 MODEL_HUB_URL = 'https://huggingface.co'
@@ -56,7 +52,7 @@ def main():
     # trace and save model, then upload it from temp file
     with tempfile.TemporaryDirectory() as tmp_dir:
         print("Loading HuggingFace transformer tokenizer and model")
-        hftm = HuggingFaceTransformerModel(args.model_id, args.task_type)
+        hftm = TransformerModel(args.model_id, args.task_type)
         model_path, config_path, vocab_path = hftm.save(tmp_dir)
 
         ptm = PyTorchModel(es, hftm.es_model_id)
