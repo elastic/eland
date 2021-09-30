@@ -70,7 +70,8 @@ class TestPandasToEland:
             "to 'append' or 'replace' data."
         )
 
-    def test_es_if_exists_replace(self):
+    @pytest.mark.parametrize("show_progressbar", [True, False, None])
+    def test_es_if_exists_replace(self, show_progressbar):
         # Assert that 'replace' allows for creation
         df1 = pandas_to_eland(
             pd_df2,
@@ -78,6 +79,7 @@ class TestPandasToEland:
             es_dest_index="test-index",
             es_if_exists="replace",
             es_refresh=True,
+            show_progressbar=show_progressbar,
         ).to_pandas()
         assert_frame_equal(pd_df2, df1)
 

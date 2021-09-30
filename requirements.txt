@@ -1,3 +1,4 @@
 elasticsearch>=7.7
 pandas>=1
 matplotlib
+tqdm

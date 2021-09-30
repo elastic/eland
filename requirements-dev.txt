@@ -11,3 +11,7 @@ nox
 lightgbm
 pytest-cov
 mypy
+tqdm
+jupyter
+notebook
+ipywidgets
