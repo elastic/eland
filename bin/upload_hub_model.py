@@ -24,42 +24,79 @@ uploaded along with the model.
 """
 
 import argparse
-import elasticsearch
 import tempfile
+
+import elasticsearch
 import urllib3
 
-from eland.ml.pytorch.transformers import SUPPORTED_TASK_TYPES, TransformerModel
 from eland.ml.pytorch import PyTorchModel
+from eland.ml.pytorch.transformers import SUPPORTED_TASK_TYPES, TransformerModel
 
-DEFAULT_URL = 'http://elastic:changeme@localhost:9200'
-MODEL_HUB_URL = 'https://huggingface.co'
+DEFAULT_URL = "http://elastic:changeme@localhost:9200"
+MODEL_HUB_URL = "https://huggingface.co"
 
 # For secure, self-signed localhost, disable warnings
 urllib3.disable_warnings()
 
 
 def main():
-    parser = argparse.ArgumentParser(prog='upload_hub_model.py')
-    parser.add_argument('--url', default=DEFAULT_URL,
-                        help="An Elasticsearch connection URL, e.g. http://user:secret@localhost:9200")
-    parser.add_argument('--model-id', required=True,
-                        help="The model ID in the Hugging Face model hub, "
-                             "e.g. dbmdz/bert-large-cased-finetuned-conll03-english")
-    parser.add_argument('--task-type', required=True, choices=SUPPORTED_TASK_TYPES,
-                        help=f"The task type that the model will be used for.")
-    parser.add_argument('--start', action='store_true', default=False,
-                        help="Start the model deployment after uploading. Default: False")
+    parser = argparse.ArgumentParser(prog="upload_hub_model.py")
+    parser.add_argument(
+        "--url",
+        default=DEFAULT_URL,
+        help="An Elasticsearch connection URL, e.g. http://user:secret@localhost:9200",
+    )
+    parser.add_argument(
+        "--hub-model-id",
+        required=True,
+        help="The model ID in the Hugging Face model hub, "
+        "e.g. dbmdz/bert-large-cased-finetuned-conll03-english",
+    )
+    parser.add_argument(
+        "--elasticsearch-model-id",
+        required=False,
+        default=None,
+        help="The model ID to use in Elasticsearch, "
+        "e.g. bert-large-cased-finetuned-conll03-english."
+        "When left unspecified, this will be auto-created from the `hub-id`",
+    )
+    parser.add_argument(
+        "--task-type",
+        required=True,
+        choices=SUPPORTED_TASK_TYPES,
+        help="The task type that the model will be used for.",
+    )
+    parser.add_argument(
+        "--quantize",
+        action="store_true",
+        default=False,
+        help="Quantize the model before uploading. Default: False",
+    )
+    parser.add_argument(
+        "--start",
+        action="store_true",
+        default=False,
+        help="Start the model deployment after uploading. Default: False",
+    )
     args = parser.parse_args()
 
-    es = elasticsearch.Elasticsearch(args.url, verify_certs=False, timeout=300)  # 5 minute timeout
+    es = elasticsearch.Elasticsearch(
+        args.url, verify_certs=False, timeout=300
+    )  # 5 minute timeout
 
     # trace and save model, then upload it from temp file
     with tempfile.TemporaryDirectory() as tmp_dir:
         print("Loading HuggingFace transformer tokenizer and model")
-        hftm = TransformerModel(args.model_id, args.task_type)
-        model_path, config_path, vocab_path = hftm.save(tmp_dir)
+        tm = TransformerModel(args.hub_model_id, args.task_type, args.quantize)
+        model_path, config_path, vocab_path = tm.save(tmp_dir)
 
-        ptm = PyTorchModel(es, hftm.es_model_id)
+        es_model_id = (
+            args.elasticsearch_model_id
+            if args.elasticsearch_model_id
+            else tm.elasticsearch_model_id()
+        )
+
+        ptm = PyTorchModel(es, es_model_id)
         ptm.stop()
         ptm.delete()
         print("Uploading model")
@@ -71,8 +108,8 @@ def main():
         if ptm.start():
             print(f" - started: {ptm.model_id}")
         else:
-            print(f" - failed")
+            print(" - failed")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

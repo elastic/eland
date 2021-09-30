@@ -19,7 +19,7 @@ import base64
 import json
 import math
 import os
-from typing import TYPE_CHECKING, Any, Dict, List, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Set, Tuple, Union
 
 import elasticsearch
 from tqdm.auto import tqdm
@@ -138,3 +138,17 @@ class PyTorchModel:
             return self._client.ml.delete_trained_model(self.model_id, ignore=(404,))
         except elasticsearch.NotFoundError:
             pass
+
+    @staticmethod
+    def list(
+        es_client: Union[str, List[str], Tuple[str, ...], "Elasticsearch"]
+    ) -> Set[str]:
+        client = ensure_es_client(es_client)
+        res = client.ml.get_trained_models(model_id="*", allow_no_match=True)
+        return set(
+            [
+                model["model_id"]
+                for model in res["trained_model_configs"]
+                if model["model_type"] == "pytorch"
+            ]
+        )
