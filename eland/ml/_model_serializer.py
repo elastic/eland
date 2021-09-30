@@ -70,6 +70,7 @@ class TreeNode:
         split_feature: Optional[int] = None,
         threshold: Optional[float] = None,
         leaf_value: Optional[List[float]] = None,
+        number_samples: Optional[int] = None,
     ):
         self._node_idx = node_idx
         self._decision_type = decision_type
@@ -79,6 +80,7 @@ class TreeNode:
         self._threshold = threshold
         self._leaf_value = leaf_value
         self._default_left = default_left
+        self._number_samples = number_samples
 
     @property
     def node_idx(self) -> int:
@@ -93,6 +95,7 @@ class TreeNode:
             add_if_exists(d, "right_child", self._right_child)
             add_if_exists(d, "split_feature", self._split_feature)
             add_if_exists(d, "threshold", self._threshold)
+            add_if_exists(d, "number_samples", self._number_samples)
         else:
             if len(self._leaf_value) == 1:
                 # Support Elasticsearch 7.6 which only

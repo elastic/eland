@@ -88,6 +88,7 @@ class LGBMForestTransformer(ModelTransformer):
             decision_type=transform_decider(tree_node_json_obj["decision_type"]),
             left_child=left_child,
             right_child=right_child,
+            number_samples=int(tree_node_json_obj["internal_count"]),
         )
 
     def make_leaf_node(
@@ -96,6 +97,9 @@ class LGBMForestTransformer(ModelTransformer):
         return TreeNode(
             node_idx=node_id,
             leaf_value=[float(tree_node_json_obj["leaf_value"])],
+            number_samples=int(tree_node_json_obj["leaf_count"])
+            if "leaf_count" in tree_node_json_obj
+            else None,
         )
 
     def build_tree(self, tree_id: int, tree_json_obj: Dict[str, Any]) -> Tree:
@@ -228,7 +232,13 @@ class LGBMClassifierTransformer(LGBMForestTransformer):
             return super().make_leaf_node(tree_id, node_id, tree_node_json_obj)
         leaf_val = [0.0] * self.n_classes
         leaf_val[tree_id % self.n_classes] = float(tree_node_json_obj["leaf_value"])
-        return TreeNode(node_idx=node_id, leaf_value=leaf_val)
+        return TreeNode(
+            node_idx=node_id,
+            leaf_value=leaf_val,
+            number_samples=int(tree_node_json_obj["leaf_count"])
+            if "leaf_count" in tree_node_json_obj
+            else None,
+        )
 
     def check_model_booster(self) -> None:
         if self._model.params["boosting_type"] not in {"gbdt", "rf", "dart", "goss"}:
