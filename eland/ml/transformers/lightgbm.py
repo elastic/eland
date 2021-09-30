@@ -88,6 +88,7 @@ class LGBMForestTransformer(ModelTransformer):
             decision_type=transform_decider(tree_node_json_obj["decision_type"]),
             left_child=left_child,
             right_child=right_child,
+            number_samples=int(tree_node_json_obj["internal_count"]),
         )
 
     def make_leaf_node(
