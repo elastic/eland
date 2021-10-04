@@ -78,7 +78,7 @@ class _DistilBertWrapper(nn.Module):
     conform to Elasticsearch's native inference processor interface.
     """
 
-    def __init__(self, model: transformers.DistilBertModel):
+    def __init__(self, model: transformers.PreTrainedModel):
         super().__init__()
         self._model = model
         self.config = model.config
@@ -112,7 +112,7 @@ class _SentenceTransformerWrapper(nn.Module):
     def __init__(self, model: PreTrainedModel, output_key: str = DEFAULT_OUTPUT_KEY):
         super().__init__()
         self._hf_model = model
-        self._st_model = SentenceTransformer(model.name_or_path)
+        self._st_model = SentenceTransformer(model.config.name_or_path)
         self._output_key = output_key
 
         self._remove_pooling_layer()
@@ -260,6 +260,12 @@ class _TraceableModel(ABC):
 
         inputs = self._prepare_inputs()
         position_ids = torch.arange(inputs["input_ids"].size(1), dtype=torch.long)
+
+        # Add params when not provided by the tokenizer (e.g. DistilBERT), to conform to BERT interface
+        if "token_type_ids" not in inputs:
+            inputs["token_type_ids"] = torch.zeros(
+                inputs["input_ids"].size(1), dtype=torch.long
+            )
 
         return torch.jit.trace(
             self._model,
