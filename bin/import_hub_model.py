@@ -27,23 +27,18 @@ import argparse
 import tempfile
 
 import elasticsearch
-import urllib3
 
 from eland.ml.pytorch import PyTorchModel
 from eland.ml.pytorch.transformers import SUPPORTED_TASK_TYPES, TransformerModel
 
-DEFAULT_URL = "http://elastic:changeme@localhost:9200"
 MODEL_HUB_URL = "https://huggingface.co"
-
-# For secure, self-signed localhost, disable warnings
-urllib3.disable_warnings()
 
 
 def main():
     parser = argparse.ArgumentParser(prog="upload_hub_model.py")
     parser.add_argument(
         "--url",
-        default=DEFAULT_URL,
+        required=True,
         help="An Elasticsearch connection URL, e.g. http://user:secret@localhost:9200",
     )
     parser.add_argument(
@@ -80,9 +75,7 @@ def main():
     )
     args = parser.parse_args()
 
-    es = elasticsearch.Elasticsearch(
-        args.url, verify_certs=False, timeout=300
-    )  # 5 minute timeout
+    es = elasticsearch.Elasticsearch(args.url, timeout=300)  # 5 minute timeout
 
     # trace and save model, then upload it from temp file
     with tempfile.TemporaryDirectory() as tmp_dir:
