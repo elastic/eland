@@ -19,7 +19,7 @@ import base64
 import json
 import math
 import os
-from typing import TYPE_CHECKING, Iterable, List, Set, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Set, Tuple, Union
 
 from tqdm.auto import tqdm
 
@@ -61,8 +61,8 @@ class PyTorchModel:
         with open(path) as f:
             vocab = json.load(f)
         return self._client.transport.perform_request(
-            method="PUT",
-            url=f"/_ml/trained_models/{self.model_id}/vocabulary",
+            "PUT",
+            f"/_ml/trained_models/{self.model_id}/vocabulary",
             body=vocab,
         )
 
@@ -85,8 +85,8 @@ class PyTorchModel:
                 "definition": data,
             }
             self._client.transport.perform_request(
-                method="PUT",
-                url=f"/_ml/trained_models/{self.model_id}/definition/{i}",
+                "PUT",
+                f"/_ml/trained_models/{self.model_id}/definition/{i}",
                 body=body,
             )
 
@@ -104,6 +104,16 @@ class PyTorchModel:
             self.put_config(config_path)
             and self.put_vocab(vocab_path)
             and self.put_model(model_path, chunk_size)
+        )
+
+    def infer(
+        self, body: Dict[str, Any], timeout: str = DEFAULT_TIMEOUT
+    ) -> Dict[str, Any]:
+        self._client.transport.perform_request(
+            "POST",
+            f"/_ml/trained_models/{self.model_id}/deployment/_infer",
+            body=body,
+            params={"timeout": timeout},
         )
 
     def start(self, timeout: str = DEFAULT_TIMEOUT) -> None:
