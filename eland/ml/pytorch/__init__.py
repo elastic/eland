@@ -15,6 +15,6 @@
 #  specific language governing permissions and limitations
 #  under the License.
 
-from eland.ml.pytorch.pytorch_model import PyTorchModel  # noqa: F401
+from eland.ml.pytorch._pytorch_model import PyTorchModel  # noqa: F401
 
 __all__ = ["PyTorchModel"]

@@ -19,9 +19,8 @@ import base64
 import json
 import math
 import os
-from typing import TYPE_CHECKING, Any, Dict, List, Set, Tuple, Union
+from typing import TYPE_CHECKING, Iterable, List, Set, Tuple, Union
 
-import elasticsearch
 from tqdm.auto import tqdm
 
 from eland.common import ensure_es_client
@@ -30,8 +29,6 @@ if TYPE_CHECKING:
     from elasticsearch import Elasticsearch
 
 DEFAULT_CHUNK_SIZE = 4 * 1024 * 1024  # 4MB
-QUEUE_SIZE = 4
-THREAD_COUNT = 4
 DEFAULT_TIMEOUT = "60s"
 
 
@@ -52,33 +49,28 @@ class PyTorchModel:
         self._client = ensure_es_client(es_client)
         self.model_id = model_id
 
-    @staticmethod
-    def _load_json(path: str) -> Dict[str, Any]:
-        with open(path, "r") as infile:
-            return json.load(infile)
-
-    def _upload_config(self, path: str) -> bool:
-        config = PyTorchModel._load_json(path)
+    def put_config(self, path: str) -> bool:
+        with open(path) as f:
+            config = json.load(f)
         response = self._client.ml.put_trained_model(
             model_id=self.model_id, body=config
         )
         return response is not None
 
-    def _upload_vocab(self, path: str) -> bool:
-        vocab = PyTorchModel._load_json(path)
+    def put_vocab(self, path: str) -> bool:
+        with open(path) as f:
+            vocab = json.load(f)
         return self._client.transport.perform_request(
             method="PUT",
             url=f"/_ml/trained_models/{self.model_id}/vocabulary",
             body=vocab,
         )
 
-    def _upload_model(
-        self, model_path: str, chunk_size: int = DEFAULT_CHUNK_SIZE
-    ) -> bool:
-        file_stats = os.stat(model_path)
-        total_parts = math.ceil(file_stats.st_size / chunk_size)
+    def put_model(self, model_path: str, chunk_size: int = DEFAULT_CHUNK_SIZE) -> bool:
+        model_size = os.stat(model_path).st_size
+        total_parts = math.ceil(model_size / chunk_size)
 
-        def model_file_chunk_generator():
+        def model_file_chunk_generator() -> Iterable[str]:
             with open(model_path, "rb") as f:
                 while True:
                     data = f.read(chunk_size)
@@ -86,11 +78,9 @@ class PyTorchModel:
                         break
                     yield base64.b64encode(data).decode()
 
-        for i, data in tqdm(
-            enumerate(model_file_chunk_generator(), start=0), total=total_parts
-        ):
+        for i, data in tqdm(enumerate(model_file_chunk_generator()), total=total_parts):
             body = {
-                "total_definition_length": file_stats.st_size,
+                "total_definition_length": model_size,
                 "total_parts": total_parts,
                 "definition": data,
             }
@@ -102,7 +92,7 @@ class PyTorchModel:
 
         return True
 
-    def upload(
+    def import_model(
         self,
         model_path: str,
         config_path: str,
@@ -111,37 +101,31 @@ class PyTorchModel:
     ) -> bool:
         # TODO: Implement some pre-flight checks on config, vocab, and model
         return (
-            self._upload_config(config_path)
-            and self._upload_vocab(vocab_path)
-            and self._upload_model(model_path, chunk_size)
+            self.put_config(config_path)
+            and self.put_vocab(vocab_path)
+            and self.put_model(model_path, chunk_size)
         )
 
-    def start(self, timeout: str = DEFAULT_TIMEOUT) -> bool:
-        return self._client.transport.perform_request(
-            method="POST",
-            url=f"/_ml/trained_models/{self.model_id}/deployment/_start",
+    def start(self, timeout: str = DEFAULT_TIMEOUT) -> None:
+        self._client.transport.perform_request(
+            "POST",
+            f"/_ml/trained_models/{self.model_id}/deployment/_start",
             params={"timeout": timeout, "wait_for": "started"},
         )
 
-    def stop(self) -> bool:
-        try:
-            return self._client.transport.perform_request(
-                method="POST",
-                url=f"/_ml/trained_models/{self.model_id}/deployment/_stop",
-                params={"ignore": 404},
-            )
-        except elasticsearch.NotFoundError:
-            pass
+    def stop(self) -> None:
+        self._client.transport.perform_request(
+            "POST",
+            f"/_ml/trained_models/{self.model_id}/deployment/_stop",
+            params={"ignore": 404},
+        )
 
-    def delete(self) -> Dict[str, Any]:
-        try:
-            return self._client.ml.delete_trained_model(self.model_id, ignore=(404,))
-        except elasticsearch.NotFoundError:
-            pass
+    def delete(self) -> None:
+        self._client.ml.delete_trained_model(self.model_id, ignore=(404,))
 
-    @staticmethod
+    @classmethod
     def list(
-        es_client: Union[str, List[str], Tuple[str, ...], "Elasticsearch"]
+        cls, es_client: Union[str, List[str], Tuple[str, ...], "Elasticsearch"]
     ) -> Set[str]:
         client = ensure_es_client(es_client)
         res = client.ml.get_trained_models(model_id="*", allow_no_match=True)

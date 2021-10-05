@@ -99,16 +99,13 @@ def main():
         ptm = PyTorchModel(es, es_model_id)
         ptm.stop()
         ptm.delete()
-        print("Uploading model")
-        ptm.upload(model_path, config_path, vocab_path)
+        print(f"Importing model: {ptm.model_id}")
+        ptm.import_model(model_path, config_path, vocab_path)
 
     # start the deployed model
     if args.start:
         print("Starting model deployment")
-        if ptm.start():
-            print(f" - started: {ptm.model_id}")
-        else:
-            print(" - failed")
+        ptm.start()
 
 
 if __name__ == "__main__":
