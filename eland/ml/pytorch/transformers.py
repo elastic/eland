@@ -48,19 +48,13 @@ SUPPORTED_TASK_TYPES = {
 SUPPORTED_TASK_TYPES_NAMES = ", ".join(sorted(SUPPORTED_TASK_TYPES))
 SUPPORTED_TOKENIZERS = (
     transformers.BertTokenizer,
-    transformers.BertTokenizerFast,
     transformers.DPRContextEncoderTokenizer,
-    transformers.DPRContextEncoderTokenizerFast,
     transformers.DPRQuestionEncoderTokenizer,
-    transformers.DPRQuestionEncoderTokenizerFast,
     transformers.DistilBertTokenizer,
-    transformers.DistilBertTokenizerFast,
     transformers.ElectraTokenizer,
-    transformers.ElectraTokenizerFast,
     transformers.MobileBertTokenizer,
-    transformers.MobileBertTokenizerFast,
     transformers.RetriBertTokenizer,
-    transformers.RetriBertTokenizerFast,
+    transformers.SqueezeBertTokenizer,
 )
 SUPPORTED_TOKENIZERS_NAMES = ", ".join(sorted([str(x) for x in SUPPORTED_TOKENIZERS]))
 
@@ -346,7 +340,7 @@ class TransformerModel:
         # use padding in the tokenizer to ensure max length sequences are used for tracing
         #  - see: https://huggingface.co/transformers/serialization.html#dummy-inputs-and-standard-lengths
         self._tokenizer = transformers.AutoTokenizer.from_pretrained(
-            self._model_id, padding=True
+            self._model_id, padding=True, use_fast=False
         )
 
         # check for a supported tokenizer
