@@ -11,3 +11,7 @@ nox
 lightgbm
 pytest-cov
 mypy
+huggingface-hub>=0.0.17
+sentence-transformers>=2.0.0
+torch>=1.9.0
+transformers[torch]>=4.11.0

@@ -84,5 +84,11 @@ setup(
         "xgboost": ["xgboost>=0.90,<2"],
         "scikit-learn": ["scikit-learn>=0.22.1,<1"],
         "lightgbm": ["lightgbm>=2,<4"],
+        "pytorch": [
+            "huggingface-hub>=0.0.17,<1",
+            "sentence-transformers>=2.0.0,<3",
+            "torch>=1.9.0,<2",
+            "transformers[torch]>=4.11.0<5",
+        ],
     },
 )
