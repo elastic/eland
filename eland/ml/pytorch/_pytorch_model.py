@@ -49,24 +49,21 @@ class PyTorchModel:
         self._client = ensure_es_client(es_client)
         self.model_id = model_id
 
-    def put_config(self, path: str) -> bool:
+    def put_config(self, path: str) -> None:
         with open(path) as f:
             config = json.load(f)
-        response = self._client.ml.put_trained_model(
-            model_id=self.model_id, body=config
-        )
-        return response is not None
+        self._client.ml.put_trained_model(model_id=self.model_id, body=config)
 
-    def put_vocab(self, path: str) -> bool:
+    def put_vocab(self, path: str) -> None:
         with open(path) as f:
             vocab = json.load(f)
-        return self._client.transport.perform_request(
+        self._client.transport.perform_request(
             "PUT",
             f"/_ml/trained_models/{self.model_id}/vocabulary",
             body=vocab,
         )
 
-    def put_model(self, model_path: str, chunk_size: int = DEFAULT_CHUNK_SIZE) -> bool:
+    def put_model(self, model_path: str, chunk_size: int = DEFAULT_CHUNK_SIZE) -> None:
         model_size = os.stat(model_path).st_size
         total_parts = math.ceil(model_size / chunk_size)
 
@@ -90,26 +87,22 @@ class PyTorchModel:
                 body=body,
             )
 
-        return True
-
     def import_model(
         self,
         model_path: str,
         config_path: str,
         vocab_path: str,
         chunk_size: int = DEFAULT_CHUNK_SIZE,
-    ) -> bool:
+    ) -> None:
         # TODO: Implement some pre-flight checks on config, vocab, and model
-        return (
-            self.put_config(config_path)
-            and self.put_vocab(vocab_path)
-            and self.put_model(model_path, chunk_size)
-        )
+        self.put_config(config_path)
+        self.put_vocab(vocab_path)
+        self.put_model(model_path, chunk_size)
 
     def infer(
         self, body: Dict[str, Any], timeout: str = DEFAULT_TIMEOUT
     ) -> Dict[str, Any]:
-        self._client.transport.perform_request(
+        return self._client.transport.perform_request(
             "POST",
             f"/_ml/trained_models/{self.model_id}/deployment/_infer",
             body=body,
