@@ -92,6 +92,7 @@ class SKLearnTransformer(ModelTransformer):
                 node_index,
                 decision_type=self._node_decision_type,
                 leaf_value=leaf_value,
+                number_samples=int(node_data[5]),
             )
         else:
             return TreeNode(
@@ -101,6 +102,7 @@ class SKLearnTransformer(ModelTransformer):
                 right_child=int(node_data[1]),
                 split_feature=int(node_data[2]),
                 threshold=float(node_data[3]),
+                number_samples=int(node_data[5]),
             )
 
 
