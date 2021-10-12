@@ -1,4 +1,4 @@
-= Eland
+= Eland Python Client
 
 :doctype:           book
 
