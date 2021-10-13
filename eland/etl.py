@@ -175,7 +175,7 @@ def pandas_to_eland(
 
         elif es_if_exists == "replace":
             es_client.indices.delete(index=es_dest_index)
-            es_api_compat(es_client.indices.create, body=mapping)
+            es_api_compat(es_client.indices.create, index=es_dest_index, body=mapping)
 
         elif es_if_exists == "append":
             dest_mapping = es_client.indices.get_mapping(index=es_dest_index)[
@@ -187,7 +187,7 @@ def pandas_to_eland(
                 es_type_overrides=es_type_overrides,
             )
     else:
-        es_api_compat(es_client.indices.create, body=mapping)
+        es_api_compat(es_client.indices.create, index=es_dest_index, body=mapping)
 
     def action_generator(
         pd_df: pd.DataFrame,
