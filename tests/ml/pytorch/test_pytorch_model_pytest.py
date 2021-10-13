@@ -20,18 +20,21 @@ import pytest
 
 try:
     import sklearn
+
     HAS_SKLEARN = True
 except ImportError:
     HAS_SKLEARN = False
 
 try:
     import transformers
+
+    from eland.ml.pytorch import PyTorchModel
+    from eland.ml.pytorch.transformers import TransformerModel
+
     HAS_TRANSFORMERS = True
 except ImportError:
     HAS_TRANSFORMERS = False
 
-from eland.ml.pytorch import PyTorchModel
-from eland.ml.pytorch.transformers import TransformerModel
 from tests import ES_TEST_CLIENT, ES_VERSION
 
 requires_es_8 = pytest.mark.skipif(
