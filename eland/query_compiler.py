@@ -370,7 +370,7 @@ class QueryCompiler:
             self, self.index.es_index_field, items
         )
 
-    def _empty_pd_ef(self):
+    def _empty_pd_ef(self) -> "pd.DataFrame":
         # Return an empty dataframe with correct columns and dtypes
         df = pd.DataFrame()
         for c, d in zip(self.dtypes.index, self.dtypes.values):
