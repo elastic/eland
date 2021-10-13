@@ -16,7 +16,6 @@
 #  under the License.
 
 import copy
-from datetime import datetime
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -33,11 +32,7 @@ from typing import (
 import numpy as np
 import pandas as pd  # type: ignore
 
-from eland.common import (
-    DEFAULT_PROGRESS_REPORTING_NUM_ROWS,
-    elasticsearch_date_to_pandas_date,
-    ensure_es_client,
-)
+from eland.common import elasticsearch_date_to_pandas_date, ensure_es_client
 from eland.field_mappings import FieldMappings
 from eland.filter import BooleanFilter, QueryFilter
 from eland.index import Index
@@ -149,7 +144,6 @@ class QueryCompiler:
     def _es_results_to_pandas(
         self,
         results: List[Dict[str, Any]],
-        show_progress: bool = False,
     ) -> "pd.Dataframe":
         """
         Parameters
@@ -274,10 +268,6 @@ class QueryCompiler:
             # flatten row to map correctly to 2D DataFrame
             rows.append(self._flatten_dict(row, field_mapping_cache))
 
-            if show_progress:
-                if i % DEFAULT_PROGRESS_REPORTING_NUM_ROWS == 0:
-                    print(f"{datetime.now()}: read {i} rows")
-
         # Create pandas DataFrame
         df = pd.DataFrame(data=rows, index=index)
 
@@ -298,9 +288,6 @@ class QueryCompiler:
         # Sort columns in mapping order
         if len(self.columns) > 1:
             df = df[self.columns]
-
-        if show_progress:
-            print(f"{datetime.now()}: read {i} rows")
 
         return df
 
@@ -383,7 +370,7 @@ class QueryCompiler:
             self, self.index.es_index_field, items
         )
 
-    def _empty_pd_ef(self):
+    def _empty_pd_ef(self) -> "pd.DataFrame":
         # Return an empty dataframe with correct columns and dtypes
         df = pd.DataFrame()
         for c, d in zip(self.dtypes.index, self.dtypes.values):
