@@ -121,6 +121,7 @@ if [[ "$ELASTICSEARCH_VERSION" != *oss* ]]; then
     --env xpack.security.enabled=false
     --env xpack.security.http.ssl.enabled=false
     --env xpack.security.transport.ssl.enabled=false
+    --env xpack.ml.max_machine_memory_percent=90
 END
 ))
 fi
