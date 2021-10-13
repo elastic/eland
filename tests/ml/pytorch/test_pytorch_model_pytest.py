@@ -18,6 +18,18 @@ import tempfile
 
 import pytest
 
+try:
+    import sklearn
+    HAS_SKLEARN = True
+except ImportError:
+    HAS_SKLEARN = False
+
+try:
+    import transformers
+    HAS_TRANSFORMERS = True
+except ImportError:
+    HAS_TRANSFORMERS = False
+
 from eland.ml.pytorch import PyTorchModel
 from eland.ml.pytorch.transformers import TransformerModel
 from tests import ES_TEST_CLIENT, ES_VERSION
@@ -25,6 +37,14 @@ from tests import ES_TEST_CLIENT, ES_VERSION
 requires_es_8 = pytest.mark.skipif(
     ES_VERSION < (8, 0, 0),
     reason="This test requires at least Elasticsearch version 8.0.0",
+)
+
+requires_sklearn = pytest.mark.skipif(
+    not HAS_SKLEARN, reason="This test requires 'scikit-learn' package to run"
+)
+
+requires_transforms = pytest.mark.skipif(
+    not HAS_TRANSFORMERS, reason="This test requires 'transformers' package to run"
 )
 
 
@@ -38,6 +58,8 @@ def delete_test_index():
 
 class TestPytorchModel:
     @requires_es_8
+    @requires_sklearn
+    @requires_transforms
     def test_infer(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
             print("Loading HuggingFace transformer tokenizer and model")
