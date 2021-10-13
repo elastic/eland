@@ -1213,6 +1213,10 @@ class Operations:
         if show_progress:
             print(f"{datetime.now()}: read {i} rows")
 
+        # pd.concat() can't handle an empty list
+        # because there aren't defined columns.
+        if not df_list:
+            return query_compiler._empty_pd_df()
         return pd.concat(df_list)
 
     def to_csv(
@@ -1222,9 +1226,10 @@ class Operations:
         **kwargs: Union[bool, str],
     ) -> Optional[str]:
         return self.to_pandas(
-            query_compiler=query_compiler,
-            show_progress=show_progress
-        ).to_csv(**kwargs)  # type: ignore[no-any-return]
+            query_compiler=query_compiler, show_progress=show_progress
+        ).to_csv(
+            **kwargs
+        )  # type: ignore[no-any-return]
 
     def search_yield_pandas_dataframes(
         self, query_compiler: "QueryCompiler"
