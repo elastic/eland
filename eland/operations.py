@@ -1221,19 +1221,10 @@ class Operations:
         show_progress: bool = False,
         **kwargs: Union[bool, str],
     ) -> Optional[str]:
-        df_list: List[pd.DataFrame] = []
-        i = 0
-        for df in self.search_yield_pandas_dataframes(query_compiler=query_compiler):
-            if show_progress:
-                i = i + df.shape[0]
-                if i % DEFAULT_PROGRESS_REPORTING_NUM_ROWS == 0:
-                    print(f"{datetime.now()}: read {i} rows")
-            df_list.append(df)
-
-        if show_progress:
-            print(f"{datetime.now()}: read {i} rows")
-
-        return pd.concat(df_list).to_csv(**kwargs)  # type: ignore[no-any-return]
+        return self.to_pandas(
+            query_compiler=query_compiler,
+            show_progress=show_progress
+        ).to_csv(**kwargs)  # type: ignore[no-any-return]
 
     def search_yield_pandas_dataframes(
         self, query_compiler: "QueryCompiler"
