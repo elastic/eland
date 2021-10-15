@@ -96,8 +96,8 @@ class PyTorchModel:
     ) -> None:
         # TODO: Implement some pre-flight checks on config, vocab, and model
         self.put_config(config_path)
-        self.put_vocab(vocab_path)
         self.put_model(model_path, chunk_size)
+        self.put_vocab(vocab_path)
 
     def infer(
         self, body: Dict[str, Any], timeout: str = DEFAULT_TIMEOUT
