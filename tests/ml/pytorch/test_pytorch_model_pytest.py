@@ -52,37 +52,37 @@ pytestmark = [
 ]
 
 TEXT_PREDICTION_MODELS = [
-    (
-        "distilbert-base-uncased",
-        "fill_mask",
-        "[MASK] is the capital of France.",
-        "paris",
-    ),
+    # (
+    #    "distilbert-base-uncased",
+    #    "fill_mask",
+    #    "[MASK] is the capital of France.",
+    #    "paris",
+    # ),
     ("bert-base-cased", "fill_mask", "[MASK] is the capital of France.", "Paris"),
-    (
-        "distilbert-base-uncased-finetuned-sst-2-english",
-        "text_classification",
-        "I love Elasticsearch",
-        "POSITIVE",
-    ),
-    (
-        "nateraw/bert-base-uncased-emotion",
-        "text_classification",
-        "Eland and pytorch are amazing.",
-        "joy",
-    ),
-    (
-        "elastic/distilbert-base-cased-finetuned-conll03-english",
-        "ner",
-        "I am Bart Simpson and I work at Elastic.",
-        "I am [Bart Simpson](PER&Bart+Simpson) and I work at [Elastic](ORG&Elastic).",
-    ),
-    (
-        "elastic/distilbert-base-uncased-finetuned-conll03-english",
-        "ner",
-        "I am Bart Simpson and I work at Elastic.",
-        "I am [Bart Simpson](PER&Bart+Simpson) and I work at [Elastic](ORG&Elastic).",
-    ),
+    # (
+    #    "distilbert-base-uncased-finetuned-sst-2-english",
+    #    "text_classification",
+    #    "I love Elasticsearch",
+    #    "POSITIVE",
+    # ),
+    # (
+    #    "nateraw/bert-base-uncased-emotion",
+    #    "text_classification",
+    #    "Eland and pytorch are amazing.",
+    #    "joy",
+    # ),
+    # (
+    #    "elastic/distilbert-base-cased-finetuned-conll03-english",
+    #    "ner",
+    #    "I am Bart Simpson and I work at Elastic.",
+    #    "I am [Bart Simpson](PER&Bart+Simpson) and I work at [Elastic](ORG&Elastic).",
+    # ),
+    # (
+    #    "elastic/distilbert-base-uncased-finetuned-conll03-english",
+    #    "ner",
+    #    "I am Bart Simpson and I work at Elastic.",
+    #    "I am [Bart Simpson](PER&Bart+Simpson) and I work at [Elastic](ORG&Elastic).",
+    # ),
 ]
 
 ZERO_SHOT_MODELS = [
@@ -2442,7 +2442,10 @@ TEXT_EMBEDDING = [
 
 
 @pytest.fixture(scope="function", autouse=True)
-def tear_down():
+def setup_and_tear_down():
+    ES_TEST_CLIENT.cluster.put_settings(
+        body={"transient": {"logger.org.elasticsearch.xpack.ml": "DEBUG"}}
+    )
     yield
     for model_id, _, _, _ in TEXT_PREDICTION_MODELS:
         model = PyTorchModel(ES_TEST_CLIENT, model_id.replace("/", "__").lower()[:64])
@@ -2484,6 +2487,7 @@ class TestPytorchModel:
 
     @pytest.mark.parametrize("quantize", [True, False])
     @pytest.mark.parametrize("model_id,text_input,labels,value", ZERO_SHOT_MODELS)
+    @pytest.mark.skip("temp skip")
     def test_zero_shot_classification(
         self, quantize, model_id, text_input, labels, value
     ):
@@ -2502,6 +2506,7 @@ class TestPytorchModel:
             assert result["predicted_value"] == value
 
     @pytest.mark.parametrize("quantize,model_id,text_input,value", TEXT_EMBEDDING)
+    @pytest.mark.skip("temp skip")
     def test_text_embedding(self, quantize, model_id, text_input, value):
         with tempfile.TemporaryDirectory() as tmp_dir:
             ptm = download_model_and_start_deployment(
