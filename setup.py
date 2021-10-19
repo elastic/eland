@@ -76,6 +76,7 @@ setup(
         "matplotlib",
         "numpy",
     ],
+    scripts=["bin/eland_import_hub_model"],
     python_requires=">=3.7",
     package_data={"eland": ["py.typed"]},
     include_package_data=True,
