@@ -136,12 +136,7 @@ def docs(session):
     # Run this so users get an error if they don't have Pandoc installed.
     session.run("pandoc", "--version", external=True)
 
-    session.install(
-        "-r",
-        "docs/requirements-docs.txt",
-        "-f",
-        "https://download.pytorch.org/whl/torch_stable.html",
-    )
+    session.install("-r", "docs/requirements-docs.txt")
     session.install(".")
 
     # See if we have an Elasticsearch cluster active
