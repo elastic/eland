@@ -140,7 +140,7 @@ def docs(session):
         "-r",
         "docs/requirements-docs.txt",
         "-f",
-        "https://download.pytorch.org/whl/torch_stable.html"
+        "https://download.pytorch.org/whl/torch_stable.html",
     )
     session.install(".")
 
