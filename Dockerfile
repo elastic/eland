@@ -9,6 +9,6 @@ RUN apt-get update && \
 ADD . /eland
 WORKDIR /eland
 
-RUN python3 -m pip install --no-cache --disable-pip-version-check .[all]
+RUN python3 -m pip install --no-cache-dir --disable-pip-version-check .[all]
 
 CMD ["/bin/sh"]
