@@ -22,16 +22,16 @@
 
 ## About
 
-Eland is a Python Elasticsearch client for exploring and
-analyzing data in Elasticsearch with a familiar Pandas-compatible API.
+Eland is a Python Elasticsearch client for exploring and  analyzing data in Elasticsearch with a familiar
+Pandas-compatible API.
 
 Where possible the package uses existing Python APIs and data structures to make it easy to switch between numpy,
-pandas, scikit-learn to their Elasticsearch powered equivalents. In general, the data resides in Elasticsearch and
+pandas, or scikit-learn to their Elasticsearch powered equivalents. In general, the data resides in Elasticsearch and
 not in memory, which allows Eland to access large datasets stored in Elasticsearch.
 
-Eland also provides tools to upload trained machine learning models from your
-common libraries like [scikit-learn](https://scikit-learn.org), [XGBoost](https://xgboost.readthedocs.io),
-and [LightGBM](https://lightgbm.readthedocs.io) into Elasticsearch.
+Eland also provides tools to upload trained machine learning models from common libraries like
+[scikit-learn](https://scikit-learn.org), [XGBoost](https://xgboost.readthedocs.io),  and
+[LightGBM](https://lightgbm.readthedocs.io) into Elasticsearch.
 
 ## Getting Started
 
@@ -51,6 +51,47 @@ $ conda install -c conda-forge eland
 
 - Supports Python 3.7+ and Pandas 1.3
 - Supports Elasticsearch clusters that are 7.11+, recommended 7.14 or later for all features to work.
+
+### Prerequisites
+
+Users installing Eland on Debian-based distributions may need to install prerequisite packages for the transitive
+dependencies of Eland:
+
+```bash
+$ sudo apt-get install -y \
+  build-essential pkg-config cmake \
+  python3-dev libzip-dev libjpeg-dev
+```
+
+Note that other distributions such as CentOS, RedHat, Arch, etc. may require using a different package manager and
+specifying different package names. 
+
+### Docker
+
+Users wishing to use Eland without installing it, in order to just run the available scripts, can build the Docker
+container:
+
+```bash
+$ docker build -t elastic/eland .
+```
+
+The container can now be used interactively:
+
+```bash
+$ docker run -it --rm --network host elastic/eland
+```
+
+Running installed scripts is also possible without an interactive shell, e.g.:
+
+```bash
+$ docker run -it --rm --network host \
+    elastic/eland \
+    eland_import_hub_model \
+      --url http://host.docker.internal:9200/ \
+      --hub-model-id elastic/distilbert-base-cased-finetuned-conll03-english \
+      --task-type ner \
+      --start
+```
 
 ### Connecting to Elasticsearch 
 

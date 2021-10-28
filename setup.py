@@ -54,6 +54,18 @@ with open(path.join(here, "README.md"), "r", "utf-8") as f:
             last_html_index = i + 1
     long_description = "\n".join(lines[last_html_index:])
 
+extras = {
+    "xgboost": ["xgboost>=0.90,<2"],
+    "scikit-learn": ["scikit-learn>=0.22.1,<1"],
+    "lightgbm": ["lightgbm>=2,<4"],
+    "pytorch": [
+        "huggingface-hub>=0.0.17,<1",
+        "sentence-transformers>=2.0.0,<3",
+        "torch>=1.9.0,<2",
+        "transformers[torch]>=4.11.0<5",
+    ],
+}
+extras["all"] = list({dep for deps in extras.values() for dep in deps})
 
 setup(
     name=about["__title__"],
@@ -81,15 +93,5 @@ setup(
     package_data={"eland": ["py.typed"]},
     include_package_data=True,
     zip_safe=False,
-    extras_require={
-        "xgboost": ["xgboost>=0.90,<2"],
-        "scikit-learn": ["scikit-learn>=0.22.1,<1"],
-        "lightgbm": ["lightgbm>=2,<4"],
-        "pytorch": [
-            "huggingface-hub>=0.0.17,<1",
-            "sentence-transformers>=2.0.0,<3",
-            "torch>=1.9.0,<2",
-            "transformers[torch]>=4.11.0<5",
-        ],
-    },
+    extras_require=extras,
 )
