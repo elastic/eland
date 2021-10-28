@@ -45,6 +45,7 @@ from eland.common import (
     SortOrder,
     build_pd_series,
     elasticsearch_date_to_pandas_date,
+    es_api_compat,
     es_version,
 )
 from eland.index import Index
@@ -1524,7 +1525,8 @@ def _search_with_scroll(
     hits_yielded = 0
 
     # Make the initial search with 'scroll' set
-    resp = client.search(
+    resp = es_api_compat(
+        client.search,
         index=query_compiler._index_pattern,
         body=body,
         scroll=DEFAULT_PIT_KEEP_ALIVE,
@@ -1601,7 +1603,7 @@ def _search_with_pit_and_search_after(
         body["pit"] = {"id": pit_id, "keep_alive": DEFAULT_PIT_KEEP_ALIVE}
 
         while max_number_of_hits is None or hits_yielded < max_number_of_hits:
-            resp = client.search(body=body)
+            resp = es_api_compat(client.search, body=body)
             hits: List[Dict[str, Any]] = resp["hits"]["hits"]
 
             # The point in time ID can change between searches so we

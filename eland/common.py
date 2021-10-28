@@ -32,6 +32,7 @@ from typing import (
 
 import pandas as pd  # type: ignore
 from elasticsearch import Elasticsearch
+from elasticsearch import __version__ as ES_CLIENT_VERSION
 
 if TYPE_CHECKING:
     from numpy.typing import DTypeLike
@@ -47,6 +48,10 @@ DEFAULT_PAGINATION_SIZE = 5000  # for composite aggregations
 PANDAS_VERSION: Tuple[int, ...] = tuple(
     int(part) for part in pd.__version__.split(".") if part.isdigit()
 )[:2]
+
+# Starting in 7.15 the client raises DeprecationWarnings
+# for some APIs using the 'body' parameter.
+ES_CLIENT_HAS_V8_0_DEPRECATIONS = ES_CLIENT_VERSION >= (7, 15)
 
 
 with warnings.catch_warnings():
@@ -329,3 +334,16 @@ def es_version(es_client: Elasticsearch) -> Tuple[int, int, int]:
     else:
         eland_es_version = es_client._eland_es_version  # type: ignore
     return eland_es_version
+
+
+def es_api_compat(
+    method: Callable[..., Dict[str, Any]], **kwargs: Any
+) -> Dict[str, Any]:
+    """Expands the 'body' parameter to top-level parameters
+    on clients that would raise DeprecationWarnings if used.
+    """
+    if ES_CLIENT_HAS_V8_0_DEPRECATIONS:
+        body = kwargs.pop("body", None)
+        if body:
+            kwargs.update(body)
+    return method(**kwargs)
