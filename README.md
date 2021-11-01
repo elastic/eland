@@ -185,8 +185,10 @@ std        4.578263e+03    2.663867e+02
 
 ## Machine Learning in Eland
 
-Eland allows transforming trained models from scikit-learn, XGBoost, and LightGBM libraries
-to be serialized and used as an inference model in Elasticsearch
+### Regression and classification
+
+Eland allows transforming trained regression and classification models from scikit-learn, XGBoost, and LightGBM
+libraries to be serialized and used as an inference model in Elasticsearch.
 
 ➤ [Eland Machine Learning API documentation](https://eland.readthedocs.io/en/latest/reference/ml.html)
 
@@ -214,4 +216,44 @@ to be serialized and used as an inference model in Elasticsearch
 # Exercise the ML model in Elasticsearch with the training data
 >>> es_model.predict(training_data[0])
 [0 1 1 0 1 0 0 0 1 0]
+```
+
+### NLP with PyTorch
+
+For NLP tasks, Eland allows importing PyTorch trained BERT models into Elasticsearch. Models can be either plain PyTorch
+models, or supported [transformers](https://huggingface.co/transformers) models from the
+[Hugging Face model hub](https://huggingface.co/models).
+
+```bash
+$ eland_import_hub_model \
+  --url http://localhost:9200/ \
+  --hub-model-id elastic/distilbert-base-cased-finetuned-conll03-english \
+  --task-type ner \
+  --start
+```
+
+```python
+>>> import elasticsearch
+>>> from pathlib import Path
+>>> from eland.ml.pytorch import PyTorchModel
+>>> from eland.ml.pytorch.transformers import TransformerModel
+
+# Load a Hugging Face transformers model directly from the model hub
+>>> tm = TransformerModel("elastic/distilbert-base-cased-finetuned-conll03-english", "ner")
+Downloading: 100%|██████████| 257/257 [00:00<00:00, 108kB/s]
+Downloading: 100%|██████████| 954/954 [00:00<00:00, 372kB/s]
+Downloading: 100%|██████████| 208k/208k [00:00<00:00, 668kB/s] 
+Downloading: 100%|██████████| 112/112 [00:00<00:00, 43.9kB/s]
+Downloading: 100%|██████████| 249M/249M [00:23<00:00, 11.2MB/s]
+
+# Export the model in a TorchScrpt representation which Elasticsearch uses
+>>> tmp_path = "models"
+>>> Path(tmp_path).mkdir(parents=True, exist_ok=True)
+>>> model_path, config_path, vocab_path = tm.save(tmp_path)
+
+# Import model into Elasticsearch
+>>> es = elasticsearch.Elasticsearch("http://elastic:mlqa_admin@localhost:9200", timeout=300)  # 5 minute timeout
+>>> ptm = PyTorchModel(es, tm.elasticsearch_model_id())
+>>> ptm.import_model(model_path, config_path, vocab_path)
+100%|██████████| 63/63 [00:12<00:00,  5.02it/s]
 ```
