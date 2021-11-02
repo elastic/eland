@@ -90,7 +90,12 @@ def _update_max_compilations_limit(es, limit="10000/1m"):
     if es_version(es) < (7, 8):
         body = {"transient": {"script.max_compilations_rate": limit}}
     else:
-        body = {"transient": {"script.context.field.max_compilations_rate": limit}}
+        body = {
+            "transient": {
+                "script.max_compilations_rate": "use-context",
+                "script.context.field.max_compilations_rate": limit,
+            }
+        }
     es.cluster.put_settings(body=body)
 
 
