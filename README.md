@@ -22,16 +22,16 @@
 
 ## About
 
-Eland is a Python Elasticsearch client for exploring and
-analyzing data in Elasticsearch with a familiar Pandas-compatible API.
+Eland is a Python Elasticsearch client for exploring and  analyzing data in Elasticsearch with a familiar
+Pandas-compatible API.
 
 Where possible the package uses existing Python APIs and data structures to make it easy to switch between numpy,
-pandas, scikit-learn to their Elasticsearch powered equivalents. In general, the data resides in Elasticsearch and
+pandas, or scikit-learn to their Elasticsearch powered equivalents. In general, the data resides in Elasticsearch and
 not in memory, which allows Eland to access large datasets stored in Elasticsearch.
 
-Eland also provides tools to upload trained machine learning models from your
-common libraries like [scikit-learn](https://scikit-learn.org), [XGBoost](https://xgboost.readthedocs.io),
-and [LightGBM](https://lightgbm.readthedocs.io) into Elasticsearch.
+Eland also provides tools to upload trained machine learning models from common libraries like
+[scikit-learn](https://scikit-learn.org), [XGBoost](https://xgboost.readthedocs.io),  and
+[LightGBM](https://lightgbm.readthedocs.io) into Elasticsearch.
 
 ## Getting Started
 
@@ -51,6 +51,47 @@ $ conda install -c conda-forge eland
 
 - Supports Python 3.7+ and Pandas 1.3
 - Supports Elasticsearch clusters that are 7.11+, recommended 7.14 or later for all features to work.
+
+### Prerequisites
+
+Users installing Eland on Debian-based distributions may need to install prerequisite packages for the transitive
+dependencies of Eland:
+
+```bash
+$ sudo apt-get install -y \
+  build-essential pkg-config cmake \
+  python3-dev libzip-dev libjpeg-dev
+```
+
+Note that other distributions such as CentOS, RedHat, Arch, etc. may require using a different package manager and
+specifying different package names. 
+
+### Docker
+
+Users wishing to use Eland without installing it, in order to just run the available scripts, can build the Docker
+container:
+
+```bash
+$ docker build -t elastic/eland .
+```
+
+The container can now be used interactively:
+
+```bash
+$ docker run -it --rm --network host elastic/eland
+```
+
+Running installed scripts is also possible without an interactive shell, e.g.:
+
+```bash
+$ docker run -it --rm --network host \
+    elastic/eland \
+    eland_import_hub_model \
+      --url http://host.docker.internal:9200/ \
+      --hub-model-id elastic/distilbert-base-cased-finetuned-conll03-english \
+      --task-type ner \
+      --start
+```
 
 ### Connecting to Elasticsearch 
 
@@ -144,8 +185,10 @@ std        4.578263e+03    2.663867e+02
 
 ## Machine Learning in Eland
 
-Eland allows transforming trained models from scikit-learn, XGBoost, and LightGBM libraries
-to be serialized and used as an inference model in Elasticsearch
+### Regression and classification
+
+Eland allows transforming trained regression and classification models from scikit-learn, XGBoost, and LightGBM
+libraries to be serialized and used as an inference model in Elasticsearch.
 
 ➤ [Eland Machine Learning API documentation](https://eland.readthedocs.io/en/latest/reference/ml.html)
 
@@ -173,4 +216,44 @@ to be serialized and used as an inference model in Elasticsearch
 # Exercise the ML model in Elasticsearch with the training data
 >>> es_model.predict(training_data[0])
 [0 1 1 0 1 0 0 0 1 0]
+```
+
+### NLP with PyTorch
+
+For NLP tasks, Eland allows importing PyTorch trained BERT models into Elasticsearch. Models can be either plain PyTorch
+models, or supported [transformers](https://huggingface.co/transformers) models from the
+[Hugging Face model hub](https://huggingface.co/models).
+
+```bash
+$ eland_import_hub_model \
+  --url http://localhost:9200/ \
+  --hub-model-id elastic/distilbert-base-cased-finetuned-conll03-english \
+  --task-type ner \
+  --start
+```
+
+```python
+>>> import elasticsearch
+>>> from pathlib import Path
+>>> from eland.ml.pytorch import PyTorchModel
+>>> from eland.ml.pytorch.transformers import TransformerModel
+
+# Load a Hugging Face transformers model directly from the model hub
+>>> tm = TransformerModel("elastic/distilbert-base-cased-finetuned-conll03-english", "ner")
+Downloading: 100%|██████████| 257/257 [00:00<00:00, 108kB/s]
+Downloading: 100%|██████████| 954/954 [00:00<00:00, 372kB/s]
+Downloading: 100%|██████████| 208k/208k [00:00<00:00, 668kB/s] 
+Downloading: 100%|██████████| 112/112 [00:00<00:00, 43.9kB/s]
+Downloading: 100%|██████████| 249M/249M [00:23<00:00, 11.2MB/s]
+
+# Export the model in a TorchScrpt representation which Elasticsearch uses
+>>> tmp_path = "models"
+>>> Path(tmp_path).mkdir(parents=True, exist_ok=True)
+>>> model_path, config_path, vocab_path = tm.save(tmp_path)
+
+# Import model into Elasticsearch
+>>> es = elasticsearch.Elasticsearch("http://elastic:mlqa_admin@localhost:9200", timeout=300)  # 5 minute timeout
+>>> ptm = PyTorchModel(es, tm.elasticsearch_model_id())
+>>> ptm.import_model(model_path, config_path, vocab_path)
+100%|██████████| 63/63 [00:12<00:00,  5.02it/s]
 ```
