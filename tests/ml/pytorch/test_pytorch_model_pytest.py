@@ -52,24 +52,24 @@ pytestmark = [
 ]
 
 TEXT_PREDICTION_MODELS = [
-     (
+    (
         "distilbert-base-uncased",
         "fill_mask",
         "[MASK] is the capital of France.",
         "paris",
-     ),
-     (
+    ),
+    (
         "distilbert-base-uncased-finetuned-sst-2-english",
         "text_classification",
         "I love Elasticsearch",
         "POSITIVE",
-     ),
-     (
+    ),
+    (
         "elastic/distilbert-base-cased-finetuned-conll03-english",
         "ner",
         "I am Bart Simpson and I work at Elastic.",
         "I am [Bart Simpson](PER&Bart+Simpson) and I work at [Elastic](ORG&Elastic).",
-     ),
+    ),
 ]
 
 ZERO_SHOT_MODELS = [
@@ -529,9 +529,7 @@ class TestPytorchModel:
 
     @pytest.mark.parametrize("model_id,text_input,labels,value", ZERO_SHOT_MODELS)
     @pytest.mark.skip("temp skip")
-    def test_zero_shot_classification(
-        self, model_id, text_input, labels, value
-    ):
+    def test_zero_shot_classification(self, model_id, text_input, labels, value):
         with tempfile.TemporaryDirectory() as tmp_dir:
             ptm = download_model_and_start_deployment(
                 tmp_dir, True, model_id, "zero_shot_classification"
