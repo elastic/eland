@@ -24,7 +24,7 @@
     - inject:
         properties-content: HOME=$JENKINS_HOME
     concurrent: true
-    node: ubuntu
+    node: flyweight
     scm:
     - git:
         name: origin

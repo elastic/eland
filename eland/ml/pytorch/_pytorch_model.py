@@ -96,8 +96,8 @@ class PyTorchModel:
     ) -> None:
         # TODO: Implement some pre-flight checks on config, vocab, and model
         self.put_config(config_path)
-        self.put_vocab(vocab_path)
         self.put_model(model_path, chunk_size)
+        self.put_vocab(vocab_path)
 
     def infer(
         self, body: Dict[str, Any], timeout: str = DEFAULT_TIMEOUT
@@ -106,14 +106,14 @@ class PyTorchModel:
             "POST",
             f"/_ml/trained_models/{self.model_id}/deployment/_infer",
             body=body,
-            params={"timeout": timeout},
+            params={"timeout": timeout, "request_timeout": 60},
         )
 
     def start(self, timeout: str = DEFAULT_TIMEOUT) -> None:
         self._client.transport.perform_request(
             "POST",
             f"/_ml/trained_models/{self.model_id}/deployment/_start",
-            params={"timeout": timeout, "wait_for": "started"},
+            params={"timeout": timeout, "request_timeout": 60, "wait_for": "started"},
         )
 
     def stop(self) -> None:
