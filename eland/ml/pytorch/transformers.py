@@ -290,6 +290,7 @@ class _TraceableFillMaskModel(_TraceableModel):
         return self._tokenizer(
             "Who was Jim Henson?",
             "[MASK] Henson was a puppeteer",
+            padding="max_length",
             return_tensors="pt",
         )
 
@@ -301,6 +302,7 @@ class _TraceableNerModel(_TraceableClassificationModel):
                 "Hugging Face Inc. is a company based in New York City. "
                 "Its headquarters are in DUMBO, therefore very close to the Manhattan Bridge."
             ),
+            padding="max_length",
             return_tensors="pt",
         )
 
@@ -309,6 +311,7 @@ class _TraceableTextClassificationModel(_TraceableClassificationModel):
     def _prepare_inputs(self) -> transformers.BatchEncoding:
         return self._tokenizer(
             "This is an example sentence.",
+            padding="max_length",
             return_tensors="pt",
         )
 
@@ -317,6 +320,7 @@ class _TraceableTextEmbeddingModel(_TraceableModel):
     def _prepare_inputs(self) -> transformers.BatchEncoding:
         return self._tokenizer(
             "This is an example sentence.",
+            padding="max_length",
             return_tensors="pt",
         )
 
@@ -326,8 +330,8 @@ class _TraceableZeroShotClassificationModel(_TraceableClassificationModel):
         return self._tokenizer(
             "This is an example sentence.",
             "This example is an example.",
+            padding="max_length",
             return_tensors="pt",
-            truncation_strategy="only_first",
         )
 
 
@@ -337,10 +341,11 @@ class TransformerModel:
         self._task_type = task_type.replace("-", "_")
 
         # load Hugging Face model and tokenizer
-        # use padding in the tokenizer to ensure max length sequences are used for tracing
+        # use padding in the tokenizer to ensure max length sequences are used for tracing (at call time)
         #  - see: https://huggingface.co/transformers/serialization.html#dummy-inputs-and-standard-lengths
         self._tokenizer = transformers.AutoTokenizer.from_pretrained(
-            self._model_id, padding=True, use_fast=False
+            self._model_id,
+            use_fast=False,
         )
 
         # check for a supported tokenizer
