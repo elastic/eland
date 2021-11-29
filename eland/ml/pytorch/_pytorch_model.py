@@ -21,7 +21,7 @@ import math
 import os
 from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Set, Tuple, Union
 
-from tqdm.auto import tqdm
+from tqdm.auto import tqdm  # type: ignore
 
 from eland.common import ensure_es_client
 
@@ -101,7 +101,7 @@ class PyTorchModel:
 
     def infer(
         self, body: Dict[str, Any], timeout: str = DEFAULT_TIMEOUT
-    ) -> Dict[str, Any]:
+    ) -> Union[bool, Any]:
         return self._client.transport.perform_request(
             "POST",
             f"/_ml/trained_models/{self.model_id}/deployment/_infer",
@@ -124,7 +124,7 @@ class PyTorchModel:
         )
 
     def delete(self) -> None:
-        self._client.ml.delete_trained_model(self.model_id, ignore=(404,))
+        self._client.ml.delete_trained_model(model_id=self.model_id, ignore=(404,))
 
     @classmethod
     def list(
