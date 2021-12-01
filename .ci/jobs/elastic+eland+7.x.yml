@@ -1,0 +1,14 @@
+---
+- job:
+    name: elastic+eland+7.x
+    display-name: 'elastic / eland # 7.x'
+    description: Eland is a data science client with a Pandas-like interface
+    junit_results: "*-junit.xml"
+    parameters:
+      - string:
+          name: branch_specifier
+          default: refs/heads/7.x
+          description: The Git branch specifier to build
+    triggers:
+      - github
+      - timed: '@daily'

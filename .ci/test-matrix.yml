@@ -1,16 +1,15 @@
 ---
 
 ELASTICSEARCH_VERSION:
+  - 8.1.0-SNAPSHOT
   - 8.0.0-SNAPSHOT
-  - 7.x-SNAPSHOT
-  - 7.14-SNAPSHOT
-  - 7.11-SNAPSHOT
 
 PANDAS_VERSION:
   - 1.2.0
   - 1.3.0
 
 PYTHON_VERSION:
+  - 3.10
   - 3.9
   - 3.8
   - 3.7
