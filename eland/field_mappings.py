@@ -515,7 +515,7 @@ class FieldMappings:
     @staticmethod
     def _generate_es_mappings(
         dataframe: "pd.DataFrame", es_type_overrides: Optional[Mapping[str, str]] = None
-    ) -> Dict[str, Dict[str, Dict[str, Any]]]:
+    ) -> Dict[str, Dict[str, Any]]:
         """Given a pandas dataframe, generate the associated Elasticsearch mapping
 
         Parameters
@@ -894,20 +894,20 @@ def verify_mapping_compatibility(
     problems = []
     es_type_overrides = es_type_overrides or {}
 
-    ed_mapping = ed_mapping["mappings"]["properties"]
-    es_mapping = es_mapping["mappings"]["properties"]
+    ed_props = ed_mapping["mappings"]["properties"]
+    es_props = es_mapping["mappings"]["properties"]
 
-    for key in sorted(es_mapping.keys()):
-        if key not in ed_mapping:
+    for key in sorted(es_props.keys()):
+        if key not in ed_props:
             problems.append(f"- {key!r} is missing from DataFrame columns")
 
-    for key, key_def in sorted(ed_mapping.items()):
-        if key not in es_mapping:
+    for key, key_def in sorted(ed_props.items()):
+        if key not in es_props:
             problems.append(f"- {key!r} is missing from ES index mapping")
             continue
 
         key_type = es_type_overrides.get(key, key_def["type"])
-        es_key_type = es_mapping[key]["type"]
+        es_key_type = es_props[key]["type"]
         if key_type != es_key_type and es_key_type not in ES_COMPATIBLE_TYPES.get(
             key_type, ()
         ):

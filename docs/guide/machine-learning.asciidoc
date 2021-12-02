@@ -19,7 +19,7 @@ model in Elasticsearch
 
 # Import the model into Elasticsearch
 >>> es_model = MLModel.import_model(
-    es_client="localhost:9200",
+    es_client="http://localhost:9200",
     model_id="xgb-classifier",
     model=xgb_model,
     feature_names=["f0", "f1", "f2", "f3", "f4"],

@@ -122,7 +122,7 @@ class TestDataFrameUtils(TestData):
             }
         }
 
-        mapping = ES_TEST_CLIENT.indices.get_mapping(index_name)
+        mapping = ES_TEST_CLIENT.indices.get_mapping(index=index_name)
 
         assert expected_mapping == mapping
 

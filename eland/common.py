@@ -309,8 +309,10 @@ def elasticsearch_date_to_pandas_date(
 def ensure_es_client(
     es_client: Union[str, List[str], Tuple[str, ...], Elasticsearch]
 ) -> Elasticsearch:
+    if isinstance(es_client, tuple):
+        es_client = list(es_client)
     if not isinstance(es_client, Elasticsearch):
-        es_client = Elasticsearch(es_client)
+        es_client = Elasticsearch(es_client)  # type: ignore[arg-type]
     return es_client
 
 
@@ -334,16 +336,3 @@ def es_version(es_client: Elasticsearch) -> Tuple[int, int, int]:
     else:
         eland_es_version = es_client._eland_es_version  # type: ignore
     return eland_es_version
-
-
-def es_api_compat(
-    method: Callable[..., Dict[str, Any]], **kwargs: Any
-) -> Dict[str, Any]:
-    """Expands the 'body' parameter to top-level parameters
-    on clients that would raise DeprecationWarnings if used.
-    """
-    if ES_CLIENT_HAS_V8_0_DEPRECATIONS:
-        body = kwargs.pop("body", None)
-        if body:
-            kwargs.update(body)
-    return method(**kwargs)

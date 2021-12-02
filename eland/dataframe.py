@@ -56,7 +56,7 @@ class DataFrame(NDFrame):
 
     Parameters
     ----------
-    es_client: Elasticsearch client argument(s) (e.g. 'localhost:9200')
+    es_client: Elasticsearch client argument(s) (e.g. 'http://localhost:9200')
         - elasticsearch-py parameters or
         - elasticsearch-py instance
     es_index_pattern: str
@@ -74,7 +74,7 @@ class DataFrame(NDFrame):
     --------
     Constructing DataFrame from an Elasticsearch configuration arguments and an Elasticsearch index
 
-    >>> df = ed.DataFrame('localhost:9200', 'flights')
+    >>> df = ed.DataFrame('http://localhost:9200', 'flights')
     >>> df.head()
        AvgTicketPrice  Cancelled  ... dayOfWeek           timestamp
     0      841.265642      False  ...         0 2018-01-01 00:00:00
@@ -89,7 +89,7 @@ class DataFrame(NDFrame):
     Constructing DataFrame from an Elasticsearch client and an Elasticsearch index
 
     >>> from elasticsearch import Elasticsearch
-    >>> es = Elasticsearch("localhost:9200")
+    >>> es = Elasticsearch("http://localhost:9200")
     >>> df = ed.DataFrame(es_client=es, es_index_pattern='flights', columns=['AvgTicketPrice', 'Cancelled'])
     >>> df.head()
        AvgTicketPrice  Cancelled
@@ -692,7 +692,7 @@ class DataFrame(NDFrame):
 
         Examples
         --------
-        >>> df = ed.DataFrame("localhost:9200", "ecommerce")
+        >>> df = ed.DataFrame("http://localhost:9200", "ecommerce")
         >>> df.es_match("Men's", columns=["category"])
                                                       category currency  ...   type     user
         0                                     [Men's Clothing]      EUR  ...  order    eddie
@@ -1462,7 +1462,7 @@ class DataFrame(NDFrame):
 
         Examples
         --------
-        >>> df = ed.DataFrame('localhost:9200', 'flights', columns=['AvgTicketPrice', 'Cancelled']).head()
+        >>> df = ed.DataFrame('http://localhost:9200', 'flights', columns=['AvgTicketPrice', 'Cancelled']).head()
         >>> df
            AvgTicketPrice  Cancelled
         0      841.265642      False
@@ -1520,7 +1520,7 @@ class DataFrame(NDFrame):
 
         Examples
         --------
-        >>> df = ed.DataFrame('localhost:9200', 'flights', columns=['AvgTicketPrice', 'Cancelled']).head()
+        >>> df = ed.DataFrame('http://localhost:9200', 'flights', columns=['AvgTicketPrice', 'Cancelled']).head()
         >>> df
            AvgTicketPrice  Cancelled
         0      841.265642      False

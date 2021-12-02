@@ -34,7 +34,6 @@ from typing import (
 
 import numpy as np
 import pandas as pd  # type: ignore
-from elasticsearch.exceptions import NotFoundError
 
 from eland.actions import PostProcessingAction
 from eland.common import (
@@ -45,8 +44,6 @@ from eland.common import (
     SortOrder,
     build_pd_series,
     elasticsearch_date_to_pandas_date,
-    es_api_compat,
-    es_version,
 )
 from eland.index import Index
 from eland.query import Query
@@ -173,7 +170,7 @@ class Operations:
             body.exists(field, must=True)
 
             field_exists_count = query_compiler._client.count(
-                index=query_compiler._index_pattern, body=body.to_count_body()
+                index=query_compiler._index_pattern, **body.to_count_body()
             )["count"]
             counts[field] = field_exists_count
 
@@ -240,7 +237,7 @@ class Operations:
 
         # Fetch Response
         response = query_compiler._client.search(
-            index=query_compiler._index_pattern, size=0, body=body.to_search_body()
+            index=query_compiler._index_pattern, size=0, **body.to_search_body()
         )
         response = response["aggregations"]
 
@@ -404,7 +401,7 @@ class Operations:
                     )
 
         response = query_compiler._client.search(
-            index=query_compiler._index_pattern, size=0, body=body.to_search_body()
+            index=query_compiler._index_pattern, size=0, **body.to_search_body()
         )
 
         """
@@ -1275,7 +1272,7 @@ class Operations:
         body.exists(field, must=True)
 
         count: int = query_compiler._client.count(
-            index=query_compiler._index_pattern, body=body.to_count_body()
+            index=query_compiler._index_pattern, **body.to_count_body()
         )["count"]
         return count
 
@@ -1313,7 +1310,7 @@ class Operations:
             body.terms(field, items, must=True)
 
         count: int = query_compiler._client.count(
-            index=query_compiler._index_pattern, body=body.to_count_body()
+            index=query_compiler._index_pattern, **body.to_count_body()
         )["count"]
         return count
 
@@ -1488,98 +1485,15 @@ def _search_yield_hits(
     [[{'_index': 'flights', '_type': '_doc', '_id': '0', '_score': None, '_source': {...}, 'sort': [...]},
       {'_index': 'flights', '_type': '_doc', '_id': '1', '_score': None, '_source': {...}, 'sort': [...]}]]
     """
+    # No documents, no reason to send a search.
+    if max_number_of_hits == 0:
+        return
+
     # Make a copy of 'body' to avoid mutating it outside this function.
     body = body.copy()
 
     # Use the default search size
     body.setdefault("size", DEFAULT_SEARCH_SIZE)
-
-    # Elasticsearch 7.12 added '_shard_doc' sort tiebreaker for PITs which
-    # means we're guaranteed to be safe on documents with a duplicate sort rank.
-    if es_version(query_compiler._client) >= (7, 12, 0):
-        yield from _search_with_pit_and_search_after(
-            query_compiler=query_compiler,
-            body=body,
-            max_number_of_hits=max_number_of_hits,
-        )
-
-    # Otherwise we use 'scroll' like we used to.
-    else:
-        yield from _search_with_scroll(
-            query_compiler=query_compiler,
-            body=body,
-            max_number_of_hits=max_number_of_hits,
-        )
-
-
-def _search_with_scroll(
-    query_compiler: "QueryCompiler",
-    body: Dict[str, Any],
-    max_number_of_hits: Optional[int],
-) -> Generator[List[Dict[str, Any]], None, None]:
-    # No documents, no reason to send a search.
-    if max_number_of_hits == 0:
-        return
-
-    client = query_compiler._client
-    hits_yielded = 0
-
-    # Make the initial search with 'scroll' set
-    resp = es_api_compat(
-        client.search,
-        index=query_compiler._index_pattern,
-        body=body,
-        scroll=DEFAULT_PIT_KEEP_ALIVE,
-    )
-    scroll_id: Optional[str] = resp.get("_scroll_id", None)
-
-    try:
-        while scroll_id and (
-            max_number_of_hits is None or hits_yielded < max_number_of_hits
-        ):
-            hits: List[Dict[str, Any]] = resp["hits"]["hits"]
-
-            # If we didn't receive any hits it means we've reached the end.
-            if not hits:
-                break
-
-            # Calculate which hits should be yielded from this batch
-            if max_number_of_hits is None:
-                hits_to_yield = len(hits)
-            else:
-                hits_to_yield = min(len(hits), max_number_of_hits - hits_yielded)
-
-            # Yield the hits we need to and then track the total number.
-            # Never yield an empty list as that makes things simpler for
-            # downstream consumers.
-            if hits and hits_to_yield > 0:
-                yield hits[:hits_to_yield]
-                hits_yielded += hits_to_yield
-
-            # Retrieve the next set of results
-            resp = client.scroll(
-                body={"scroll_id": scroll_id, "scroll": DEFAULT_PIT_KEEP_ALIVE},
-            )
-            scroll_id = resp.get("_scroll_id", None)  # Update the scroll ID.
-
-    finally:
-        # Close the scroll if we have one open
-        if scroll_id is not None:
-            try:
-                client.clear_scroll(body={"scroll_id": [scroll_id]})
-            except NotFoundError:
-                pass
-
-
-def _search_with_pit_and_search_after(
-    query_compiler: "QueryCompiler",
-    body: Dict[str, Any],
-    max_number_of_hits: Optional[int],
-) -> Generator[List[Dict[str, Any]], None, None]:
-
-    # No documents, no reason to send a search.
-    if max_number_of_hits == 0:
-        return
 
     client = query_compiler._client
     hits_yielded = 0  # Track the total number of hits yielded.
@@ -1603,7 +1517,7 @@ def _search_with_pit_and_search_after(
         body["pit"] = {"id": pit_id, "keep_alive": DEFAULT_PIT_KEEP_ALIVE}
 
         while max_number_of_hits is None or hits_yielded < max_number_of_hits:
-            resp = es_api_compat(client.search, body=body)
+            resp = client.search(**body)
             hits: List[Dict[str, Any]] = resp["hits"]["hits"]
 
             # The point in time ID can change between searches so we
@@ -1636,8 +1550,4 @@ def _search_with_pit_and_search_after(
         # We want to cleanup the point in time if we allocated one
         # to keep our memory footprint low.
         if pit_id is not None:
-            try:
-                client.close_point_in_time(body={"id": pit_id})
-            except NotFoundError:
-                # If a point in time is already closed Elasticsearch throws NotFoundError
-                pass
+            client.options(ignore_status=404).close_point_in_time(id=pit_id)

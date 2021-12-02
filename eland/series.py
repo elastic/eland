@@ -760,7 +760,7 @@ class Series(NDFrame):
         Examples
         --------
         >>> df = ed.DataFrame(
-        ...   "localhost:9200", "ecommerce",
+        ...   "http://localhost:9200", "ecommerce",
         ...   columns=["category", "taxful_total_price"]
         ... )
         >>> df[

@@ -11,7 +11,7 @@ without overloading your machine.
 -------------------------------------
 >>> import eland as ed
 >>> # Connect to 'flights' index via localhost Elasticsearch node
->>> df = ed.DataFrame('localhost:9200', 'flights')
+>>> df = ed.DataFrame('http://localhost:9200', 'flights')
 
 # eland.DataFrame instance has the same API as pandas.DataFrame
 # except all data is in Elasticsearch. See .info() memory usage.

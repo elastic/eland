@@ -42,7 +42,7 @@ class TestDataFrameDateTime(TestData):
         usually contains tests).
         """
         es = ES_TEST_CLIENT
-        if es.indices.exists(cls.time_index_name):
+        if es.indices.exists(index=cls.time_index_name):
             es.indices.delete(index=cls.time_index_name)
         dts = [datetime.strptime(time, "%Y-%m-%dT%H:%M:%S.%f%z") for time in cls.times]
 
@@ -58,11 +58,11 @@ class TestDataFrameDateTime(TestData):
 
         body = {"mappings": mappings}
         index = "test_time_formats"
-        es.indices.delete(index=index, ignore=[400, 404])
+        es.options(ignore_status=[400, 404]).indices.delete(index=index)
         es.indices.create(index=index, body=body)
 
         for i, time_formats in enumerate(time_formats_docs):
-            es.index(index=index, body=time_formats, id=i)
+            es.index(index=index, id=i, document=time_formats)
         es.indices.refresh(index=index)
 
     @classmethod

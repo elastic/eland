@@ -46,21 +46,19 @@ class PyTorchModel:
         es_client: Union[str, List[str], Tuple[str, ...], "Elasticsearch"],
         model_id: str,
     ):
-        self._client = ensure_es_client(es_client)
+        self._client: Elasticsearch = ensure_es_client(es_client)
         self.model_id = model_id
 
     def put_config(self, path: str) -> None:
         with open(path) as f:
             config = json.load(f)
-        self._client.ml.put_trained_model(model_id=self.model_id, body=config)
+        self._client.ml.put_trained_model(model_id=self.model_id, **config)
 
     def put_vocab(self, path: str) -> None:
         with open(path) as f:
             vocab = json.load(f)
-        self._client.transport.perform_request(
-            "PUT",
-            f"/_ml/trained_models/{self.model_id}/vocabulary",
-            body=vocab,
+        self._client.ml.put_trained_model_vocabulary(
+            model_id=self.model_id, vocabulary=vocab["vocabulary"]
         )
 
     def put_model(self, model_path: str, chunk_size: int = DEFAULT_CHUNK_SIZE) -> None:
@@ -76,15 +74,12 @@ class PyTorchModel:
                     yield base64.b64encode(data).decode()
 
         for i, data in tqdm(enumerate(model_file_chunk_generator()), total=total_parts):
-            body = {
-                "total_definition_length": model_size,
-                "total_parts": total_parts,
-                "definition": data,
-            }
-            self._client.transport.perform_request(
-                "PUT",
-                f"/_ml/trained_models/{self.model_id}/definition/{i}",
-                body=body,
+            self._client.ml.put_trained_model_definition_part(
+                model_id=self.model_id,
+                part=i,
+                total_definition_length=model_size,
+                total_parts=total_parts,
+                definition=data,
             )
 
     def import_model(
@@ -100,42 +95,41 @@ class PyTorchModel:
         self.put_vocab(vocab_path)
 
     def infer(
-        self, body: Dict[str, Any], timeout: str = DEFAULT_TIMEOUT
-    ) -> Union[bool, Any]:
-        return self._client.transport.perform_request(
-            "POST",
-            f"/_ml/trained_models/{self.model_id}/deployment/_infer",
-            body=body,
-            params={"timeout": timeout, "request_timeout": 60},
+        self,
+        docs: List[Dict[str, str]],
+        timeout: str = DEFAULT_TIMEOUT,
+    ) -> Any:
+        return self._client.options(
+            request_timeout=60
+        ).ml.infer_trained_model_deployment(
+            model_id=self.model_id,
+            timeout=timeout,
+            docs=docs,
         )
 
     def start(self, timeout: str = DEFAULT_TIMEOUT) -> None:
-        self._client.transport.perform_request(
-            "POST",
-            f"/_ml/trained_models/{self.model_id}/deployment/_start",
-            params={"timeout": timeout, "request_timeout": 60, "wait_for": "started"},
+        self._client.options(request_timeout=60).ml.start_trained_model_deployment(
+            model_id=self.model_id, timeout=timeout, wait_for="started"
         )
 
     def stop(self) -> None:
-        self._client.transport.perform_request(
-            "POST",
-            f"/_ml/trained_models/{self.model_id}/deployment/_stop",
-            params={"ignore": 404},
-        )
+        self._client.ml.stop_trained_model_deployment(model_id=self.model_id)
 
     def delete(self) -> None:
-        self._client.ml.delete_trained_model(model_id=self.model_id, ignore=(404,))
+        self._client.options(ignore_status=404).ml.delete_trained_model(
+            model_id=self.model_id
+        )
 
     @classmethod
     def list(
         cls, es_client: Union[str, List[str], Tuple[str, ...], "Elasticsearch"]
     ) -> Set[str]:
         client = ensure_es_client(es_client)
-        res = client.ml.get_trained_models(model_id="*", allow_no_match=True)
+        resp = client.ml.get_trained_models(model_id="*", allow_no_match=True)
         return set(
             [
                 model["model_id"]
-                for model in res["trained_model_configs"]
+                for model in resp["trained_model_configs"]
                 if model["model_type"] == "pytorch"
             ]
         )

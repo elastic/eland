@@ -195,7 +195,7 @@ class TestPandasToEland:
             )
 
         # Assert that the value 128 caused the index error
-        assert "Value [128] is out of range for a byte" in str(e.value)
+        assert "Value [128] is out of range for a byte" in str(e.value.errors)
 
     def test_pandas_to_eland_text_inserts_keyword(self):
         es = ES_TEST_CLIENT
