@@ -79,7 +79,7 @@ class MLModel:
         model_id: str
             The unique identifier of the trained inference model in Elasticsearch.
         """
-        self._client = ensure_es_client(es_client)
+        self._client: Elasticsearch = ensure_es_client(es_client)
         self._model_id = model_id
         self._trained_model_config_cache: Optional[Dict[str, Any]] = None
 
@@ -120,7 +120,7 @@ class MLModel:
         >>> # Serialise the model to Elasticsearch
         >>> feature_names = ["f0", "f1", "f2", "f3", "f4", "f5"]
         >>> model_id = "test_xgb_regressor"
-        >>> es_model = MLModel.import_model('localhost', model_id, regressor, feature_names, es_if_exists='replace')
+        >>> es_model = MLModel.import_model('http://localhost:9200', model_id, regressor, feature_names, es_if_exists='replace')
 
         >>> # Get some test results from Elasticsearch model
         >>> es_model.predict(test_data)  # doctest: +SKIP
@@ -167,20 +167,18 @@ class MLModel:
         )
 
         results = self._client.ingest.simulate(
-            body={
-                "pipeline": {
-                    "processors": [
-                        {
-                            "inference": {
-                                "model_id": self._model_id,
-                                "inference_config": {self.model_type: {}},
-                                field_map_name: {},
-                            }
+            pipeline={
+                "processors": [
+                    {
+                        "inference": {
+                            "model_id": self._model_id,
+                            "inference_config": {self.model_type: {}},
+                            field_map_name: {},
                         }
-                    ]
-                },
-                "docs": docs,
-            }
+                    }
+                ]
+            },
+            docs=docs,
         )
 
         # Unpack results into an array. Errors can be present
@@ -342,7 +340,7 @@ class MLModel:
         >>> feature_names = ["f0", "f1", "f2", "f3", "f4"]
         >>> model_id = "test_decision_tree_classifier"
         >>> es_model = MLModel.import_model(
-        ...   'localhost',
+        ...   'http://localhost:9200',
         ...   model_id=model_id,
         ...   model=classifier,
         ...   feature_names=feature_names,
@@ -383,22 +381,21 @@ class MLModel:
         elif es_if_exists == "replace":
             ml_model.delete_model()
 
-        body: Dict[str, Any] = {
-            "input": {"field_names": feature_names},
-        }
-        # 'inference_config' is required in 7.8+ but isn't available in <=7.7
-        if es_version(es_client) >= (7, 8):
-            body["inference_config"] = {model_type: {}}
-
         if es_compress_model_definition:
-            body["compressed_definition"] = serializer.serialize_and_compress_model()
+            ml_model._client.ml.put_trained_model(
+                model_id=model_id,
+                input={"field_names": feature_names},
+                inference_config={model_type: {}},
+                compressed_definition=serializer.serialize_and_compress_model(),
+            )
         else:
-            body["definition"] = serializer.serialize_model()
+            ml_model._client.ml.put_trained_model(
+                model_id=model_id,
+                input={"field_names": feature_names},
+                inference_config={model_type: {}},
+                definition=serializer.serialize_model(),
+            )
 
-        ml_model._client.ml.put_trained_model(
-            model_id=model_id,
-            body=body,
-        )
         return ml_model
 
     def delete_model(self) -> None:
@@ -408,7 +405,9 @@ class MLModel:
         If model doesn't exist, ignore failure.
         """
         try:
-            self._client.ml.delete_trained_model(model_id=self._model_id, ignore=(404,))
+            self._client.options(ignore_status=404).ml.delete_trained_model(
+                model_id=self._model_id
+            )
         except elasticsearch.NotFoundError:
             pass
 
@@ -426,16 +425,7 @@ class MLModel:
     def _trained_model_config(self) -> Dict[str, Any]:
         """Lazily loads an ML models 'trained_model_config' information"""
         if self._trained_model_config_cache is None:
-
-            # In Elasticsearch 7.7 and earlier you can't get
-            # target type without pulling the model definition
-            # so we check the version first.
-            if es_version(self._client) < (7, 8):
-                resp = self._client.ml.get_trained_models(
-                    model_id=self._model_id, include_model_definition=True
-                )
-            else:
-                resp = self._client.ml.get_trained_models(model_id=self._model_id)
+            resp = self._client.ml.get_trained_models(model_id=self._model_id)
 
             if resp["count"] > 1:
                 raise ValueError(f"Model ID {self._model_id!r} wasn't unambiguous")

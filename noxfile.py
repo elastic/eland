@@ -71,19 +71,19 @@ def lint(session):
     # Install numpy to use its mypy plugin
     # https://numpy.org/devdocs/reference/typing.html#mypy-plugin
     session.install("black", "flake8", "mypy", "isort", "numpy")
-    session.install("--pre", "elasticsearch")
+    session.install("--pre", "elasticsearch>=8.0.0a1,<9")
     session.run("python", "utils/license-headers.py", "check", *SOURCE_FILES)
     session.run("black", "--check", "--target-version=py37", *SOURCE_FILES)
     session.run("isort", "--check", "--profile=black", *SOURCE_FILES)
     session.run("flake8", "--ignore=E501,W503,E402,E712,E203", *SOURCE_FILES)
 
     # TODO: When all files are typed we can change this to .run("mypy", "--strict", "eland/")
-    session.log("mypy --strict eland/")
+    session.log("mypy --show-error-codes --strict eland/")
     for typed_file in TYPED_FILES:
         if not os.path.isfile(typed_file):
             session.error(f"The file {typed_file!r} couldn't be found")
         process = subprocess.run(
-            ["mypy", "--strict", typed_file],
+            ["mypy", "--show-error-codes", "--strict", typed_file],
             env=session.env,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
@@ -100,14 +100,15 @@ def lint(session):
             session.error("\n" + "\n".join(sorted(set(errors))))
 
 
-@nox.session(python=["3.7", "3.8", "3.9"])
+@nox.session(python=["3.7", "3.8", "3.9", "3.10"])
 @nox.parametrize("pandas_version", ["1.2.0", "1.3.0"])
 def test(session, pandas_version: str):
     session.install("-r", "requirements-dev.txt")
     session.install(".")
     session.run("python", "-m", "pip", "install", f"pandas~={pandas_version}")
     session.run("python", "-m", "tests.setup_tests")
-    session.run(
+
+    pytest_args = (
         "python",
         "-m",
         "pytest",
@@ -116,6 +117,13 @@ def test(session, pandas_version: str):
         "--cov-config=setup.cfg",
         "--doctest-modules",
         "--nbval",
+    )
+
+    # PyTorch doesn't support Python 3.10 yet
+    if session.python == "3.10":
+        pytest_args += ("--ignore=eland/ml/pytorch",)
+    session.run(
+        *pytest_args,
         *(session.posargs or ("eland/", "tests/")),
     )
 
@@ -144,21 +152,25 @@ def docs(session):
 
     # See if we have an Elasticsearch cluster active
     # to rebuild the Jupyter notebooks with.
+    es_active = False
     try:
-        import elasticsearch
+        from elasticsearch import ConnectionError, Elasticsearch
 
-        es = elasticsearch.Elasticsearch("localhost:9200")
-        es.info()
-        if not es.indices.exists("flights"):
-            session.run("python", "-m", "tests.setup_tests")
-        es_active = True
-    except Exception:
-        es_active = False
+        try:
+            es = Elasticsearch("http://localhost:9200")
+            es.info()
+            if not es.indices.exists(index="flights"):
+                session.run("python", "-m", "tests.setup_tests")
+            es_active = True
+        except ConnectionError:
+            pass
+    except ImportError:
+        pass
 
     # Rebuild all the example notebooks inplace
     if es_active:
         session.install("jupyter-client", "ipykernel")
-        for filename in os.listdir(BASE_DIR / "docs/source/examples"):
+        for filename in os.listdir(BASE_DIR / "docs/sphinx/examples"):
             if (
                 filename.endswith(".ipynb")
                 and filename != "introduction_to_eland_webinar.ipynb"
@@ -170,7 +182,7 @@ def docs(session):
                     "notebook",
                     "--inplace",
                     "--execute",
-                    str(BASE_DIR / "docs/source/examples" / filename),
+                    str(BASE_DIR / "docs/sphinx/examples" / filename),
                 )
 
     session.cd("docs")

@@ -1,4 +1,4 @@
-elasticsearch>=7.7
+elasticsearch>=8.0.0a1,<9
 pandas>=1.2.0
 matplotlib
 pytest>=5.2.1
@@ -11,6 +11,9 @@ nox
 lightgbm
 pytest-cov
 mypy
-sentence-transformers>=2.1.0
-torch>=1.9.0
-transformers[torch]>=4.12.0
+huggingface-hub>=0.0.17
+
+# Torch doesn't support Python 3.10 yet (pytorch/pytorch#66424)
+sentence-transformers>=2.1.0; python_version<'3.10'
+torch>=1.9.0; python_version<'3.10'
+transformers[torch]>=4.12.0; python_version<'3.10'

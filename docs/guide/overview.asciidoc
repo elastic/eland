@@ -20,13 +20,13 @@ The recommended way to set your requirements in your `setup.py` or
 [discrete]
 === Getting Started
 
-Create a `DataFrame` object connected to an {es} cluster running on `localhost:9200`:
+Create a `DataFrame` object connected to an {es} cluster running on `http://localhost:9200`:
 
 [source,python]
 ------------------------------------
 >>> import eland as ed
 >>> df = ed.DataFrame(
-...    es_client="localhost:9200",
+...    es_client="http://localhost:9200",
 ...    es_index_pattern="flights",
 ... )
 >>> df

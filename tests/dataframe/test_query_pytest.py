@@ -69,7 +69,7 @@ class TestDataFrameQuery(TestData):
 
         assert_pandas_eland_frame_equal(pd_q4, ed_q4)
 
-        ES_TEST_CLIENT.indices.delete(index_name)
+        ES_TEST_CLIENT.indices.delete(index=index_name)
 
     def test_simple_query(self):
         ed_flights = self.ed_flights()
@@ -141,4 +141,4 @@ class TestDataFrameQuery(TestData):
 
         assert_pandas_eland_frame_equal(pd_q4, ed_q4)
 
-        ES_TEST_CLIENT.indices.delete(index_name)
+        ES_TEST_CLIENT.indices.delete(index=index_name)

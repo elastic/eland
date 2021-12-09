@@ -24,12 +24,7 @@ from elasticsearch import Elasticsearch
 from elasticsearch.helpers import parallel_bulk
 
 from eland import DataFrame
-from eland.common import (
-    DEFAULT_CHUNK_SIZE,
-    PANDAS_VERSION,
-    ensure_es_client,
-    es_api_compat,
-)
+from eland.common import DEFAULT_CHUNK_SIZE, PANDAS_VERSION, ensure_es_client
 from eland.field_mappings import FieldMappings, verify_mapping_compatibility
 
 try:
@@ -128,7 +123,7 @@ def pandas_to_eland(
 
 
     >>> ed_df = ed.pandas_to_eland(pd_df,
-    ...                            'localhost',
+    ...                            'http://localhost:9200',
     ...                            'pandas_to_eland',
     ...                            es_if_exists="replace",
     ...                            es_refresh=True,
@@ -175,7 +170,7 @@ def pandas_to_eland(
 
         elif es_if_exists == "replace":
             es_client.indices.delete(index=es_dest_index)
-            es_api_compat(es_client.indices.create, index=es_dest_index, body=mapping)
+            es_client.indices.create(index=es_dest_index, mappings=mapping["mappings"])
 
         elif es_if_exists == "append":
             dest_mapping = es_client.indices.get_mapping(index=es_dest_index)[
@@ -187,7 +182,7 @@ def pandas_to_eland(
                 es_type_overrides=es_type_overrides,
             )
     else:
-        es_api_compat(es_client.indices.create, index=es_dest_index, body=mapping)
+        es_client.indices.create(index=es_dest_index, mappings=mapping["mappings"])
 
     def action_generator(
         pd_df: pd.DataFrame,
@@ -252,7 +247,7 @@ def eland_to_pandas(ed_df: DataFrame, show_progress: bool = False) -> pd.DataFra
 
     Examples
     --------
-    >>> ed_df = ed.DataFrame('localhost', 'flights').head()
+    >>> ed_df = ed.DataFrame('http://localhost:9200', 'flights').head()
     >>> type(ed_df)
     <class 'eland.dataframe.DataFrame'>
     >>> ed_df
@@ -282,7 +277,7 @@ def eland_to_pandas(ed_df: DataFrame, show_progress: bool = False) -> pd.DataFra
 
     Convert `eland.DataFrame` to `pandas.DataFrame` and show progress every 10000 rows
 
-    >>> pd_df = ed.eland_to_pandas(ed.DataFrame('localhost', 'flights'), show_progress=True) # doctest: +SKIP
+    >>> pd_df = ed.eland_to_pandas(ed.DataFrame('http://localhost:9200', 'flights'), show_progress=True) # doctest: +SKIP
     2020-01-29 12:43:36.572395: read 10000 rows
     2020-01-29 12:43:37.309031: read 13059 rows
 
@@ -420,7 +415,7 @@ def csv_to_eland(  # type: ignore
 
     >>>  ed.csv_to_eland(
     ...      "churn.csv",
-    ...      es_client='localhost',
+    ...      es_client='http://localhost:9200',
     ...      es_dest_index='churn',
     ...      es_refresh=True,
     ...      index_col=0

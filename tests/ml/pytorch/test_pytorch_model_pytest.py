@@ -90,5 +90,5 @@ class TestPytorchModel:
     def test_text_classification(self, model_id, task, text_input, value):
         with tempfile.TemporaryDirectory() as tmp_dir:
             ptm = download_model_and_start_deployment(tmp_dir, True, model_id, task)
-            result = ptm.infer({"docs": [{"text_field": text_input}]})
+            result = ptm.infer(docs=[{"text_field": text_input}])
             assert result["predicted_value"] == value

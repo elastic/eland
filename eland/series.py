@@ -97,7 +97,7 @@ class Series(NDFrame):
 
     Examples
     --------
-    >>> ed.Series(es_client='localhost', es_index_pattern='flights', name='Carrier')
+    >>> ed.Series(es_client='http://localhost:9200', es_index_pattern='flights', name='Carrier')
     0         Kibana Airlines
     1        Logstash Airways
     2        Logstash Airways
@@ -165,7 +165,7 @@ class Series(NDFrame):
 
         Examples
         --------
-        >>> df = ed.Series('localhost', 'ecommerce', name='total_quantity')
+        >>> df = ed.Series('http://localhost:9200', 'ecommerce', name='total_quantity')
         >>> df.shape
         (4675, 1)
         """
@@ -214,7 +214,7 @@ class Series(NDFrame):
 
         Examples
         --------
-        >>> df = ed.DataFrame('localhost', 'flights')
+        >>> df = ed.DataFrame('http://localhost:9200', 'flights')
         >>> df.Carrier
         0         Kibana Airlines
         1        Logstash Airways
@@ -290,7 +290,7 @@ class Series(NDFrame):
 
         Examples
         --------
-        >>> df = ed.DataFrame('localhost', 'flights')
+        >>> df = ed.DataFrame('http://localhost:9200', 'flights')
         >>> df['Carrier'].value_counts()
         Logstash Airways    3331
         JetBeats            3274
@@ -587,7 +587,7 @@ class Series(NDFrame):
 
         Examples
         --------
-        >>> ed_flights = ed.DataFrame('localhost', 'flights')
+        >>> ed_flights = ed.DataFrame('http://localhost:9200', 'flights')
         >>> ed_flights["timestamp"].quantile([.2,.5,.75]) # doctest: +SKIP
         0.20   2018-01-09 04:30:57.289159912
         0.50   2018-01-21 23:39:27.031627441
@@ -691,7 +691,7 @@ class Series(NDFrame):
 
         Examples
         --------
-        >>> ed_ecommerce = ed.DataFrame('localhost', 'ecommerce')
+        >>> ed_ecommerce = ed.DataFrame('http://localhost:9200', 'ecommerce')
         >>> ed_ecommerce["day_of_week"].mode()
         0    Thursday
         dtype: object
@@ -760,7 +760,7 @@ class Series(NDFrame):
         Examples
         --------
         >>> df = ed.DataFrame(
-        ...   "localhost:9200", "ecommerce",
+        ...   "http://localhost:9200", "ecommerce",
         ...   columns=["category", "taxful_total_price"]
         ... )
         >>> df[
@@ -807,7 +807,7 @@ class Series(NDFrame):
 
         Examples
         --------
-        >>> df = ed.DataFrame('localhost', 'ecommerce').head(5)
+        >>> df = ed.DataFrame('http://localhost:9200', 'ecommerce').head(5)
         >>> df.taxful_total_price
         0     36.98
         1     53.98
@@ -867,7 +867,7 @@ class Series(NDFrame):
 
         Examples
         --------
-        >>> df = ed.DataFrame('localhost', 'ecommerce').head(5)
+        >>> df = ed.DataFrame('http://localhost:9200', 'ecommerce').head(5)
         >>> df.taxful_total_price
         0     36.98
         1     53.98
@@ -906,7 +906,7 @@ class Series(NDFrame):
 
         Examples
         --------
-        >>> df = ed.DataFrame('localhost', 'ecommerce').head(5)
+        >>> df = ed.DataFrame('http://localhost:9200', 'ecommerce').head(5)
         >>> df.taxful_total_price
         0     36.98
         1     53.98
@@ -945,7 +945,7 @@ class Series(NDFrame):
 
         Examples
         --------
-        >>> df = ed.DataFrame('localhost', 'ecommerce').head(5)
+        >>> df = ed.DataFrame('http://localhost:9200', 'ecommerce').head(5)
         >>> df.taxful_total_price
         0     36.98
         1     53.98
@@ -984,7 +984,7 @@ class Series(NDFrame):
 
         Examples
         --------
-        >>> df = ed.DataFrame('localhost', 'ecommerce').head(5)
+        >>> df = ed.DataFrame('http://localhost:9200', 'ecommerce').head(5)
         >>> df.taxful_total_price
         0     36.98
         1     53.98
@@ -1023,7 +1023,7 @@ class Series(NDFrame):
 
         Examples
         --------
-        >>> df = ed.DataFrame('localhost', 'ecommerce').head(5)
+        >>> df = ed.DataFrame('http://localhost:9200', 'ecommerce').head(5)
         >>> df.taxful_total_price
         0     36.98
         1     53.98
@@ -1062,7 +1062,7 @@ class Series(NDFrame):
 
         Examples
         --------
-        >>> df = ed.DataFrame('localhost', 'ecommerce').head(5)
+        >>> df = ed.DataFrame('http://localhost:9200', 'ecommerce').head(5)
         >>> df.taxful_total_price
         0     36.98
         1     53.98
@@ -1101,7 +1101,7 @@ class Series(NDFrame):
 
         Examples
         --------
-        >>> df = ed.DataFrame('localhost', 'ecommerce').head(5)
+        >>> df = ed.DataFrame('http://localhost:9200', 'ecommerce').head(5)
         >>> df.taxful_total_price
         0     36.98
         1     53.98
@@ -1133,7 +1133,7 @@ class Series(NDFrame):
 
         Examples
         --------
-        >>> df = ed.DataFrame('localhost', 'ecommerce').head(5)
+        >>> df = ed.DataFrame('http://localhost:9200', 'ecommerce').head(5)
         >>> df.taxful_total_price
         0     36.98
         1     53.98
@@ -1165,7 +1165,7 @@ class Series(NDFrame):
 
         Examples
         --------
-        >>> df = ed.DataFrame('localhost', 'ecommerce').head(5)
+        >>> df = ed.DataFrame('http://localhost:9200', 'ecommerce').head(5)
         >>> df.taxful_total_price
         0     36.98
         1     53.98
@@ -1197,7 +1197,7 @@ class Series(NDFrame):
 
         Examples
         --------
-        >>> df = ed.DataFrame('localhost', 'ecommerce').head(5)
+        >>> df = ed.DataFrame('http://localhost:9200', 'ecommerce').head(5)
         >>> df.taxful_total_price
         0     36.98
         1     53.98
@@ -1229,7 +1229,7 @@ class Series(NDFrame):
 
         Examples
         --------
-        >>> df = ed.DataFrame('localhost', 'ecommerce').head(5)
+        >>> df = ed.DataFrame('http://localhost:9200', 'ecommerce').head(5)
         >>> df.taxful_total_price
         0     36.98
         1     53.98
@@ -1261,7 +1261,7 @@ class Series(NDFrame):
 
         Examples
         --------
-        >>> df = ed.DataFrame('localhost', 'ecommerce').head(5)
+        >>> df = ed.DataFrame('http://localhost:9200', 'ecommerce').head(5)
         >>> df.total_quantity
         0    2
         1    2
@@ -1293,7 +1293,7 @@ class Series(NDFrame):
 
         Examples
         --------
-        >>> df = ed.DataFrame('localhost', 'ecommerce').head(5)
+        >>> df = ed.DataFrame('http://localhost:9200', 'ecommerce').head(5)
         >>> df.taxful_total_price
         0     36.98
         1     53.98
@@ -1415,7 +1415,7 @@ class Series(NDFrame):
 
         Examples
         --------
-        >>> s = ed.DataFrame('localhost', 'flights')['AvgTicketPrice']
+        >>> s = ed.DataFrame('http://localhost:9200', 'flights')['AvgTicketPrice']
         >>> int(s.max())
         1199
         """
@@ -1439,7 +1439,7 @@ class Series(NDFrame):
 
         Examples
         --------
-        >>> s = ed.DataFrame('localhost', 'flights')['AvgTicketPrice']
+        >>> s = ed.DataFrame('http://localhost:9200', 'flights')['AvgTicketPrice']
         >>> int(s.mean())
         628
         """
@@ -1463,7 +1463,7 @@ class Series(NDFrame):
 
         Examples
         --------
-        >>> s = ed.DataFrame('localhost', 'flights')['AvgTicketPrice']
+        >>> s = ed.DataFrame('http://localhost:9200', 'flights')['AvgTicketPrice']
         >>> int(s.median())
         640
         """
@@ -1487,7 +1487,7 @@ class Series(NDFrame):
 
         Examples
         --------
-        >>> s = ed.DataFrame('localhost', 'flights')['AvgTicketPrice']
+        >>> s = ed.DataFrame('http://localhost:9200', 'flights')['AvgTicketPrice']
         >>> int(s.min())
         100
         """
@@ -1511,7 +1511,7 @@ class Series(NDFrame):
 
         Examples
         --------
-        >>> s = ed.DataFrame('localhost', 'flights')['AvgTicketPrice']
+        >>> s = ed.DataFrame('http://localhost:9200', 'flights')['AvgTicketPrice']
         >>> int(s.sum())
         8204364
         """
@@ -1533,7 +1533,7 @@ class Series(NDFrame):
 
         Examples
         --------
-        >>> s = ed.DataFrame('localhost', 'flights')['Carrier']
+        >>> s = ed.DataFrame('http://localhost:9200', 'flights')['Carrier']
         >>> s.nunique()
         4
         """
@@ -1555,7 +1555,7 @@ class Series(NDFrame):
 
         Examples
         --------
-        >>> s = ed.DataFrame('localhost', 'flights')['AvgTicketPrice']
+        >>> s = ed.DataFrame('http://localhost:9200', 'flights')['AvgTicketPrice']
         >>> int(s.var())
         70964
         """
@@ -1577,7 +1577,7 @@ class Series(NDFrame):
 
         Examples
         --------
-        >>> s = ed.DataFrame('localhost', 'flights')['AvgTicketPrice']
+        >>> s = ed.DataFrame('http://localhost:9200', 'flights')['AvgTicketPrice']
         >>> int(s.std())
         266
         """
@@ -1599,7 +1599,7 @@ class Series(NDFrame):
 
         Examples
         --------
-        >>> s = ed.DataFrame('localhost', 'flights')['AvgTicketPrice']
+        >>> s = ed.DataFrame('http://localhost:9200', 'flights')['AvgTicketPrice']
         >>> int(s.mad())
         213
         """
@@ -1627,7 +1627,7 @@ class Series(NDFrame):
 
         Examples
         --------
-        >>> df = ed.DataFrame('localhost', 'flights') # ignoring percentiles as they don't generate consistent results
+        >>> df = ed.DataFrame('http://localhost:9200', 'flights') # ignoring percentiles as they don't generate consistent results
         >>> df.AvgTicketPrice.describe()  # doctest: +SKIP
         count    13059.000000
         mean       628.253689
@@ -1660,7 +1660,7 @@ class Series(NDFrame):
 
         Examples
         --------
-        >>> ed_s = ed.Series('localhost', 'flights', name='Carrier').head(5)
+        >>> ed_s = ed.Series('http://localhost:9200', 'flights', name='Carrier').head(5)
         >>> pd_s = ed.eland_to_pandas(ed_s)
         >>> print(f"type(ed_s)={type(ed_s)}\\ntype(pd_s)={type(pd_s)}")
         type(ed_s)=<class 'eland.series.Series'>

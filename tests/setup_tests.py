@@ -17,8 +17,8 @@
 
 import pandas as pd
 from elasticsearch import helpers
+from elasticsearch._sync.client import Elasticsearch
 
-from eland.common import es_version
 from tests import (
     ECOMMERCE_FILE_NAME,
     ECOMMERCE_INDEX_NAME,
@@ -53,9 +53,9 @@ def _setup_data(es):
 
         # Delete index
         print("Deleting index:", index_name)
-        es.indices.delete(index=index_name, ignore=[400, 404])
+        es.options(ignore_status=[400, 404]).indices.delete(index=index_name)
         print("Creating index:", index_name)
-        es.indices.create(index=index_name, body=mapping)
+        es.indices.create(index=index_name, **mapping)
 
         df = pd.read_json(json_file_name, lines=True)
 
@@ -85,30 +85,28 @@ def _setup_data(es):
         print("Done", index_name)
 
 
-def _update_max_compilations_limit(es, limit="10000/1m"):
+def _update_max_compilations_limit(es: Elasticsearch, limit="10000/1m"):
     print("Updating script.max_compilations_rate to ", limit)
-    if es_version(es) < (7, 8):
-        body = {"transient": {"script.max_compilations_rate": limit}}
-    else:
-        body = {
-            "transient": {
-                "script.max_compilations_rate": "use-context",
-                "script.context.field.max_compilations_rate": limit,
-            }
+    es.cluster.put_settings(
+        transient={
+            "script.max_compilations_rate": "use-context",
+            "script.context.field.max_compilations_rate": limit,
         }
-    es.cluster.put_settings(body=body)
+    )
 
 
-def _setup_test_mappings(es):
+def _setup_test_mappings(es: Elasticsearch):
     # Create a complex mapping containing many Elasticsearch features
-    es.indices.delete(index=TEST_MAPPING1_INDEX_NAME, ignore=[400, 404])
-    es.indices.create(index=TEST_MAPPING1_INDEX_NAME, body=TEST_MAPPING1)
+    es.options(ignore_status=[400, 404]).indices.delete(index=TEST_MAPPING1_INDEX_NAME)
+    es.indices.create(index=TEST_MAPPING1_INDEX_NAME, **TEST_MAPPING1)
 
 
 def _setup_test_nested(es):
-    es.indices.delete(index=TEST_NESTED_USER_GROUP_INDEX_NAME, ignore=[400, 404])
+    es.options(ignore_status=[400, 404]).indices.delete(
+        index=TEST_NESTED_USER_GROUP_INDEX_NAME
+    )
     es.indices.create(
-        index=TEST_NESTED_USER_GROUP_INDEX_NAME, body=TEST_NESTED_USER_GROUP_MAPPING
+        index=TEST_NESTED_USER_GROUP_INDEX_NAME, **TEST_NESTED_USER_GROUP_MAPPING
     )
 
     helpers.bulk(es, TEST_NESTED_USER_GROUP_DOCS)

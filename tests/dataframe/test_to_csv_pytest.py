@@ -99,7 +99,7 @@ class TestDataFrameToCSV(TestData):
         print(pd_flights_from_csv.head())
 
         # clean up index
-        ES_TEST_CLIENT.indices.delete(test_index)
+        ES_TEST_CLIENT.indices.delete(index=test_index)
 
     def test_pd_to_csv_without_filepath(self):
 
