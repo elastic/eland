@@ -107,7 +107,8 @@ def test(session, pandas_version: str):
     session.install(".")
     session.run("python", "-m", "pip", "install", f"pandas~={pandas_version}")
     session.run("python", "-m", "tests.setup_tests")
-    session.run(
+
+    pytest_args = (
         "python",
         "-m",
         "pytest",
@@ -116,6 +117,13 @@ def test(session, pandas_version: str):
         "--cov-config=setup.cfg",
         "--doctest-modules",
         "--nbval",
+    )
+
+    # PyTorch doesn't support Python 3.10 yet
+    if session.python == "3.10":
+        pytest_args += ("--ignore=eland/ml/pytorch",)
+    session.run(
+        *pytest_args,
         *(session.posargs or ("eland/", "tests/")),
     )
 
@@ -137,10 +145,10 @@ def test(session, pandas_version: str):
 @nox.session(reuse_venv=True)
 def docs(session):
     # Run this so users get an error if they don't have Pandoc installed.
-    # session.run("pandoc", "--version", external=True)
+    session.run("pandoc", "--version", external=True)
 
-    # session.install("-r", "docs/requirements-docs.txt")
-    # session.install(".")
+    session.install("-r", "docs/requirements-docs.txt")
+    session.install(".")
 
     # See if we have an Elasticsearch cluster active
     # to rebuild the Jupyter notebooks with.
