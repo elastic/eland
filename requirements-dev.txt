@@ -14,6 +14,6 @@ mypy
 huggingface-hub>=0.0.17
 
 # Torch doesn't support Python 3.10 yet (pytorch/pytorch#66424)
-sentence-transformers>=2.0.0; python_version<'3.10'
+sentence-transformers>=2.1.0; python_version<'3.10'
 torch>=1.9.0; python_version<'3.10'
-transformers[torch]>=4.11.0; python_version<'3.10'
+transformers[torch]>=4.12.0; python_version<'3.10'
