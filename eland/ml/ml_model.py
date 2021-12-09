@@ -120,7 +120,7 @@ class MLModel:
         >>> # Serialise the model to Elasticsearch
         >>> feature_names = ["f0", "f1", "f2", "f3", "f4", "f5"]
         >>> model_id = "test_xgb_regressor"
-        >>> es_model = MLModel.import_model('localhost', model_id, regressor, feature_names, es_if_exists='replace')
+        >>> es_model = MLModel.import_model('http://localhost:9200', model_id, regressor, feature_names, es_if_exists='replace')
 
         >>> # Get some test results from Elasticsearch model
         >>> es_model.predict(test_data)  # doctest: +SKIP
@@ -340,7 +340,7 @@ class MLModel:
         >>> feature_names = ["f0", "f1", "f2", "f3", "f4"]
         >>> model_id = "test_decision_tree_classifier"
         >>> es_model = MLModel.import_model(
-        ...   'localhost',
+        ...   'http://localhost:9200',
         ...   model_id=model_id,
         ...   model=classifier,
         ...   feature_names=feature_names,

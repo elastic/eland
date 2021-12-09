@@ -43,7 +43,7 @@ def ed_hist_series(
     Examples
     --------
     >>> import matplotlib.pyplot as plt
-    >>> df = ed.DataFrame('localhost', 'flights')
+    >>> df = ed.DataFrame('http://localhost:9200', 'flights')
     >>> df[df.OriginWeather == 'Sunny']['FlightTimeMin'].hist(alpha=0.5, density=True) # doctest: +SKIP
     >>> df[df.OriginWeather != 'Sunny']['FlightTimeMin'].hist(alpha=0.5, density=True) # doctest: +SKIP
     >>> plt.show() # doctest: +SKIP
@@ -109,7 +109,7 @@ def ed_hist_frame(
 
     Examples
     --------
-    >>> df = ed.DataFrame('localhost', 'flights')
+    >>> df = ed.DataFrame('http://localhost:9200', 'flights')
     >>> hist = df.select_dtypes(include=[np.number]).hist(figsize=[10,10]) # doctest: +SKIP
     """
     return hist_frame(

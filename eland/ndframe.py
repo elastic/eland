@@ -99,7 +99,7 @@ class NDFrame(ABC):
 
         Examples
         --------
-        >>> df = ed.DataFrame('localhost', 'flights')
+        >>> df = ed.DataFrame('http://localhost:9200', 'flights')
         >>> assert isinstance(df.index, ed.Index)
         >>> df.index.es_index_field
         '_id'
@@ -127,7 +127,7 @@ class NDFrame(ABC):
 
         Examples
         --------
-        >>> df = ed.DataFrame('localhost', 'flights', columns=['Origin', 'AvgTicketPrice', 'timestamp', 'dayOfWeek'])
+        >>> df = ed.DataFrame('http://localhost:9200', 'flights', columns=['Origin', 'AvgTicketPrice', 'timestamp', 'dayOfWeek'])
         >>> df.dtypes
         Origin                    object
         AvgTicketPrice           float64
@@ -149,7 +149,7 @@ class NDFrame(ABC):
 
         Examples
         --------
-        >>> df = ed.DataFrame('localhost', 'flights', columns=['Origin', 'AvgTicketPrice', 'timestamp', 'dayOfWeek'])
+        >>> df = ed.DataFrame('http://localhost:9200', 'flights', columns=['Origin', 'AvgTicketPrice', 'timestamp', 'dayOfWeek'])
         >>> df.es_dtypes
         Origin            keyword
         AvgTicketPrice      float
@@ -213,7 +213,7 @@ class NDFrame(ABC):
 
         Examples
         --------
-        >>> df = ed.DataFrame('localhost', 'flights', columns=["AvgTicketPrice", "Cancelled", "dayOfWeek", "timestamp", "DestCountry"])
+        >>> df = ed.DataFrame('http://localhost:9200', 'flights', columns=["AvgTicketPrice", "Cancelled", "dayOfWeek", "timestamp", "DestCountry"])
         >>> df.mean()  # doctest: +SKIP
         AvgTicketPrice                          628.254
         Cancelled                              0.128494
@@ -262,7 +262,7 @@ class NDFrame(ABC):
 
         Examples
         --------
-        >>> df = ed.DataFrame('localhost', 'flights', columns=["AvgTicketPrice", "Cancelled", "dayOfWeek", "timestamp", "DestCountry"])
+        >>> df = ed.DataFrame('http://localhost:9200', 'flights', columns=["AvgTicketPrice", "Cancelled", "dayOfWeek", "timestamp", "DestCountry"])
         >>> df.sum()  # doctest: +SKIP
         AvgTicketPrice    8.20436e+06
         Cancelled                1678
@@ -310,7 +310,7 @@ class NDFrame(ABC):
 
         Examples
         --------
-        >>> df = ed.DataFrame('localhost', 'flights', columns=["AvgTicketPrice", "Cancelled", "dayOfWeek", "timestamp", "DestCountry"])
+        >>> df = ed.DataFrame('http://localhost:9200', 'flights', columns=["AvgTicketPrice", "Cancelled", "dayOfWeek", "timestamp", "DestCountry"])
         >>> df.min()  # doctest: +SKIP
         AvgTicketPrice                100.021
         Cancelled                       False
@@ -357,7 +357,7 @@ class NDFrame(ABC):
 
         Examples
         --------
-        >>> df = ed.DataFrame('localhost', 'flights', columns=["AvgTicketPrice", "Cancelled", "dayOfWeek", "timestamp", "DestCountry"])
+        >>> df = ed.DataFrame('http://localhost:9200', 'flights', columns=["AvgTicketPrice", "Cancelled", "dayOfWeek", "timestamp", "DestCountry"])
         >>> df.var()  # doctest: +SKIP
         AvgTicketPrice    70964.570234
         Cancelled             0.111987
@@ -403,7 +403,7 @@ class NDFrame(ABC):
 
         Examples
         --------
-        >>> df = ed.DataFrame('localhost', 'flights', columns=["AvgTicketPrice", "Cancelled", "dayOfWeek", "timestamp", "DestCountry"])
+        >>> df = ed.DataFrame('http://localhost:9200', 'flights', columns=["AvgTicketPrice", "Cancelled", "dayOfWeek", "timestamp", "DestCountry"])
         >>> df.std()  # doctest: +SKIP
         AvgTicketPrice    266.407061
         Cancelled           0.334664
@@ -449,7 +449,7 @@ class NDFrame(ABC):
 
         Examples
         --------
-        >>> df = ed.DataFrame('localhost', 'flights', columns=["AvgTicketPrice", "Cancelled", "dayOfWeek", "timestamp", "DestCountry"])
+        >>> df = ed.DataFrame('http://localhost:9200', 'flights', columns=["AvgTicketPrice", "Cancelled", "dayOfWeek", "timestamp", "DestCountry"])
         >>> df.median() # doctest: +SKIP
         AvgTicketPrice                          640.363
         Cancelled                                 False
@@ -498,7 +498,7 @@ class NDFrame(ABC):
 
         Examples
         --------
-        >>> df = ed.DataFrame('localhost', 'flights', columns=["AvgTicketPrice", "Cancelled", "dayOfWeek", "timestamp", "DestCountry"])
+        >>> df = ed.DataFrame('http://localhost:9200', 'flights', columns=["AvgTicketPrice", "Cancelled", "dayOfWeek", "timestamp", "DestCountry"])
         >>> df.max()  # doctest: +SKIP
         AvgTicketPrice                1199.73
         Cancelled                        True
@@ -557,7 +557,7 @@ class NDFrame(ABC):
         Examples
         --------
         >>> columns = ['category', 'currency', 'customer_birth_date', 'customer_first_name', 'user']
-        >>> df = ed.DataFrame('localhost', 'ecommerce', columns=columns)
+        >>> df = ed.DataFrame('http://localhost:9200', 'ecommerce', columns=columns)
         >>> df.nunique()
         category                6
         currency                1
@@ -583,7 +583,7 @@ class NDFrame(ABC):
 
         Examples
         --------
-        >>> df = ed.DataFrame('localhost', 'flights', columns=["AvgTicketPrice", "Cancelled", "dayOfWeek", "timestamp", "DestCountry"])
+        >>> df = ed.DataFrame('http://localhost:9200', 'flights', columns=["AvgTicketPrice", "Cancelled", "dayOfWeek", "timestamp", "DestCountry"])
         >>> df.mad() # doctest: +SKIP
         AvgTicketPrice    213.35497
         dayOfWeek           2.00000
@@ -628,7 +628,7 @@ class NDFrame(ABC):
 
         Examples
         --------
-        >>> df = ed.DataFrame('localhost', 'flights', columns=['AvgTicketPrice', 'FlightDelayMin']) # ignoring percentiles
+        >>> df = ed.DataFrame('http://localhost:9200', 'flights', columns=['AvgTicketPrice', 'FlightDelayMin']) # ignoring percentiles
         >>> df.describe() # doctest: +SKIP
                AvgTicketPrice  FlightDelayMin
         count    13059.000000    13059.000000

@@ -123,7 +123,7 @@ def pandas_to_eland(
 
 
     >>> ed_df = ed.pandas_to_eland(pd_df,
-    ...                            'localhost',
+    ...                            'http://localhost:9200',
     ...                            'pandas_to_eland',
     ...                            es_if_exists="replace",
     ...                            es_refresh=True,
@@ -247,7 +247,7 @@ def eland_to_pandas(ed_df: DataFrame, show_progress: bool = False) -> pd.DataFra
 
     Examples
     --------
-    >>> ed_df = ed.DataFrame('localhost', 'flights').head()
+    >>> ed_df = ed.DataFrame('http://localhost:9200', 'flights').head()
     >>> type(ed_df)
     <class 'eland.dataframe.DataFrame'>
     >>> ed_df
@@ -277,7 +277,7 @@ def eland_to_pandas(ed_df: DataFrame, show_progress: bool = False) -> pd.DataFra
 
     Convert `eland.DataFrame` to `pandas.DataFrame` and show progress every 10000 rows
 
-    >>> pd_df = ed.eland_to_pandas(ed.DataFrame('localhost', 'flights'), show_progress=True) # doctest: +SKIP
+    >>> pd_df = ed.eland_to_pandas(ed.DataFrame('http://localhost:9200', 'flights'), show_progress=True) # doctest: +SKIP
     2020-01-29 12:43:36.572395: read 10000 rows
     2020-01-29 12:43:37.309031: read 13059 rows
 
@@ -415,7 +415,7 @@ def csv_to_eland(  # type: ignore
 
     >>>  ed.csv_to_eland(
     ...      "churn.csv",
-    ...      es_client='localhost',
+    ...      es_client='http://localhost:9200',
     ...      es_dest_index='churn',
     ...      es_refresh=True,
     ...      index_col=0

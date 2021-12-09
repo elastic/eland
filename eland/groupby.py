@@ -68,7 +68,7 @@ class DataFrameGroupBy(GroupBy):
         Examples
         --------
         >>> df = ed.DataFrame(
-        ...   "localhost", "flights",
+        ...   "http://localhost:9200", "flights",
         ...   columns=["AvgTicketPrice", "Cancelled", "dayOfWeek", "timestamp", "DestCountry"]
         ... )
         >>> df.groupby("DestCountry").mean(numeric_only=False) # doctest: +SKIP
@@ -119,7 +119,7 @@ class DataFrameGroupBy(GroupBy):
         Examples
         --------
         >>> df = ed.DataFrame(
-        ...   "localhost", "flights",
+        ...   "http://localhost:9200", "flights",
         ...   columns=["AvgTicketPrice", "Cancelled", "dayOfWeek", "timestamp", "DestCountry"]
         ... )
         >>> df.groupby("DestCountry").var() # doctest: +NORMALIZE_WHITESPACE
@@ -170,7 +170,7 @@ class DataFrameGroupBy(GroupBy):
         Examples
         --------
         >>> df = ed.DataFrame(
-        ...   "localhost", "flights",
+        ...   "http://localhost:9200", "flights",
         ...   columns=["AvgTicketPrice", "Cancelled", "dayOfWeek", "DestCountry"]
         ... )
         >>> df.groupby("DestCountry").std() # doctest: +NORMALIZE_WHITESPACE
@@ -221,7 +221,7 @@ class DataFrameGroupBy(GroupBy):
         Examples
         --------
         >>> df = ed.DataFrame(
-        ...   "localhost", "flights",
+        ...   "http://localhost:9200", "flights",
         ...   columns=["AvgTicketPrice", "Cancelled", "dayOfWeek", "timestamp", "DestCountry"]
         ... )
         >>> df.groupby("DestCountry").mad() # doctest: +SKIP
@@ -272,7 +272,7 @@ class DataFrameGroupBy(GroupBy):
         Examples
         --------
         >>> df = ed.DataFrame(
-        ...   "localhost", "flights",
+        ...   "http://localhost:9200", "flights",
         ...   columns=["AvgTicketPrice", "Cancelled", "dayOfWeek", "timestamp", "DestCountry"]
         ... )
         >>> df.groupby("DestCountry").median(numeric_only=False) # doctest: +SKIP
@@ -323,7 +323,7 @@ class DataFrameGroupBy(GroupBy):
         Examples
         --------
         >>> df = ed.DataFrame(
-        ...   "localhost", "flights",
+        ...   "http://localhost:9200", "flights",
         ...   columns=["AvgTicketPrice", "Cancelled", "dayOfWeek", "DestCountry"]
         ... )
         >>> df.groupby("DestCountry").sum() # doctest: +NORMALIZE_WHITESPACE
@@ -374,7 +374,7 @@ class DataFrameGroupBy(GroupBy):
         Examples
         --------
         >>> df = ed.DataFrame(
-        ...   "localhost", "flights",
+        ...   "http://localhost:9200", "flights",
         ...   columns=["AvgTicketPrice", "Cancelled", "dayOfWeek", "timestamp", "DestCountry"]
         ... )
         >>> df.groupby("DestCountry").min(numeric_only=False) # doctest: +NORMALIZE_WHITESPACE
@@ -425,7 +425,7 @@ class DataFrameGroupBy(GroupBy):
         Examples
         --------
         >>> df = ed.DataFrame(
-        ...   "localhost", "flights",
+        ...   "http://localhost:9200", "flights",
         ...   columns=["AvgTicketPrice", "Cancelled", "dayOfWeek", "timestamp", "DestCountry"]
         ... )
         >>> df.groupby("DestCountry").max(numeric_only=False) # doctest: +NORMALIZE_WHITESPACE
@@ -476,7 +476,7 @@ class DataFrameGroupBy(GroupBy):
         Examples
         --------
         >>> df = ed.DataFrame(
-        ...   "localhost", "flights",
+        ...   "http://localhost:9200", "flights",
         ...   columns=["AvgTicketPrice", "Cancelled", "dayOfWeek", "DestCountry"]
         ... )
         >>> df.groupby("DestCountry").nunique() # doctest: +NORMALIZE_WHITESPACE
@@ -526,7 +526,7 @@ class DataFrameGroupBy(GroupBy):
 
         Examples
         --------
-        >>> ed_df = ed.DataFrame('localhost', 'flights')
+        >>> ed_df = ed.DataFrame('http://localhost:9200', 'flights')
         >>> ed_flights = ed_df.filter(["AvgTicketPrice", "FlightDelayMin", "dayOfWeek", "timestamp"])
         >>> ed_flights.groupby(["dayOfWeek", "Cancelled"]).quantile() # doctest: +SKIP
                              AvgTicketPrice  FlightDelayMin
@@ -616,7 +616,7 @@ class DataFrameGroupBy(GroupBy):
         Examples
         --------
         >>> df = ed.DataFrame(
-        ...   "localhost", "flights",
+        ...   "http://localhost:9200", "flights",
         ...   columns=["AvgTicketPrice", "Cancelled", "dayOfWeek", "DestCountry"]
         ... )
         >>> df.groupby("DestCountry").aggregate(["min", "max"]) # doctest: +NORMALIZE_WHITESPACE
@@ -670,7 +670,7 @@ class DataFrameGroupBy(GroupBy):
         Examples
         --------
         >>> df = ed.DataFrame(
-        ...   "localhost", "flights",
+        ...   "http://localhost:9200", "flights",
         ...   columns=["AvgTicketPrice", "Cancelled", "dayOfWeek", "DestCountry"]
         ... )
         >>> df.groupby("DestCountry").count() # doctest: +NORMALIZE_WHITESPACE
