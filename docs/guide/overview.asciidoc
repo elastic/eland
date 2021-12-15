@@ -10,9 +10,13 @@ Source code is available on https://github.com/elastic/eland[GitHub].
 
 - Supports Python 3.7+ and Pandas 1.3
 - Supports {es} clusters that are 7.11+, recommended 7.14 or later for all features to work.
+  Make sure your Eland major version matches the major version of your Elasticsearch cluster.
 
 The recommended way to set your requirements in your `setup.py` or
 `requirements.txt` is::
+
+    # Elasticsearch 8.x
+    eland>=8,<9
 
     # Elasticsearch 7.x
     eland>=7,<8
