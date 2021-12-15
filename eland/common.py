@@ -32,7 +32,8 @@ from typing import (
 
 import pandas as pd  # type: ignore
 from elasticsearch import Elasticsearch
-from elasticsearch import __version__ as ES_CLIENT_VERSION
+
+from ._version import __version__ as _eland_version
 
 if TYPE_CHECKING:
     from numpy.typing import DTypeLike
@@ -49,9 +50,7 @@ PANDAS_VERSION: Tuple[int, ...] = tuple(
     int(part) for part in pd.__version__.split(".") if part.isdigit()
 )[:2]
 
-# Starting in 7.15 the client raises DeprecationWarnings
-# for some APIs using the 'body' parameter.
-ES_CLIENT_HAS_V8_0_DEPRECATIONS = ES_CLIENT_VERSION >= (7, 15)
+_ELAND_MAJOR_VERSION = int(_eland_version.split(".")[0])
 
 
 with warnings.catch_warnings():
@@ -333,6 +332,18 @@ def es_version(es_client: Elasticsearch) -> Tuple[int, int, int]:
             Tuple[int, int, int], tuple(int(x) for x in match.groups())
         )
         es_client._eland_es_version = eland_es_version  # type: ignore
+
+        # Raise a warning if the major version of the library doesn't match the
+        # the Elasticsearch server major version.
+        if eland_es_version[0] != _ELAND_MAJOR_VERSION:
+            warnings.warn(
+                f"Eland major version ({_eland_version}) doesn't match the major "
+                f"version of the Elasticsearch server ({version_info}) which can lead "
+                f"to compatibility issues. Your Eland major version should be the same "
+                "as your cluster major version.",
+                stacklevel=2,
+            )
+
     else:
         eland_es_version = es_client._eland_es_version  # type: ignore
     return eland_es_version

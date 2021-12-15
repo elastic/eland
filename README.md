@@ -51,6 +51,7 @@ $ conda install -c conda-forge eland
 
 - Supports Python 3.7+ and Pandas 1.3
 - Supports Elasticsearch clusters that are 7.11+, recommended 7.14 or later for all features to work.
+  Make sure your Eland major version matches the major version of your Elasticsearch cluster.
 
 ### Prerequisites
 
