@@ -2,6 +2,32 @@
 Changelog
 =========
 
+8.0.0b1 (2021-12-16)
+--------------------
+
+Added
+^^^^^
+
+* Added support for Natural Language Processing (NLP) models using PyTorch (`#394`_)
+* Added new extra ``eland[pytorch]`` for installing all dependencies needed for PyTorch (`#394`_)
+* Added a CLI script ``eland_import_hub_model`` for uploading HuggingFace models to Elasticsearch (`#403`_)
+* Added support for v8.0 of the Python Elasticsearch client (`#415`_)
+* Added a warning if Eland detects it's communicating with an incompatible Elasticsearch version (`#419`_)
+* Added support for ``number_samples`` to LightGBM and Scikit-Learn models (`#397`_, contributed by `@V1NAY8`_)
+
+Changed
+^^^^^^^
+
+* Changed ``to_pandas()`` to only use Point-in-Time and ``search_after`` instead of using Scroll APIs
+  for pagination.
+
+.. _#419: https://github.com/elastic/eland/pull/419
+.. _#415: https://github.com/elastic/eland/pull/415
+.. _#397: https://github.com/elastic/eland/pull/397
+.. _#394: https://github.com/elastic/eland/pull/394
+.. _#403: https://github.com/elastic/eland/pull/403
+
+
 7.14.1b1 (2021-08-30)
 ---------------------
 
@@ -16,7 +42,7 @@ Performance
 * Simplified result collectors to increase performance transforming Elasticsearch results to pandas (`#378`_, contributed by `@V1NAY8`_)
 * Changed search pagination function to yield batches of hits (`#379`_)
 
- .. _@kxbin: https://github.com/kxbin
+.. _@kxbin: https://github.com/kxbin
 .. _#378: https://github.com/elastic/eland/pull/378
 .. _#379: https://github.com/elastic/eland/pull/379
 .. _#380: https://github.com/elastic/eland/pull/380
