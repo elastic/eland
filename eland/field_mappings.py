@@ -560,6 +560,29 @@ class FieldMappings:
                 mapping_props[column] = es_dtype
 
         return {"mappings": {"properties": mapping_props}}
+    
+    @staticmethod
+    def _flatten_es_mapping(es_mapping: Dict[str, Any]) -> Dict[str, Any]:
+        """Flatten Elasticsearch mapping to a single level
+
+        Parameters
+        ----------
+            es_mapping : dict
+                Elasticsearch mapping to flatten
+
+        Returns
+        -------
+            flattened_mapping : dict
+        """
+        flattened_mapping: Dict[str, Any] = {"mappings": {"properties": {}}}
+
+        df = pd.json_normalize(es_mapping["mappings"]["properties"])
+
+        for col,col_type in zip(df.columns, df.iloc[0]):
+            col_name = col.replace(".properties", "").replace(".type","")
+            flattened_mapping["mappings"]["properties"][col_name] = {"type": col_type}
+
+        return flattened_mapping
 
     def aggregatable_field_name(self, display_name: str) -> Optional[str]:
         """
@@ -896,6 +919,8 @@ def verify_mapping_compatibility(
 
     ed_mapping = ed_mapping["mappings"]["properties"]
     es_mapping = es_mapping["mappings"]["properties"]
+
+    print(ed_mapping, es_mapping)
 
     for key in sorted(es_mapping.keys()):
         if key not in ed_mapping:

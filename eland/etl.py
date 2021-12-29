@@ -181,9 +181,10 @@ def pandas_to_eland(
             dest_mapping = es_client.indices.get_mapping(index=es_dest_index)[
                 es_dest_index
             ]
+            flattened_dest_mapping = FieldMappings._flatten_es_mapping(dest_mapping)
             verify_mapping_compatibility(
                 ed_mapping=mapping,
-                es_mapping=dest_mapping,
+                es_mapping=flattened_dest_mapping,
                 es_type_overrides=es_type_overrides,
             )
     else:
