@@ -137,7 +137,7 @@ class TestPandasToEland:
         pd_df3 = pd_df.append(pd_df2)
         assert_pandas_eland_frame_equal(pd_df3, df2)
 
-    def test_es_if_exists_append_mapping_mismatch(self):
+    def test_es_if_exists_append_mapping_mismatch_schema_enforcement(self):
         df1 = pandas_to_eland(
             pd_df,
             es_client=ES_TEST_CLIENT,
@@ -154,14 +154,29 @@ class TestPandasToEland:
                 es_if_exists="append",
             )
 
-        assert str(e.value) == (
-            "DataFrame dtypes and Elasticsearch index mapping aren't compatible:\n"
-            "- 'b' is missing from DataFrame columns\n"
-            "- 'c' is missing from DataFrame columns\n"
-            "- 'd' is missing from DataFrame columns\n"
-            "- 'Z' is missing from ES index mapping\n"
-            "- 'a' column type ('keyword') not compatible with ES index mapping type ('long')"
+        
+        # Assert that the index isn't modified
+        assert_pandas_eland_frame_equal(pd_df, df1)
+
+    def test_es_if_exists_append_mapping_mismatch_no_schema_enforcement(self):
+        df1 = pandas_to_eland(
+            pd_df,
+            es_client=ES_TEST_CLIENT,
+            es_dest_index="test-index",
+            es_if_exists="append",
+            es_refresh=True,
         )
+
+        df2 = pandas_to_eland(
+            pd_df2,
+            es_client=ES_TEST_CLIENT,
+            es_dest_index="test-index",
+            es_if_exists="append",
+        )
+
+        pr
+
+        
         # Assert that the index isn't modified
         assert_pandas_eland_frame_equal(pd_df, df1)
 

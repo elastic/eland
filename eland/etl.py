@@ -48,6 +48,7 @@ def pandas_to_eland(
     es_refresh: bool = False,
     es_dropna: bool = False,
     es_type_overrides: Optional[Mapping[str, str]] = None,
+    enforce_index_schema: bool = True,
     thread_count: int = 4,
     chunksize: Optional[int] = None,
     use_pandas_index_for_es_ids: bool = True,
@@ -177,7 +178,7 @@ def pandas_to_eland(
             es_client.indices.delete(index=es_dest_index)
             es_api_compat(es_client.indices.create, index=es_dest_index, body=mapping)
 
-        elif es_if_exists == "append":
+        elif es_if_exists == "append" and enforce_index_schema:
             dest_mapping = es_client.indices.get_mapping(index=es_dest_index)[
                 es_dest_index
             ]
