@@ -159,26 +159,47 @@ class TestPandasToEland:
         assert_pandas_eland_frame_equal(pd_df, df1)
 
     def test_es_if_exists_append_mapping_mismatch_no_schema_enforcement(self):
-        df1 = pandas_to_eland(
+        pandas_to_eland(
             pd_df,
             es_client=ES_TEST_CLIENT,
             es_dest_index="test-index",
             es_if_exists="append",
             es_refresh=True,
         )
-
-        df2 = pandas_to_eland(
+        
+        pd_df2 = pd.DataFrame(
+            {
+                "a": [4, 5, 6],
+                "b": [-1.0, -2.0, -3.0],
+                "d": [dt, dt - timedelta(1), dt - timedelta(2)],
+                "e": ["A", "B", "C"],
+            },
+            index=["3", "4", "5"],
+        )
+        
+        pandas_to_eland(
             pd_df2,
             es_client=ES_TEST_CLIENT,
             es_dest_index="test-index",
             es_if_exists="append",
+            es_refresh=True,
+            es_enforce_index_schema=False,
         )
 
-        pr
-
+        final_df = pd.DataFrame(
+           {
+                "a": [1, 2, 3, 4, 5, 6],
+                "b": [1.0, 2.0, 3.0, -1.0, -2.0, -3.0],
+                "c": ["A", "B", "C", None, None, None],
+                "d": [dt, dt + timedelta(1), dt + timedelta(2), dt, dt - timedelta(1), dt - timedelta(2)],
+                "e": [None, None, None, "A", "B", "C"],
+            }, 
+            index=["0", "1", "2", "3", "4", "5"],
+        ) 
         
+        eland_df = DataFrame(ES_TEST_CLIENT, "test-index")
         # Assert that the index isn't modified
-        assert_pandas_eland_frame_equal(pd_df, df1)
+        assert_pandas_eland_frame_equal(final_df, eland_df)
 
     def test_es_if_exists_append_es_type_coerce_error(self):
         df1 = pandas_to_eland(
