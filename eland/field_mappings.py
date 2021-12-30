@@ -578,7 +578,9 @@ class FieldMappings:
 
         # Create a 1 row Pandas Dataframe where the column names are the name of the
         # fields in the format "a.properties.b.properties.c.type" and the value in
-        # each cell is the elastic field type
+        # each cell is the elastic field type.
+        # This also takes care of recursively iterating & parsing the nested elastic
+        # mapping so we don't have to.
         df = pd.json_normalize(es_mapping["mappings"]["properties"])
 
         for col, col_type in zip(df.columns, df.iloc[0]):
