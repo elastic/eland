@@ -576,10 +576,21 @@ class FieldMappings:
         """
         flattened_mapping: Dict[str, Any] = {"mappings": {"properties": {}}}
 
+        # Create a 1 row Pandas Dataframe where the column names are the name of the
+        # fields in the format "a.properties.b.properties.c.type" and the value in
+        # each cell is the elastic field type
         df = pd.json_normalize(es_mapping["mappings"]["properties"])
 
         for col, col_type in zip(df.columns, df.iloc[0]):
-            col_name = col.replace(".properties", "").replace(".type", "")
+            # split "a.properties.b.properties.c.type" into ["a", "properties", "b", properties", "c", "type"]
+            col_name_list = col.split(".")
+            # "properites" and "type" that are not actually a part of the field name will always be in
+            # odd index elements of the array, so we can remove all odd index elements of the array to get
+            # rid of them
+            del col_name_list[1::2]
+
+            # Rebuild the field name
+            col_name = ".".join(col_name_list)
             flattened_mapping["mappings"]["properties"][col_name] = {"type": col_type}
 
         return flattened_mapping
