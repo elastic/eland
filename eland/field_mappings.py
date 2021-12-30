@@ -931,8 +931,6 @@ def verify_mapping_compatibility(
     ed_mapping = ed_mapping["mappings"]["properties"]
     es_mapping = es_mapping["mappings"]["properties"]
 
-    print(ed_mapping, es_mapping)
-
     for key in sorted(es_mapping.keys()):
         if key not in ed_mapping:
             problems.append(f"- {key!r} is missing from DataFrame columns")
