@@ -35,6 +35,7 @@ import pandas as pd  # type: ignore
 from pandas.core.dtypes.common import (  # type: ignore
     is_bool_dtype,
     is_datetime_or_timedelta_dtype,
+    is_datetime64_any_dtype,
     is_float_dtype,
     is_integer_dtype,
     is_string_dtype,
@@ -504,6 +505,8 @@ class FieldMappings:
         elif is_string_dtype(pd_dtype):
             es_dtype = "keyword"
         elif is_datetime_or_timedelta_dtype(pd_dtype):
+            es_dtype = "date"
+        elif is_datetime64_any_dtype(pd_dtype):
             es_dtype = "date"
         else:
             warnings.warn(
