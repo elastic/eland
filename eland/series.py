@@ -34,6 +34,7 @@ Based on NDFrame which underpins eland.DataFrame
 import sys
 import warnings
 from collections.abc import Collection
+from datetime import datetime
 from io import StringIO
 from typing import TYPE_CHECKING, Any, List, Optional, Sequence, Tuple, Union
 
@@ -461,51 +462,67 @@ class Series(NDFrame):
         return self._query_compiler.es_dtypes[0]
 
     def __gt__(self, other: Union[int, float, "Series"]) -> BooleanFilter:
+        if isinstance(other, np.datetime64):
+            # convert numpy datetime64 object it has no `strftime` method
+            other = pd.to_datetime(other)
+
         if isinstance(other, Series):
             # Need to use scripted query to compare to values
             painless = f"doc['{self.name}'].value > doc['{other.name}'].value"
             return ScriptFilter(painless, lang="painless")
-        elif isinstance(other, (int, float)):
+        elif isinstance(other, (int, float, datetime)):
             return Greater(field=self.name, value=other)
         else:
             raise NotImplementedError(other, type(other))
 
     def __lt__(self, other: Union[int, float, "Series"]) -> BooleanFilter:
+        if isinstance(other, np.datetime64):
+            other = pd.to_datetime(other)
+
         if isinstance(other, Series):
             # Need to use scripted query to compare to values
             painless = f"doc['{self.name}'].value < doc['{other.name}'].value"
             return ScriptFilter(painless, lang="painless")
-        elif isinstance(other, (int, float)):
+        elif isinstance(other, (int, float, datetime)):
             return Less(field=self.name, value=other)
         else:
             raise NotImplementedError(other, type(other))
 
     def __ge__(self, other: Union[int, float, "Series"]) -> BooleanFilter:
+        if isinstance(other, np.datetime64):
+            other = pd.to_datetime(other)
+
         if isinstance(other, Series):
             # Need to use scripted query to compare to values
             painless = f"doc['{self.name}'].value >= doc['{other.name}'].value"
             return ScriptFilter(painless, lang="painless")
-        elif isinstance(other, (int, float)):
+        elif isinstance(other, (int, float, datetime)):
             return GreaterEqual(field=self.name, value=other)
         else:
             raise NotImplementedError(other, type(other))
 
     def __le__(self, other: Union[int, float, "Series"]) -> BooleanFilter:
+        if isinstance(other, np.datetime64):
+            other = pd.to_datetime(other)
+
         if isinstance(other, Series):
             # Need to use scripted query to compare to values
             painless = f"doc['{self.name}'].value <= doc['{other.name}'].value"
             return ScriptFilter(painless, lang="painless")
-        elif isinstance(other, (int, float)):
+        elif isinstance(other, (int, float, datetime)):
             return LessEqual(field=self.name, value=other)
         else:
             raise NotImplementedError(other, type(other))
 
     def __eq__(self, other: Union[int, float, str, "Series"]) -> BooleanFilter:
+        if isinstance(other, np.datetime64):
+            other = pd.to_datetime(other)
+
         if isinstance(other, Series):
             # Need to use scripted query to compare to values
             painless = f"doc['{self.name}'].value == doc['{other.name}'].value"
             return ScriptFilter(painless, lang="painless")
-        elif isinstance(other, (int, float)):
+        elif isinstance(other, (int, float, datetime)):
             return Equal(field=self.name, value=other)
         elif isinstance(other, str):
             return Equal(field=self.name, value=other)
@@ -513,11 +530,14 @@ class Series(NDFrame):
             raise NotImplementedError(other, type(other))
 
     def __ne__(self, other: Union[int, float, str, "Series"]) -> BooleanFilter:
+        if isinstance(other, np.datetime64):
+            other = pd.to_datetime(other)
+
         if isinstance(other, Series):
             # Need to use scripted query to compare to values
             painless = f"doc['{self.name}'].value != doc['{other.name}'].value"
             return ScriptFilter(painless, lang="painless")
-        elif isinstance(other, (int, float)):
+        elif isinstance(other, (int, float, datetime)):
             return NotFilter(Equal(field=self.name, value=other))
         elif isinstance(other, str):
             return NotFilter(Equal(field=self.name, value=other))
