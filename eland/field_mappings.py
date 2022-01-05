@@ -34,6 +34,7 @@ import numpy as np
 import pandas as pd  # type: ignore
 from pandas.core.dtypes.common import (  # type: ignore
     is_bool_dtype,
+    is_datetime64_any_dtype,
     is_datetime_or_timedelta_dtype,
     is_float_dtype,
     is_integer_dtype,
@@ -487,7 +488,7 @@ class FieldMappings:
         int64 int int_, int8, int16, int32, int64, uint8, uint16, uint32, uint64 Integer numbers
         float64 float float_, float16, float32, float64 Floating point numbers
         bool bool bool_ True/False values
-        datetime64 NA datetime64[ns] Date and time values
+        datetime64 NA datetime64[ns] datetime64[ns, TIMEZONE] Date and time values
         timedelta[ns] NA NA Differences between two datetimes
         category NA NA Finite list of text values
         ```
@@ -504,6 +505,8 @@ class FieldMappings:
         elif is_string_dtype(pd_dtype):
             es_dtype = "keyword"
         elif is_datetime_or_timedelta_dtype(pd_dtype):
+            es_dtype = "date"
+        elif is_datetime64_any_dtype(pd_dtype):
             es_dtype = "date"
         else:
             warnings.warn(
