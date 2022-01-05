@@ -191,7 +191,7 @@ class TestPandasToEland:
             es_dest_index="test-index",
             es_if_exists="append",
             es_refresh=True,
-            es_enforce_index_schema=False,
+            es_verify_mapping_compatibility=False,
         )
 
         final_df = pd.DataFrame(

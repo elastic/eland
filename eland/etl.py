@@ -48,7 +48,7 @@ def pandas_to_eland(
     es_refresh: bool = False,
     es_dropna: bool = False,
     es_type_overrides: Optional[Mapping[str, str]] = None,
-    es_enforce_index_schema: bool = True,
+    es_verify_mapping_compatibility: bool = True,
     thread_count: int = 4,
     chunksize: Optional[int] = None,
     use_pandas_index_for_es_ids: bool = True,
@@ -78,7 +78,7 @@ def pandas_to_eland(
         * False: Include missing values - may cause bulk to fail
     es_type_overrides: dict, default None
         Dict of field_name: es_data_type that overrides default es data types
-    es_enforce_index_schema: bool, default 'True'
+    es_verify_mapping_compatibility: bool, default 'True'
         * True: Verify that the dataframe schema matches the Elasticsearch index schema
         * False: Do not verify schema
     thread_count: int
@@ -181,7 +181,7 @@ def pandas_to_eland(
             es_client.indices.delete(index=es_dest_index)
             es_api_compat(es_client.indices.create, index=es_dest_index, body=mapping)
 
-        elif es_if_exists == "append" and es_enforce_index_schema:
+        elif es_if_exists == "append" and es_verify_mapping_compatibility:
             dest_mapping = es_client.indices.get_mapping(index=es_dest_index)[
                 es_dest_index
             ]
