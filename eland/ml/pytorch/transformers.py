@@ -151,7 +151,6 @@ class _SentenceTransformerWrapperModule(nn.Module):  # type: ignore
 
 
 class _SentenceTransformerWrapper(_SentenceTransformerWrapperModule):
-
     def __init__(self, model: PreTrainedModel, output_key: str = DEFAULT_OUTPUT_KEY):
         super().__init__(model=model, output_key=output_key)
 
