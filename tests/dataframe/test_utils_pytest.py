@@ -37,6 +37,7 @@ class TestDataFrameUtils(TestData):
                 "E": [1.0, 2.0, 3.0],
                 "F": False,
                 "G": [1, 2, 3],
+                "H": pd.Timestamp("20190102", tz="UTC"),
             },
             index=["0", "1", "2"],
         )
@@ -51,6 +52,7 @@ class TestDataFrameUtils(TestData):
                     "E": {"type": "double"},
                     "F": {"type": "boolean"},
                     "G": {"type": "long"},
+                    "H": {"type": "date"},
                 }
             }
         }
