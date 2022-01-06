@@ -3,7 +3,7 @@
 
 [discrete]
 [[ml-trained-models]]
-=== Using trained models
+=== Trained models
 
 Eland allows transforming trained models from scikit-learn, XGBoost,
 and LightGBM libraries to be serialized and used as an inference
