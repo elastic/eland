@@ -17,6 +17,7 @@
 import tempfile
 
 import pytest
+from elasticsearch import NotFoundError
 
 try:
     import sklearn  # noqa: F401
@@ -68,8 +69,11 @@ def setup_and_tear_down():
     yield
     for model_id, _, _, _ in TEXT_PREDICTION_MODELS:
         model = PyTorchModel(ES_TEST_CLIENT, model_id.replace("/", "__").lower()[:64])
-        model.stop()
-        model.delete()
+        try:
+            model.stop()
+            model.delete()
+        except NotFoundError:
+            pass
 
 
 def download_model_and_start_deployment(tmp_dir, quantize, model_id, task):
@@ -77,8 +81,11 @@ def download_model_and_start_deployment(tmp_dir, quantize, model_id, task):
     tm = TransformerModel(model_id, task, quantize)
     model_path, config_path, vocab_path = tm.save(tmp_dir)
     ptm = PyTorchModel(ES_TEST_CLIENT, tm.elasticsearch_model_id())
-    ptm.stop()
-    ptm.delete()
+    try:
+        ptm.stop()
+        ptm.delete()
+    except NotFoundError:
+        pass
     print(f"Importing model: {ptm.model_id}")
     ptm.import_model(model_path, config_path, vocab_path)
     ptm.start()
