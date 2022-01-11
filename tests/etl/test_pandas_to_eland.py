@@ -165,6 +165,36 @@ class TestPandasToEland:
         # Assert that the index isn't modified
         assert_pandas_eland_frame_equal(pd_df, df1)
 
+    def test_es_append_dotted_columns(self):
+
+        data = {
+            "file.hash.sha1": ["hash1"],
+            "file.hash.sha256": ["hash2"],
+            "label": [1],
+            "process.name": ["process1"],
+        }
+        df1 = pd.DataFrame(data, index=["0"])
+
+        pandas_to_eland(
+            df1,
+            es_client=ES_TEST_CLIENT,
+            es_dest_index="test-index",
+            es_if_exists="append",
+            es_refresh=True,
+        )
+
+        df2 = df1.copy()
+        df2.index = ["1"]
+        final_df = pandas_to_eland(
+            df2,
+            es_client=ES_TEST_CLIENT,
+            es_dest_index="test-index",
+            es_if_exists="append",
+            es_refresh=True,
+        )
+
+        assert_pandas_eland_frame_equal(pd.concat([df1, df2]), final_df)
+
     def test_es_if_exists_append_es_type_coerce_error(self):
         df1 = pandas_to_eland(
             pd_df,
