@@ -42,7 +42,7 @@ class Task(ABC):
             The task type (e.g. head, tail etc.)
     """
 
-    def __init__(self, task_type: str):
+    def __init__(self, task_type: str) -> None:
         self._task_type = task_type
 
     @property
@@ -345,7 +345,7 @@ class BooleanFilterTask(Task):
 
 
 class ArithmeticOpFieldsTask(Task):
-    def __init__(self, display_name: str, arithmetic_series: ArithmeticSeries):
+    def __init__(self, display_name: str, arithmetic_series: ArithmeticSeries) -> None:
         super().__init__("arithmetic_op_fields")
 
         self._display_name = display_name

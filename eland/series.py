@@ -1382,7 +1382,10 @@ class Series(NDFrame):
 
         Naming is consistent for rops
         """
-        # print("_numeric_op", self, right, method_name)
+        # We are assigning a display name internally
+        # TODO: Override this if new name is given explicitly
+        # Example: ed_df['new_field'] = ed_df['DestCountry'] + ed_df['OriginCountry']
+        display_name: Optional[str] = self.name
         if isinstance(right, Series):
             # Check we can the 2 Series are compatible (raises on error):
             self._query_compiler.check_arithmetics(right._query_compiler)
@@ -1393,10 +1396,8 @@ class Series(NDFrame):
             display_name = None
         elif np.issubdtype(np.dtype(type(right)), np.number):
             right_object = ArithmeticNumber(right, np.dtype(type(right)))
-            display_name = self.name
         elif isinstance(right, str):
             right_object = ArithmeticString(right)
-            display_name = self.name
         else:
             raise TypeError(
                 f"unsupported operation type(s) [{method_name!r}] "
@@ -1409,7 +1410,8 @@ class Series(NDFrame):
 
         series = Series(
             _query_compiler=self._query_compiler.arithmetic_op_fields(
-                display_name, left_object
+                display_name=display_name,
+                arithmetic_object=left_object,
             )
         )
 

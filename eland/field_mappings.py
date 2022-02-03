@@ -24,6 +24,7 @@ from typing import (
     Mapping,
     NamedTuple,
     Optional,
+    Sequence,
     Set,
     TextIO,
     Tuple,
@@ -31,8 +32,8 @@ from typing import (
 )
 
 import numpy as np
-import pandas as pd  # type: ignore
-from pandas.core.dtypes.common import (  # type: ignore
+import pandas as pd  # type: ignore[import]
+from pandas.core.dtypes.common import (  # type: ignore[import]
     is_bool_dtype,
     is_datetime64_any_dtype,
     is_datetime_or_timedelta_dtype,
@@ -40,7 +41,7 @@ from pandas.core.dtypes.common import (  # type: ignore
     is_integer_dtype,
     is_string_dtype,
 )
-from pandas.core.dtypes.inference import is_list_like
+from pandas.core.dtypes.inference import is_list_like  # type: ignore[import]
 
 if TYPE_CHECKING:
     from elasticsearch import Elasticsearch
@@ -68,6 +69,7 @@ class Field(NamedTuple):
     """Holds all information on a particular field in the mapping"""
 
     column: str
+    display_name: str
     es_field_name: str
     is_source: bool
     es_dtype: str
@@ -80,21 +82,23 @@ class Field(NamedTuple):
 
     @property
     def is_numeric(self) -> bool:
-        return is_integer_dtype(self.pd_dtype) or is_float_dtype(self.pd_dtype)
+        return is_integer_dtype(self.pd_dtype) or is_float_dtype(self.pd_dtype)  # type: ignore[no-any-return]
 
     @property
     def is_timestamp(self) -> bool:
-        return is_datetime_or_timedelta_dtype(self.pd_dtype)
+        return is_datetime_or_timedelta_dtype(self.pd_dtype)  # type: ignore[no-any-return]
 
     @property
     def is_bool(self) -> bool:
-        return is_bool_dtype(self.pd_dtype)
+        return is_bool_dtype(self.pd_dtype)  # type: ignore[no-any-return]
 
     @property
-    def np_dtype(self):
+    def np_dtype(self) -> Any:
         return np.dtype(self.pd_dtype)
 
-    def is_es_agg_compatible(self, es_agg) -> bool:
+    def is_es_agg_compatible(
+        self, es_agg: Union[Tuple[str, List[float]], str, Sequence[object]]
+    ) -> bool:
         # Unpack the actual aggregation if this is 'extended_stats/percentiles'
         if isinstance(es_agg, tuple):
             if es_agg[0] == "extended_stats":
@@ -221,8 +225,10 @@ class FieldMappings:
         )
 
         # Populate capability matrix of fields
-        self._mappings_capabilities = FieldMappings._create_capability_matrix(
-            all_fields, source_fields, all_fields_caps
+        self._mappings_capabilities: pd.DataFrame = (
+            FieldMappings._create_capability_matrix(
+                all_fields, source_fields, all_fields_caps
+            )
         )
 
         if display_names is not None:
@@ -231,7 +237,7 @@ class FieldMappings:
     @staticmethod
     def _extract_fields_from_mapping(
         mappings: Dict[str, Any], source_only: bool = False
-    ) -> Dict[str, str]:
+    ) -> Dict[str, Tuple[str, Any]]:
         """
         Extract all field names and types from a mapping.
         ```
@@ -294,15 +300,15 @@ class FieldMappings:
 
         Returns
         -------
-        fields, dates_format: tuple(dict, dict)
+        fields, dates_format: Dict[str, Tuple[str, Any]]
             where:
                 fields: dict of field names and types
                 dates_format: Dict of date field names and format
         """
-        fields = {}
+        fields: Dict[str, Tuple[str, Any]] = {}
 
         # Recurse until we get a 'type: xxx'
-        def flatten(x, name=""):
+        def flatten(x: Union[str, Dict[str, str]], name: str = "") -> None:
             if isinstance(x, dict):
                 for a in x:
                     if a == "type" and isinstance(
@@ -352,7 +358,11 @@ class FieldMappings:
         return fields
 
     @staticmethod
-    def _create_capability_matrix(all_fields, source_fields, all_fields_caps):
+    def _create_capability_matrix(
+        all_fields: Dict[str, Tuple[str, Any]],
+        source_fields: Dict[str, Tuple[str, Any]],
+        all_fields_caps: Dict[str, Dict[str, Any]],
+    ) -> pd.DataFrame:
         """
         {
           "fields": {
@@ -380,56 +390,56 @@ class FieldMappings:
           }
         }
         """
-        all_fields_caps_fields = all_fields_caps["fields"]
+        # Filter the required fields
+        all_fields_caps_fields = {
+            key: value
+            for key, value in all_fields_caps["fields"].items()
+            if key in all_fields
+        }
 
-        capability_matrix = {}
+        capability_matrix: List[pd.Series] = []
 
         for field, field_caps in all_fields_caps_fields.items():
-            if field in all_fields:
-                # v = {'long': {'type': 'long', 'searchable': True, 'aggregatable': True}}
-                for kk, vv in field_caps.items():
-                    _source = field in source_fields
-                    es_field_name = field
-                    es_dtype = vv["type"]
-                    es_date_format = all_fields[field][1]
-                    pd_dtype = FieldMappings._es_dtype_to_pd_dtype(vv["type"])
-                    is_searchable = vv["searchable"]
-                    is_aggregatable = vv["aggregatable"]
-                    scripted = False
-                    aggregatable_es_field_name = None  # this is populated later
+            # v = {'long': {'type': 'long', 'searchable': True, 'aggregatable': True}}
+            for _, vv in field_caps.items():
+                capability_row = pd.Series(
+                    {
+                        "display_name": field,
+                        "es_field_name": field,  # field name in ES
+                        "is_source": field in source_fields,
+                        "es_dtype": vv["type"],
+                        "es_date_format": all_fields[field][1],
+                        "pd_dtype": FieldMappings._es_dtype_to_pd_dtype(vv["type"]),
+                        "is_searchable": vv["searchable"],
+                        "is_aggregatable": vv["aggregatable"],
+                        "is_scripted": False,
+                        "aggregatable_es_field_name": None,  # this is populated later
+                    },
+                )
 
-                    caps = [
-                        es_field_name,
-                        _source,
-                        es_dtype,
-                        es_date_format,
-                        pd_dtype,
-                        is_searchable,
-                        is_aggregatable,
-                        scripted,
-                        aggregatable_es_field_name,
-                    ]
+                if "non_aggregatable_indices" in vv:
+                    warnings.warn(
+                        f"Field {field} has conflicting aggregatable fields across indexes "
+                        f"{str(vv['non_aggregatable_indices'])}",
+                        UserWarning,
+                    )
+                if "non_searchable_indices" in vv:
+                    warnings.warn(
+                        f"Field {field} has conflicting searchable fields across indexes "
+                        f"{str(vv['non_searchable_indices'])}",
+                        UserWarning,
+                    )
 
-                    capability_matrix[field] = caps
+                capability_matrix.append(capability_row)
 
-                    if "non_aggregatable_indices" in vv:
-                        warnings.warn(
-                            f"Field {field} has conflicting aggregatable fields across indexes "
-                            f"{str(vv['non_aggregatable_indices'])}",
-                            UserWarning,
-                        )
-                    if "non_searchable_indices" in vv:
-                        warnings.warn(
-                            f"Field {field} has conflicting searchable fields across indexes "
-                            f"{str(vv['non_searchable_indices'])}",
-                            UserWarning,
-                        )
-
-        capability_matrix_df = pd.DataFrame.from_dict(
-            capability_matrix, orient="index", columns=FieldMappings.column_labels
+        # concatenating List[pd.Series] is efficient than appending each one
+        capability_matrix_df: pd.DataFrame = (
+            pd.concat(capability_matrix, axis=1)
+            .transpose()
+            .sort_values("display_name", ignore_index=True)
         )
 
-        def find_aggregatable(row, df):
+        def find_aggregatable(row: pd.Series, df: pd.DataFrame) -> pd.Series:
             # convert series to dict so we can add 'aggregatable_es_field_name'
             row_as_dict = row.to_dict()
             if not row_as_dict["is_aggregatable"]:
@@ -456,10 +466,10 @@ class FieldMappings:
         )
 
         # return just source fields (as these are the only ones we display)
-        return capability_matrix_df[capability_matrix_df.is_source].sort_index()
+        return capability_matrix_df[capability_matrix_df.is_source]
 
     @classmethod
-    def _es_dtype_to_pd_dtype(cls, es_dtype):
+    def _es_dtype_to_pd_dtype(cls, es_dtype: str) -> str:
         """
         Mapping Elasticsearch types to pandas dtypes
         --------------------------------------------
@@ -477,7 +487,7 @@ class FieldMappings:
         return cls.ES_DTYPE_TO_PD_DTYPE.get(es_dtype, "object")
 
     @staticmethod
-    def _pd_dtype_to_es_dtype(pd_dtype) -> Optional[str]:
+    def _pd_dtype_to_es_dtype(pd_dtype: str) -> Optional[str]:
         """
         Mapping pandas dtypes to Elasticsearch dtype
         --------------------------------------------
@@ -533,7 +543,7 @@ class FieldMappings:
         -------
             mapping : str
         """
-        es_dtype: Union[str, Dict[str, Any]]
+        es_dtype: Union[Optional[str], Dict[str, Any]]
 
         mapping_props: Dict[str, Any] = {}
 
@@ -587,16 +597,16 @@ class FieldMappings:
 
         raise KeyError if the field_name doesn't exist in the mapping, or isn't aggregatable
         """
-        mapping: Optional[pd.Series] = None
+        mapping: pd.Series = self._mappings_capabilities.loc[
+            self._mappings_capabilities["display_name"] == display_name
+        ].squeeze()
 
-        try:
-            mapping = self._mappings_capabilities.loc[display_name]
-        except KeyError:
+        if mapping.empty:
             raise KeyError(
                 f"Can not get aggregatable field name for invalid display name {display_name}"
-            ) from None
+            )
 
-        if mapping is not None and mapping.aggregatable_es_field_name is None:
+        if mapping.aggregatable_es_field_name is None:
             warnings.warn(f"Aggregations not supported for '{display_name}'")
 
         return mapping.aggregatable_es_field_name
@@ -649,7 +659,7 @@ class FieldMappings:
         str
             A string (for date fields) containing the date format for the field
         """
-        return self._mappings_capabilities.loc[
+        return self._mappings_capabilities.loc[  # type: ignore[no-any-return]
             self._mappings_capabilities.es_field_name == es_field_name
         ].es_date_format.squeeze()
 
@@ -669,46 +679,47 @@ class FieldMappings:
         KeyError
             If es_field_name does not exist in mapping
         """
-        if es_field_name not in self._mappings_capabilities.es_field_name:
+        capability_row: pd.Series = self._mappings_capabilities.loc[
+            self._mappings_capabilities["es_field_name"] == es_field_name
+        ].squeeze()
+
+        if capability_row.empty or capability_row["is_scripted"] == True:
             raise KeyError(f"es_field_name {es_field_name} does not exist")
 
-        pd_dtype = self._mappings_capabilities.loc[
-            self._mappings_capabilities.es_field_name == es_field_name
-        ].pd_dtype.squeeze()
-        return pd_dtype
+        return capability_row["pd_dtype"]  # type: ignore[no-any-return]
 
     def add_scripted_field(
         self, scripted_field_name: str, display_name: str, pd_dtype: str
     ) -> None:
         # if this display name is used somewhere else, drop it
-        if display_name in self._mappings_capabilities.index:
-            self._mappings_capabilities = self._mappings_capabilities.drop(
-                index=[display_name]
-            )
+        try:
+            # display_name can be None
+            index = self._mappings_capabilities[
+                (self._mappings_capabilities.display_name == display_name)
+                | (self._mappings_capabilities.display_name.isna())
+            ].index
+            if not index.empty:
+                self._mappings_capabilities.drop(labels=index, inplace=True)
+        except KeyError:
+            pass
 
-        # ['es_field_name', 'is_source', 'es_dtype', 'es_date_format', 'pd_dtype', 'is_searchable',
-        # 'is_aggregatable', 'is_scripted', 'aggregatable_es_field_name']
-
-        capabilities = {
-            display_name: [
-                scripted_field_name,
-                False,
-                self._pd_dtype_to_es_dtype(pd_dtype),
-                None,
-                pd_dtype,
-                True,
-                True,
-                True,
-                scripted_field_name,
-            ]
-        }
-
-        capability_matrix_row = pd.DataFrame.from_dict(
-            capabilities, orient="index", columns=FieldMappings.column_labels
+        scripted_field_mapping: pd.Series = pd.Series(
+            {
+                "display_name": display_name,
+                "es_field_name": scripted_field_name,
+                "is_source": False,
+                "es_dtype": self._pd_dtype_to_es_dtype(pd_dtype),
+                "es_date_format": None,
+                "pd_dtype": pd_dtype,
+                "is_searchable": True,
+                "is_aggregatable": True,
+                "is_scripted": True,
+                "aggregatable_es_field_name": scripted_field_name,
+            },
         )
 
         self._mappings_capabilities = self._mappings_capabilities.append(
-            capability_matrix_row
+            scripted_field_mapping, ignore_index=True
         )
 
     def numeric_source_fields(self) -> List[str]:
@@ -725,9 +736,9 @@ class FieldMappings:
 
         """
         source_fields: List[Field] = []
-        for column, row in self._mappings_capabilities.iterrows():
-            row = row.to_dict()
-            row["column"] = column
+        for row in self._mappings_capabilities.itertuples(index=False):
+            row = row._asdict()
+            row["column"] = row["display_name"]
             source_fields.append(Field(**row))
         return source_fields
 
@@ -747,8 +758,9 @@ class FieldMappings:
         """
         groupby_fields: Dict[str, Field] = {}
         aggregatable_fields: List[Field] = []
-        for column, row in self._mappings_capabilities.iterrows():
-            row = row.to_dict()
+        for row in self._mappings_capabilities.itertuples(index=False):
+            row = row._asdict()
+            column = row["display_name"]
             row["column"] = column
             if column not in by:
                 aggregatable_fields.append(Field(**row))
@@ -795,31 +807,36 @@ class FieldMappings:
                 es_date_formats.append(es_date_format)
 
         # return in display_name order
-        return pd_dtypes, es_field_names, es_date_formats
+        return pd_dtypes, es_field_names, es_date_formats  # type: ignore
 
     def get_field_names(self, include_scripted_fields: bool = True) -> List[str]:
         if include_scripted_fields:
-            return self._mappings_capabilities.es_field_name.to_list()
+            return self._mappings_capabilities.es_field_name.to_list()  # type: ignore[no-any-return]
 
-        return self._mappings_capabilities[  # noqa: E712
+        return self._mappings_capabilities[  # type: ignore[no-any-return]
             self._mappings_capabilities.is_scripted == False
         ].es_field_name.to_list()
 
-    def _get_display_names(self):
-        return self._mappings_capabilities.index.to_list()
+    def _get_display_names(self) -> List[str]:
+        return self._mappings_capabilities.display_name.to_list()  # type: ignore[no-any-return]
 
-    def _set_display_names(self, display_names: List[str]):
+    def _set_display_names(self, display_names: List[str]) -> None:
         if not is_list_like(display_names):
             raise ValueError(f"'{display_names}' is not list like")
 
         if list(set(display_names) - set(self.display_names)):
             raise KeyError(f"{display_names} not in display names {self.display_names}")
 
-        self._mappings_capabilities = self._mappings_capabilities.reindex(display_names)
+        # Now filter and maintain order by display_names
+        self._mappings_capabilities = self._mappings_capabilities.iloc[
+            pd.Index(self._mappings_capabilities["display_name"]).get_indexer(
+                display_names
+            )
+        ].reset_index(drop=True)
 
     display_names = property(_get_display_names, _set_display_names)
 
-    def dtypes(self):
+    def dtypes(self) -> pd.Series:
         """
         Returns
         -------
@@ -827,15 +844,21 @@ class FieldMappings:
             Index: Display name
             Values: pd_dtype as np.dtype
         """
-        pd_dtypes = self._mappings_capabilities["pd_dtype"]
+        pd_dtypes = self._mappings_capabilities[["display_name", "pd_dtype"]].set_index(
+            "display_name"
+        )
+
+        if isinstance(pd_dtypes, pd.DataFrame):
+            pd_dtypes = pd_dtypes.squeeze(axis=1)
 
         # Set name of the returned series as None
         pd_dtypes.name = None
+        pd_dtypes.index.name = None
 
         # Convert return from 'str' to 'np.dtype'
         return pd_dtypes.apply(lambda x: np.dtype(x))
 
-    def es_dtypes(self):
+    def es_dtypes(self) -> pd.Series:
         """
         Returns
         -------
@@ -843,17 +866,23 @@ class FieldMappings:
             Index: Display name
             Values: es_dtype as a string
         """
-        es_dtypes = self._mappings_capabilities["es_dtype"]
+        es_dtypes = self._mappings_capabilities[["display_name", "es_dtype"]].set_index(
+            "display_name"
+        )
+
+        if isinstance(es_dtypes, pd.DataFrame):
+            es_dtypes = es_dtypes.squeeze(axis=1)
 
         # Set name of the returned series as None
         es_dtypes.name = None
+        es_dtypes.index.name = None
         return es_dtypes
 
     def es_info(self, buf: TextIO) -> None:
         buf.write("Mappings:\n")
         buf.write(f" capabilities:\n{self._mappings_capabilities.to_string()}\n")
 
-    def rename(self, old_name_new_name_dict):
+    def rename(self, old_name_new_name_dict: Dict[str, str]) -> None:
         """
         Renames display names in-place
 
@@ -869,32 +898,34 @@ class FieldMappings:
         -----
         For the names that do not exist this is a no op
         """
-        self._mappings_capabilities = self._mappings_capabilities.rename(
-            index=old_name_new_name_dict
+        self._mappings_capabilities["display_name"].replace(
+            old_name_new_name_dict, inplace=True
         )
 
-    def get_renames(self):
-        # return dict of renames { old_name: new_name, ... } (inefficient)
-        renames = {}
-
-        for display_name in self.display_names:
-            field_name = self._mappings_capabilities.loc[display_name].es_field_name
-            if field_name != display_name:
-                renames[field_name] = display_name
-
-        return renames
+    def get_renames(self) -> Dict[str, str]:
+        """
+        This method returns the differences between `display_name` and `es_field_name`
+        by querying directly
+        """
+        renames_df: pd.DataFrame = self._mappings_capabilities[
+            self._mappings_capabilities.apply(
+                lambda x: x["display_name"] != x["es_field_name"], axis=1
+            )
+        ][["display_name", "es_field_name"]]
+        # {'products.manufacturer': 'manufacturer', 'products.base_unit_price': base_unit_price}
+        return renames_df.set_index("es_field_name")["display_name"].to_dict()  # type: ignore[no-any-return]
 
 
 def verify_mapping_compatibility(
-    ed_mapping: Mapping[str, Mapping[str, Mapping[str, Mapping[str, str]]]],
-    es_mapping: Mapping[str, Mapping[str, Mapping[str, Mapping[str, str]]]],
+    ed_mapping: Mapping[str, Mapping[str, Mapping[str, Any]]],
+    es_mapping: Mapping[str, Mapping[str, Mapping[str, Any]]],
     es_type_overrides: Optional[Mapping[str, str]] = None,
 ) -> None:
     """Given a mapping generated by Eland and an existing ES index mapping
     attempt to see if the two are compatible. If not compatible raise ValueError
     with a list of problems between the two to be reported to the user.
     """
-    problems = []
+    problems: List[str] = []
     es_type_overrides = es_type_overrides or {}
 
     ed_props = ed_mapping["mappings"]["properties"]
@@ -909,10 +940,10 @@ def verify_mapping_compatibility(
             problems.append(f"- {key!r} is missing from ES index mapping")
             continue
 
-        key_type = es_type_overrides.get(key, key_def["type"])
-        es_key_type = es_props[key]["type"]
+        key_type: Any = es_type_overrides.get(key, key_def["type"])
+        es_key_type: Any = es_mapping[key]["type"]
         if key_type != es_key_type and es_key_type not in ES_COMPATIBLE_TYPES.get(
-            key_type, ()
+            key_type, set()
         ):
             problems.append(
                 f"- {key!r} column type ({key_type!r}) not compatible with "

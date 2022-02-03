@@ -27,16 +27,17 @@ class Query:
     Simple class to manage building Elasticsearch queries.
     """
 
-    def __init__(self, query: Optional["Query"] = None):
-        # type defs
-        self._query: BooleanFilter
-        self._aggs: Dict[str, Any]
-        self._composite_aggs: Dict[str, Any]
+    def __init__(
+        self,
+        query: Optional["Query"] = None,
+        script_fields: Optional[Dict[str, Dict[str, Any]]] = None,
+    ):
+        self._script_fields = script_fields or {}
 
         if query is None:
-            self._query = BooleanFilter()
-            self._aggs = {}
-            self._composite_aggs = {}
+            self._query: BooleanFilter = BooleanFilter()
+            self._aggs: Dict[str, Any] = {}
+            self._composite_aggs: Dict[str, Any] = {}
         else:
             # Deep copy the incoming query so we can change it
             self._query = deepcopy(query._query)
@@ -122,7 +123,12 @@ class Query:
             }
         }
         """
-        agg = {func: {"field": field}}
+        if field in self._script_fields:
+            _field = self._script_fields[field]
+        else:
+            _field = {"field": field}
+        agg = {func: _field}
+
         if es_size:
             agg[func]["size"] = str(es_size)
 
@@ -142,8 +148,11 @@ class Query:
             }
         }
         """
-        agg = {func: {"field": field}}
-        self._aggs[name] = agg
+        if field in self._script_fields:
+            _field = self._script_fields[field]
+        else:
+            _field = {"field": field}
+        self._aggs[name] = {func: _field}
 
     def percentile_agg(self, name: str, field: str, percents: List[float]) -> None:
         """
@@ -160,7 +169,11 @@ class Query:
         }
 
         """
-        agg = {"percentiles": {"field": field, "percents": percents}}
+        if field in self._script_fields:
+            _field = self._script_fields[field]
+        else:
+            _field = {"field": field}
+        agg = {"percentiles": {**_field, "percents": percents}}
         self._aggs[name] = agg
 
     def top_hits_agg(
@@ -191,7 +204,11 @@ class Query:
             }
         }
         """
-        self._composite_aggs[name] = {"terms": {"field": field}}
+        if field in self._script_fields:
+            _field = self._script_fields[field]
+        else:
+            _field = {"field": field}
+        self._composite_aggs[name] = {"terms": _field}
 
     def composite_agg_bucket_date_histogram(
         self,
@@ -204,7 +221,11 @@ class Query:
             raise ValueError(
                 "calendar_interval and fixed_interval parmaeters are mutually exclusive"
             )
-        agg = {"field": field}
+        if field in self._script_fields:
+            _field = self._script_fields[field]
+        else:
+            _field = {"field": field}
+        agg: Dict[str, Any] = {"field": _field}
         if calendar_interval is not None:
             agg["calendar_interval"] = calendar_interval
         elif fixed_interval is not None:
