@@ -41,7 +41,13 @@ def main():
     parser.add_argument(
         "--url",
         required=True,
-        help="An Elasticsearch connection URL, e.g. http://user:secret@localhost:9200",
+        help="An Elasticsearch connection URL, e.g. https://user:secret@localhost:9200",
+    )
+    parser.add_argument(
+        "--insecure",
+        default=True,
+        action="store_false",
+        help="Disable TLS certificate verification.",
     )
     parser.add_argument(
         "--hub-model-id",
@@ -83,7 +89,7 @@ def main():
     )
     args = parser.parse_args()
 
-    es = elasticsearch.Elasticsearch(args.url, timeout=300)  # 5 minute timeout
+    es = elasticsearch.Elasticsearch(args.url, verify_certs=args.insecure, timeout=300)  # 5 minute timeout
 
     # trace and save model, then upload it from temp file
     with tempfile.TemporaryDirectory() as tmp_dir:
