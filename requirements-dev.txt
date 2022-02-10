@@ -1,4 +1,4 @@
-elasticsearch>=8.0.0a1,<9
+elasticsearch>=8,<9
 pandas>=1.2.0
 matplotlib
 pytest>=5.2.1
