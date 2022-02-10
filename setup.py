@@ -28,7 +28,7 @@ with open(path.join(here, "eland", "_version.py"), "r", "utf-8") as f:
     exec(f.read(), about)
 
 CLASSIFIERS = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "License :: OSI Approved :: Apache Software License",
     "Environment :: Console",
     "Operating System :: OS Independent",
@@ -82,7 +82,7 @@ setup(
     keywords="elastic eland pandas python",
     packages=find_packages(include=["eland", "eland.*"]),
     install_requires=[
-        "elasticsearch>=8.0.0a1,<9",
+        "elasticsearch>=8,<9",
         "pandas>=1.2,<1.4",
         "matplotlib",
         "numpy",

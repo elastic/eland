@@ -2,8 +2,8 @@
 Changelog
 =========
 
-8.0.0b1 (2021-12-16)
---------------------
+8.0.0 (2022-02-10)
+------------------
 
 Added
 ^^^^^
@@ -14,6 +14,9 @@ Added
 * Added support for v8.0 of the Python Elasticsearch client (`#415`_)
 * Added a warning if Eland detects it's communicating with an incompatible Elasticsearch version (`#419`_)
 * Added support for ``number_samples`` to LightGBM and Scikit-Learn models (`#397`_, contributed by `@V1NAY8`_)
+* Added ability to use datetime types for filtering dataframes (`284`_, contributed by `@Fju`_)
+* Added pandas ``datetime64`` type to use the Elasticsearch ``date`` type (`#425`_, contributed by `@Ashton-Sidhu`_)
+* Added ``es_verify_mapping_compatibility`` parameter to disable schema enforcement with ``pandas_to_eland`` (`#423`_, contributed by `@Ashton-Sidhu`_)
 
 Changed
 ^^^^^^^
@@ -21,11 +24,16 @@ Changed
 * Changed ``to_pandas()`` to only use Point-in-Time and ``search_after`` instead of using Scroll APIs
   for pagination.
 
+.. _@Fju: https://github.com/Fju
+.. _@Ashton-Sidhu: https://github.com/Ashton-Sidhu
 .. _#419: https://github.com/elastic/eland/pull/419
 .. _#415: https://github.com/elastic/eland/pull/415
 .. _#397: https://github.com/elastic/eland/pull/397
 .. _#394: https://github.com/elastic/eland/pull/394
 .. _#403: https://github.com/elastic/eland/pull/403
+.. _#284: https://github.com/elastic/eland/pull/284
+.. _#424: https://github.com/elastic/eland/pull/425
+.. _#423: https://github.com/elastic/eland/pull/423
 
 
 7.14.1b1 (2021-08-30)
