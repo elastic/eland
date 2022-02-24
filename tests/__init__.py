@@ -64,7 +64,7 @@ FLIGHTS_MAPPING = {
             "OriginRegion": {"type": "keyword"},
             "OriginWeather": {"type": "keyword"},
             "dayOfWeek": {"type": "byte"},
-            "timestamp": {"type": "date", "format": "strict_date_hour_minute_second"},
+            "timestamp": {"type": "date", "format": "strict_date_optional_time"},
         }
     }
 }
