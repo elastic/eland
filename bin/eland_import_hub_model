@@ -29,6 +29,7 @@ import argparse
 import tempfile
 
 import elasticsearch
+from elastic_transport.client_utils import DEFAULT
 
 from eland.ml.pytorch import PyTorchModel
 from eland.ml.pytorch.transformers import SUPPORTED_TASK_TYPES, TransformerModel
@@ -81,9 +82,21 @@ def main():
         default=False,
         help="Should the model previously stored with `elasticsearch-model-id` be deleted"
     )
+    parser.add_argument(
+        "--insecure",
+        action="store_false",
+        default=True,
+        help="Do not verify SSL certificates"
+    )
+    parser.add_argument(
+        "--ca-certs",
+        required=False,
+        default=DEFAULT,
+        help="Path to CA bundle"
+    )        
     args = parser.parse_args()
 
-    es = elasticsearch.Elasticsearch(args.url, timeout=300)  # 5 minute timeout
+    es = elasticsearch.Elasticsearch(args.url, request_timeout=300, verify_certs=args.insecure, ca_certs=args.ca_certs)  # 5 minute timeout
 
     # trace and save model, then upload it from temp file
     with tempfile.TemporaryDirectory() as tmp_dir:
