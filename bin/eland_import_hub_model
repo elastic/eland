@@ -29,10 +29,11 @@ import argparse
 import tempfile
 
 import elasticsearch
+from elastic_transport.client_utils import DEFAULT
 
 from eland.ml.pytorch import PyTorchModel
-from eland.ml.pytorch.transformers import SUPPORTED_TASK_TYPES, TransformerModel
-from elastic_transport.client_utils import DEFAULT
+from eland.ml.pytorch.transformers import (SUPPORTED_TASK_TYPES,
+                                           TransformerModel)
 
 MODEL_HUB_URL = "https://huggingface.co"
 
