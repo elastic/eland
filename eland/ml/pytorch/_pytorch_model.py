@@ -19,7 +19,7 @@ import base64
 import json
 import math
 import os
-from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Set, Tuple, Union
+from typing import TYPE_CHECKING, Any, Iterable, List, Mapping, Set, Tuple, Union
 
 from tqdm.auto import tqdm  # type: ignore
 
@@ -96,7 +96,7 @@ class PyTorchModel:
 
     def infer(
         self,
-        docs: List[Dict[str, str]],
+        docs: List[Mapping[str, str]],
         timeout: str = DEFAULT_TIMEOUT,
     ) -> Any:
         return self._client.options(
