@@ -15,7 +15,7 @@
 #  specific language governing permissions and limitations
 #  under the License.
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Tuple, Union, cast
 
 import elasticsearch
 import numpy as np
@@ -129,7 +129,7 @@ class MLModel:
         >>> # Delete model from Elasticsearch
         >>> es_model.delete_model()
         """
-        docs = []
+        docs: List[Mapping[str, Any]] = []
         if isinstance(X, np.ndarray):
 
             def to_list_or_float(x: Any) -> Union[List[Any], float]:
