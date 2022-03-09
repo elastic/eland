@@ -57,8 +57,11 @@ class PyTorchModel:
     def put_vocab(self, path: str) -> None:
         with open(path) as f:
             vocab = json.load(f)
-        self._client.ml.put_trained_model_vocabulary(
-            model_id=self.model_id, vocabulary=vocab["vocabulary"]
+        self._client.perform_request(
+            method="PUT",
+            path=f"/_ml/trained_models/{self.model_id}/vocabulary",
+            headers={"accept": "application/json", "content-type": "application/json"},
+            body=vocab,
         )
 
     def put_model(self, model_path: str, chunk_size: int = DEFAULT_CHUNK_SIZE) -> None:
