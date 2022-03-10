@@ -413,7 +413,7 @@ class TransformerModel:
         vocab_obj = {
             "vocabulary": vocabulary,
         }
-        ranks = getattr(self._tokenizer, "bpe_ranks", [])
+        ranks = getattr(self._tokenizer, "bpe_ranks", {})
         if len(ranks) > 0:
             merges = [
                 " ".join(m) for m, _ in sorted(ranks.items(), key=lambda kv: kv[1])
