@@ -800,6 +800,34 @@ class Operations:
         else:
             return df if is_dataframe else df.transpose().iloc[0]
 
+    def unique(self, query_compiler: "QueryCompiler") -> pd.Series:
+
+        query_params, _ = self._resolve_tasks(query_compiler)
+
+        fields = query_compiler._mappings.all_source_fields()
+
+        body = Query(query_params.query)
+
+        # Unique is only for eland.Series
+        assert len(fields) == 1
+
+        body.composite_agg_bucket_terms(
+            name=f"unique_{fields[0].column}",
+            field=fields[0].aggregatable_es_field_name,
+        )
+
+        # Composite aggregation
+        body.composite_agg_start(size=DEFAULT_PAGINATION_SIZE, name="unique_buckets")
+
+        unique_buckets: List[Any] = sum(
+            self.bucket_generator(query_compiler, body, "unique_buckets"), []  # type: ignore
+        )
+
+        return np.array(
+            [bucket["key"][f"unique_{fields[0].column}"] for bucket in unique_buckets],
+            dtype=fields[0].pd_dtype,
+        )
+
     def aggs_groupby(
         self,
         query_compiler: "QueryCompiler",
@@ -920,7 +948,9 @@ class Operations:
             size=DEFAULT_PAGINATION_SIZE, name="groupby_buckets", dropna=dropna
         )
 
-        for buckets in self.bucket_generator(query_compiler, body):
+        for buckets in self.bucket_generator(
+            query_compiler, body, name="groupby_buckets"
+        ):
             # We recieve response row-wise
             for bucket in buckets:
                 # groupby columns are added to result same way they are returned
@@ -984,7 +1014,7 @@ class Operations:
 
     @staticmethod
     def bucket_generator(
-        query_compiler: "QueryCompiler", body: "Query"
+        query_compiler: "QueryCompiler", body: "Query", name: str
     ) -> Generator[Sequence[Dict[str, Any]], None, Sequence[Dict[str, Any]]]:
         """
             This can be used for all groupby operations.
@@ -1015,7 +1045,7 @@ class Operations:
             )
 
             # Pagination Logic
-            composite_buckets: Dict[str, Any] = res["aggregations"]["groupby_buckets"]
+            composite_buckets: Dict[str, Any] = res["aggregations"][name]
 
             after_key: Optional[Dict[str, Any]] = composite_buckets.get(
                 "after_key", None
@@ -1028,7 +1058,7 @@ class Operations:
                 yield buckets
 
                 body.composite_agg_after_key(
-                    name="groupby_buckets",
+                    name=name,
                     after_key=after_key,
                 )
             else:
