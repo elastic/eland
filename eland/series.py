@@ -1562,7 +1562,9 @@ class Series(NDFrame):
 
     def unique(self) -> pd.Series:
         """
-            Returns unique values in the ascending order
+            Returns all unique values within a Series.
+            Note that behavior is slightly different between pandas and Eland: pandas will return values in the order
+            they're first seen and Eland returns values in sorted order.
 
         Returns
         -------
