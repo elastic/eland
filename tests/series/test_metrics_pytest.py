@@ -156,10 +156,8 @@ class TestSeriesMetrics(TestData):
         else:
             assert pd_quantile * 0.9 <= ed_quantile <= pd_quantile * 1.1
 
-    @pytest.mark.parametrize(
-        "column", ["FlightDelayMin", "dayOfWeek", "Cancelled", "DestCountry"]
-    )
-    def test_flights_unique(self, column):
+    @pytest.mark.parametrize("column", ["FlightDelayMin", "dayOfWeek"])
+    def test_flights_unique_numeric(self, column):
         pd_flights = self.pd_flights()[column]
         ed_flights = self.ed_flights()[column]
 
@@ -169,6 +167,18 @@ class TestSeriesMetrics(TestData):
         ed_unique = ed_flights.unique()
 
         np.testing.assert_allclose(pd_unique, ed_unique)
+
+    @pytest.mark.parametrize("column", ["Cancelled", "DestCountry"])
+    def test_flights_unique_strings(self, column):
+        pd_flights = self.pd_flights()[column]
+        ed_flights = self.ed_flights()[column]
+
+        # Pandas returns unique values in order of their appearance
+        # ES returns results in ascending order, hence sort the pandas array to check equality
+        pd_unique = np.sort(pd_flights.unique())
+        ed_unique = ed_flights.unique()
+
+        np.equal(pd_unique, ed_unique)
 
     @pytest.mark.parametrize("quantiles_list", [[np.array([1, 2])], ["1", 2]])
     def test_quantile_non_numeric_values(self, quantiles_list):
