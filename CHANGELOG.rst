@@ -2,6 +2,19 @@
 Changelog
 =========
 
+8.1.0 (2022-03-31)
+------------------
+
+Added
+^^^^^
+
+* Added support for ``eland.Series.unique()`` (`#448`_, contributed by `@V1NAY8`_)
+* Added ``--ca-certs`` and ``--insecure`` options to ``eland_import_hub_model`` for configuring TLS (`#441`_)
+
+.. _#448: https://github.com/elastic/eland/pull/448
+.. _#441: https://github.com/elastic/eland/pull/441
+
+
 8.0.0 (2022-02-10)
 ------------------
 
