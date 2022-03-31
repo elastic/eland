@@ -1560,6 +1560,24 @@ class Series(NDFrame):
         results = super().nunique()
         return results.squeeze()
 
+    def unique(self) -> pd.Series:
+        """
+            Returns all unique values within a Series.
+            Note that behavior is slightly different between pandas and Eland: pandas will return values in the order
+            they're first seen and Eland returns values in sorted order.
+
+        Returns
+        -------
+        pd.Series
+            A series containing unique values of given series is returned.
+
+        See Also
+        --------
+        :pandas_api_docs:`pandas.Series.unique`
+
+        """
+        return self._query_compiler.unique()
+
     def var(self, numeric_only: Optional[bool] = None) -> pd.Series:
         """
         Return variance for a Series

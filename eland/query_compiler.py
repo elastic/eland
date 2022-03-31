@@ -621,6 +621,9 @@ class QueryCompiler:
             self, ["nunique"], numeric_only=False
         )
 
+    def unique(self) -> pd.Series:
+        return self._operations.unique(self)
+
     def mode(
         self,
         es_size: int,
