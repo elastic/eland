@@ -1225,36 +1225,56 @@ class Operations:
         )
 
     def to_pandas(
-        self, query_compiler: "QueryCompiler", show_progress: bool = False
-    ) -> pd.DataFrame:
+        self,
+        query_compiler: "QueryCompiler",
+        show_progress: bool = False,
+        to_csv: bool = False,
+        **csv_kwargs: Union[bool, str],
+    ) -> Optional[Union[pd.DataFrame, str]]:
+
+        write_header: bool = True
+        _ = csv_kwargs.pop("mode", None)
+        _ = csv_kwargs.pop("header", None)
+
+        # Return a csv string if file path is not provided.
+        result = []
+        path_or_buf = csv_kwargs.pop("path_or_buf", None)
 
         df_list: List[pd.DataFrame] = []
         i = 0
+
         for df in self.search_yield_pandas_dataframes(query_compiler=query_compiler):
             if show_progress:
                 i = i + df.shape[0]
                 if i % DEFAULT_PROGRESS_REPORTING_NUM_ROWS == 0:
                     print(f"{datetime.now()}: read {i} rows")
-            df_list.append(df)
+
+            if to_csv:
+                result.append(
+                    df.to_csv(
+                        path_or_buf=path_or_buf,
+                        mode="w" if write_header else "a",
+                        header=True if write_header else False,
+                        **csv_kwargs,
+                    )
+                )
+                write_header = False
+            else:
+                df_list.append(df)
 
         if show_progress:
             print(f"{datetime.now()}: read {i} rows")
 
-        # pd.concat() can't handle an empty list
-        # because there aren't defined columns.
-        if not df_list:
-            return query_compiler._empty_pd_ef()
-        return pd.concat(df_list)
-
-    def to_csv(
-        self,
-        query_compiler: "QueryCompiler",
-        show_progress: bool = False,
-        **kwargs: Union[bool, str],
-    ) -> Optional[str]:
-        return self.to_pandas(  # type: ignore[no-any-return]
-            query_compiler=query_compiler, show_progress=show_progress
-        ).to_csv(**kwargs)
+        if to_csv and path_or_buf is None:
+            return "".join(result)
+        elif not to_csv:
+            # pd.concat() can't handle an empty list
+            # because there aren't defined columns.
+            if not df_list:
+                return query_compiler._empty_pd_ef()
+            return pd.concat(df_list)
+        else:
+            return None
 
     def search_yield_pandas_dataframes(
         self, query_compiler: "QueryCompiler"

@@ -498,7 +498,7 @@ class QueryCompiler:
         return self._update_query(QueryFilter(query))
 
     # To/From Pandas
-    def to_pandas(self, show_progress: bool = False):
+    def to_pandas(self, show_progress: bool = False) -> pd.DataFrame:
         """Converts Eland DataFrame to Pandas DataFrame.
 
         Returns:
@@ -513,7 +513,7 @@ class QueryCompiler:
         Returns:
             If path_or_buf is None, returns the resulting csv format as a string. Otherwise returns None.
         """
-        return self._operations.to_csv(self, **kwargs)
+        return self._operations.to_pandas(query_compiler=self, to_csv=True, **kwargs)
 
     def search_yield_pandas_dataframes(self) -> Generator["pd.DataFrame", None, None]:
         return self._operations.search_yield_pandas_dataframes(self)
