@@ -113,8 +113,12 @@ def main():
         ptm = PyTorchModel(es, es_model_id)
         if args.clear_previous:
             print(f"Stopping previous deployment and deleting model: {ptm.model_id}")
-            ptm.stop()
-            ptm.delete()
+            try:
+                ptm.stop()
+                ptm.delete()
+            except elasticsearch.NotFoundError:
+                print(f"Previous deployment for {ptm.model_id} not found")
+
         print(f"Importing model: {ptm.model_id}")
         ptm.import_model(model_path, config_path, vocab_path)
 
