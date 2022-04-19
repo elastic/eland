@@ -37,6 +37,19 @@ from transformers import (
     PreTrainedTokenizerFast,
 )
 
+from eland.ml.pytorch.nlp_ml_model import (
+    FillMaskInferenceOptions,
+    InferenceConfig,
+    NerInferenceOptions,
+    NlpBertTokenizationConfig,
+    NlpRobertaTokenizationConfig,
+    NlpTrainedModelConfig,
+    TextClassificationInferenceOptions,
+    TextEmbeddingInferenceOptions,
+    TrainedModelInput,
+    ZeroShotClassificationInferenceOptions,
+)
+
 DEFAULT_OUTPUT_KEY = "sentence_embedding"
 SUPPORTED_TASK_TYPES = {
     "fill_mask",
@@ -44,6 +57,13 @@ SUPPORTED_TASK_TYPES = {
     "text_classification",
     "text_embedding",
     "zero_shot_classification",
+}
+TASK_TYPE_TO_INFERENCE_CONFIG = {
+    "fill_mask": FillMaskInferenceOptions,
+    "ner": NerInferenceOptions,
+    "text_classification": TextClassificationInferenceOptions,
+    "text_embedding": TextEmbeddingInferenceOptions,
+    "zero_shot_classification": ZeroShotClassificationInferenceOptions,
 }
 SUPPORTED_TASK_TYPES_NAMES = ", ".join(sorted(SUPPORTED_TASK_TYPES))
 SUPPORTED_TOKENIZERS = (
@@ -91,8 +111,8 @@ class _DistilBertWrapper(nn.Module):  # type: ignore
         self,
         input_ids: Tensor,
         attention_mask: Tensor,
-        token_type_ids: Tensor,
-        position_ids: Tensor,
+        _token_type_ids: Tensor,
+        _position_ids: Tensor,
     ) -> Tensor:
         """Wrap the input and output to conform to the native process interface."""
 
@@ -246,7 +266,7 @@ class _DPREncoderWrapper(nn.Module):  # type: ignore
         input_ids: Tensor,
         attention_mask: Tensor,
         token_type_ids: Tensor,
-        position_ids: Tensor,
+        _position_ids: Tensor,
     ) -> Tensor:
         """Wrap the input and output to conform to the native process interface."""
 
@@ -421,50 +441,51 @@ class TransformerModel:
             vocab_obj["merges"] = merges
         return vocab_obj
 
-    def _create_config(self) -> Dict[str, Any]:
+    def _create_config(self) -> NlpTrainedModelConfig:
         if isinstance(self._tokenizer, transformers.MPNetTokenizer):
-            tokenizer_type = "mpnet"
-            tokenizer_obj = {
-                "do_lower_case": getattr(self._tokenizer, "do_lower_case", False)
-            }
+            tokenization_config = NlpBertTokenizationConfig(
+                do_lower_case=getattr(self._tokenizer, "do_lower_case", None),
+                max_sequence_length=getattr(
+                    self._tokenizer, "max_model_input_sizes", dict()
+                ).get(self._model_id),
+            )
         elif isinstance(
             self._tokenizer, (transformers.RobertaTokenizer, transformers.BartTokenizer)
         ):
-            tokenizer_type = "roberta"
-            tokenizer_obj = {
-                "add_prefix_space": getattr(self._tokenizer, "add_prefix_space", False)
-            }
-        else:
-            tokenizer_type = "bert"
-            tokenizer_obj = {
-                "do_lower_case": getattr(self._tokenizer, "do_lower_case", False)
-            }
-        inference_config: Dict[str, Dict[str, Any]] = {
-            self._task_type: {"tokenization": {tokenizer_type: tokenizer_obj}}
-        }
-
-        if hasattr(self._tokenizer, "max_model_input_sizes"):
-            max_sequence_length = self._tokenizer.max_model_input_sizes.get(
-                self._model_id
+            tokenization_config = NlpRobertaTokenizationConfig(
+                add_prefix_space=getattr(self._tokenizer, "add_prefix_space", None),
+                max_sequence_length=getattr(
+                    self._tokenizer, "max_model_input_sizes", dict()
+                ).get(self._model_id),
             )
-            if max_sequence_length:
-                inference_config[self._task_type]["tokenization"][tokenizer_type][
-                    "max_sequence_length"
-                ] = max_sequence_length
+        else:
+            tokenization_config = NlpBertTokenizationConfig(
+                do_lower_case=getattr(self._tokenizer, "do_lower_case", None),
+                max_sequence_length=getattr(
+                    self._tokenizer, "max_model_input_sizes", dict()
+                ).get(self._model_id),
+            )
 
         if self._traceable_model.classification_labels():
-            inference_config[self._task_type][
-                "classification_labels"
-            ] = self._traceable_model.classification_labels()
+            inference_config: InferenceConfig = TASK_TYPE_TO_INFERENCE_CONFIG[
+                self._task_type
+            ](
+                tokenization=tokenization_config,
+                classification_labels=self._traceable_model.classification_labels(),
+            )
+        else:
+            inference_config: InferenceConfig = TASK_TYPE_TO_INFERENCE_CONFIG[
+                self._task_type
+            ](tokenization=tokenization_config)
 
-        return {
-            "description": f"Model {self._model_id} for task type '{self._task_type}'",
-            "model_type": "pytorch",
-            "inference_config": inference_config,
-            "input": {
-                "field_names": ["text_field"],
-            },
-        }
+        return NlpTrainedModelConfig(
+            description=f"Model {self._model_id} for task type '{self._task_type}'",
+            model_type="pytorch",
+            inference_config=inference_config,
+            input=TrainedModelInput(
+                field_names=["text_field"],
+            ),
+        )
 
     def _create_traceable_model(self) -> _TraceableModel:
         if self._task_type == "fill_mask":
@@ -514,19 +535,14 @@ class TransformerModel:
         # Elasticsearch model IDs need to be a specific format: no special chars, all lowercase, max 64 chars
         return self._model_id.replace("/", "__").lower()[:64]
 
-    def save(self, path: str) -> Tuple[str, str, str]:
+    def save(self, path: str) -> Tuple[str, NlpTrainedModelConfig, str]:
         # save traced model
         model_path = os.path.join(path, "traced_pytorch_model.pt")
         torch.jit.save(self._traced_model, model_path)
-
-        # save configuration
-        config_path = os.path.join(path, "config.json")
-        with open(config_path, "w") as outfile:
-            json.dump(self._config, outfile)
 
         # save vocabulary
         vocab_path = os.path.join(path, "vocabulary.json")
         with open(vocab_path, "w") as outfile:
             json.dump(self._vocab, outfile)
 
-        return model_path, config_path, vocab_path
+        return model_path, self._config, vocab_path

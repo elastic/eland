@@ -30,6 +30,7 @@ import tempfile
 
 import elasticsearch
 from elastic_transport.client_utils import DEFAULT
+from elasticsearch import NotFoundError
 
 from eland.ml.pytorch import PyTorchModel
 from eland.ml.pytorch.transformers import SUPPORTED_TASK_TYPES, TransformerModel
@@ -102,7 +103,7 @@ def main():
     with tempfile.TemporaryDirectory() as tmp_dir:
         print(f"Loading HuggingFace transformer tokenizer and model {args.hub_model_id}")
         tm = TransformerModel(args.hub_model_id, args.task_type, args.quantize)
-        model_path, config_path, vocab_path = tm.save(tmp_dir)
+        model_path, config, vocab_path = tm.save(tmp_dir)
 
         es_model_id = (
             args.elasticsearch_model_id
@@ -113,10 +114,13 @@ def main():
         ptm = PyTorchModel(es, es_model_id)
         if args.clear_previous:
             print(f"Stopping previous deployment and deleting model: {ptm.model_id}")
-            ptm.stop()
-            ptm.delete()
+            try:
+                ptm.stop()
+                ptm.delete()
+            except NotFoundError:
+                print(f"Previous deployment for model {ptm.model_id} not found")
         print(f"Importing model: {ptm.model_id}")
-        ptm.import_model(model_path, config_path, vocab_path)
+        ptm.import_model(model_path, config, vocab_path)
 
     # start the deployed model
     if args.start:

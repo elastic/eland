@@ -24,6 +24,7 @@ from typing import TYPE_CHECKING, Any, Iterable, List, Mapping, Set, Tuple, Unio
 from tqdm.auto import tqdm  # type: ignore
 
 from eland.common import ensure_es_client
+from eland.ml.pytorch.nlp_ml_model import NlpTrainedModelConfig
 
 if TYPE_CHECKING:
     from elasticsearch import Elasticsearch
@@ -88,12 +89,14 @@ class PyTorchModel:
     def import_model(
         self,
         model_path: str,
-        config_path: str,
+        config: Union[str, NlpTrainedModelConfig],
         vocab_path: str,
         chunk_size: int = DEFAULT_CHUNK_SIZE,
     ) -> None:
-        # TODO: Implement some pre-flight checks on config, vocab, and model
-        self.put_config(config_path)
+        if isinstance(config, str):
+            with open(config) as f:
+                config = NlpTrainedModelConfig(**json.load(f))
+        self._client.ml.put_trained_model(model_id=self.model_id, **config.to_dict())
         self.put_model(model_path, chunk_size)
         self.put_vocab(vocab_path)
 

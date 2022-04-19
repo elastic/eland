@@ -1,0 +1,248 @@
+#  Licensed to Elasticsearch B.V. under one or more contributor
+#  license agreements. See the NOTICE file distributed with
+#  this work for additional information regarding copyright
+#  ownership. Elasticsearch B.V. licenses this file to you under
+#  the Apache License, Version 2.0 (the "License"); you may
+#  not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+# 	http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing,
+#  software distributed under the License is distributed on an
+#  "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+#  KIND, either express or implied.  See the License for the
+#  specific language governing permissions and limitations
+#  under the License.
+
+import typing as t
+
+
+class NlpTokenizationConfig:
+    def __init__(self, configuration_type: str):
+        self.name = configuration_type
+
+    def to_dict(self):
+        return {
+            self.name: {
+                k: v
+                for k, v in self.__dict__.items()
+                if v is not None and k is not "name"
+            }
+        }
+
+
+class NlpRobertaTokenizationConfig(NlpTokenizationConfig):
+    def __init__(
+        self,
+        add_prefix_space: t.Optional[bool] = None,
+        with_special_tokens: t.Optional[bool] = None,
+        max_sequence_length: t.Optional[int] = None,
+        truncate: t.Optional[
+            t.Union["t.Literal['first', 'none', 'second']", str]
+        ] = None,
+        span: t.Optional[int] = None,
+    ):
+        super().__init__("roberta")
+        self.add_prefix_space = add_prefix_space
+        self.with_special_tokens = with_special_tokens
+        self.max_sequence_length = max_sequence_length
+        self.truncate = truncate
+        self.span = span
+
+
+class NlpBertTokenizationConfig(NlpTokenizationConfig):
+    def __init__(
+        self,
+        do_lower_case: t.Optional[bool] = False,
+        with_special_tokens: t.Optional[bool] = False,
+        max_sequence_length: t.Optional[int] = 512,
+        truncate: t.Optional[
+            t.Union["t.Literal['first', 'none', 'second']", str]
+        ] = None,
+        span: t.Optional[int] = None,
+        configuration_type: str = "bert",
+    ):
+        super().__init__(configuration_type)
+        self.do_lower_case = do_lower_case
+        self.with_special_tokens = with_special_tokens
+        self.max_sequence_length = max_sequence_length
+        self.truncate = truncate
+        self.span = span
+
+
+class NlpMPNetNlpBertTokenizationConfig(NlpBertTokenizationConfig):
+    def __init__(
+        self,
+        do_lower_case: t.Optional[bool] = False,
+        with_special_tokens: t.Optional[bool] = False,
+        max_sequence_length: t.Optional[int] = 512,
+        truncate: t.Optional[
+            t.Union["t.Literal['first', 'none', 'second']", str]
+        ] = None,
+        span: t.Optional[int] = None,
+    ):
+        super(NlpMPNetNlpBertTokenizationConfig, self).__init__(
+            do_lower_case,
+            with_special_tokens,
+            max_sequence_length,
+            truncate,
+            span,
+            configuration_type="mpnet",
+        )
+
+
+class InferenceConfig:
+    def __init__(self, configuration_type: str):
+        self.name = configuration_type
+
+    def to_dict(self):
+        return {
+            self.name: {
+                k: v.to_dict() if hasattr(v, "to_dict") else v
+                for k, v in self.__dict__.items()
+                if v is not None and k is not "name"
+            }
+        }
+
+
+class TextClassificationInferenceOptions(InferenceConfig):
+    def __init__(
+        self,
+        classification_labels: t.Union[t.List[str], t.Tuple[str, ...]],
+        tokenization: t.Union[
+            NlpBertTokenizationConfig,
+            NlpMPNetNlpBertTokenizationConfig,
+            NlpRobertaTokenizationConfig,
+        ],
+        results_field: t.Optional[str] = None,
+        num_top_classes: t.Optional[int] = None,
+    ):
+        super().__init__("text_classification")
+        self.results_field = results_field
+        self.num_top_classes = num_top_classes
+        self.tokenization = tokenization
+        self.results_field = results_field
+        self.classification_labels = classification_labels
+
+
+class ZeroShotClassificationInferenceOptions(InferenceConfig):
+    def __init__(
+        self,
+        tokenization: t.Union[
+            NlpBertTokenizationConfig,
+            NlpMPNetNlpBertTokenizationConfig,
+            NlpRobertaTokenizationConfig,
+        ],
+        classification_labels: t.Union[t.List[str], t.Tuple[str, ...]],
+        results_field: t.Optional[str] = None,
+        multi_label: t.Optional[bool] = None,
+        labels: t.Optional[t.Union[t.List[str], t.Tuple[str, ...]]] = None,
+        hypothesis_template: t.Optional[str] = None,
+    ):
+        super().__init__("zero_shot_classification")
+        self.tokenization = tokenization
+        self.hypothesis_template = hypothesis_template
+        self.classification_labels = classification_labels
+        self.results_field = results_field
+        self.multi_label = multi_label
+        self.labels = labels
+
+
+class FillMaskInferenceOptions(InferenceConfig):
+    def __init__(
+        self,
+        tokenization: t.Union[
+            NlpBertTokenizationConfig,
+            NlpMPNetNlpBertTokenizationConfig,
+            NlpRobertaTokenizationConfig,
+        ],
+        results_field: t.Optional[str] = None,
+        num_top_classes: t.Optional[int] = None,
+    ):
+        super().__init__("fill_mask")
+        self.num_top_classes = num_top_classes
+        self.tokenization = tokenization
+        self.results_field = results_field
+
+
+class NerInferenceOptions(InferenceConfig):
+    def __init__(
+        self,
+        tokenization: t.Union[
+            NlpBertTokenizationConfig,
+            NlpMPNetNlpBertTokenizationConfig,
+            NlpRobertaTokenizationConfig,
+        ],
+        classification_labels: t.Union[t.List[str], t.Tuple[str, ...]],
+        results_field: t.Optional[str] = None,
+    ):
+        super().__init__("ner")
+        self.tokenization = tokenization
+        self.classification_labels = classification_labels
+        self.results_field = results_field
+
+
+class PassThroughInferenceOptions(InferenceConfig):
+    def __init__(
+        self,
+        tokenization: t.Union[
+            NlpBertTokenizationConfig,
+            NlpMPNetNlpBertTokenizationConfig,
+            NlpRobertaTokenizationConfig,
+        ],
+        results_field: t.Optional[str] = None,
+    ):
+        super().__init__("pass_through")
+        self.tokenization = tokenization
+        self.results_field = results_field
+
+
+class TextEmbeddingInferenceOptions(InferenceConfig):
+    def __init__(
+        self,
+        tokenization: t.Union[
+            NlpBertTokenizationConfig,
+            NlpMPNetNlpBertTokenizationConfig,
+            NlpRobertaTokenizationConfig,
+        ],
+        results_field: t.Optional[str] = None,
+    ):
+        super().__init__("text_embedding")
+        self.tokenization = tokenization
+        self.results_field = results_field
+
+
+class TrainedModelInput:
+    def __init__(self, field_names: list[str]):
+        self.field_names = field_names
+
+    def to_dict(self):
+        return self.__dict__
+
+
+class NlpTrainedModelConfig:
+    def __init__(
+        self,
+        description: str,
+        inference_config: InferenceConfig,
+        input: TrainedModelInput = TrainedModelInput(["text_field"]),
+        metadata: dict = None,
+        model_type: t.Union["t.Literal['pytorch']", str] = "pytorch",
+        default_field_map: t.Mapping[str, str] = None,
+        tags: t.Union[t.List[str], t.Tuple[str, ...]] = None,
+    ):
+        self.tags = tags
+        self.default_field_map = default_field_map
+        self.description = description
+        self.inference_config = inference_config
+        self.input = input
+        self.metadata = metadata
+        self.model_type = model_type
+
+    def to_dict(self):
+        return {
+            k: v.to_dict() if hasattr(v, "to_dict") else v
+            for k, v in self.__dict__.items()
+            if v is not None
+        }
