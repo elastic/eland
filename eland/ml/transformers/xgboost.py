@@ -125,8 +125,6 @@ class XGBoostForestTransformer(ModelTransformer):
 
         :return: A list of Tree objects
         """
-        self.check_model_booster()
-
         tree_table: pd.DataFrame = self._model.trees_to_dataframe()
         transformed_trees = []
         curr_tree: Optional[Any] = None
@@ -155,17 +153,16 @@ class XGBoostForestTransformer(ModelTransformer):
     def is_objective_supported(self) -> bool:
         return False
 
-    def check_model_booster(self) -> None:
+    @staticmethod
+    def check_model_booster(booster: Optional[str]) -> None:
         # xgboost v1 made booster default to 'None' meaning 'gbtree'
-        if self._model.booster not in {"dart", "gbtree", None}:
+        if booster not in {"dart", "gbtree", None}:
             raise ValueError(
                 f"booster must exist and be of type 'dart' or "
-                f"'gbtree', was {self._model.booster!r}"
+                f"'gbtree', was {booster!r}"
             )
 
     def transform(self) -> Ensemble:
-        self.check_model_booster()
-
         if not self.is_objective_supported():
             raise ValueError(f"Unsupported objective '{self._objective}'")
 
@@ -188,6 +185,11 @@ class XGBoostRegressorTransformer(XGBoostForestTransformer):
             base_score = 0.5
         super().__init__(
             model.get_booster(), feature_names, base_score, model.objective
+        )
+        XGBoostForestTransformer.check_model_booster(
+            model.get_booster().booster
+            if hasattr(model.get_booster(), "booster")
+            else model.booster
         )
 
     def determine_target_type(self) -> str:
@@ -225,6 +227,11 @@ class XGBoostClassifierTransformer(XGBoostForestTransformer):
             model.base_score,
             model.objective,
             classification_labels,
+        )
+        XGBoostForestTransformer.check_model_booster(
+            model.get_booster().booster
+            if hasattr(model.get_booster(), "booster")
+            else model.booster
         )
         if model.classes_ is None:
             n_estimators = model.get_params()["n_estimators"]
