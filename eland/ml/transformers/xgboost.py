@@ -154,7 +154,7 @@ class XGBoostForestTransformer(ModelTransformer):
         return False
 
     @staticmethod
-    def check_model_booster(model: Optional[XGBModel]) -> None:
+    def check_model_booster(model: XGBModel) -> None:
         # xgboost v1 made booster default to 'None' meaning 'gbtree'
         booster = (
             model.get_booster().booster
