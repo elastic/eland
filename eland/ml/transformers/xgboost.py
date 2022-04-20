@@ -27,7 +27,7 @@ from .base import ModelTransformer
 
 import_optional_dependency("xgboost", on_version="warn")
 
-from xgboost import Booster, XGBClassifier, XGBRegressor  # type: ignore
+from xgboost import Booster, XGBClassifier, XGBModel, XGBRegressor  # type: ignore
 
 
 class XGBoostForestTransformer(ModelTransformer):
@@ -154,8 +154,13 @@ class XGBoostForestTransformer(ModelTransformer):
         return False
 
     @staticmethod
-    def check_model_booster(booster: Optional[str]) -> None:
+    def check_model_booster(model: Optional[XGBModel]) -> None:
         # xgboost v1 made booster default to 'None' meaning 'gbtree'
+        booster = (
+            model.get_booster().booster
+            if hasattr(model.get_booster(), "booster")
+            else model.booster
+        )
         if booster not in {"dart", "gbtree", None}:
             raise ValueError(
                 f"booster must exist and be of type 'dart' or "
@@ -186,11 +191,7 @@ class XGBoostRegressorTransformer(XGBoostForestTransformer):
         super().__init__(
             model.get_booster(), feature_names, base_score, model.objective
         )
-        XGBoostForestTransformer.check_model_booster(
-            model.get_booster().booster
-            if hasattr(model.get_booster(), "booster")
-            else model.booster
-        )
+        XGBoostForestTransformer.check_model_booster(model)
 
     def determine_target_type(self) -> str:
         return "regression"
@@ -228,11 +229,7 @@ class XGBoostClassifierTransformer(XGBoostForestTransformer):
             model.objective,
             classification_labels,
         )
-        XGBoostForestTransformer.check_model_booster(
-            model.get_booster().booster
-            if hasattr(model.get_booster(), "booster")
-            else model.booster
-        )
+        XGBoostForestTransformer.check_model_booster(model)
         if model.classes_ is None:
             n_estimators = model.get_params()["n_estimators"]
             num_trees = model.get_booster().trees_to_dataframe()["Tree"].max() + 1
