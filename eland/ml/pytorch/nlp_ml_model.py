@@ -19,7 +19,7 @@ import typing as t
 
 
 class NlpTokenizationConfig:
-    def __init__(self, configuration_type: str):
+    def __init__(self, *, configuration_type: str):
         self.name = configuration_type
 
     def to_dict(self):
@@ -35,6 +35,7 @@ class NlpTokenizationConfig:
 class NlpRobertaTokenizationConfig(NlpTokenizationConfig):
     def __init__(
         self,
+        *,
         add_prefix_space: t.Optional[bool] = None,
         with_special_tokens: t.Optional[bool] = None,
         max_sequence_length: t.Optional[int] = None,
@@ -43,7 +44,7 @@ class NlpRobertaTokenizationConfig(NlpTokenizationConfig):
         ] = None,
         span: t.Optional[int] = None,
     ):
-        super().__init__("roberta")
+        super().__init__(configuration_type="roberta")
         self.add_prefix_space = add_prefix_space
         self.with_special_tokens = with_special_tokens
         self.max_sequence_length = max_sequence_length
@@ -54,6 +55,7 @@ class NlpRobertaTokenizationConfig(NlpTokenizationConfig):
 class NlpBertTokenizationConfig(NlpTokenizationConfig):
     def __init__(
         self,
+        *,
         do_lower_case: t.Optional[bool] = False,
         with_special_tokens: t.Optional[bool] = False,
         max_sequence_length: t.Optional[int] = 512,
@@ -63,7 +65,7 @@ class NlpBertTokenizationConfig(NlpTokenizationConfig):
         span: t.Optional[int] = None,
         configuration_type: str = "bert",
     ):
-        super().__init__(configuration_type)
+        super().__init__(configuration_type=configuration_type)
         self.do_lower_case = do_lower_case
         self.with_special_tokens = with_special_tokens
         self.max_sequence_length = max_sequence_length
@@ -74,6 +76,7 @@ class NlpBertTokenizationConfig(NlpTokenizationConfig):
 class NlpMPNetNlpBertTokenizationConfig(NlpBertTokenizationConfig):
     def __init__(
         self,
+        *,
         do_lower_case: t.Optional[bool] = False,
         with_special_tokens: t.Optional[bool] = False,
         max_sequence_length: t.Optional[int] = 512,
@@ -83,17 +86,17 @@ class NlpMPNetNlpBertTokenizationConfig(NlpBertTokenizationConfig):
         span: t.Optional[int] = None,
     ):
         super(NlpMPNetNlpBertTokenizationConfig, self).__init__(
-            do_lower_case,
-            with_special_tokens,
-            max_sequence_length,
-            truncate,
-            span,
+            do_lower_case=do_lower_case,
+            with_special_tokens=with_special_tokens,
+            max_sequence_length=max_sequence_length,
+            truncate=truncate,
+            span=span,
             configuration_type="mpnet",
         )
 
 
 class InferenceConfig:
-    def __init__(self, configuration_type: str):
+    def __init__(self, *, configuration_type: str):
         self.name = configuration_type
 
     def to_dict(self):
@@ -109,6 +112,7 @@ class InferenceConfig:
 class TextClassificationInferenceOptions(InferenceConfig):
     def __init__(
         self,
+        *,
         classification_labels: t.Union[t.List[str], t.Tuple[str, ...]],
         tokenization: t.Union[
             NlpBertTokenizationConfig,
@@ -118,7 +122,7 @@ class TextClassificationInferenceOptions(InferenceConfig):
         results_field: t.Optional[str] = None,
         num_top_classes: t.Optional[int] = None,
     ):
-        super().__init__("text_classification")
+        super().__init__(configuration_type="text_classification")
         self.results_field = results_field
         self.num_top_classes = num_top_classes
         self.tokenization = tokenization
@@ -129,6 +133,7 @@ class TextClassificationInferenceOptions(InferenceConfig):
 class ZeroShotClassificationInferenceOptions(InferenceConfig):
     def __init__(
         self,
+        *,
         tokenization: t.Union[
             NlpBertTokenizationConfig,
             NlpMPNetNlpBertTokenizationConfig,
@@ -140,7 +145,7 @@ class ZeroShotClassificationInferenceOptions(InferenceConfig):
         labels: t.Optional[t.Union[t.List[str], t.Tuple[str, ...]]] = None,
         hypothesis_template: t.Optional[str] = None,
     ):
-        super().__init__("zero_shot_classification")
+        super().__init__(configuration_type="zero_shot_classification")
         self.tokenization = tokenization
         self.hypothesis_template = hypothesis_template
         self.classification_labels = classification_labels
@@ -152,6 +157,7 @@ class ZeroShotClassificationInferenceOptions(InferenceConfig):
 class FillMaskInferenceOptions(InferenceConfig):
     def __init__(
         self,
+        *,
         tokenization: t.Union[
             NlpBertTokenizationConfig,
             NlpMPNetNlpBertTokenizationConfig,
@@ -160,7 +166,7 @@ class FillMaskInferenceOptions(InferenceConfig):
         results_field: t.Optional[str] = None,
         num_top_classes: t.Optional[int] = None,
     ):
-        super().__init__("fill_mask")
+        super().__init__(configuration_type="fill_mask")
         self.num_top_classes = num_top_classes
         self.tokenization = tokenization
         self.results_field = results_field
@@ -169,6 +175,7 @@ class FillMaskInferenceOptions(InferenceConfig):
 class NerInferenceOptions(InferenceConfig):
     def __init__(
         self,
+        *,
         tokenization: t.Union[
             NlpBertTokenizationConfig,
             NlpMPNetNlpBertTokenizationConfig,
@@ -177,7 +184,7 @@ class NerInferenceOptions(InferenceConfig):
         classification_labels: t.Union[t.List[str], t.Tuple[str, ...]],
         results_field: t.Optional[str] = None,
     ):
-        super().__init__("ner")
+        super().__init__(configuration_type="ner")
         self.tokenization = tokenization
         self.classification_labels = classification_labels
         self.results_field = results_field
@@ -186,6 +193,7 @@ class NerInferenceOptions(InferenceConfig):
 class PassThroughInferenceOptions(InferenceConfig):
     def __init__(
         self,
+        *,
         tokenization: t.Union[
             NlpBertTokenizationConfig,
             NlpMPNetNlpBertTokenizationConfig,
@@ -193,7 +201,7 @@ class PassThroughInferenceOptions(InferenceConfig):
         ],
         results_field: t.Optional[str] = None,
     ):
-        super().__init__("pass_through")
+        super().__init__(configuration_type="pass_through")
         self.tokenization = tokenization
         self.results_field = results_field
 
@@ -201,6 +209,7 @@ class PassThroughInferenceOptions(InferenceConfig):
 class TextEmbeddingInferenceOptions(InferenceConfig):
     def __init__(
         self,
+        *,
         tokenization: t.Union[
             NlpBertTokenizationConfig,
             NlpMPNetNlpBertTokenizationConfig,
@@ -208,13 +217,13 @@ class TextEmbeddingInferenceOptions(InferenceConfig):
         ],
         results_field: t.Optional[str] = None,
     ):
-        super().__init__("text_embedding")
+        super().__init__(configuration_type="text_embedding")
         self.tokenization = tokenization
         self.results_field = results_field
 
 
 class TrainedModelInput:
-    def __init__(self, field_names: list[str]):
+    def __init__(self, *, field_names: list[str]):
         self.field_names = field_names
 
     def to_dict(self):
@@ -224,13 +233,14 @@ class TrainedModelInput:
 class NlpTrainedModelConfig:
     def __init__(
         self,
+        *,
         description: str,
         inference_config: InferenceConfig,
-        input: TrainedModelInput = TrainedModelInput(["text_field"]),
-        metadata: dict = None,
+        input: TrainedModelInput = TrainedModelInput(field_names=["text_field"]),
+        metadata: t.Optional[dict] = None,
         model_type: t.Union["t.Literal['pytorch']", str] = "pytorch",
-        default_field_map: t.Mapping[str, str] = None,
-        tags: t.Union[t.List[str], t.Tuple[str, ...]] = None,
+        default_field_map: t.Optional[t.Mapping[str, str]] = None,
+        tags: t.Optional[t.Union[t.List[str], t.Tuple[str, ...]]] = None,
     ):
         self.tags = tags
         self.default_field_map = default_field_map
