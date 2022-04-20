@@ -97,7 +97,7 @@ class InferenceConfig:
     def __init__(self, *, configuration_type: str):
         self.name = configuration_type
 
-    def to_dict(self):
+    def to_dict(self) -> t.Dict[str, t.Any]:
         return {
             self.name: {
                 k: v.to_dict() if hasattr(v, "to_dict") else v
@@ -224,7 +224,7 @@ class TrainedModelInput:
     def __init__(self, *, field_names: list[str]):
         self.field_names = field_names
 
-    def to_dict(self):
+    def to_dict(self) -> t.Dict[str, t.Any]:
         return self.__dict__
 
 
@@ -248,7 +248,7 @@ class NlpTrainedModelConfig:
         self.metadata = metadata
         self.model_type = model_type
 
-    def to_dict(self):
+    def to_dict(self) -> t.Dict[str, t.Any]:
         return {
             k: v.to_dict() if hasattr(v, "to_dict") else v
             for k, v in self.__dict__.items()
