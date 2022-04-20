@@ -25,9 +25,7 @@ class NlpTokenizationConfig:
     def to_dict(self):
         return {
             self.name: {
-                k: v
-                for k, v in self.__dict__.items()
-                if v is not None and k is not "name"
+                k: v for k, v in self.__dict__.items() if v is not None and k != "name"
             }
         }
 
@@ -104,7 +102,7 @@ class InferenceConfig:
             self.name: {
                 k: v.to_dict() if hasattr(v, "to_dict") else v
                 for k, v in self.__dict__.items()
-                if v is not None and k is not "name"
+                if v is not None and k != "name"
             }
         }
 
