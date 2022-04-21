@@ -54,9 +54,9 @@ class NlpBertTokenizationConfig(NlpTokenizationConfig):
     def __init__(
         self,
         *,
-        do_lower_case: t.Optional[bool] = False,
-        with_special_tokens: t.Optional[bool] = False,
-        max_sequence_length: t.Optional[int] = 512,
+        do_lower_case: t.Optional[bool] = None,
+        with_special_tokens: t.Optional[bool] = None,
+        max_sequence_length: t.Optional[int] = None,
         truncate: t.Optional[
             t.Union["t.Literal['first', 'none', 'second']", str]
         ] = None,
@@ -75,9 +75,9 @@ class NlpMPNetTokenizationConfig(NlpBertTokenizationConfig):
     def __init__(
         self,
         *,
-        do_lower_case: t.Optional[bool] = False,
-        with_special_tokens: t.Optional[bool] = False,
-        max_sequence_length: t.Optional[int] = 512,
+        do_lower_case: t.Optional[bool] = None,
+        with_special_tokens: t.Optional[bool] = None,
+        max_sequence_length: t.Optional[int] = None,
         truncate: t.Optional[
             t.Union["t.Literal['first', 'none', 'second']", str]
         ] = None,
