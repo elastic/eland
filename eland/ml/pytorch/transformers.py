@@ -39,10 +39,11 @@ from transformers import (
 
 from eland.ml.pytorch.nlp_ml_model import (
     FillMaskInferenceOptions,
-    InferenceConfig,
     NerInferenceOptions,
     NlpBertTokenizationConfig,
+    NlpMPNetTokenizationConfig,
     NlpRobertaTokenizationConfig,
+    NlpTokenizationConfig,
     NlpTrainedModelConfig,
     TextClassificationInferenceOptions,
     TextEmbeddingInferenceOptions,
@@ -441,9 +442,9 @@ class TransformerModel:
             vocab_obj["merges"] = merges
         return vocab_obj
 
-    def _create_config(self) -> NlpTrainedModelConfig:
+    def _create_tokenization_config(self) -> NlpTokenizationConfig:
         if isinstance(self._tokenizer, transformers.MPNetTokenizer):
-            tokenization_config = NlpBertTokenizationConfig(
+            return NlpMPNetTokenizationConfig(
                 do_lower_case=getattr(self._tokenizer, "do_lower_case", None),
                 max_sequence_length=getattr(
                     self._tokenizer, "max_model_input_sizes", dict()
@@ -452,31 +453,33 @@ class TransformerModel:
         elif isinstance(
             self._tokenizer, (transformers.RobertaTokenizer, transformers.BartTokenizer)
         ):
-            tokenization_config = NlpRobertaTokenizationConfig(
+            return NlpRobertaTokenizationConfig(
                 add_prefix_space=getattr(self._tokenizer, "add_prefix_space", None),
                 max_sequence_length=getattr(
                     self._tokenizer, "max_model_input_sizes", dict()
                 ).get(self._model_id),
             )
         else:
-            tokenization_config = NlpBertTokenizationConfig(
+            return NlpBertTokenizationConfig(
                 do_lower_case=getattr(self._tokenizer, "do_lower_case", None),
                 max_sequence_length=getattr(
                     self._tokenizer, "max_model_input_sizes", dict()
                 ).get(self._model_id),
             )
 
-        if self._traceable_model.classification_labels():
-            inference_config: InferenceConfig = TASK_TYPE_TO_INFERENCE_CONFIG[
-                self._task_type
-            ](
+    def _create_config(self) -> NlpTrainedModelConfig:
+        tokenization_config = self._create_tokenization_config()
+
+        inference_config = (
+            TASK_TYPE_TO_INFERENCE_CONFIG[self._task_type](
                 tokenization=tokenization_config,
                 classification_labels=self._traceable_model.classification_labels(),
             )
-        else:
-            inference_config: InferenceConfig = TASK_TYPE_TO_INFERENCE_CONFIG[
-                self._task_type
-            ](tokenization=tokenization_config)
+            if self._traceable_model.classification_labels()
+            else TASK_TYPE_TO_INFERENCE_CONFIG[self._task_type](
+                tokenization=tokenization_config
+            )
+        )
 
         return NlpTrainedModelConfig(
             description=f"Model {self._model_id} for task type '{self._task_type}'",

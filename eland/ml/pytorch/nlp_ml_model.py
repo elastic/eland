@@ -71,7 +71,7 @@ class NlpBertTokenizationConfig(NlpTokenizationConfig):
         self.span = span
 
 
-class NlpMPNetNlpBertTokenizationConfig(NlpBertTokenizationConfig):
+class NlpMPNetTokenizationConfig(NlpBertTokenizationConfig):
     def __init__(
         self,
         *,
@@ -83,7 +83,7 @@ class NlpMPNetNlpBertTokenizationConfig(NlpBertTokenizationConfig):
         ] = None,
         span: t.Optional[int] = None,
     ):
-        super(NlpMPNetNlpBertTokenizationConfig, self).__init__(
+        super(NlpMPNetTokenizationConfig, self).__init__(
             do_lower_case=do_lower_case,
             with_special_tokens=with_special_tokens,
             max_sequence_length=max_sequence_length,
@@ -112,11 +112,7 @@ class TextClassificationInferenceOptions(InferenceConfig):
         self,
         *,
         classification_labels: t.Union[t.List[str], t.Tuple[str, ...]],
-        tokenization: t.Union[
-            NlpBertTokenizationConfig,
-            NlpMPNetNlpBertTokenizationConfig,
-            NlpRobertaTokenizationConfig,
-        ],
+        tokenization: NlpTokenizationConfig,
         results_field: t.Optional[str] = None,
         num_top_classes: t.Optional[int] = None,
     ):
@@ -132,11 +128,7 @@ class ZeroShotClassificationInferenceOptions(InferenceConfig):
     def __init__(
         self,
         *,
-        tokenization: t.Union[
-            NlpBertTokenizationConfig,
-            NlpMPNetNlpBertTokenizationConfig,
-            NlpRobertaTokenizationConfig,
-        ],
+        tokenization: NlpTokenizationConfig,
         classification_labels: t.Union[t.List[str], t.Tuple[str, ...]],
         results_field: t.Optional[str] = None,
         multi_label: t.Optional[bool] = None,
@@ -156,11 +148,7 @@ class FillMaskInferenceOptions(InferenceConfig):
     def __init__(
         self,
         *,
-        tokenization: t.Union[
-            NlpBertTokenizationConfig,
-            NlpMPNetNlpBertTokenizationConfig,
-            NlpRobertaTokenizationConfig,
-        ],
+        tokenization: NlpTokenizationConfig,
         results_field: t.Optional[str] = None,
         num_top_classes: t.Optional[int] = None,
     ):
@@ -174,11 +162,7 @@ class NerInferenceOptions(InferenceConfig):
     def __init__(
         self,
         *,
-        tokenization: t.Union[
-            NlpBertTokenizationConfig,
-            NlpMPNetNlpBertTokenizationConfig,
-            NlpRobertaTokenizationConfig,
-        ],
+        tokenization: NlpTokenizationConfig,
         classification_labels: t.Union[t.List[str], t.Tuple[str, ...]],
         results_field: t.Optional[str] = None,
     ):
@@ -192,11 +176,7 @@ class PassThroughInferenceOptions(InferenceConfig):
     def __init__(
         self,
         *,
-        tokenization: t.Union[
-            NlpBertTokenizationConfig,
-            NlpMPNetNlpBertTokenizationConfig,
-            NlpRobertaTokenizationConfig,
-        ],
+        tokenization: NlpTokenizationConfig,
         results_field: t.Optional[str] = None,
     ):
         super().__init__(configuration_type="pass_through")
@@ -208,11 +188,7 @@ class TextEmbeddingInferenceOptions(InferenceConfig):
     def __init__(
         self,
         *,
-        tokenization: t.Union[
-            NlpBertTokenizationConfig,
-            NlpMPNetNlpBertTokenizationConfig,
-            NlpRobertaTokenizationConfig,
-        ],
+        tokenization: NlpTokenizationConfig,
         results_field: t.Optional[str] = None,
     ):
         super().__init__(configuration_type="text_embedding")
