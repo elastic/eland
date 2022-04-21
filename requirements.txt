@@ -1,3 +1,7 @@
-elasticsearch>=8.0.0a1,<9
-pandas>=1
-matplotlib
+#
+# Basic requirements
+#
+elasticsearch>=8,<9
+pandas>=1.2,<2
+matplotlib<4
+numpy<2
