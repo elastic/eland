@@ -85,7 +85,7 @@ setup(
         "elasticsearch>=8,<9",
         "pandas>=1.2,<2",
         "matplotlib<4",
-        "numpy<2"
+        "numpy<2",
     ],
     scripts=["bin/eland_import_hub_model"],
     python_requires=">=3.7",
