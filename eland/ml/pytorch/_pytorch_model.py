@@ -19,7 +19,17 @@ import base64
 import json
 import math
 import os
-from typing import TYPE_CHECKING, Any, Iterable, List, Mapping, Set, Tuple, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    Set,
+    Tuple,
+    Union,
+)
 
 from tqdm.auto import tqdm  # type: ignore
 
@@ -50,10 +60,19 @@ class PyTorchModel:
         self._client: Elasticsearch = ensure_es_client(es_client)
         self.model_id = model_id
 
-    def put_config(self, path: str) -> None:
-        with open(path) as f:
-            config = json.load(f)
-        self._client.ml.put_trained_model(model_id=self.model_id, **config)
+    def put_config(
+        self, path: Optional[str] = None, config: Optional[NlpTrainedModelConfig] = None
+    ) -> None:
+        if path is not None and config is not None:
+            raise ValueError("Only include path or config. Not both")
+        if config is None and path is not None:
+            with open(path) as f:
+                config_map = json.load(f)
+        elif config is not None:
+            config_map = config.to_dict()
+        else:
+            raise ValueError("Must provide path or config")
+        self._client.ml.put_trained_model(model_id=self.model_id, **config_map)
 
     def put_vocab(self, path: str) -> None:
         with open(path) as f:
@@ -90,15 +109,14 @@ class PyTorchModel:
 
     def import_model(
         self,
+        *,
         model_path: str,
-        config: Union[str, NlpTrainedModelConfig],
+        config_path: Optional[str],
         vocab_path: str,
+        config: Optional[NlpTrainedModelConfig] = None,
         chunk_size: int = DEFAULT_CHUNK_SIZE,
     ) -> None:
-        if isinstance(config, str):
-            with open(config) as f:
-                config = NlpTrainedModelConfig(**json.load(f))
-        self._client.ml.put_trained_model(model_id=self.model_id, **config.to_dict())
+        self.put_config(path=config_path, config=config)
         self.put_model(model_path, chunk_size)
         self.put_vocab(vocab_path)
 

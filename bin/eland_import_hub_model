@@ -193,7 +193,7 @@ if __name__ == "__main__":
                 exit(1)
 
         logger.info(f"Creating model with id '{ptm.model_id}'")
-        ptm.put_config(config_path)
+        ptm.put_config(config=config)
 
         logger.info(f"Uploading model definition")
         ptm.put_model(model_path)

@@ -88,7 +88,9 @@ def download_model_and_start_deployment(tmp_dir, quantize, model_id, task):
     except NotFoundError:
         pass
     print(f"Importing model: {ptm.model_id}")
-    ptm.import_model(model_path, config, vocab_path)
+    ptm.import_model(
+        model_path=model_path, config_path=None, vocab_path=vocab_path, config=config
+    )
     ptm.start()
     return ptm
 
