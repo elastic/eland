@@ -80,7 +80,7 @@ def get_arg_parser():
         "--es-api-key",
         required=False,
         default=os.environ.get("ES_API_KEY"),
-        help="Password for the Elasticsearch user specified with -u/--username"
+        help="API key for Elasticsearch"
     )
     parser.add_argument(
         "--task-type",
