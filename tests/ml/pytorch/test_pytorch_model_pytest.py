@@ -80,7 +80,6 @@ def download_model_and_start_deployment(tmp_dir, quantize, model_id, task):
     print("Loading HuggingFace transformer tokenizer and model")
     tm = TransformerModel(model_id, task, quantize)
     model_path, config, vocab_path = tm.save(tmp_dir)
-    print(f"config [{config.to_dict()}]")
     ptm = PyTorchModel(ES_TEST_CLIENT, tm.elasticsearch_model_id())
     try:
         ptm.stop()
