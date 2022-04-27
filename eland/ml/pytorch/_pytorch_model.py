@@ -77,7 +77,9 @@ class PyTorchModel:
                         break
                     yield base64.b64encode(data).decode()
 
-        for i, data in tqdm(enumerate(model_file_chunk_generator()), total=total_parts):
+        for i, data in tqdm(
+            enumerate(model_file_chunk_generator()), unit=" parts", total=total_parts
+        ):
             self._client.ml.put_trained_model_definition_part(
                 model_id=self.model_id,
                 part=i,

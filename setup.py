@@ -56,7 +56,7 @@ with open(path.join(here, "README.md"), "r", "utf-8") as f:
 
 extras = {
     "xgboost": ["xgboost>=0.90,<2"],
-    "scikit-learn": ["scikit-learn>=0.22.1,<1"],
+    "scikit-learn": ["scikit-learn>=0.22.1,<2"],
     "lightgbm": ["lightgbm>=2,<4"],
     "pytorch": [
         "sentence-transformers>=2.1.0,<3",
@@ -83,9 +83,9 @@ setup(
     packages=find_packages(include=["eland", "eland.*"]),
     install_requires=[
         "elasticsearch>=8,<9",
-        "pandas>=1.2,<1.4",
-        "matplotlib",
-        "numpy",
+        "pandas>=1.2,<2",
+        "matplotlib<4",
+        "numpy<2",
     ],
     scripts=["bin/eland_import_hub_model"],
     python_requires=">=3.7",
