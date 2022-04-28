@@ -197,7 +197,7 @@ class TextEmbeddingInferenceOptions(InferenceConfig):
 
 
 class TrainedModelInput:
-    def __init__(self, *, field_names: list[str]):
+    def __init__(self, *, field_names: t.List[str]):
         self.field_names = field_names
 
     def to_dict(self) -> t.Dict[str, t.Any]:
