@@ -39,11 +39,16 @@ MODEL_HUB_URL = "https://huggingface.co"
 
 def get_arg_parser():
     parser = argparse.ArgumentParser()
-    parser.add_argument(
+    location_args = parser.add_mutually_exclusive_group(required=True)
+    location_args.add_argument(
         "--url",
-        required=True,
         default=os.environ.get("ES_URL"),
         help="An Elasticsearch connection URL, e.g. http://localhost:9200",
+    )
+    location_args.add_argument(
+        "--cloud-id",
+        default=os.environ.get("CLOUD_ID"),
+        help="Cloud ID as found in the 'Manage Deployment' page of an Elastic Cloud deployment",
     )
     parser.add_argument(
         "--hub-model-id",
@@ -75,7 +80,7 @@ def get_arg_parser():
         "--es-api-key",
         required=False,
         default=os.environ.get("ES_API_KEY"),
-        help="Password for the Elasticsearch user specified with -u/--username"
+        help="API key for Elasticsearch"
     )
     parser.add_argument(
         "--task-type",
@@ -125,6 +130,14 @@ def get_es_client(cli_args):
             'ca_certs': cli_args.ca_certs
         }
 
+        # Deployment location
+        if cli_args.url:
+            es_args['hosts'] = cli_args.url
+
+        if cli_args.cloud_id:
+            es_args['cloud_id'] = cli_args.cloud_id
+
+        # Authentication
         if cli_args.es_api_key:
             es_args['api_key'] = cli_args.es_api_key
         elif cli_args.es_username:
@@ -134,7 +147,7 @@ def get_es_client(cli_args):
 
             es_args['basic_auth'] = (cli_args.es_username, cli_args.es_password)
 
-        es_client = Elasticsearch(args.url, **es_args)
+        es_client = Elasticsearch(**es_args)
         es_info = es_client.info()
         logger.info(f"Connected to cluster named '{es_info['cluster_name']}' (version: {es_info['version']['number']})")
 
