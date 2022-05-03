@@ -79,7 +79,7 @@ def setup_and_tear_down():
 def download_model_and_start_deployment(tmp_dir, quantize, model_id, task):
     print("Loading HuggingFace transformer tokenizer and model")
     tm = TransformerModel(model_id, task, quantize)
-    model_path, config_path, vocab_path = tm.save(tmp_dir)
+    model_path, config, vocab_path = tm.save(tmp_dir)
     ptm = PyTorchModel(ES_TEST_CLIENT, tm.elasticsearch_model_id())
     try:
         ptm.stop()
@@ -87,7 +87,9 @@ def download_model_and_start_deployment(tmp_dir, quantize, model_id, task):
     except NotFoundError:
         pass
     print(f"Importing model: {ptm.model_id}")
-    ptm.import_model(model_path, config_path, vocab_path)
+    ptm.import_model(
+        model_path=model_path, config_path=None, vocab_path=vocab_path, config=config
+    )
     ptm.start()
     return ptm
 
