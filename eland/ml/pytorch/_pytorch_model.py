@@ -65,7 +65,7 @@ class PyTorchModel:
     ) -> None:
         if path is not None and config is not None:
             raise ValueError("Only include path or config. Not both")
-        if config is None and path is not None:
+        if path is not None:
             with open(path) as f:
                 config_map = json.load(f)
         elif config is not None:

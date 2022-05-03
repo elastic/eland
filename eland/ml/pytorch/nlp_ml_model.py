@@ -61,9 +61,8 @@ class NlpBertTokenizationConfig(NlpTokenizationConfig):
             t.Union["t.Literal['first', 'none', 'second']", str]
         ] = None,
         span: t.Optional[int] = None,
-        configuration_type: str = "bert",
     ):
-        super().__init__(configuration_type=configuration_type)
+        super().__init__(configuration_type="bert")
         self.do_lower_case = do_lower_case
         self.with_special_tokens = with_special_tokens
         self.max_sequence_length = max_sequence_length
@@ -71,7 +70,7 @@ class NlpBertTokenizationConfig(NlpTokenizationConfig):
         self.span = span
 
 
-class NlpMPNetTokenizationConfig(NlpBertTokenizationConfig):
+class NlpMPNetTokenizationConfig(NlpTokenizationConfig):
     def __init__(
         self,
         *,
@@ -83,14 +82,12 @@ class NlpMPNetTokenizationConfig(NlpBertTokenizationConfig):
         ] = None,
         span: t.Optional[int] = None,
     ):
-        super(NlpMPNetTokenizationConfig, self).__init__(
-            do_lower_case=do_lower_case,
-            with_special_tokens=with_special_tokens,
-            max_sequence_length=max_sequence_length,
-            truncate=truncate,
-            span=span,
-            configuration_type="mpnet",
-        )
+        super().__init__(configuration_type="mpnet")
+        self.do_lower_case = do_lower_case
+        self.with_special_tokens = with_special_tokens
+        self.max_sequence_length = max_sequence_length
+        self.truncate = truncate
+        self.span = span
 
 
 class InferenceConfig:
@@ -120,7 +117,6 @@ class TextClassificationInferenceOptions(InferenceConfig):
         self.results_field = results_field
         self.num_top_classes = num_top_classes
         self.tokenization = tokenization
-        self.results_field = results_field
         self.classification_labels = classification_labels
 
 

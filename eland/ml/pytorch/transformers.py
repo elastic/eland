@@ -45,6 +45,7 @@ from eland.ml.pytorch.nlp_ml_model import (
     NlpRobertaTokenizationConfig,
     NlpTokenizationConfig,
     NlpTrainedModelConfig,
+    PassThroughInferenceOptions,
     TextClassificationInferenceOptions,
     TextEmbeddingInferenceOptions,
     TrainedModelInput,
@@ -65,6 +66,7 @@ TASK_TYPE_TO_INFERENCE_CONFIG = {
     "text_classification": TextClassificationInferenceOptions,
     "text_embedding": TextEmbeddingInferenceOptions,
     "zero_shot_classification": ZeroShotClassificationInferenceOptions,
+    "pass_through": PassThroughInferenceOptions,
 }
 SUPPORTED_TASK_TYPES_NAMES = ", ".join(sorted(SUPPORTED_TASK_TYPES))
 SUPPORTED_TOKENIZERS = (
