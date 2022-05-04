@@ -58,6 +58,7 @@ try:
     HAS_PYTORCH = True
 except ImportError:
     HAS_PYTORCH = False
+    from eland.ml.pytorch import NlpBertTokenizationConfig, NlpTrainedModelConfig
 
 from tests import ES_TEST_CLIENT, ES_VERSION
 
