@@ -19,8 +19,22 @@ import typing as t
 
 
 class NlpTokenizationConfig:
-    def __init__(self, *, configuration_type: str):
+    def __init__(
+        self,
+        *,
+        configuration_type: str,
+        with_special_tokens: t.Optional[bool] = None,
+        max_sequence_length: t.Optional[int] = None,
+        truncate: t.Optional[
+            t.Union["t.Literal['first', 'none', 'second']", str]
+        ] = None,
+        span: t.Optional[int] = None,
+    ):
         self.name = configuration_type
+        self.with_special_tokens = with_special_tokens
+        self.max_sequence_length = max_sequence_length
+        self.truncate = truncate
+        self.span = span
 
     def to_dict(self):
         return {
@@ -42,12 +56,14 @@ class NlpRobertaTokenizationConfig(NlpTokenizationConfig):
         ] = None,
         span: t.Optional[int] = None,
     ):
-        super().__init__(configuration_type="roberta")
+        super().__init__(
+            configuration_type="roberta",
+            with_special_tokens=with_special_tokens,
+            max_sequence_length=max_sequence_length,
+            truncate=truncate,
+            span=span,
+        )
         self.add_prefix_space = add_prefix_space
-        self.with_special_tokens = with_special_tokens
-        self.max_sequence_length = max_sequence_length
-        self.truncate = truncate
-        self.span = span
 
 
 class NlpBertTokenizationConfig(NlpTokenizationConfig):
@@ -62,12 +78,14 @@ class NlpBertTokenizationConfig(NlpTokenizationConfig):
         ] = None,
         span: t.Optional[int] = None,
     ):
-        super().__init__(configuration_type="bert")
+        super().__init__(
+            configuration_type="bert",
+            with_special_tokens=with_special_tokens,
+            max_sequence_length=max_sequence_length,
+            truncate=truncate,
+            span=span,
+        )
         self.do_lower_case = do_lower_case
-        self.with_special_tokens = with_special_tokens
-        self.max_sequence_length = max_sequence_length
-        self.truncate = truncate
-        self.span = span
 
 
 class NlpMPNetTokenizationConfig(NlpTokenizationConfig):
@@ -82,12 +100,14 @@ class NlpMPNetTokenizationConfig(NlpTokenizationConfig):
         ] = None,
         span: t.Optional[int] = None,
     ):
-        super().__init__(configuration_type="mpnet")
+        super().__init__(
+            configuration_type="mpnet",
+            with_special_tokens=with_special_tokens,
+            max_sequence_length=max_sequence_length,
+            truncate=truncate,
+            span=span,
+        )
         self.do_lower_case = do_lower_case
-        self.with_special_tokens = with_special_tokens
-        self.max_sequence_length = max_sequence_length
-        self.truncate = truncate
-        self.span = span
 
 
 class InferenceConfig:
@@ -178,6 +198,24 @@ class PassThroughInferenceOptions(InferenceConfig):
         super().__init__(configuration_type="pass_through")
         self.tokenization = tokenization
         self.results_field = results_field
+
+
+class QuestionAnsweringInferenceOptions(InferenceConfig):
+    def __init__(
+        self,
+        *,
+        tokenization: NlpTokenizationConfig,
+        results_field: t.Optional[str] = None,
+        max_answer_length: t.Optional[int] = None,
+        question: t.Optional[str] = None,
+        num_top_classes: t.Optional[int] = None,
+    ):
+        super().__init__(configuration_type="question_answering")
+        self.tokenization = tokenization
+        self.results_field = results_field
+        self.max_answer_length = max_answer_length
+        self.question = question
+        self.num_top_classes = num_top_classes
 
 
 class TextEmbeddingInferenceOptions(InferenceConfig):

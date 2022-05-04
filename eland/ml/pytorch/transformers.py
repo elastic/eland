@@ -32,6 +32,7 @@ from torch import Tensor, nn
 from transformers import (
     AutoConfig,
     AutoModel,
+    AutoModelForQuestionAnswering,
     PreTrainedModel,
     PreTrainedTokenizer,
     PreTrainedTokenizerFast,
@@ -46,6 +47,7 @@ from eland.ml.pytorch.nlp_ml_model import (
     NlpTokenizationConfig,
     NlpTrainedModelConfig,
     PassThroughInferenceOptions,
+    QuestionAnsweringInferenceOptions,
     TextClassificationInferenceOptions,
     TextEmbeddingInferenceOptions,
     TrainedModelInput,
@@ -59,6 +61,7 @@ SUPPORTED_TASK_TYPES = {
     "text_classification",
     "text_embedding",
     "zero_shot_classification",
+    "question_answering",
 }
 TASK_TYPE_TO_INFERENCE_CONFIG = {
     "fill_mask": FillMaskInferenceOptions,
@@ -67,6 +70,7 @@ TASK_TYPE_TO_INFERENCE_CONFIG = {
     "text_embedding": TextEmbeddingInferenceOptions,
     "zero_shot_classification": ZeroShotClassificationInferenceOptions,
     "pass_through": PassThroughInferenceOptions,
+    "question_answering": QuestionAnsweringInferenceOptions,
 }
 SUPPORTED_TASK_TYPES_NAMES = ", ".join(sorted(SUPPORTED_TASK_TYPES))
 SUPPORTED_TOKENIZERS = (
@@ -90,6 +94,86 @@ TracedModelTypes = Union[
     torch.jit.ScriptModule,
     torch.jit.TopLevelTracedModule,
 ]
+
+
+class _QuestionAnsweringWrapperModule(nn.Module):  # type: ignore
+    """
+    A wrapper around a question answering model.
+    Our inference engine only takes the first tuple if the inference response
+    is a tuple.
+
+    This wrapper transforms the output to be a stacked tensor if its a tuple.
+
+    Otherwise it passes it through
+    """
+
+    def __init__(self, model: PreTrainedModel):
+        super().__init__()
+        self._hf_model = model
+        self.config = model.config
+
+    @staticmethod
+    def from_pretrained(model_id: str) -> Optional[Any]:
+        model = AutoModelForQuestionAnswering.from_pretrained(
+            model_id, torchscript=True
+        )
+        if isinstance(
+            model.config,
+            (
+                transformers.MPNetConfig,
+                transformers.RobertaConfig,
+                transformers.BartConfig,
+            ),
+        ):
+            return _TwoParameterQuestionAnsweringWrapper(model)
+        else:
+            return _QuestionAnsweringWrapper(model)
+
+
+class _QuestionAnsweringWrapper(_QuestionAnsweringWrapperModule):
+    def __init__(self, model: PreTrainedModel):
+        super().__init__(model=model)
+
+    def forward(
+        self,
+        input_ids: Tensor,
+        attention_mask: Tensor,
+        token_type_ids: Tensor,
+        position_ids: Tensor,
+    ) -> Tensor:
+        """Wrap the input and output to conform to the native process interface."""
+
+        inputs = {
+            "input_ids": input_ids,
+            "attention_mask": attention_mask,
+            "token_type_ids": token_type_ids,
+            "position_ids": position_ids,
+        }
+
+        # remove inputs for specific model types
+        if isinstance(self._hf_model.config, transformers.DistilBertConfig):
+            del inputs["token_type_ids"]
+            del inputs["position_ids"]
+        response = self._hf_model(**inputs)
+        if isinstance(response, tuple):
+            return torch.stack(list(response), dim=0)
+        return response
+
+
+class _TwoParameterQuestionAnsweringWrapper(_QuestionAnsweringWrapperModule):
+    def __init__(self, model: PreTrainedModel):
+        super().__init__(model=model)
+
+    def forward(self, input_ids: Tensor, attention_mask: Tensor) -> Tensor:
+        """Wrap the input and output to conform to the native process interface."""
+        inputs = {
+            "input_ids": input_ids,
+            "attention_mask": attention_mask,
+        }
+        response = self._hf_model(**inputs)
+        if isinstance(response, tuple):
+            return torch.stack(list(response), dim=0)
+        return response
 
 
 class _DistilBertWrapper(nn.Module):  # type: ignore
@@ -404,6 +488,16 @@ class _TraceableZeroShotClassificationModel(_TraceableClassificationModel):
         )
 
 
+class _TraceableQuestionAnsweringModel(_TraceableModel):
+    def _prepare_inputs(self) -> transformers.BatchEncoding:
+        return self._tokenizer(
+            "What is the meaning of life?"
+            "The meaning of life, according to the hitchikers guide, is 42.",
+            padding="max_length",
+            return_tensors="pt",
+        )
+
+
 class TransformerModel:
     def __init__(self, model_id: str, task_type: str, quantize: bool = False):
         self._model_id = model_id
@@ -472,6 +566,11 @@ class TransformerModel:
     def _create_config(self) -> NlpTrainedModelConfig:
         tokenization_config = self._create_tokenization_config()
 
+        # Set squad well known defaults
+        if self._task_type == "question_answering":
+            tokenization_config.max_sequence_length = 386
+            tokenization_config.span = 128
+            tokenization_config.truncate = "none"
         inference_config = (
             TASK_TYPE_TO_INFERENCE_CONFIG[self._task_type](
                 tokenization=tokenization_config,
@@ -530,7 +629,9 @@ class TransformerModel:
             )
             model = _DistilBertWrapper.try_wrapping(model)
             return _TraceableZeroShotClassificationModel(self._tokenizer, model)
-
+        elif self._task_type == "question_answering":
+            model = _QuestionAnsweringWrapperModule.from_pretrained(self._model_id)
+            return _TraceableQuestionAnsweringModel(self._tokenizer, model)
         else:
             raise TypeError(
                 f"Unknown task type {self._task_type}, must be one of: {SUPPORTED_TASK_TYPES_NAMES}"
