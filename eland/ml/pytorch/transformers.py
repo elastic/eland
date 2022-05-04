@@ -47,10 +47,11 @@ from eland.ml.pytorch.nlp_ml_model import (
     NlpTokenizationConfig,
     NlpTrainedModelConfig,
     PassThroughInferenceOptions,
+    QuestionAnsweringInferenceOptions,
     TextClassificationInferenceOptions,
     TextEmbeddingInferenceOptions,
     TrainedModelInput,
-    ZeroShotClassificationInferenceOptions, QuestionAnsweringInferenceOptions,
+    ZeroShotClassificationInferenceOptions,
 )
 
 DEFAULT_OUTPUT_KEY = "sentence_embedding"
