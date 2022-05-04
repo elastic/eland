@@ -188,7 +188,7 @@ if __name__ == "__main__":
         logger.info(f"Loading HuggingFace transformer tokenizer and model '{args.hub_model_id}'")
 
         tm = TransformerModel(args.hub_model_id, args.task_type, args.quantize)
-        model_path, config_path, vocab_path = tm.save(tmp_dir)
+        model_path, config, vocab_path = tm.save(tmp_dir)
 
         ptm = PyTorchModel(es, args.es_model_id if args.es_model_id else tm.elasticsearch_model_id())
         model_exists = es.options(ignore_status=404).ml.get_trained_models(model_id=ptm.model_id).meta.status == 200
@@ -206,7 +206,7 @@ if __name__ == "__main__":
                 exit(1)
 
         logger.info(f"Creating model with id '{ptm.model_id}'")
-        ptm.put_config(config_path)
+        ptm.put_config(config=config)
 
         logger.info(f"Uploading model definition")
         ptm.put_model(model_path)

@@ -250,11 +250,11 @@ Downloading: 100%|██████████| 249M/249M [00:23<00:00, 11.2MB
 # Export the model in a TorchScrpt representation which Elasticsearch uses
 >>> tmp_path = "models"
 >>> Path(tmp_path).mkdir(parents=True, exist_ok=True)
->>> model_path, config_path, vocab_path = tm.save(tmp_path)
+>>> model_path, config, vocab_path = tm.save(tmp_path)
 
 # Import model into Elasticsearch
 >>> es = elasticsearch.Elasticsearch("http://elastic:mlqa_admin@localhost:9200", timeout=300)  # 5 minute timeout
 >>> ptm = PyTorchModel(es, tm.elasticsearch_model_id())
->>> ptm.import_model(model_path, config_path, vocab_path)
+>>> ptm.import_model(model_path=model_path, config_path=None, vocab_path=vocab_path, config=config)
 100%|██████████| 63/63 [00:12<00:00,  5.02it/s]
 ```
