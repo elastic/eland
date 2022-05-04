@@ -58,7 +58,10 @@ try:
     HAS_PYTORCH = True
 except ImportError:
     HAS_PYTORCH = False
-    from eland.ml.pytorch import NlpBertTokenizationConfig, NlpTrainedModelConfig
+    from eland.ml.pytorch.nlp_ml_model import (
+        NlpBertTokenizationConfig,
+        NlpTrainedModelConfig,
+    )
 
 from tests import ES_TEST_CLIENT, ES_VERSION
 
@@ -98,8 +101,6 @@ TEST_BERT_VOCAB = [
     "with",
     "?",
 ]
-
-TEST_BERT_TOKENIZER_CONFIG = NlpBertTokenizationConfig()
 
 NER_LABELS = [
     "O",
@@ -189,7 +190,7 @@ MODELS_TO_TEST = [
         NlpTrainedModelConfig(
             description="test ner model",
             inference_config=NerInferenceOptions(
-                tokenization=TEST_BERT_TOKENIZER_CONFIG,
+                tokenization=NlpBertTokenizationConfig(),
                 classification_labels=NER_LABELS,
             ),
         ),
@@ -202,7 +203,7 @@ MODELS_TO_TEST = [
         NlpTrainedModelConfig(
             description="test text_embedding model",
             inference_config=TextEmbeddingInferenceOptions(
-                tokenization=TEST_BERT_TOKENIZER_CONFIG
+                tokenization=NlpBertTokenizationConfig()
             ),
         ),
         "Godzilla Pancake Elasticsearch is fun.",
@@ -214,7 +215,7 @@ MODELS_TO_TEST = [
         NlpTrainedModelConfig(
             description="test text_classification model",
             inference_config=TextClassificationInferenceOptions(
-                tokenization=TEST_BERT_TOKENIZER_CONFIG,
+                tokenization=NlpBertTokenizationConfig(),
                 classification_labels=TEXT_CLASSIFICATION_LABELS,
             ),
         ),
