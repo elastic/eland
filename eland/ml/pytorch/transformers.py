@@ -53,6 +53,7 @@ from eland.ml.pytorch.nlp_ml_model import (
     TrainedModelInput,
     ZeroShotClassificationInferenceOptions,
 )
+from eland.ml.pytorch.traceable_model import TraceableModel
 
 DEFAULT_OUTPUT_KEY = "sentence_embedding"
 SUPPORTED_TASK_TYPES = {
@@ -364,7 +365,7 @@ class _DPREncoderWrapper(nn.Module):  # type: ignore
         )
 
 
-class _TraceableModel(ABC):
+class _TransformerTraceableModel(TraceableModel):
     """A base class representing a HuggingFace transformer model that can be traced."""
 
     def __init__(
@@ -377,18 +378,10 @@ class _TraceableModel(ABC):
             _DistilBertWrapper,
         ],
     ):
+        super(_TransformerTraceableModel, self).__init__(model=model)
         self._tokenizer = tokenizer
-        self._model = model
 
-    def quantize(self) -> None:
-        torch.quantization.quantize_dynamic(
-            self._model, {torch.nn.Linear}, dtype=torch.qint8
-        )
-
-    def trace(self) -> TracedModelTypes:
-        # model needs to be in evaluate mode
-        self._model.eval()
-
+    def _trace(self) -> TracedModelTypes:
         inputs = self._prepare_inputs()
 
         # Add params when not provided by the tokenizer (e.g. DistilBERT), to conform to BERT interface
@@ -425,11 +418,8 @@ class _TraceableModel(ABC):
     def _prepare_inputs(self) -> transformers.BatchEncoding:
         ...
 
-    def classification_labels(self) -> Optional[List[str]]:
-        return None
 
-
-class _TraceableClassificationModel(_TraceableModel, ABC):
+class _TraceableClassificationModel(_TransformerTraceableModel, ABC):
     def classification_labels(self) -> Optional[List[str]]:
         id_label_items = self._model.config.id2label.items()
         labels = [v for _, v in sorted(id_label_items, key=lambda kv: kv[0])]  # type: ignore
@@ -438,7 +428,7 @@ class _TraceableClassificationModel(_TraceableModel, ABC):
         return [label.replace("-", "_") for label in labels]
 
 
-class _TraceableFillMaskModel(_TraceableModel):
+class _TraceableFillMaskModel(_TransformerTraceableModel):
     def _prepare_inputs(self) -> transformers.BatchEncoding:
         return self._tokenizer(
             "Who was Jim Henson?",
@@ -469,7 +459,7 @@ class _TraceableTextClassificationModel(_TraceableClassificationModel):
         )
 
 
-class _TraceableTextEmbeddingModel(_TraceableModel):
+class _TraceableTextEmbeddingModel(_TransformerTraceableModel):
     def _prepare_inputs(self) -> transformers.BatchEncoding:
         return self._tokenizer(
             "This is an example sentence.",
@@ -488,7 +478,7 @@ class _TraceableZeroShotClassificationModel(_TraceableClassificationModel):
         )
 
 
-class _TraceableQuestionAnsweringModel(_TraceableModel):
+class _TraceableQuestionAnsweringModel(_TransformerTraceableModel):
     def _prepare_inputs(self) -> transformers.BatchEncoding:
         return self._tokenizer(
             "What is the meaning of life?"
@@ -520,7 +510,6 @@ class TransformerModel:
         self._traceable_model = self._create_traceable_model()
         if quantize:
             self._traceable_model.quantize()
-        self._traced_model = self._traceable_model.trace()
         self._vocab = self._load_vocab()
         self._config = self._create_config()
 
@@ -591,7 +580,7 @@ class TransformerModel:
             ),
         )
 
-    def _create_traceable_model(self) -> _TraceableModel:
+    def _create_traceable_model(self) -> TraceableModel:
         if self._task_type == "fill_mask":
             model = transformers.AutoModelForMaskedLM.from_pretrained(
                 self._model_id, torchscript=True
@@ -643,8 +632,7 @@ class TransformerModel:
 
     def save(self, path: str) -> Tuple[str, NlpTrainedModelConfig, str]:
         # save traced model
-        model_path = os.path.join(path, "traced_pytorch_model.pt")
-        torch.jit.save(self._traced_model, model_path)
+        model_path = self._traceable_model.save(path)
 
         # save vocabulary
         vocab_path = os.path.join(path, "vocabulary.json")

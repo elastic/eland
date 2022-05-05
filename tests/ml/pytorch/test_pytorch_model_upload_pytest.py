@@ -27,8 +27,6 @@ except ImportError:
     HAS_SKLEARN = False
 
 try:
-    import transformers  # noqa: F401
-
     from eland.ml.pytorch import PyTorchModel
     from eland.ml.pytorch.transformers import TransformerModel
 
