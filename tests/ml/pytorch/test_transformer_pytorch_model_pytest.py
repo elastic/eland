@@ -24,12 +24,6 @@ import numpy as np
 import pytest
 from elasticsearch import NotFoundError
 
-from eland.ml.pytorch.nlp_ml_model import (
-    NerInferenceOptions,
-    TextClassificationInferenceOptions,
-    TextEmbeddingInferenceOptions,
-)
-
 try:
     import sklearn  # noqa: F401
 
@@ -46,6 +40,11 @@ try:
         NlpTrainedModelConfig,
         PyTorchModel,
         TraceableModel,
+    )
+    from eland.ml.pytorch.nlp_ml_model import (
+        NerInferenceOptions,
+        TextClassificationInferenceOptions,
+        TextEmbeddingInferenceOptions,
     )
 
     TracedModelTypes = Union[  # noqa: F401
@@ -112,111 +111,116 @@ NER_LABELS = [
 
 TEXT_CLASSIFICATION_LABELS = ["foo", "bar", "baz"]
 
+if not HAS_PYTORCH:
+    pytest.skip("This test requires 'pytorch' package to run", allow_module_level=True)
 
-if HAS_PYTORCH:
 
-    class TestTraceableModel(TraceableModel, ABC):
-        def __init__(self, model: nn.Module):
-            super().__init__(model)
+class TestTraceableModel(TraceableModel, ABC):
+    def __init__(self, model: nn.Module):
+        super().__init__(model)
 
-        def _trace(self) -> TracedModelTypes:
-            input_ids = torch.tensor(np.array(range(0, len(TEST_BERT_VOCAB))))
-            attention_mask = torch.tensor([1] * len(TEST_BERT_VOCAB))
-            token_type_ids = torch.tensor([0] * len(TEST_BERT_VOCAB))
-            position_ids = torch.arange(len(TEST_BERT_VOCAB), dtype=torch.long)
-            return torch.jit.trace(
-                self._model,
-                (
-                    input_ids,
-                    attention_mask,
-                    token_type_ids,
-                    position_ids,
-                ),
-            )
-
-    class NerModule(nn.Module):
-        def forward(
-            self,
-            input_ids: Tensor,
-            _attention_mask: Tensor,
-            _token_type_ids: Tensor,
-            _position_ids: Tensor,
-        ) -> Tensor:
-            """Wrap the input and output to conform to the native process interface."""
-            outside = [0] * len(NER_LABELS)
-            outside[0] = 1
-            person = [0] * len(NER_LABELS)
-            person[3] = 1
-            person[4] = 1
-            result = [outside for _t in np.array(input_ids.data)]
-            result[1] = person
-            result[2] = person
-            return torch.tensor([result], dtype=torch.float)
-
-    class EmbeddingModule(nn.Module):
-        def forward(
-            self,
-            _input_ids: Tensor,
-            _attention_mask: Tensor,
-            _token_type_ids: Tensor,
-            _position_ids: Tensor,
-        ) -> Tensor:
-            """Wrap the input and output to conform to the native process interface."""
-            result = [0] * 512
-            return torch.tensor([result], dtype=torch.float)
-
-    class TextClassificationModule(nn.Module):
-        def forward(
-            self,
-            _input_ids: Tensor,
-            _attention_mask: Tensor,
-            _token_type_ids: Tensor,
-            _position_ids: Tensor,
-        ) -> Tensor:
-            # foo, bar, baz are the classification labels
-            result = [0, 1.0, 0]
-            return torch.tensor([result], dtype=torch.float)
-
-    MODELS_TO_TEST = [
-        (
-            "ner",
-            TestTraceableModel(model=NerModule()),
-            NlpTrainedModelConfig(
-                description="test ner model",
-                inference_config=NerInferenceOptions(
-                    tokenization=NlpBertTokenizationConfig(),
-                    classification_labels=NER_LABELS,
-                ),
+    def _trace(self) -> TracedModelTypes:
+        input_ids = torch.tensor(np.array(range(0, len(TEST_BERT_VOCAB))))
+        attention_mask = torch.tensor([1] * len(TEST_BERT_VOCAB))
+        token_type_ids = torch.tensor([0] * len(TEST_BERT_VOCAB))
+        position_ids = torch.arange(len(TEST_BERT_VOCAB), dtype=torch.long)
+        return torch.jit.trace(
+            self._model,
+            (
+                input_ids,
+                attention_mask,
+                token_type_ids,
+                position_ids,
             ),
-            "Godzilla Pancake Elasticsearch is fun.",
-            "[Godzilla](PER&Godzilla) Pancake Elasticsearch is fun.",
-        ),
-        (
-            "embedding",
-            TestTraceableModel(model=EmbeddingModule()),
-            NlpTrainedModelConfig(
-                description="test text_embedding model",
-                inference_config=TextEmbeddingInferenceOptions(
-                    tokenization=NlpBertTokenizationConfig()
-                ),
+        )
+
+
+class NerModule(nn.Module):
+    def forward(
+        self,
+        input_ids: Tensor,
+        _attention_mask: Tensor,
+        _token_type_ids: Tensor,
+        _position_ids: Tensor,
+    ) -> Tensor:
+        """Wrap the input and output to conform to the native process interface."""
+        outside = [0] * len(NER_LABELS)
+        outside[0] = 1
+        person = [0] * len(NER_LABELS)
+        person[3] = 1
+        person[4] = 1
+        result = [outside for _t in np.array(input_ids.data)]
+        result[1] = person
+        result[2] = person
+        return torch.tensor([result], dtype=torch.float)
+
+
+class EmbeddingModule(nn.Module):
+    def forward(
+        self,
+        _input_ids: Tensor,
+        _attention_mask: Tensor,
+        _token_type_ids: Tensor,
+        _position_ids: Tensor,
+    ) -> Tensor:
+        """Wrap the input and output to conform to the native process interface."""
+        result = [0] * 512
+        return torch.tensor([result], dtype=torch.float)
+
+
+class TextClassificationModule(nn.Module):
+    def forward(
+        self,
+        _input_ids: Tensor,
+        _attention_mask: Tensor,
+        _token_type_ids: Tensor,
+        _position_ids: Tensor,
+    ) -> Tensor:
+        # foo, bar, baz are the classification labels
+        result = [0, 1.0, 0]
+        return torch.tensor([result], dtype=torch.float)
+
+
+MODELS_TO_TEST = [
+    (
+        "ner",
+        TestTraceableModel(model=NerModule()),
+        NlpTrainedModelConfig(
+            description="test ner model",
+            inference_config=NerInferenceOptions(
+                tokenization=NlpBertTokenizationConfig(),
+                classification_labels=NER_LABELS,
             ),
-            "Godzilla Pancake Elasticsearch is fun.",
-            [0] * 512,
         ),
-        (
-            "text_classification",
-            TestTraceableModel(model=TextClassificationModule()),
-            NlpTrainedModelConfig(
-                description="test text_classification model",
-                inference_config=TextClassificationInferenceOptions(
-                    tokenization=NlpBertTokenizationConfig(),
-                    classification_labels=TEXT_CLASSIFICATION_LABELS,
-                ),
+        "Godzilla Pancake Elasticsearch is fun.",
+        "[Godzilla](PER&Godzilla) Pancake Elasticsearch is fun.",
+    ),
+    (
+        "embedding",
+        TestTraceableModel(model=EmbeddingModule()),
+        NlpTrainedModelConfig(
+            description="test text_embedding model",
+            inference_config=TextEmbeddingInferenceOptions(
+                tokenization=NlpBertTokenizationConfig()
             ),
-            "Godzilla Pancake Elasticsearch is fun.",
-            "bar",
         ),
-    ]
+        "Godzilla Pancake Elasticsearch is fun.",
+        [0] * 512,
+    ),
+    (
+        "text_classification",
+        TestTraceableModel(model=TextClassificationModule()),
+        NlpTrainedModelConfig(
+            description="test text_classification model",
+            inference_config=TextClassificationInferenceOptions(
+                tokenization=NlpBertTokenizationConfig(),
+                classification_labels=TEXT_CLASSIFICATION_LABELS,
+            ),
+        ),
+        "Godzilla Pancake Elasticsearch is fun.",
+        "bar",
+    ),
+]
 
 
 @pytest.fixture(scope="function", autouse=True)
