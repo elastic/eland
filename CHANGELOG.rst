@@ -2,6 +2,23 @@
 Changelog
 =========
 
+8.2.0 (2022-05-09)
+------------------
+
+Added
+^^^^^
+
+* Added support for passing Cloud ID via ``--cloud-id`` to ``eland_import_hub_model`` CLI tool (`#462`_)
+* Added support for authenticating via ``--es-username``, ``--es-password``, and ``--es-api-key`` to the ``eland_import_hub_model`` CLI tool (`#461`_)
+* Added support for XGBoost 1.6 (`#458`_)
+* Added support for ``question_answering`` NLP tasks (`#457`_)
+
+.. _#457: https://github.com/elastic/eland/pull/457
+.. _#458: https://github.com/elastic/eland/pull/458
+.. _#461: https://github.com/elastic/eland/pull/461
+.. _#462: https://github.com/elastic/eland/pull/462
+
+
 8.1.0 (2022-03-31)
 ------------------
 
