@@ -478,7 +478,7 @@ class _TraceableZeroShotClassificationModel(_TraceableClassificationModel):
         )
 
 
-class _TraceableQuestionAnsweringModel(_TraceableModel):
+class _TraceableQuestionAnsweringModel(_TransformerTraceableModel):
     def _prepare_inputs(self) -> transformers.BatchEncoding:
         return self._tokenizer(
             "What is the meaning of life?"
