@@ -86,8 +86,8 @@ class SKLearnTransformer(ModelTransformer):
             ):  # classification requires more than one value, so assume regression
                 leaf_value = [float(value[0][0])]
             else:
-                # the classification value, which is the index of the largest value
-                leaf_value = [float(np.argmax(value))]
+                # the classification value
+                leaf_value = [float(n) for n in value[0]]
             return TreeNode(
                 node_index,
                 decision_type=self._node_decision_type,
