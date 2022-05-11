@@ -14,7 +14,7 @@
 #  KIND, either express or implied.  See the License for the
 #  specific language governing permissions and limitations
 #  under the License.
-
+import math
 from typing import Any, Dict, Optional, Sequence, Tuple, Type, Union
 
 import numpy as np
@@ -87,7 +87,9 @@ class SKLearnTransformer(ModelTransformer):
                 leaf_value = [float(value[0][0])]
             else:
                 # the classification value
-                leaf_value = [float(n) for n in value[0]]
+                # DecisionTreeClassifiers simply use normalize (dividing predicted values by sum)
+                # We use softMax, to get our probabilities as close as possible, store log value here
+                leaf_value = [-10000000 if n == 0 else math.log(float(n)) for n in value[0]]
             return TreeNode(
                 node_index,
                 decision_type=self._node_decision_type,

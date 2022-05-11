@@ -270,8 +270,8 @@ class MLModel:
         model: An instance of a supported python model. We support the following model types:
             - sklearn.tree.DecisionTreeClassifier
                 - NOTE: When calculating the probabilities of a given classification label, Elasticsearch utilizes
-                        softMax. SKLearn instead normalizes the results. This may result in different probabilities
-                        but the overall predictions will still align.
+                        softMax. SKLearn instead normalizes the results. We try to account for this during model
+                        serialization, but probabilities may be slightly different in the predictions.
             - sklearn.tree.DecisionTreeRegressor
             - sklearn.ensemble.RandomForestRegressor
             - sklearn.ensemble.RandomForestClassifier
