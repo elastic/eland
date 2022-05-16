@@ -90,7 +90,7 @@ class SKLearnTransformer(ModelTransformer):
                 # DecisionTreeClassifiers simply use normalize (dividing predicted values by sum)
                 # We use softMax, to get our probabilities as close as possible, store log value here
                 leaf_value = [
-                    -10000000 if n == 0 else math.log(float(n)) for n in value[0]
+                    -10000000 if n <= 0 else math.log(float(n)) for n in value[0]
                 ]
             return TreeNode(
                 node_index,
