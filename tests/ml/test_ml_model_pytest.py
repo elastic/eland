@@ -73,7 +73,7 @@ def random_rows(data, size):
     return data[np.random.randint(data.shape[0], size=size), :]
 
 
-def check_prediction_equality(es_model, py_model, test_data):
+def check_prediction_equality(es_model: MLModel, py_model, test_data):
     # Get some test results
     test_results = py_model.predict(np.asarray(test_data))
     es_results = es_model.predict(test_data)
@@ -131,14 +131,25 @@ class TestMLModel:
 
     @requires_sklearn
     @pytest.mark.parametrize("compress_model_definition", [True, False])
-    def test_decision_tree_classifier(self, compress_model_definition):
+    @pytest.mark.parametrize("multi_class", [True, False])
+    def test_decision_tree_classifier(self, compress_model_definition, multi_class):
         # Train model
-        training_data = datasets.make_classification(n_features=5)
+        training_data = (
+            datasets.make_classification(
+                n_features=7,
+                n_classes=3,
+                n_clusters_per_class=2,
+                n_informative=6,
+                n_redundant=1,
+            )
+            if multi_class
+            else datasets.make_classification(n_features=7)
+        )
         classifier = DecisionTreeClassifier()
         classifier.fit(training_data[0], training_data[1])
 
         # Serialise the models to Elasticsearch
-        feature_names = ["f0", "f1", "f2", "f3", "f4"]
+        feature_names = ["f0", "f1", "f2", "f3", "f4", "f5", "f6"]
         model_id = "test_decision_tree_classifier"
 
         es_model = MLModel.import_model(
