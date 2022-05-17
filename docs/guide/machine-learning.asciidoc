@@ -93,17 +93,17 @@ The following authentication options are available when using the import script:
 * username and password authentication (specified with the `-u` and `-p` options):
 +
 --
-[source, shell]
+[source,bash]
 --------------------------------------------------
-eland_import_hub_model --cloud-id <cloud-id> -u <username> -p <password> ...
+eland_import_hub_model -u <username> -p <password> --cloud-id <cloud-id> ...
 --------------------------------------------------
-This option also works when you use `--url`.
+These `-u` and `-p` options also work when you use `--url`.
 --
 
 * username and password authentication (embedded in the URL):
 +
 --
-[source, shell]
+[source,bash]
 --------------------------------------------------
 eland_import_hub_model --url https://<user>:<password>@<hostname>:<port> ...
 --------------------------------------------------
@@ -112,8 +112,8 @@ eland_import_hub_model --url https://<user>:<password>@<hostname>:<port> ...
 * API key authentication:
 +
 --
-[source, shell]
+[source,bash]
 --------------------------------------------------
-eland_import_hub_model --url https://<hostname>:<port> --es-api-key <api-key> ...
+eland_import_hub_model --es-api-key <api-key> --url https://<hostname>:<port> ...
 --------------------------------------------------
 --
