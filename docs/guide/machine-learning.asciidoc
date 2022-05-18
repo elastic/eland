@@ -41,16 +41,21 @@ model in {es}.
 For NLP tasks, Eland enables you to import PyTorch trained BERT models into {es}. 
 Models can be either plain PyTorch models, or supported 
 https://huggingface.co/transformers[transformers] models from the
-https://huggingface.co/models[Hugging Face model hub].
+https://huggingface.co/models[Hugging Face model hub]. For example:
 
 [source,bash]
 ------------------------
-$ eland_import_hub_model \
-  --url http://localhost:9200/ \
-  --hub-model-id elastic/distilbert-base-cased-finetuned-conll03-english \
-  --task-type ner \
+$ eland_import_hub_model <authentication> \ <1>
+  --url http://localhost:9200/ \ <2>
+  --hub-model-id elastic/distilbert-base-cased-finetuned-conll03-english \ <3>
+  --task-type ner \ <4>
   --start
 ------------------------
+<1> Use an authentication method to access your cluster. Refer to <<ml-nlp-pytorch-auth>>.
+<2> The cluster URL. Alternatively, use `--cloud-id`.
+<3> Specify the identifier for the model in the Hugging Face model hub.
+<4> Specify the type of NLP task. Supported values are `fill_mask`, `ner`,
+`text_classification`, `text_embedding`, and `zero_shot_classification`.
 
 [source,python]
 ------------------------
@@ -67,7 +72,7 @@ Downloading: 100%|██████████| 208k/208k [00:00<00:00, 668kB/
 Downloading: 100%|██████████| 112/112 [00:00<00:00, 43.9kB/s]
 Downloading: 100%|██████████| 249M/249M [00:23<00:00, 11.2MB/s]
 
-# Export the model in a TorchScrpt representation which Elasticsearch uses
+# Export the model in a TorchScript representation which Elasticsearch uses
 >>> tmp_path = "models"
 >>> Path(tmp_path).mkdir(parents=True, exist_ok=True)
 >>> model_path, config_path, vocab_path = tm.save(tmp_path)
@@ -78,3 +83,37 @@ Downloading: 100%|██████████| 249M/249M [00:23<00:00, 11.2MB
 >>> ptm.import_model(model_path, config_path, vocab_path)
 100%|██████████| 63/63 [00:12<00:00,  5.02it/s]
 ------------------------
+
+[discrete]
+[[ml-nlp-pytorch-auth]]
+==== Authentication methods
+
+The following authentication options are available when using the import script:
+
+* username and password authentication (specified with the `-u` and `-p` options):
++
+--
+[source,bash]
+--------------------------------------------------
+eland_import_hub_model -u <username> -p <password> --cloud-id <cloud-id> ...
+--------------------------------------------------
+These `-u` and `-p` options also work when you use `--url`.
+--
+
+* username and password authentication (embedded in the URL):
++
+--
+[source,bash]
+--------------------------------------------------
+eland_import_hub_model --url https://<user>:<password>@<hostname>:<port> ...
+--------------------------------------------------
+--
+
+* API key authentication:
++
+--
+[source,bash]
+--------------------------------------------------
+eland_import_hub_model --es-api-key <api-key> --url https://<hostname>:<port> ...
+--------------------------------------------------
+--
