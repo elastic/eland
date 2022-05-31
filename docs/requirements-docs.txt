@@ -7,3 +7,6 @@ xgboost>=1
 lightgbm
 nbsphinx
 git+https://github.com/pandas-dev/pydata-sphinx-theme.git
+
+# traitlets has been having all sorts of release problems lately.
+traitlets<5.1
