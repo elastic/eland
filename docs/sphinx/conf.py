@@ -60,7 +60,6 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.doctest",
     "sphinx.ext.extlinks",
-    "numpydoc",
     "matplotlib.sphinxext.plot_directive",
     "sphinx.ext.todo",
     "nbsphinx",
