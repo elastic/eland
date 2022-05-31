@@ -746,7 +746,7 @@ class Operations:
                     if pd_agg in {"max", "min", "median", "sum", "mode"}:
                         # 'sum' isn't representable with bool, use int64
                         if pd_agg == "sum" and field.is_bool:
-                            agg_value = np.int64(agg_value)
+                            agg_value = np.int64(agg_value)  # type: ignore
                         else:
                             agg_value = field.np_dtype.type(agg_value)
 

@@ -55,7 +55,7 @@ $ eland_import_hub_model <authentication> \ <1>
 <2> The cluster URL. Alternatively, use `--cloud-id`.
 <3> Specify the identifier for the model in the Hugging Face model hub.
 <4> Specify the type of NLP task. Supported values are `fill_mask`, `ner`,
-`text_classification`, `text_embedding`, and `zero_shot_classification`.
+`question_answering`, text_classification`, `text_embedding`, and `zero_shot_classification`.
 
 [source,python]
 ------------------------
