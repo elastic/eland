@@ -41,7 +41,7 @@ class TraceableModel(ABC):
 
     def quantize(self) -> None:
         torch.quantization.quantize_dynamic(
-            self._model, {torch.nn.Linear}, dtype=torch.qint8
+            self._model, {torch.nn.Linear}, dtype=torch.qint8, inplace=True
         )
 
     def trace(self) -> TracedModelTypes:
