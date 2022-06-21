@@ -60,7 +60,7 @@ extras = {
     "lightgbm": ["lightgbm>=2,<4"],
     "pytorch": [
         "sentence-transformers>=2.1.0,<3",
-        "torch>=1.9.0,<2",
+        "torch>=1.11.0,<2",
         "transformers[torch]>=4.12.0,<5",
     ],
 }
