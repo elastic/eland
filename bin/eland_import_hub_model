@@ -84,9 +84,11 @@ def get_arg_parser():
     )
     parser.add_argument(
         "--task-type",
-        required=True,
+        required=False,
         choices=SUPPORTED_TASK_TYPES,
-        help="The task type for the model usage.",
+        help="The task type for the model usage. Will attempt to auto-detect task type for the model if not provided. "
+             "Default: auto",
+        default="auto"
     )
     parser.add_argument(
         "--quantize",
@@ -165,7 +167,11 @@ if __name__ == "__main__":
 
     try:
         from eland.ml.pytorch import PyTorchModel
-        from eland.ml.pytorch.transformers import SUPPORTED_TASK_TYPES, TransformerModel
+        from eland.ml.pytorch.transformers import (
+            SUPPORTED_TASK_TYPES,
+            TaskTypeError,
+            TransformerModel,
+        )
     except ModuleNotFoundError as e:
         logger.error(textwrap.dedent(f"""\
             \033[31mFailed to run because module '{e.name}' is not available.\033[0m
@@ -187,8 +193,12 @@ if __name__ == "__main__":
     with tempfile.TemporaryDirectory() as tmp_dir:
         logger.info(f"Loading HuggingFace transformer tokenizer and model '{args.hub_model_id}'")
 
-        tm = TransformerModel(args.hub_model_id, args.task_type, args.quantize)
-        model_path, config, vocab_path = tm.save(tmp_dir)
+        try:
+            tm = TransformerModel(args.hub_model_id, args.task_type, args.quantize)
+            model_path, config, vocab_path = tm.save(tmp_dir)
+        except TaskTypeError as err:
+            logger.error(f"Failed to get model for task type, please provide valid task type via '--task-type' parameter. Caused by {err}")
+            exit(1)
 
         ptm = PyTorchModel(es, args.es_model_id if args.es_model_id else tm.elasticsearch_model_id())
         model_exists = es.options(ignore_status=404).ml.get_trained_models(model_id=ptm.model_id).meta.status == 200

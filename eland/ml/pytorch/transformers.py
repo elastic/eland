@@ -23,7 +23,7 @@ libraries such as sentence-transformers.
 import json
 import os.path
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 import torch  # type: ignore
 import transformers  # type: ignore
@@ -33,6 +33,7 @@ from transformers import (
     AutoConfig,
     AutoModel,
     AutoModelForQuestionAnswering,
+    PretrainedConfig,
     PreTrainedModel,
     PreTrainedTokenizer,
     PreTrainedTokenizerFast,
@@ -64,6 +65,15 @@ SUPPORTED_TASK_TYPES = {
     "zero_shot_classification",
     "question_answering",
 }
+ARCHITECTURE_TO_TASK_TYPE = {
+    "MaskedLM": ["fill_mask", "text_embedding"],
+    "TokenClassification": ["ner"],
+    "SequenceClassification": ["text_classification", "zero_shot_classification"],
+    "QuestionAnswering": ["question_answering"],
+    "DPRQuestionEncoder": ["text_embedding"],
+    "DPRContextEncoder": ["text_embedding"],
+}
+ZERO_SHOT_LABELS = {"contradiction", "neutral", "entailment"}
 TASK_TYPE_TO_INFERENCE_CONFIG = {
     "fill_mask": FillMaskInferenceOptions,
     "ner": NerInferenceOptions,
@@ -95,6 +105,37 @@ TracedModelTypes = Union[
     torch.jit.ScriptModule,
     torch.jit.TopLevelTracedModule,
 ]
+
+
+class TaskTypeError(Exception):
+    pass
+
+
+def task_type_from_model_config(model_config: PretrainedConfig) -> Optional[str]:
+    if model_config.architectures is None:
+        if model_config.name_or_path.startswith("sentence-transformers/"):
+            return "text_embedding"
+        return None
+    potential_task_types: Set[str] = set()
+    for architecture in model_config.architectures:
+        for (substr, task_type) in ARCHITECTURE_TO_TASK_TYPE.items():
+            if substr in architecture:
+                for t in task_type:
+                    potential_task_types.add(t)
+    if len(potential_task_types) == 0:
+        return None
+    if len(potential_task_types) > 1:
+        if "zero_shot_classification" in potential_task_types:
+            if model_config.label2id:
+                labels = set([x.lower() for x in model_config.label2id.keys()])
+                if len(labels.difference(ZERO_SHOT_LABELS)) == 0:
+                    return "zero_shot_classification"
+            return "text_classification"
+        if "text_embedding" in potential_task_types:
+            if model_config.name_or_path.startswith("sentence-transformers/"):
+                return "text_embedding"
+            return "fill_mask"
+    return potential_task_types.pop()
 
 
 class _QuestionAnsweringWrapperModule(nn.Module):  # type: ignore
@@ -581,6 +622,18 @@ class TransformerModel:
         )
 
     def _create_traceable_model(self) -> TraceableModel:
+        if self._task_type == "auto":
+            model = transformers.AutoModel.from_pretrained(
+                self._model_id, torchscript=True
+            )
+            maybe_task_type = task_type_from_model_config(model.config)
+            if maybe_task_type is None:
+                raise TaskTypeError(
+                    f"Unable to automatically determine task type for model {self._model_id}, please supply task type: {SUPPORTED_TASK_TYPES_NAMES}"
+                )
+            else:
+                self._task_type = maybe_task_type
+
         if self._task_type == "fill_mask":
             model = transformers.AutoModelForMaskedLM.from_pretrained(
                 self._model_id, torchscript=True

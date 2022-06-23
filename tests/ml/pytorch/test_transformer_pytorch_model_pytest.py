@@ -34,12 +34,14 @@ except ImportError:
 try:
     import torch  # noqa: F401
     from torch import Tensor, nn  # noqa: F401
+    from transformers import PretrainedConfig  # noqa: F401
 
     from eland.ml.pytorch import (  # noqa: F401
         NlpBertTokenizationConfig,
         NlpTrainedModelConfig,
         PyTorchModel,
         TraceableModel,
+        task_type_from_model_config,
     )
     from eland.ml.pytorch.nlp_ml_model import (
         NerInferenceOptions,
@@ -222,6 +224,41 @@ MODELS_TO_TEST = [
     ),
 ]
 
+AUTO_TASK_RESULTS = [
+    ("any_bert", "BERTMaskedLM", None, "fill_mask"),
+    ("any_roberta", "RoBERTaMaskedLM", None, "fill_mask"),
+    ("sentence-transformers/any_bert", "BERTMaskedLM", None, "text_embedding"),
+    ("sentence-transformers/any_roberta", "RoBERTaMaskedLM", None, "text_embedding"),
+    ("sentence-transformers/mpnet", "MPNetMaskedLM", None, "text_embedding"),
+    ("anynermodel", "BERTForTokenClassification", None, "ner"),
+    ("anynermodel", "MPNetForTokenClassification", None, "ner"),
+    ("anynermodel", "RoBERTaForTokenClassification", None, "ner"),
+    ("anynermodel", "BERTForQuestionAnswering", None, "question_answering"),
+    ("anynermodel", "MPNetForQuestionAnswering", None, "question_answering"),
+    ("anynermodel", "RoBERTaForQuestionAnswering", None, "question_answering"),
+    ("aqaModel", "DPRQuestionEncoder", None, "text_embedding"),
+    ("aqaModel", "DPRContextEncoder", None, "text_embedding"),
+    (
+        "any_bert",
+        "BERTForSequenceClassification",
+        ["foo", "bar", "baz"],
+        "text_classification",
+    ),
+    (
+        "any_bert",
+        "BERTForSequenceClassification",
+        ["contradiction", "neutral", "entailment"],
+        "zero_shot_classification",
+    ),
+    (
+        "any_bert",
+        "BERTForSequenceClassification",
+        ["CONTRADICTION", "NEUTRAL", "ENTAILMENT"],
+        "zero_shot_classification",
+    ),
+    ("any_bert", "SomeUnknownType", None, None),
+]
+
 
 @pytest.fixture(scope="function", autouse=True)
 def setup_and_tear_down():
@@ -274,3 +311,22 @@ class TestPytorchModelUpload:
             result = ptm.infer(docs=[{"text_field": input}])
             assert result.get("predicted_value") is not None
             assert result["predicted_value"] == prediction
+
+    @pytest.mark.parametrize(
+        "model_id,architecture,labels,expected_task", AUTO_TASK_RESULTS
+    )
+    def test_auto_task_type(self, model_id, architecture, labels, expected_task):
+        config = (
+            PretrainedConfig(
+                name_or_path=model_id,
+                architectures=[architecture],
+                label2id=dict(zip(labels, range(len(labels)))),
+                id2label=dict(zip(range(len(labels)), labels)),
+            )
+            if labels
+            else PretrainedConfig(
+                name_or_path=model_id,
+                architectures=[architecture],
+            )
+        )
+        assert task_type_from_model_config(model_config=config) == expected_task
