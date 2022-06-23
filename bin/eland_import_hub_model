@@ -196,7 +196,7 @@ if __name__ == "__main__":
         try:
             tm = TransformerModel(args.hub_model_id, args.task_type, args.quantize)
             model_path, config, vocab_path = tm.save(tmp_dir)
-        except TransformerModel as err:
+        except TaskTypeError as err:
             logger.error(f"Failed to get model for task type, please provide valid task type via '--task-type' parameter. Caused by {err}")
             exit(1)
 
