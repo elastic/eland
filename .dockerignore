@@ -1,4 +1,66 @@
+# docs and example
 docs/*
 example/*
+
+# Git
 .git
+
+# Nox
 .nox
+
+# Compiled python modules.
+*.pyc
+__pycache__/
+
+# Setuptools distribution folder.
+dist/
+
+# Build folder
+build/
+
+# docs
+docs/*
+
+# pytest results
+tests/dataframe/results/*csv
+result_images/
+
+# Python egg metadata, regenerated from source files by setuptools.
+/*.egg-info
+eland.egg-info/
+
+# PyCharm files
+.idea/
+
+# vscode files
+.vscode/
+
+# pytest files
+.pytest_cache/
+
+# Ignore MacOSX files
+.DS_Store
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# Environments
+.env
+.venv
+.nox
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.mypy_cache
+
+# Coverage
+.coverage
