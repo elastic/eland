@@ -127,7 +127,7 @@ class PyTorchModel:
     ) -> Any:
         return self._client.options(
             request_timeout=60
-        ).ml.infer_trained_model_deployment(
+        ).ml.infer_trained_model(
             model_id=self.model_id,
             timeout=timeout,
             docs=docs,
