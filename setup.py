@@ -82,7 +82,7 @@ setup(
     keywords="elastic eland pandas python",
     packages=find_packages(include=["eland", "eland.*"]),
     install_requires=[
-        "elasticsearch>=8,<9",
+        "elasticsearch>=8.3,<9",
         "pandas>=1.2,<2",
         "matplotlib<4",
         "numpy<2",
