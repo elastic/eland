@@ -125,9 +125,7 @@ class PyTorchModel:
         docs: List[Mapping[str, str]],
         timeout: str = DEFAULT_TIMEOUT,
     ) -> Any:
-        return self._client.options(
-            request_timeout=60
-        ).ml.infer_trained_model(
+        return self._client.options(request_timeout=60).ml.infer_trained_model(
             model_id=self.model_id,
             timeout=timeout,
             docs=docs,
