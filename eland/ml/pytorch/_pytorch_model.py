@@ -22,6 +22,7 @@ import os
 from typing import (
     TYPE_CHECKING,
     Any,
+    Dict,
     Iterable,
     List,
     Mapping,
@@ -38,6 +39,8 @@ from eland.ml.pytorch.nlp_ml_model import NlpTrainedModelConfig
 
 if TYPE_CHECKING:
     from elasticsearch import Elasticsearch
+
+from elasticsearch._sync.client.utils import _quote
 
 DEFAULT_CHUNK_SIZE = 4 * 1024 * 1024  # 4MB
 DEFAULT_TIMEOUT = "60s"
@@ -125,12 +128,19 @@ class PyTorchModel:
         docs: List[Mapping[str, str]],
         timeout: str = DEFAULT_TIMEOUT,
     ) -> Any:
-        return self._client.options(
-            request_timeout=60
-        ).ml.infer_trained_model_deployment(
-            model_id=self.model_id,
-            timeout=timeout,
-            docs=docs,
+        if docs is None:
+            raise ValueError("Empty value passed for parameter 'docs'")
+
+        __body: Dict[str, Any] = {}
+        __body["docs"] = docs
+
+        __path = f"/_ml/trained_models/{_quote(self.model_id)}/deployment/_infer"
+        __query: Dict[str, Any] = {}
+        __query["timeout"] = timeout
+        __headers = {"accept": "application/json", "content-type": "application/json"}
+
+        return self._client.options(request_timeout=60).perform_request(
+            "POST", __path, params=__query, headers=__headers, body=__body
         )
 
     def start(self, timeout: str = DEFAULT_TIMEOUT) -> None:
