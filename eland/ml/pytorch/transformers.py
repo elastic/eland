@@ -49,6 +49,7 @@ from eland.ml.pytorch.nlp_ml_model import (
     NlpTrainedModelConfig,
     PassThroughInferenceOptions,
     QuestionAnsweringInferenceOptions,
+    ReRankingInferenceOptions,
     TextClassificationInferenceOptions,
     TextEmbeddingInferenceOptions,
     TrainedModelInput,
@@ -64,11 +65,16 @@ SUPPORTED_TASK_TYPES = {
     "text_embedding",
     "zero_shot_classification",
     "question_answering",
+    "re_ranking",
 }
 ARCHITECTURE_TO_TASK_TYPE = {
     "MaskedLM": ["fill_mask", "text_embedding"],
     "TokenClassification": ["ner"],
-    "SequenceClassification": ["text_classification", "zero_shot_classification"],
+    "SequenceClassification": [
+        "text_classification",
+        "zero_shot_classification",
+        "re_ranking",
+    ],
     "QuestionAnswering": ["question_answering"],
     "DPRQuestionEncoder": ["text_embedding"],
     "DPRContextEncoder": ["text_embedding"],
@@ -82,6 +88,7 @@ TASK_TYPE_TO_INFERENCE_CONFIG = {
     "zero_shot_classification": ZeroShotClassificationInferenceOptions,
     "pass_through": PassThroughInferenceOptions,
     "question_answering": QuestionAnsweringInferenceOptions,
+    "re_ranking": ReRankingInferenceOptions,
 }
 SUPPORTED_TASK_TYPES_NAMES = ", ".join(sorted(SUPPORTED_TASK_TYPES))
 SUPPORTED_TOKENIZERS = (
@@ -124,6 +131,12 @@ def task_type_from_model_config(model_config: PretrainedConfig) -> Optional[str]
                     potential_task_types.add(t)
     if len(potential_task_types) == 0:
         return None
+    if (
+        "text_classification" in potential_task_types
+        and model_config.id2label
+        and len(model_config.id2label) == 1
+    ):
+        return "re_ranking"
     if len(potential_task_types) > 1:
         if "zero_shot_classification" in potential_task_types:
             if model_config.label2id:
@@ -529,6 +542,16 @@ class _TraceableQuestionAnsweringModel(_TransformerTraceableModel):
         )
 
 
+class _TraceableReRankingModel(_TransformerTraceableModel):
+    def _prepare_inputs(self) -> transformers.BatchEncoding:
+        return self._tokenizer(
+            "What is the meaning of life?"
+            "The meaning of life, according to the hitchikers guide, is 42.",
+            padding="max_length",
+            return_tensors="pt",
+        )
+
+
 class TransformerModel:
     def __init__(self, model_id: str, task_type: str, quantize: bool = False):
         self._model_id = model_id
@@ -674,6 +697,12 @@ class TransformerModel:
         elif self._task_type == "question_answering":
             model = _QuestionAnsweringWrapperModule.from_pretrained(self._model_id)
             return _TraceableQuestionAnsweringModel(self._tokenizer, model)
+        elif self._task_type == "re_ranking":
+            model = transformers.AutoModelForSequenceClassification.from_pretrained(
+                self._model_id, torchscript=True
+            )
+            model = _DistilBertWrapper.try_wrapping(model)
+            return _TraceableReRankingModel(self._tokenizer, model)
         else:
             raise TypeError(
                 f"Unknown task type {self._task_type}, must be one of: {SUPPORTED_TASK_TYPES_NAMES}"

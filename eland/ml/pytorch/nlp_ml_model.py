@@ -218,6 +218,20 @@ class QuestionAnsweringInferenceOptions(InferenceConfig):
         self.num_top_classes = num_top_classes
 
 
+class ReRankingInferenceOptions(InferenceConfig):
+    def __init__(
+        self,
+        *,
+        tokenization: NlpTokenizationConfig,
+        results_field: t.Optional[str] = None,
+        question: t.Optional[str] = None,
+    ):
+        super().__init__(configuration_type="re_ranking")
+        self.tokenization = tokenization
+        self.results_field = results_field
+        self.question = question
+
+
 class TextEmbeddingInferenceOptions(InferenceConfig):
     def __init__(
         self,
