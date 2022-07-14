@@ -2,6 +2,32 @@
 Changelog
 =========
 
+8.3.0 (2022-07-11)
+------------------
+
+Added
+^^^^^
+
+* Added a new NLP model task type "auto" which infers the task type based on model configuration and architecture  (`#475`_)
+
+Changed
+^^^^^^^
+
+* Changed required version of 'torch' package to `>=1.11.0,<1.12` to match required PyTorch version for Elasticsearch 8.3 (was `>=1.9.0,<2`) (`#479`_)
+* Changed the default value of the `--task-type` parameter for the `eland_import_hub_model` CLI to be "auto" (`#475`_)
+
+Fixed
+^^^^^
+
+* Fixed decision tree classifier serialization to account for probabilities (`#465`_)
+* Fixed PyTorch model quantization (`#472`_)
+
+.. _#465: https://github.com/elastic/eland/pull/465
+.. _#472: https://github.com/elastic/eland/pull/472
+.. _#475: https://github.com/elastic/eland/pull/475
+.. _#479: https://github.com/elastic/eland/pull/479
+
+
 8.2.0 (2022-05-09)
 ------------------
 
