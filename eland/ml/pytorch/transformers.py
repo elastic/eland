@@ -49,9 +49,9 @@ from eland.ml.pytorch.nlp_ml_model import (
     NlpTrainedModelConfig,
     PassThroughInferenceOptions,
     QuestionAnsweringInferenceOptions,
-    TextSimilarityInferenceOptions,
     TextClassificationInferenceOptions,
     TextEmbeddingInferenceOptions,
+    TextSimilarityInferenceOptions,
     TrainedModelInput,
     ZeroShotClassificationInferenceOptions,
 )
