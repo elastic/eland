@@ -218,18 +218,18 @@ class QuestionAnsweringInferenceOptions(InferenceConfig):
         self.num_top_classes = num_top_classes
 
 
-class ReRankingInferenceOptions(InferenceConfig):
+class TextSimilarityInferenceOptions(InferenceConfig):
     def __init__(
         self,
         *,
         tokenization: NlpTokenizationConfig,
         results_field: t.Optional[str] = None,
-        question: t.Optional[str] = None,
+        text: t.Optional[str] = None,
     ):
-        super().__init__(configuration_type="re_ranking")
+        super().__init__(configuration_type="text_similarity")
         self.tokenization = tokenization
         self.results_field = results_field
-        self.question = question
+        self.text = text
 
 
 class TextEmbeddingInferenceOptions(InferenceConfig):
