@@ -88,6 +88,35 @@ Downloading: 100%|██████████| 249M/249M [00:23<00:00, 11.2MB
 100%|██████████| 63/63 [00:12<00:00,  5.02it/s]
 ------------------------
 
+# Import model with Docker
+
+IMPORTANT: To use the docker container, you will need to clone the eland repository: https://github.com/elastic/eland
+
+Users wishing to use Eland without installing it, in order to just run the available scripts, can build the Docker
+container:
+
+```bash
+$ docker build -t elastic/eland .
+```
+
+The container can now be used interactively:
+
+```bash
+$ docker run -it --rm --network host elastic/eland
+```
+
+Running installed scripts is also possible without an interactive shell, e.g.:
+
+```bash
+docker run -it --rm elastic/eland \
+    eland_import_hub_model \
+      --url $ELASTICSEARCH_URL \
+      --hub-model-id elastic/distilbert-base-uncased-finetuned-conll03-english \
+      --start
+```
+
+You will need to replace the `$ELASTICSEARCH_URL` with the URL for your Elasticsearch cluster. For authentication purposes you will need to include an administrator username and password in the URL in the format `https://username:password@host:port`.
+
 [discrete]
 [[ml-nlp-pytorch-auth]]
 ==== Authentication methods
