@@ -88,18 +88,20 @@ Downloading: 100%|██████████| 249M/249M [00:23<00:00, 11.2MB
 100%|██████████| 63/63 [00:12<00:00,  5.02it/s]
 ------------------------
 
-# Import model with Docker
+[discrete]
+[[ml-nlp-pytorch-docker]]
+==== Import model with Docker
 
 IMPORTANT: To use the docker container, you will need to clone the eland repository: https://github.com/elastic/eland
 
-Users wishing to use Eland without installing it, in order to just run the available scripts, can build the Docker
+If you want to use Eland without installing it, in order to just run the available scripts, can build the Docker
 container:
 
 ```bash
 $ docker build -t elastic/eland .
 ```
 
-The container can now be used interactively:
+You can now use the container interactively:
 
 ```bash
 $ docker run -it --rm --network host elastic/eland
