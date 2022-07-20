@@ -94,7 +94,7 @@ Downloading: 100%|██████████| 249M/249M [00:23<00:00, 11.2MB
 
 IMPORTANT: To use the docker container, you will need to clone the eland repository: https://github.com/elastic/eland
 
-If you want to use Eland without installing it, in order to just run the available scripts, can build the Docker
+If you want to use Eland without installing it, in order to just run the available scripts, you can build the Docker
 container:
 
 ```bash
@@ -107,7 +107,7 @@ You can now use the container interactively:
 $ docker run -it --rm --network host elastic/eland
 ```
 
-Running installed scripts is also possible without an interactive shell, e.g.:
+Running installed scripts is also possible without an interactive shell, for example:
 
 ```bash
 docker run -it --rm elastic/eland \
