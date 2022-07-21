@@ -117,7 +117,7 @@ docker run -it --rm elastic/eland \
       --start
 ```
 
-You will need to replace the `$ELASTICSEARCH_URL` with the URL for your Elasticsearch cluster. For authentication purposes you will need to include an administrator username and password in the URL in the format `https://username:password@host:port`.
+Replace the `$ELASTICSEARCH_URL` with the URL for your Elasticsearch cluster. For authentication purposes, include an administrator username and password in the URL in the following format: `https://username:password@host:port`.
 
 [discrete]
 [[ml-nlp-pytorch-auth]]
