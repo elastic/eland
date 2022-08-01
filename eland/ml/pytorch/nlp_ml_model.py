@@ -218,6 +218,20 @@ class QuestionAnsweringInferenceOptions(InferenceConfig):
         self.num_top_classes = num_top_classes
 
 
+class TextSimilarityInferenceOptions(InferenceConfig):
+    def __init__(
+        self,
+        *,
+        tokenization: NlpTokenizationConfig,
+        results_field: t.Optional[str] = None,
+        text: t.Optional[str] = None,
+    ):
+        super().__init__(configuration_type="text_similarity")
+        self.tokenization = tokenization
+        self.results_field = results_field
+        self.text = text
+
+
 class TextEmbeddingInferenceOptions(InferenceConfig):
     def __init__(
         self,
