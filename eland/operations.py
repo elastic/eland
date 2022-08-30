@@ -166,7 +166,9 @@ class Operations:
 
         counts = {}
         for field in fields:
-            body = Query(query_params.query)
+            body = Query(
+                query=query_params.query, script_fields=query_params.script_fields
+            )
             body.exists(field, must=True)
 
             field_exists_count = query_compiler._client.count(
@@ -225,7 +227,7 @@ class Operations:
         # Consider only Numeric fields
         fields = [field for field in fields if (field.is_numeric)]
 
-        body = Query(query_params.query)
+        body = Query(query=query_params.query, script_fields=query_params.script_fields)
 
         for field in fields:
             body.top_hits_agg(
@@ -358,7 +360,7 @@ class Operations:
             # Consider if field is Int/Float/Bool
             fields = [field for field in fields if (field.is_numeric or field.is_bool)]
 
-        body = Query(query_params.query)
+        body = Query(query=query_params.query, script_fields=query_params.script_fields)
 
         # Convert pandas aggs to ES equivalent
         es_aggs = self._map_pd_aggs_to_es_aggs(pd_aggs, percentiles)
@@ -447,7 +449,7 @@ class Operations:
         # Get just aggregatable field_names
         aggregatable_field_names = query_compiler._mappings.aggregatable_field_names()
 
-        body = Query(query_params.query)
+        body = Query(query=query_params.query, script_fields=query_params.script_fields)
 
         for field in aggregatable_field_names.keys():
             body.terms_aggs(field, func, field, es_size=es_size)
@@ -486,7 +488,7 @@ class Operations:
 
         numeric_source_fields = query_compiler._mappings.numeric_source_fields()
 
-        body = Query(query_params.query)
+        body = Query(query=query_params.query, script_fields=query_params.script_fields)
 
         results = self._metric_aggs(query_compiler, ["min", "max"], numeric_only=True)
         min_aggs = {}
@@ -880,7 +882,7 @@ class Operations:
                 field for field in agg_fields if (field.is_numeric or field.is_bool)
             ]
 
-        body = Query(query_params.query)
+        body = Query(query=query_params.query, script_fields=query_params.script_fields)
 
         # To return for creating multi-index on columns
         headers = [agg_field.column for agg_field in agg_fields]
@@ -1266,7 +1268,9 @@ class Operations:
         )
 
         script_fields = query_params.script_fields
-        query = Query(query_params.query)
+        query = Query(
+            query=query_params.query, script_fields=query_params.script_fields
+        )
 
         body = query.to_search_body()
         if script_fields is not None:
@@ -1297,7 +1301,7 @@ class Operations:
             # TODO - this is not necessarily valid as the field may not exist in ALL these docs
             return size
 
-        body = Query(query_params.query)
+        body = Query(query=query_params.query, script_fields=query_params.script_fields)
         body.exists(field, must=True)
 
         count: int = query_compiler._client.count(
@@ -1331,7 +1335,7 @@ class Operations:
             query_compiler, items
         )
 
-        body = Query(query_params.query)
+        body = Query(query=query_params.query, script_fields=query_params.script_fields)
 
         if field == Index.ID_INDEX_FIELD:
             body.ids(items, must=True)
@@ -1456,7 +1460,9 @@ class Operations:
         _source = query_compiler._mappings.get_field_names()
 
         script_fields = query_params.script_fields
-        query = Query(query_params.query)
+        query = Query(
+            query=query_params.query, script_fields=query_params.script_fields
+        )
         body = query.to_search_body()
         if script_fields is not None:
             body["script_fields"] = script_fields

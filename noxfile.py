@@ -38,6 +38,7 @@ TYPED_FILES = (
     "eland/tasks.py",
     "eland/utils.py",
     "eland/groupby.py",
+    "eland/field_mappings.py",
     "eland/operations.py",
     "eland/ndframe.py",
     "eland/ml/__init__.py",

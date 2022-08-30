@@ -247,10 +247,7 @@ class QueryCompiler:
         i = 0
         for i, hit in enumerate(results, 1):
 
-            if "_source" in hit:
-                row = hit["_source"]
-            else:
-                row = {}
+            row = hit["_source"] if "_source" in hit else {}
 
             # script_fields appear in 'fields'
             if "fields" in hit:
@@ -291,7 +288,9 @@ class QueryCompiler:
 
         return df
 
-    def _flatten_dict(self, y, field_mapping_cache: "FieldMappingCache"):
+    def _flatten_dict(
+        self, y: Dict[str, Any], field_mapping_cache: "FieldMappingCache"
+    ):
         out = {}
 
         def flatten(x, name=""):
@@ -519,16 +518,24 @@ class QueryCompiler:
         return self._operations.search_yield_pandas_dataframes(self)
 
     # __getitem__ methods
-    def getitem_column_array(self, key, numeric=False):
-        """Get column data for target labels.
+    def getitem_column_array(
+        self, key: Union[str, List[str]], numeric: bool = False
+    ) -> "QueryCompiler":
+        """
+        Get column data for target labels.
 
-        Args:
-            key: Target labels by which to retrieve data.
-            numeric: A boolean representing whether or not the key passed in represents
+        Paremeters
+        -----------
+        key: Union[str, List[str]]
+            A list of target labels by which to retrieve data.
+        numeric: bool
+            A boolean representing whether or not the key passed in represents
                 the numeric index or the named index.
 
-        Returns:
-            A new QueryCompiler.
+        Returns
+        --------
+        A new QueryCompiler.
+
         """
         result = self.copy()
 
@@ -754,12 +761,14 @@ class QueryCompiler:
             )
 
     def arithmetic_op_fields(
-        self, display_name: str, arithmetic_object: "ArithmeticSeries"
+        self,
+        display_name: str,
+        arithmetic_object: "ArithmeticSeries",
     ) -> "QueryCompiler":
         result = self.copy()
 
         # create a new field name for this display name
-        scripted_field_name = f"script_field_{display_name}"
+        scripted_field_name: str = f"script_field_{display_name}"
 
         # add scripted field
         result._mappings.add_scripted_field(

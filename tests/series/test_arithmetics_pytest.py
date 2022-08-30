@@ -15,67 +15,31 @@
 #  specific language governing permissions and limitations
 #  under the License.
 
-from datetime import datetime
-
 # File called _pytest for PyCharm compatability
 import numpy as np
 import pytest
 
-from eland import Series
-from tests.common import TestData, assert_pandas_eland_series_equal
+from tests.common import TestData, assert_almost_equal, assert_pandas_eland_series_equal
 
 
 class TestSeriesArithmetics(TestData):
-    def test_ecommerce_datetime_comparisons(self):
-        pd_df = self.pd_ecommerce()
-        ed_df = self.ed_ecommerce()
-
-        ops = ["__le__", "__lt__", "__gt__", "__ge__", "__eq__", "__ne__"]
-
-        # this datetime object is timezone naive
-        datetime_obj = datetime(2016, 12, 18)
-
-        # FIXME: the following timezone conversions are just a temporary fix
-        # to run the datetime comparison tests
-        #
-        # The problem:
-        # - the datetime objects of the pandas DataFrame are timezone aware and
-        #   can't be compared with timezone naive datetime objects
-        # - the datetime objects of the eland DataFrame are timezone naive (which
-        #   should be fixed)
-        # - however if the eland DataFrame is converted to a pandas DataFrame
-        #   (using the `to_pandas` function) the datetime objects become timezone aware
-        #
-        # This tests converts the datetime objects of the pandas Series to
-        # timezone naive ones and utilizes a class to make the datetime objects of the
-        # eland Series timezone naive before the result of `to_pandas` is returned.
-        # The `to_pandas` function is executed by the `assert_pandas_eland_series_equal`
-        # function, which compares the eland and pandas Series
-
-        # convert to timezone naive datetime object
-        pd_df["order_date"] = pd_df["order_date"].dt.tz_localize(None)
-
-        class ModifiedElandSeries(Series):
-            def to_pandas(self):
-                """remove timezone awareness before returning the pandas dataframe"""
-                series = super().to_pandas()
-                series = series.dt.tz_localize(None)
-                return series
-
-        for op in ops:
-            pd_series = pd_df[getattr(pd_df["order_date"], op)(datetime_obj)][
-                "order_date"
-            ]
-            ed_series = ed_df[getattr(ed_df["order_date"], op)(datetime_obj)][
-                "order_date"
-            ]
-
-            # "type cast" to modified class (inherits from ed.Series) that overrides the `to_pandas` function
-            ed_series.__class__ = ModifiedElandSeries
-
-            assert_pandas_eland_series_equal(
-                pd_series, ed_series, check_less_precise=True
-            )
+    ops = [
+        "__add__",
+        "__truediv__",
+        "__floordiv__",
+        "__pow__",
+        "__mod__",
+        "__mul__",
+        "__sub__",
+        "add",
+        "truediv",
+        "floordiv",
+        "pow",
+        "mod",
+        "mul",
+        "sub",
+    ]
+    funcs = ["max", "min", "mean", "sum", "median", "var", "std"]
 
     def test_ecommerce_series_invalid_div(self):
         pd_df = self.pd_ecommerce()
@@ -124,47 +88,26 @@ class TestSeriesArithmetics(TestData):
 
         assert_pandas_eland_series_equal(pd_series, ed_series, rtol=True)
 
-    def test_ecommerce_series_basic_arithmetics(self):
+    @pytest.mark.parametrize("op", ops)
+    def test_ecommerce_series_basic_arithmetics(self, op):
         pd_df = self.pd_ecommerce().head(100)
         ed_df = self.ed_ecommerce().head(100)
 
-        ops = [
-            "__add__",
-            "__truediv__",
-            "__floordiv__",
-            "__pow__",
-            "__mod__",
-            "__mul__",
-            "__sub__",
-            "add",
-            "truediv",
-            "floordiv",
-            "pow",
-            "mod",
-            "mul",
-            "sub",
-        ]
+        pd_series = getattr(pd_df["taxful_total_price"], op)(pd_df["total_quantity"])
+        ed_series = getattr(ed_df["taxful_total_price"], op)(ed_df["total_quantity"])
+        assert_pandas_eland_series_equal(pd_series, ed_series, rtol=True)
 
-        for op in ops:
-            pd_series = getattr(pd_df["taxful_total_price"], op)(
-                pd_df["total_quantity"]
-            )
-            ed_series = getattr(ed_df["taxful_total_price"], op)(
-                ed_df["total_quantity"]
-            )
-            assert_pandas_eland_series_equal(pd_series, ed_series, rtol=True)
+        pd_series = getattr(pd_df["taxful_total_price"], op)(10.56)
+        ed_series = getattr(ed_df["taxful_total_price"], op)(10.56)
+        assert_pandas_eland_series_equal(pd_series, ed_series, rtol=True)
 
-            pd_series = getattr(pd_df["taxful_total_price"], op)(10.56)
-            ed_series = getattr(ed_df["taxful_total_price"], op)(10.56)
-            assert_pandas_eland_series_equal(pd_series, ed_series, rtol=True)
+        pd_series = getattr(pd_df["taxful_total_price"], op)(np.float32(1.879))
+        ed_series = getattr(ed_df["taxful_total_price"], op)(np.float32(1.879))
+        assert_pandas_eland_series_equal(pd_series, ed_series, rtol=True)
 
-            pd_series = getattr(pd_df["taxful_total_price"], op)(np.float32(1.879))
-            ed_series = getattr(ed_df["taxful_total_price"], op)(np.float32(1.879))
-            assert_pandas_eland_series_equal(pd_series, ed_series, rtol=True)
-
-            pd_series = getattr(pd_df["taxful_total_price"], op)(int(8))
-            ed_series = getattr(ed_df["taxful_total_price"], op)(int(8))
-            assert_pandas_eland_series_equal(pd_series, ed_series, rtol=True)
+        pd_series = getattr(pd_df["taxful_total_price"], op)(int(8))
+        ed_series = getattr(ed_df["taxful_total_price"], op)(int(8))
+        assert_pandas_eland_series_equal(pd_series, ed_series, rtol=True)
 
     def test_supported_series_dtypes_ops(self):
         pd_df = self.pd_ecommerce().head(100)
@@ -353,3 +296,26 @@ class TestSeriesArithmetics(TestData):
                 pd_series = getattr(pd_df["total_quantity"], op)(pd_df["currency"])
             with pytest.raises(TypeError):
                 ed_series = getattr(ed_df["total_quantity"], op)(ed_df["currency"])
+
+    def test_scripted_series_nunique(self):
+        pd_df = self.pd_flights()
+        ed_df = self.ed_flights()
+
+        ed_nunique = ed_df["DestCountry"] + ed_df["OriginCountry"]
+        pd_nunique = pd_df["DestCountry"] + pd_df["OriginCountry"]
+
+        assert ed_nunique.nunique() == pd_nunique.nunique()
+
+    @pytest.mark.parametrize("func", funcs)
+    @pytest.mark.parametrize("op", ops)
+    def test_scripted_series_ops(self, func, op):
+        pd_df = self.pd_ecommerce()
+        ed_df = self.ed_ecommerce()
+
+        pd_series = getattr(pd_df["taxful_total_price"], op)(pd_df["total_quantity"])
+        ed_series = getattr(ed_df["taxful_total_price"], op)(ed_df["total_quantity"])
+
+        ed_agg = getattr(pd_series, func)()
+        pd_agg = getattr(ed_series, func)()
+
+        assert_almost_equal(pd_agg, ed_agg)
