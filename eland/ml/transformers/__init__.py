@@ -93,5 +93,5 @@ try:
         "LGBMClassifierTransformer",
     ]
     _MODEL_TRANSFORMERS.update(_LIGHTGBM_MODEL_TRANSFORMERS)
-except ImportError:
+except (ImportError, OSError):
     pass
