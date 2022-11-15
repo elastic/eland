@@ -35,6 +35,37 @@ Eland also provides tools to upload trained machine learning models from common 
 
 ## Getting Started
 
+### Install Python
+
+Eland is a Python module, so first of all, you'll need Python installed. Most modern operating systems have Python
+preinstalled. To verify the Python version, run your preferred terminal application and type in the command:
+
+```shell
+python --version
+```
+
+* If `python` command is not available, see if you have `python3`.
+* If you have both `python` and `python3`, pick the one with higher version.
+* If you have either `python` or `python3, but the version is below 3.7, [download and install newer Python](https://www.python.org/downloads/).
+* If you don't have `python` or `python3`, [download and install Python](https://www.python.org/downloads/).
+
+On macOS, Python 3 can be installed with homebrew:
+
+```shell
+brew install python
+```
+
+### Update Python packages
+
+It's usually a good idea to upgrade Python packages related to the package installer. Even if you just installed Python,
+they might not be at their latest version:
+
+```shell
+python -m pip install --upgrade pip setuptools wheel
+```
+
+### Install Eland
+
 Eland can be installed from [PyPI](https://pypi.org/project/eland) with Pip:
 
 ```bash
@@ -47,14 +78,20 @@ Eland can also be installed from [Conda Forge](https://anaconda.org/conda-forge/
 $ conda install -c conda-forge eland
 ```
 
+By default, Eland doesn't install PyTorch. If you plan to import NLP models, install `pytorch` extras:
+
+```shell
+python -m pip install 'eland[pytorch]'
+```
+
 ### Compatibility
 
-- Supports Python 3.7+ and Pandas 1.3
+- Supports Python 3.7+ and Pandas 1.3, but see below for PyTorch requirements.
 - Supports Elasticsearch clusters that are 7.11+, recommended 8.3 or later for all features to work.
   If you are using the NLP with PyTorch feature make sure your Eland minor version matches the minor 
   version of your Elasticsearch cluster. For all other features it is sufficient for the major versions
   to match.
-- You need to use PyTorch `1.11.0` or earlier to import an NLP model. 
+- You need to use PyTorch `1.11.0` or earlier to import an NLP model. This version of PyTorch requires Python `<3.10`. 
   Run `pip install torch==1.11` to install the aproppriate version of PyTorch.
 
 ### Prerequisites
@@ -69,14 +106,26 @@ $ sudo apt-get install -y \
 ```
 
 Note that other distributions such as CentOS, RedHat, Arch, etc. may require using a different package manager and
-specifying different package names. 
+specifying different package names.
+
+If you're using Windows, it's likely that you don't need to install any of those.
+
+If you're using macOS, you might need to install Xcode command-line tools:
+
+```shell
+xcode-select --install
+```
 
 ### Docker
 
-Users wishing to use Eland without installing it, in order to just run the available scripts, can build the Docker
-container:
+Docker provides the ability to run `eland` in a container, without installing it on your local machine.
+You'll have to [install Docker](https://docs.docker.com/get-docker/).
+
+After docker is installed and running, build the Docker container:
 
 ```bash
+$ git clone git@github.com:elastic/eland.git <eland-dir>
+$ cd <eland-dir>
 $ docker build -t elastic/eland .
 ```
 
@@ -97,6 +146,15 @@ $ docker run -it --rm --network host \
       --task-type ner \
       --start
 ```
+
+The command above:
+
+* runs a Docker container with eland installed in it
+* in the container, calls `eland_import_hub_model` to import a model from Hugging Face website called `elastic/distilbert-base-cased-finetuned-conll03-english`
+* assumes that Elasticsearch is running and accessible on localhost, port 9200
+
+`host.docker.internal` is a special DNS name that resolves to the internal IP address used by the host. 
+Using this name, services inside the container can access services running on the host machine.
 
 ### Connecting to Elasticsearch 
 
@@ -262,3 +320,8 @@ Downloading: 100%|██████████| 249M/249M [00:23<00:00, 11.2MB
 >>> ptm.import_model(model_path=model_path, config_path=None, vocab_path=vocab_path, config=config)
 100%|██████████| 63/63 [00:12<00:00,  5.02it/s]
 ```
+
+You can run `eland_import_hub_model --help` to inspect other command options.
+
+Notice that if you're importing a model into an Elastic Cloud instance, you have an option to provide a `--cloud-id`, 
+instead of a URL of the Elasticsearch cluster.
