@@ -619,9 +619,8 @@ class TransformerModel:
     def _create_config(self) -> NlpTrainedModelConfig:
         tokenization_config = self._create_tokenization_config()
 
-        # Set squad well known defaults
+        # Set span and truncate defaults for question answering
         if self._task_type == "question_answering":
-            tokenization_config.max_sequence_length = 386
             tokenization_config.span = 128
             tokenization_config.truncate = "none"
         inference_config = (
