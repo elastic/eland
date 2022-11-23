@@ -49,7 +49,13 @@ python --version
 * If you have either `python` or `python3, but the version is below 3.7, [download and install newer Python](https://www.python.org/downloads/).
 * If you don't have `python` or `python3`, [download and install Python](https://www.python.org/downloads/).
 
-On macOS, Python 3 can be installed with homebrew:
+On macOS, you'll need Xcode command-line tools:
+
+```shell
+xcode-select --install
+```
+
+Then, Python 3 can be installed with [homebrew](https://brew.sh/):
 
 ```shell
 brew install python
@@ -107,14 +113,6 @@ $ sudo apt-get install -y \
 
 Note that other distributions such as CentOS, RedHat, Arch, etc. may require using a different package manager and
 specifying different package names.
-
-If you're using Windows, it's likely that you don't need to install any of those.
-
-If you're using macOS, you might need to install Xcode command-line tools:
-
-```shell
-xcode-select --install
-```
 
 ### Docker
 
