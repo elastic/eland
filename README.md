@@ -47,6 +47,7 @@ python --version
 * If `python` command is not available, see if you have `python3`.
 * If you have both `python` and `python3`, pick the one with higher version.
 * If you have either `python` or `python3, but the version is below 3.7, [download and install newer Python](https://www.python.org/downloads/).
+* If you are using Eland to import NLP model version 3.10 or lower of Python is required. 
 * If you don't have `python` or `python3`, [download and install Python](https://www.python.org/downloads/).
 
 On macOS, you'll need Xcode command-line tools:
