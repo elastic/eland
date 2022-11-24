@@ -55,12 +55,6 @@ On macOS, you'll need Xcode command-line tools:
 xcode-select --install
 ```
 
-Then, Python 3 can be installed with [homebrew](https://brew.sh/):
-
-```shell
-brew install python
-```
-
 ### Update Python packages
 
 It's usually a good idea to upgrade Python packages related to the package installer. Even if you just installed Python,
