@@ -171,6 +171,7 @@ if __name__ == "__main__":
             SUPPORTED_TASK_TYPES,
             TaskTypeError,
             TransformerModel,
+            elasticsearch_model_id,
         )
     except ModuleNotFoundError as e:
         logger.error(textwrap.dedent(f"""\
@@ -200,7 +201,7 @@ if __name__ == "__main__":
             logger.error(f"Failed to get model for task type, please provide valid task type via '--task-type' parameter. Caused by {err}")
             exit(1)
 
-        ptm = PyTorchModel(es, args.es_model_id if args.es_model_id else tm.elasticsearch_model_id())
+        ptm = PyTorchModel(es, args.es_model_id if args.es_model_id else elasticsearch_model_id(args.hub_model_id))
         model_exists = es.options(ignore_status=404).ml.get_trained_models(model_id=ptm.model_id).meta.status == 200
 
         if model_exists:
