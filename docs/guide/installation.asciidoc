@@ -14,3 +14,12 @@ and can also be installed with https://docs.conda.io[Conda] from https://anacond
 ------------------------------------
 $ conda install -c conda-forge eland
 ------------------------------------
+
+By default, Eland doesn't install PyTorch. If you plan to import NLP models, install `pytorch` extras:
+[source,sh]
+------------------------------------
+$ python -m pip install 'eland[pytorch]'
+------------------------------------
+
+The import NLP models functionality requires the HuggingFace transformers package. Using the 
+fast tokenizers from transformers may require https://www.rust-lang.org/[Rust] to be installed
