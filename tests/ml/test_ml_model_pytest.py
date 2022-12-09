@@ -17,7 +17,10 @@
 
 import numpy as np
 import pytest
+import elasticsearch as es
+from operator import itemgetter
 
+import eland as ed
 from eland.ml import MLModel
 from tests import ES_TEST_CLIENT, ES_VERSION
 
@@ -279,7 +282,8 @@ class TestMLModel:
             )
         else:
             training_data = datasets.make_classification(n_features=5)
-            classifier = XGBClassifier(booster="gbtree", use_label_encoder=False)
+            classifier = XGBClassifier(
+                booster="gbtree", use_label_encoder=False)
 
         # Train model
         classifier.fit(training_data[0], training_data[1])
@@ -329,7 +333,8 @@ class TestMLModel:
         classifier.fit(training_data[0], training_data[1])
 
         # Serialise the models to Elasticsearch
-        feature_names = ["feature0", "feature1", "feature2", "feature3", "feature4"]
+        feature_names = ["feature0", "feature1",
+                         "feature2", "feature3", "feature4"]
         model_id = "test_xgb_classifier"
 
         es_model = MLModel.import_model(
@@ -431,11 +436,13 @@ class TestMLModel:
                 bagging_freq=3,
             )
         else:
-            regressor = LGBMRegressor(boosting_type=booster, objective=objective)
+            regressor = LGBMRegressor(
+                boosting_type=booster, objective=objective)
         regressor.fit(training_data[0], training_data[1])
 
         # Serialise the models to Elasticsearch
-        feature_names = ["Column_0", "Column_1", "Column_2", "Column_3", "Column_4"]
+        feature_names = ["Column_0", "Column_1",
+                         "Column_2", "Column_3", "Column_4"]
         model_id = "test_lgbm_regressor"
 
         es_model = MLModel.import_model(
@@ -467,16 +474,19 @@ class TestMLModel:
             training_data = datasets.make_classification(
                 n_features=5, n_classes=3, n_informative=3
             )
-            classifier = LGBMClassifier(boosting_type=booster, objective=objective)
+            classifier = LGBMClassifier(
+                boosting_type=booster, objective=objective)
         else:
             training_data = datasets.make_classification(n_features=5)
-            classifier = LGBMClassifier(boosting_type=booster, objective=objective)
+            classifier = LGBMClassifier(
+                boosting_type=booster, objective=objective)
 
         # Train model
         classifier.fit(training_data[0], training_data[1])
 
         # Serialise the models to Elasticsearch
-        feature_names = ["Column_0", "Column_1", "Column_2", "Column_3", "Column_4"]
+        feature_names = ["Column_0", "Column_1",
+                         "Column_2", "Column_3", "Column_4"]
         model_id = "test_lgbm_classifier"
 
         es_model = MLModel.import_model(
@@ -490,7 +500,110 @@ class TestMLModel:
 
         check_prediction_equality(
             es_model, classifier, random_rows(training_data[0], 20)
-        )
+        )    @requires_sklearn
+
 
         # Clean up
         es_model.delete_model()
+
+    @pytest.mark.parametrize("compress_model_definition", [False])
+    def test_export_regressor(self, compress_model_definition):
+        # from .. import FLIGHTS_SMALL_INDEX_NAME
+        import string
+        import random
+        suffix = ''.join(random.choices(string.ascii_lowercase, k=4))
+        FLIGHTS_SMALL_INDEX_NAME = "flights_small"
+        job_id = 'test-flights-regression-' + suffix
+        dest = job_id + '-dest'
+
+        try:
+            ES_TEST_CLIENT.ml.delete_data_frame_analytics(id=job_id)
+            ES_TEST_CLIENT.indices.delete(index=dest)
+        except es.NotFoundError:
+            pass
+
+        response = ES_TEST_CLIENT.ml.put_data_frame_analytics(id=job_id,
+                                                   analysis={
+                                                       "regression": {
+                                                           "dependent_variable": "FlightDelayMin",
+                                                           "max_trees": 3,
+                                                           "num_top_feature_importance_values": 0,
+                                                           "max_optimization_rounds_per_hyperparameter": 1,
+                                                           "prediction_field_name": "FlightDelayMin_prediction",
+                                                           "training_percent": 30,
+                                                           "randomize_seed": 1000,
+                                                           "loss_function": "mse",
+                                                           "early_stopping_enabled": True
+                                                       }
+                                                   }, dest={"index": dest}, source={"index": [FLIGHTS_SMALL_INDEX_NAME]}, analyzed_fields={"includes": [
+                                                       "FlightDelayMin",
+                                                       "FlightDelayType",
+                                                       "FlightTimeMin",
+                                                       "DistanceMiles",
+                                                       "OriginAirportID"
+                                                   ],
+                                                       "excludes": []}, )
+        assert response.meta.status == 200
+        response = ES_TEST_CLIENT.ml.start_data_frame_analytics(id=job_id)
+        assert response.meta.status == 200
+        import time
+        time.sleep(2)
+        response = ES_TEST_CLIENT.ml.get_trained_models(
+            model_id=job_id + '*')
+        assert response.meta.status == 200
+        assert response.body['count'] == 1
+        # for trained_model in response.body['trained_model_configs']:
+        #     model_id = trained_model['model_id']
+        #     ES_TEST_CLIENT.ml.delete_trained_model(model_id = model_id)
+        model_id = response.body['trained_model_configs'][0]['model_id']
+
+        es_model = MLModel(ES_TEST_CLIENT, model_id=model_id)
+            
+        from eland.ml.exporters.es_gradient_boosting_models import ESGradientBoostingRegressor
+        from eland.ml.exporters.encoders import FrequencyEncoder, TargetMeanEncoder, OneHotEncoder
+        from sklearn.compose import ColumnTransformer
+        from sklearn.pipeline import Pipeline
+
+        regressor = ESGradientBoostingRegressor(es_client=ES_TEST_CLIENT, model_id=model_id)
+        types = dict(regressor.get_test_data().dtypes)
+        test_data = regressor.get_test_data().to_pandas().head(10)
+        test_data = test_data.astype(types)
+        preprocessors = regressor.definition["preprocessors"]
+        transformers = []
+        for p in preprocessors:
+            encoding_type = list(p.keys())[0]
+            field = p[encoding_type]["field"]
+            if encoding_type == "frequency_encoding":
+                transform = FrequencyEncoder(p)
+                transformers.append((f"{field}_{encoding_type}", transform, field))
+            elif encoding_type == "target_mean_encoding":
+                transform = TargetMeanEncoder(p)
+                transformers.append((f"{field}_{encoding_type}", transform, field))
+            elif encoding_type == "one_hot_encoding":
+                transform = OneHotEncoder(p)
+                transformers.append((f"{field}_{encoding_type}", transform, [field]))
+        preprocessor = ColumnTransformer(
+            transformers=transformers,
+            remainder="passthrough",
+            verbose_feature_names_out=False,
+        )
+
+        X = test_data
+        y = test_data[regressor.dependent_variable]
+
+        pipeline = Pipeline(steps=[('preprocessor', preprocessor), ('es_model', regressor)])
+        pipeline.fit(X=X, y=y)
+        predictions_sklearn = pipeline.predict(X, feature_names_in=preprocessor.get_feature_names_out())
+        response = ES_TEST_CLIENT.ml.infer_trained_model(model_id=model_id, docs = X[es_model.feature_names].to_dict('records'))
+        predictions_es = np.array(list(map(itemgetter("FlightDelayMin_prediction"), response.body['inference_results'])))
+        np.testing.assert_array_almost_equal(predictions_sklearn, predictions_es)
+
+        # Clean up
+        es_model.delete_model()
+        response = ES_TEST_CLIENT.ml.delete_data_frame_analytics(id=job_id)
+        assert response.meta.status == 200
+        response = ES_TEST_CLIENT.indices.delete(index=dest)
+        assert response.meta.status == 200
+        
+
+
