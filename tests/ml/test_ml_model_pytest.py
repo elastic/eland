@@ -610,42 +610,17 @@ class TestMLModel:
             "OriginAirportID",
         ]
 
-        regressor = ESGradientBoostingRegressor(
-            es_client=ES_TEST_CLIENT, model_id=regression_model_id
-        )
-        types = dict(regressor.get_test_data().dtypes)
-        test_data = regressor.get_test_data().to_pandas().head(10)
+        model = MLModel(es_client=ES_TEST_CLIENT, model_id=regression_model_id)
+        pipeline = model.export_model()
+        types = dict(pipeline["es_model"].get_test_data().dtypes)
+        test_data = pipeline["es_model"].get_test_data().to_pandas().head(10)
         test_data = test_data.astype(types)
-        preprocessors = regressor.definition["preprocessors"]
-        transformers = []
-        for p in preprocessors:
-            encoding_type = list(p.keys())[0]
-            field = p[encoding_type]["field"]
-            if encoding_type == "frequency_encoding":
-                transform = FrequencyEncoder(p)
-                transformers.append((f"{field}_{encoding_type}", transform, field))
-            elif encoding_type == "target_mean_encoding":
-                transform = TargetMeanEncoder(p)
-                transformers.append((f"{field}_{encoding_type}", transform, field))
-            elif encoding_type == "one_hot_encoding":
-                transform = OneHotEncoder(p)
-                transformers.append((f"{field}_{encoding_type}", transform, [field]))
-        preprocessor = ColumnTransformer(
-            transformers=transformers,
-            remainder="passthrough",
-            verbose_feature_names_out=False,
-        )
 
         X = test_data
-        y = test_data[regressor.dependent_variable]
-        y.replace(to_replace={c: i for i, c in enumerate(y.unique())}, inplace=True)
+        pipeline.fit(X)
 
-        pipeline = Pipeline(
-            steps=[("preprocessor", preprocessor), ("es_model", regressor)]
-        )
-        pipeline.fit(X=X, y=y)
         predictions_sklearn = pipeline.predict(
-            X, feature_names_in=preprocessor.get_feature_names_out()
+            X, feature_names_in=pipeline["preprocessor"].get_feature_names_out()
         )
         response = ES_TEST_CLIENT.ml.infer_trained_model(
             model_id=regression_model_id, docs=X[input_fields].to_dict("records")
@@ -680,44 +655,20 @@ class TestMLModel:
             "DestRegion",
             "AvgTicketPrice",
         ]
-        classifier = ESGradientBoostingClassifier(
-            es_client=ES_TEST_CLIENT, model_id=classification_model_id
-        )
-        types = dict(classifier.get_test_data().dtypes)
-        test_data = classifier.get_test_data().to_pandas()  # .head(10)
+        model = MLModel(es_client=ES_TEST_CLIENT, model_id=classification_model_id)
+        pipeline = model.export_model()
+        types = dict(pipeline["es_model"].get_test_data().dtypes)
+        test_data = pipeline["es_model"].get_test_data().to_pandas()  # .head(10)
         test_data = test_data.astype(types)
-        preprocessors = classifier.definition["preprocessors"]
-        transformers = []
-        for p in preprocessors:
-            encoding_type = list(p.keys())[0]
-            field = p[encoding_type]["field"]
-            if encoding_type == "frequency_encoding":
-                transform = FrequencyEncoder(p)
-                transformers.append((f"{field}_{encoding_type}", transform, field))
-            elif encoding_type == "target_mean_encoding":
-                transform = TargetMeanEncoder(p)
-                transformers.append((f"{field}_{encoding_type}", transform, field))
-            elif encoding_type == "one_hot_encoding":
-                transform = OneHotEncoder(p)
-                transformers.append((f"{field}_{encoding_type}", transform, [field]))
-        preprocessor = ColumnTransformer(
-            transformers=transformers,
-            remainder="passthrough",
-            verbose_feature_names_out=False,
-        )
+        X = test_data[list(pipeline["es_model"].input_field_names)]
 
-        X = test_data[list(classifier.input_field_names)]
-        y = test_data[classifier.dependent_variable]
+        pipeline.fit(X)
 
-        pipeline = Pipeline(
-            steps=[("preprocessor", preprocessor), ("es_model", classifier)]
-        )
-        pipeline.fit(X=X, y=y)
         predictions_sklearn = pipeline.predict(
-            X, feature_names_in=preprocessor.get_feature_names_out()
+            X, feature_names_in=pipeline["preprocessor"].get_feature_names_out()
         )
         prediction_proba_sklearn = pipeline.predict_proba(
-            X, feature_names_in=preprocessor.get_feature_names_out()
+            X, feature_names_in=pipeline["preprocessor"].get_feature_names_out()
         ).max(axis=1)
 
         response = ES_TEST_CLIENT.ml.infer_trained_model(

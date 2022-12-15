@@ -88,11 +88,11 @@ class ESGradientBoostingModel(ABC):
 
         return feature_names, field_names
 
-    def fit(self, X, y, sample_weight=None, monitor=None):
+    def fit(self, X, y, sample_weight=None, monitor=None) -> None:
         # do nothing, model if fitted using elasticsearch API
         pass
 
-    def extract_common_parameters(self):
+    def extract_common_parameters(self) -> None:
         self.included_field_names = self.res["trained_model_configs"][0]["metadata"][
             "analytics_config"
         ]["analyzed_fields"]["includes"]
@@ -134,7 +134,7 @@ class ESGradientBoostingModel(ABC):
         self.n_outputs = self.n_outputs
         return estimator
 
-    def initialize_estimators(self, DecisionTreeType):
+    def initialize_estimators(self, DecisionTreeType) -> None:
         self.init_ = self._initialize_init_()
 
         self.estimators_ = np.ndarray(
@@ -149,7 +149,7 @@ class ESGradientBoostingModel(ABC):
 class ESGradientBoostingClassifier(
     ESGradientBoostingModel, sklearn.ensemble.GradientBoostingClassifier
 ):
-    def __init__(self, es_client, model_id):
+    def __init__(self, es_client, model_id) -> None:
         ESGradientBoostingModel.__init__(self, es_client, model_id)
 
         sklearn.ensemble.GradientBoostingClassifier.__init__(
@@ -220,7 +220,7 @@ class ESGradientBoostingClassifier(
 class ESGradientBoostingRegressor(
     ESGradientBoostingModel, sklearn.ensemble.GradientBoostingRegressor
 ):
-    def __init__(self, es_client, model_id):
+    def __init__(self, es_client, model_id) -> None:
         ESGradientBoostingModel.__init__(self, es_client, model_id)
         sklearn.ensemble.GradientBoostingRegressor.__init__(
             self,
@@ -231,7 +231,7 @@ class ESGradientBoostingRegressor(
         self.analysis_type = "regression"
         self._complete()
 
-    def _complete(self):
+    def _complete(self) -> None:
         self.extract_common_parameters()
 
         self.constant = self.forest.trees[0].nodes[0].value

@@ -19,8 +19,12 @@ from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Tuple, Uni
 
 import elasticsearch
 import numpy as np
+from sklearn.compose import ColumnTransformer
+import sklearn.pipeline
+import pandas as pd
 
 from eland.common import ensure_es_client, es_version
+from eland.ml.exporters.encoders import FrequencyEncoder, OneHotEncoder, TargetMeanEncoder
 from eland.utils import deprecated_api
 
 from .common import TYPE_CLASSIFICATION, TYPE_REGRESSION
@@ -423,6 +427,58 @@ class MLModel:
         except elasticsearch.NotFoundError:
             return False
         return True
+
+
+    def export_model(self) -> sklearn.pipeline.Pipeline:
+        """_summary_
+
+        Returns
+        -------
+        sklearn.pipeline.Pipeline
+            _description_
+
+        Raises
+        ------
+        ValueError
+            _description_
+        ValueError
+            _description_
+        """
+
+        from .exporters.es_gradient_boosting_models import ESGradientBoostingRegressor, ESGradientBoostingClassifier
+
+        if self.model_type == TYPE_CLASSIFICATION:
+            model = ESGradientBoostingClassifier(es_client=self._client, model_id=self._model_id)
+        elif self.model_type == TYPE_REGRESSION:
+            model = ESGradientBoostingRegressor(es_client=self._client, model_id=self._model_id)
+        else:
+            raise NotImplementedError
+
+        preprocessors = model.definition["preprocessors"]
+        transformers = []
+        for p in preprocessors:
+            encoding_type = list(p.keys())[0]
+            field = p[encoding_type]["field"]
+            if encoding_type == "frequency_encoding":
+                transform = FrequencyEncoder(p)
+                transformers.append((f"{field}_{encoding_type}", transform, field))
+            elif encoding_type == "target_mean_encoding":
+                transform = TargetMeanEncoder(p)
+                transformers.append((f"{field}_{encoding_type}", transform, field))
+            elif encoding_type == "one_hot_encoding":
+                transform = OneHotEncoder(p)
+                transformers.append((f"{field}_{encoding_type}", transform, [field]))
+        preprocessor = ColumnTransformer(
+            transformers=transformers,
+            remainder="passthrough",
+            verbose_feature_names_out=False,
+        )
+
+        pipeline = sklearn.pipeline.Pipeline(
+            steps=[("preprocessor", preprocessor), ("es_model", model)]
+        )
+        # TODO checks?
+        return pipeline
 
     @property
     def _trained_model_config(self) -> Dict[str, Any]:
