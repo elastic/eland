@@ -89,24 +89,23 @@ class ESGradientBoostingClassifier(sklearn.ensemble.GradientBoostingClassifier):
         trained_models = self.definition["trained_model"]["ensemble"]["trained_models"]
         self.forest = Forest(trained_models)
 
-    def get_feature_names_in_(self, preprocessors):
-        feature_names = []
+    def get_feature_names_in_(self, preprocessors, feature_names):
+        # feature_names = []
         field_names = set()
         for preprocessor in preprocessors:
             if "target_mean_encoding" in preprocessor:
-                feature_names.append(
-                    preprocessor["target_mean_encoding"]["feature_name"]
-                )
-                field_names.add(preprocessor["target_mean_encoding"]["field"])
+                feature_name = preprocessor["target_mean_encoding"]["feature_name"]
+                if feature_name in feature_names:
+                    field_names.add(preprocessor["target_mean_encoding"]["field"])
             elif "frequency_encoding" in preprocessor:
-                feature_names.append(preprocessor["frequency_encoding"]["feature_name"])
-                field_names.add(preprocessor["frequency_encoding"]["field"])
+                feature_name = preprocessor["frequency_encoding"]["feature_name"]
+                if feature_name in feature_names:
+                    field_names.add(preprocessor["frequency_encoding"]["field"])
 
             elif "one_hot_encoding" in preprocessor:
-                feature_names += list(
-                    preprocessor["one_hot_encoding"]["hot_map"].values()
-                )
-                field_names.add(preprocessor["one_hot_encoding"]["field"])
+                for feature_name in preprocessor["one_hot_encoding"]["hot_map"].values():
+                    if feature_name in feature_names:
+                        field_names.add(preprocessor["one_hot_encoding"]["field"])
 
         return feature_names, field_names
 
@@ -135,19 +134,20 @@ class ESGradientBoostingClassifier(sklearn.ensemble.GradientBoostingClassifier):
         self.included_field_names = self.res["trained_model_configs"][0]["metadata"][
             "analytics_config"
         ]["analyzed_fields"]["includes"]
-        self.input_field_names = self.res["trained_model_configs"][0]["input"][
-            "field_names"
-        ]
         self.dependent_variable = self.res["trained_model_configs"][0]["metadata"][
             "analytics_config"
         ]["analysis"]["classification"]["dependent_variable"]
 
-        self.feature_names_in_, preprocessor_field_names = self.get_feature_names_in_(
-            self.definition["preprocessors"]
+        self.feature_names_in_, self.input_field_names = self.get_feature_names_in_(
+            self.definition["preprocessors"], self.definition['trained_model']['ensemble']['feature_names']
         )
-        for input_field in self.input_field_names:
-            if input_field not in preprocessor_field_names:
-                self.feature_names_in_.append(input_field)
+        for field_name in self.res["trained_model_configs"][0]["input"]["field_names"]:
+            if field_name in self.feature_names_in_ and field_name not in self.input_field_names:
+                self.input_field_names.add(field_name)
+
+        # for input_field in self.input_field_names:
+            # if input_field not in preprocessor_field_names:
+            #     self.feature_names_in_.append(input_field)
         self.feature_names_map = {
             name: i for i, name in enumerate(self.feature_names_in_)
         }
@@ -212,17 +212,25 @@ class ESGradientBoostingClassifier(sklearn.ensemble.GradientBoostingClassifier):
 
         return estimator
 
-    def predict(self, X,  **predict_params):
-        if isinstance(X, np.ndarray) and X.shape[1] == self.n_features_in_:
-            return super().predict(X)
-        if isinstance(X, DataFrame):
-            X = X[self.input_field_names].to_pandas()
-        elif isinstance(X, pd.core.frame.DataFrame):
-            X = X[self.input_field_names]
-        else:
-            raise NotImplementedError("Only pandas and eland DataFrame are supported.")
-        predictions = self.es_model.predict(X.to_numpy())
-        return predictions
+    def predict_proba(self, X,  **kwargs):
+        feature_names_in = kwargs.get('feature_names_in', None)
+        X = pd.DataFrame(X, columns=feature_names_in)
+        return super().predict_proba(X[self.feature_names_in_].to_numpy())
+
+    def predict(self, X,  **kwargs):
+        feature_names_in = kwargs.get('feature_names_in', None)
+        X = pd.DataFrame(X, columns=feature_names_in)
+        return super().predict(X[self.feature_names_in_].to_numpy())
+        # if isinstance(X, np.ndarray) and X.shape[1] == self.n_features_in_:
+        #     return super().predict(X)
+        # if isinstance(X, DataFrame):
+        #     X = X[self.input_field_names].to_pandas()
+        # elif isinstance(X, pd.core.frame.DataFrame):
+        #     X = X[self.input_field_names]
+        # else:
+        #     raise NotImplementedError("Only pandas and eland DataFrame are supported.")
+        # predictions = self.es_model.predict(X.to_numpy())
+        # return predictions
 
 class ESGradientBoostingRegressor(sklearn.ensemble.GradientBoostingRegressor):
     def __init__(self, es_client, model_id):

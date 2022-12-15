@@ -9,10 +9,10 @@ class TargetMeanEncoder(FunctionTransformer):
         target_map = self.preprocessor["target_mean_encoding"]["target_map"]
         feature_name_out = self.preprocessor["target_mean_encoding"]["feature_name"]
         self.field_name_in = self.preprocessor["target_mean_encoding"]["field"]
-        default_value = self.preprocessor["target_mean_encoding"]["default_value"]
+        fallback_value = self.preprocessor["target_mean_encoding"]["default_value"]
         func = lambda column: np.array(
             [
-                target_map[str(category)] if category in target_map else default_value
+                target_map[str(category)] if category in target_map else fallback_value
                 for category in column
             ]
         ).reshape(-1, 1)
@@ -28,8 +28,12 @@ class FrequencyEncoder(FunctionTransformer):
         frequency_map = self.preprocessor["frequency_encoding"]["frequency_map"]
         feature_name_out = self.preprocessor["frequency_encoding"]["feature_name"]
         self.field_name_in = self.preprocessor["frequency_encoding"]["field"]
+        fallback_value = 0.0
         func = lambda column: np.array(
-            [frequency_map[str(category)] for category in column]
+            [
+                frequency_map[str(category)] if category in frequency_map else fallback_value
+                for category in column
+            ]
         ).reshape(-1, 1)
         feature_names_out = lambda ft, carr: [
             feature_name_out if c == self.field_name_in else c for c in carr
