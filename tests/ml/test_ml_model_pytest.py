@@ -83,6 +83,99 @@ def check_prediction_equality(es_model: MLModel, py_model, test_data):
     np.testing.assert_almost_equal(test_results, es_results, decimal=2)
 
 
+def yield_model_id(analysis, analyzed_fields):
+    import string
+    import random
+    import time
+
+    suffix = "".join(random.choices(string.ascii_lowercase, k=4))
+    FLIGHTS_SMALL_INDEX_NAME = "flights_small"
+    job_id = "test-flights-regression-" + suffix
+    dest = job_id + "-dest"
+
+    response = ES_TEST_CLIENT.ml.put_data_frame_analytics(
+        id=job_id,
+        analysis=analysis,
+        dest={"index": dest},
+        source={"index": [FLIGHTS_SMALL_INDEX_NAME]},
+        analyzed_fields=analyzed_fields,
+    )
+    assert response.meta.status == 200
+    response = ES_TEST_CLIENT.ml.start_data_frame_analytics(id=job_id)
+    assert response.meta.status == 200
+
+    time.sleep(2)
+    response = ES_TEST_CLIENT.ml.get_trained_models(model_id=job_id + "*")
+    assert response.meta.status == 200
+    assert response.body["count"] == 1
+    model_id = response.body["trained_model_configs"][0]["model_id"]
+
+    yield model_id
+
+    ES_TEST_CLIENT.ml.delete_data_frame_analytics(id=job_id)
+    ES_TEST_CLIENT.indices.delete(index=dest)
+    ES_TEST_CLIENT.ml.delete_trained_model(model_id=model_id)
+
+
+@pytest.fixture()
+def regression_model_id():
+    analysis = {
+        "regression": {
+            "dependent_variable": "FlightDelayMin",
+            "max_trees": 3,
+            "num_top_feature_importance_values": 0,
+            "max_optimization_rounds_per_hyperparameter": 1,
+            "prediction_field_name": "FlightDelayMin_prediction",
+            "training_percent": 30,
+            "randomize_seed": 1000,
+            "loss_function": "mse",
+            "early_stopping_enabled": True,
+        }
+    }
+    analyzed_fields = {
+        "includes": [
+            "FlightDelayMin",
+            "FlightDelayType",
+            "FlightTimeMin",
+            "DistanceMiles",
+            "OriginAirportID",
+        ],
+        "excludes": [],
+    }
+    yield from yield_model_id(analysis=analysis, analyzed_fields=analyzed_fields)
+
+
+@pytest.fixture()
+def classification_model_id():
+    analysis = {
+        "classification": {
+            "dependent_variable": "Cancelled",
+            "max_trees": 5,
+            "num_top_feature_importance_values": 0,
+            "max_optimization_rounds_per_hyperparameter": 1,
+            "prediction_field_name": "Cancelled_prediction",
+            "training_percent": 50,
+            "randomize_seed": 1000,
+            "num_top_classes": -1,
+            "class_assignment_objective": "maximize_minimum_recall",
+            "early_stopping_enabled": True,
+        }
+    }
+    analyzed_fields = {
+        "includes": [
+            "OriginWeather",
+            "OriginAirportID",
+            "DestCityName",
+            "DestWeather",
+            "DestRegion",
+            "AvgTicketPrice",
+            "Cancelled",
+        ],
+        "excludes": [],
+    }
+    yield from yield_model_id(analysis=analysis, analyzed_fields=analyzed_fields)
+
+
 class TestMLModel:
     @requires_no_ml_extras
     def test_import_ml_model_when_dependencies_are_not_available(self):
@@ -498,66 +591,7 @@ class TestMLModel:
         # Clean up
         es_model.delete_model()
 
-    def test_export_regressor(self):
-        # from .. import FLIGHTS_SMALL_INDEX_NAME
-        import string
-        import random
-
-        suffix = "".join(random.choices(string.ascii_lowercase, k=4))
-        FLIGHTS_SMALL_INDEX_NAME = "flights_small"
-        job_id = "test-flights-regression-" + suffix
-        dest = job_id + "-dest"
-
-        try:
-            ES_TEST_CLIENT.ml.delete_data_frame_analytics(id=job_id)
-            ES_TEST_CLIENT.indices.delete(index=dest)
-        except es.NotFoundError:
-            pass
-
-        response = ES_TEST_CLIENT.ml.put_data_frame_analytics(
-            id=job_id,
-            analysis={
-                "regression": {
-                    "dependent_variable": "FlightDelayMin",
-                    "max_trees": 3,
-                    "num_top_feature_importance_values": 0,
-                    "max_optimization_rounds_per_hyperparameter": 1,
-                    "prediction_field_name": "FlightDelayMin_prediction",
-                    "training_percent": 30,
-                    "randomize_seed": 1000,
-                    "loss_function": "mse",
-                    "early_stopping_enabled": True,
-                }
-            },
-            dest={"index": dest},
-            source={"index": [FLIGHTS_SMALL_INDEX_NAME]},
-            analyzed_fields={
-                "includes": [
-                    "FlightDelayMin",
-                    "FlightDelayType",
-                    "FlightTimeMin",
-                    "DistanceMiles",
-                    "OriginAirportID",
-                ],
-                "excludes": [],
-            },
-        )
-        assert response.meta.status == 200
-        response = ES_TEST_CLIENT.ml.start_data_frame_analytics(id=job_id)
-        assert response.meta.status == 200
-        import time
-
-        time.sleep(2)
-        response = ES_TEST_CLIENT.ml.get_trained_models(model_id=job_id + "*")
-        assert response.meta.status == 200
-        assert response.body["count"] == 1
-        # for trained_model in response.body['trained_model_configs']:
-        #     model_id = trained_model['model_id']
-        #     ES_TEST_CLIENT.ml.delete_trained_model(model_id = model_id)
-        model_id = response.body["trained_model_configs"][0]["model_id"]
-
-        es_model = MLModel(ES_TEST_CLIENT, model_id=model_id)
-
+    def test_export_regressor(self, regression_model_id):
         from eland.ml.exporters.es_gradient_boosting_models import (
             ESGradientBoostingRegressor,
         )
@@ -569,8 +603,15 @@ class TestMLModel:
         from sklearn.compose import ColumnTransformer
         from sklearn.pipeline import Pipeline
 
+        input_fields = [
+            "FlightDelayType",
+            "FlightTimeMin",
+            "DistanceMiles",
+            "OriginAirportID",
+        ]
+
         regressor = ESGradientBoostingRegressor(
-            es_client=ES_TEST_CLIENT, model_id=model_id
+            es_client=ES_TEST_CLIENT, model_id=regression_model_id
         )
         types = dict(regressor.get_test_data().dtypes)
         test_data = regressor.get_test_data().to_pandas().head(10)
@@ -597,7 +638,7 @@ class TestMLModel:
 
         X = test_data
         y = test_data[regressor.dependent_variable]
-        y.replace(to_replace={c: i for i,c in enumerate(y.unique())}, inplace=True)
+        y.replace(to_replace={c: i for i, c in enumerate(y.unique())}, inplace=True)
 
         pipeline = Pipeline(
             steps=[("preprocessor", preprocessor), ("es_model", regressor)]
@@ -607,7 +648,7 @@ class TestMLModel:
             X, feature_names_in=preprocessor.get_feature_names_out()
         )
         response = ES_TEST_CLIENT.ml.infer_trained_model(
-            model_id=model_id, docs=X[es_model.feature_names].to_dict("records")
+            model_id=regression_model_id, docs=X[input_fields].to_dict("records")
         )
         predictions_es = np.array(
             list(
@@ -617,78 +658,9 @@ class TestMLModel:
                 )
             )
         )
-        np.testing.assert_array_almost_equal(1 + predictions_sklearn, predictions_es)
+        np.testing.assert_array_almost_equal(predictions_sklearn, predictions_es)
 
-        # Clean up
-        es_model.delete_model()
-        response = ES_TEST_CLIENT.ml.delete_data_frame_analytics(id=job_id)
-        assert response.meta.status == 200
-        response = ES_TEST_CLIENT.indices.delete(index=dest)
-        assert response.meta.status == 200
-
-    def test_export_classification(self):
-        # from .. import FLIGHTS_SMALL_INDEX_NAME
-        import string
-        import random
-
-        suffix = "".join(random.choices(string.ascii_lowercase, k=4))
-        FLIGHTS_SMALL_INDEX_NAME = "flights_small"
-        job_id = "test-flights-classification-" + suffix
-        dest = job_id + "-dest"
-
-        try:
-            ES_TEST_CLIENT.ml.delete_data_frame_analytics(id=job_id)
-            ES_TEST_CLIENT.indices.delete(index=dest)
-        except es.NotFoundError:
-            pass
-
-        response = ES_TEST_CLIENT.ml.put_data_frame_analytics(
-            id=job_id,
-            analysis={
-                "classification": {
-                    "dependent_variable": "Cancelled",
-                    "max_trees": 5,
-                    "num_top_feature_importance_values": 0,
-                    "max_optimization_rounds_per_hyperparameter": 1,
-                    "prediction_field_name": "Cancelled_prediction",
-                    "training_percent": 50,
-                    "randomize_seed": 1000,
-                    "num_top_classes": -1,
-                    "class_assignment_objective": "maximize_minimum_recall",
-                    "early_stopping_enabled": True,
-                }
-            },
-            dest={"index": dest},
-            source={"index": [FLIGHTS_SMALL_INDEX_NAME]},
-            analyzed_fields={
-                "includes": [
-                    "OriginWeather",
-                    "OriginAirportID",
-                    "DestCityName",
-                    "DestWeather",
-                    "DestRegion",
-                    "AvgTicketPrice",
-                    "Cancelled",
-                ],
-                "excludes": [],
-            },
-        )
-        assert response.meta.status == 200
-        response = ES_TEST_CLIENT.ml.start_data_frame_analytics(id=job_id)
-        assert response.meta.status == 200
-        import time
-
-        time.sleep(2)
-        response = ES_TEST_CLIENT.ml.get_trained_models(model_id=job_id + "*")
-        assert response.meta.status == 200
-        assert response.body["count"] == 1
-        # for trained_model in response.body['trained_model_configs']:
-        #     model_id = trained_model['model_id']
-        #     ES_TEST_CLIENT.ml.delete_trained_model(model_id = model_id)
-        model_id = response.body["trained_model_configs"][0]["model_id"]
-
-        es_model = MLModel(ES_TEST_CLIENT, model_id=model_id)
-
+    def test_export_classification(self, classification_model_id):
         from eland.ml.exporters.es_gradient_boosting_models import (
             ESGradientBoostingClassifier,
         )
@@ -700,11 +672,19 @@ class TestMLModel:
         from sklearn.compose import ColumnTransformer
         from sklearn.pipeline import Pipeline
 
+        input_fields = [
+            "OriginWeather",
+            "OriginAirportID",
+            "DestCityName",
+            "DestWeather",
+            "DestRegion",
+            "AvgTicketPrice",
+        ]
         classifier = ESGradientBoostingClassifier(
-            es_client=ES_TEST_CLIENT, model_id=model_id
+            es_client=ES_TEST_CLIENT, model_id=classification_model_id
         )
         types = dict(classifier.get_test_data().dtypes)
-        test_data = classifier.get_test_data().to_pandas() #.head(10)
+        test_data = classifier.get_test_data().to_pandas()  # .head(10)
         test_data = test_data.astype(types)
         preprocessors = classifier.definition["preprocessors"]
         transformers = []
@@ -728,7 +708,6 @@ class TestMLModel:
 
         X = test_data[list(classifier.input_field_names)]
         y = test_data[classifier.dependent_variable]
-        # y.replace(to_replace={c: i for i,c in enumerate(y.unique())}, inplace=True)
 
         pipeline = Pipeline(
             steps=[("preprocessor", preprocessor), ("es_model", classifier)]
@@ -737,16 +716,17 @@ class TestMLModel:
         predictions_sklearn = pipeline.predict(
             X, feature_names_in=preprocessor.get_feature_names_out()
         )
-        prediction_proba_sklearn =  pipeline.predict_proba(
+        prediction_proba_sklearn = pipeline.predict_proba(
             X, feature_names_in=preprocessor.get_feature_names_out()
         ).max(axis=1)
 
         response = ES_TEST_CLIENT.ml.infer_trained_model(
-            model_id=model_id, docs=X[es_model.feature_names].to_dict("records")
+            model_id=classification_model_id, docs=X[input_fields].to_dict("records")
         )
         predictions_es = np.array(
             list(
-                map(lambda x: str(int(x["Cancelled_prediction"])),
+                map(
+                    lambda x: str(int(x["Cancelled_prediction"])),
                     response.body["inference_results"],
                 )
             )
@@ -759,12 +739,7 @@ class TestMLModel:
                 )
             )
         )
-        np.testing.assert_array_almost_equal(prediction_proba_sklearn, prediction_proba_es)
+        np.testing.assert_array_almost_equal(
+            prediction_proba_sklearn, prediction_proba_es
+        )
         np.testing.assert_array_equal(predictions_sklearn, predictions_es)
-
-        # Clean up
-        es_model.delete_model()
-        response = ES_TEST_CLIENT.ml.delete_data_frame_analytics(id=job_id)
-        assert response.meta.status == 200
-        response = ES_TEST_CLIENT.indices.delete(index=dest)
-        assert response.meta.status == 200
