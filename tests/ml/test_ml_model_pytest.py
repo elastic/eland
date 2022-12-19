@@ -17,12 +17,11 @@
 
 import numpy as np
 import pytest
-import elasticsearch as es
 from operator import itemgetter
 
 import eland as ed
 from eland.ml import MLModel
-from tests import ES_TEST_CLIENT, ES_VERSION
+from tests import ES_TEST_CLIENT, ES_VERSION, FLIGHTS_SMALL_INDEX_NAME
 
 try:
     from sklearn import datasets
@@ -89,7 +88,6 @@ def yield_model_id(analysis, analyzed_fields):
     import time
 
     suffix = "".join(random.choices(string.ascii_lowercase, k=4))
-    FLIGHTS_SMALL_INDEX_NAME = "flights_small"
     job_id = "test-flights-regression-" + suffix
     dest = job_id + "-dest"
 
@@ -591,39 +589,21 @@ class TestMLModel:
         # Clean up
         es_model.delete_model()
 
+    @requires_sklearn
     def test_export_regressor(self, regression_model_id):
-        from eland.ml.exporters.es_gradient_boosting_models import (
-            ESGradientBoostingRegressor,
-        )
-        from eland.ml.exporters.encoders import (
-            FrequencyEncoder,
-            TargetMeanEncoder,
-            OneHotEncoder,
-        )
-        from sklearn.compose import ColumnTransformer
-        from sklearn.pipeline import Pipeline
-
-        input_fields = [
-            "FlightDelayType",
-            "FlightTimeMin",
-            "DistanceMiles",
-            "OriginAirportID",
-        ]
+        ed_flights = ed.DataFrame(ES_TEST_CLIENT, FLIGHTS_SMALL_INDEX_NAME).head(10)
+        X = ed.eland_to_pandas(ed_flights)
 
         model = MLModel(es_client=ES_TEST_CLIENT, model_id=regression_model_id)
         pipeline = model.export_model()
-        types = dict(pipeline["es_model"].get_test_data().dtypes)
-        test_data = pipeline["es_model"].get_test_data().to_pandas().head(10)
-        test_data = test_data.astype(types)
-
-        X = test_data
         pipeline.fit(X)
 
         predictions_sklearn = pipeline.predict(
-            X, feature_names_in=pipeline["preprocessor"].get_feature_names_out()
+            X, feature_names_in = pipeline["preprocessor"].get_feature_names_out()
         )
         response = ES_TEST_CLIENT.ml.infer_trained_model(
-            model_id=regression_model_id, docs=X[input_fields].to_dict("records")
+            model_id=regression_model_id,
+            docs=X[pipeline["es_model"].input_field_names].to_dict("records"),
         )
         predictions_es = np.array(
             list(
@@ -635,33 +615,13 @@ class TestMLModel:
         )
         np.testing.assert_array_almost_equal(predictions_sklearn, predictions_es)
 
+    @requires_sklearn
     def test_export_classification(self, classification_model_id):
-        from eland.ml.exporters.es_gradient_boosting_models import (
-            ESGradientBoostingClassifier,
-        )
-        from eland.ml.exporters.encoders import (
-            FrequencyEncoder,
-            TargetMeanEncoder,
-            OneHotEncoder,
-        )
-        from sklearn.compose import ColumnTransformer
-        from sklearn.pipeline import Pipeline
+        ed_flights = ed.DataFrame(ES_TEST_CLIENT, FLIGHTS_SMALL_INDEX_NAME).head(10)
+        X = ed.eland_to_pandas(ed_flights)
 
-        input_fields = [
-            "OriginWeather",
-            "OriginAirportID",
-            "DestCityName",
-            "DestWeather",
-            "DestRegion",
-            "AvgTicketPrice",
-        ]
         model = MLModel(es_client=ES_TEST_CLIENT, model_id=classification_model_id)
         pipeline = model.export_model()
-        types = dict(pipeline["es_model"].get_test_data().dtypes)
-        test_data = pipeline["es_model"].get_test_data().to_pandas()  # .head(10)
-        test_data = test_data.astype(types)
-        X = test_data[list(pipeline["es_model"].input_field_names)]
-
         pipeline.fit(X)
 
         predictions_sklearn = pipeline.predict(
@@ -672,7 +632,8 @@ class TestMLModel:
         ).max(axis=1)
 
         response = ES_TEST_CLIENT.ml.infer_trained_model(
-            model_id=classification_model_id, docs=X[input_fields].to_dict("records")
+            model_id=classification_model_id,
+            docs=X[pipeline["es_model"].input_field_names].to_dict("records"),
         )
         predictions_es = np.array(
             list(

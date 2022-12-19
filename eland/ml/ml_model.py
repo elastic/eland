@@ -19,15 +19,20 @@ from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Tuple, Uni
 
 import elasticsearch
 import numpy as np
-from sklearn.compose import ColumnTransformer
-import sklearn.pipeline
-import pandas as pd
 
 from eland.common import ensure_es_client, es_version
-from eland.ml.exporters.encoders import FrequencyEncoder, OneHotEncoder, TargetMeanEncoder
+from eland.ml.exporters._sklearn_deserializers import (
+    FrequencyEncoder,
+    OneHotEncoder,
+    TargetMeanEncoder,
+)
 from eland.utils import deprecated_api
 
 from .common import TYPE_CLASSIFICATION, TYPE_REGRESSION
+from .exporters.es_gb_models import (
+    ESGradientBoostingClassifier,
+    ESGradientBoostingRegressor,
+)
 from .transformers import get_model_transformer
 
 if TYPE_CHECKING:
@@ -37,10 +42,12 @@ if TYPE_CHECKING:
     # Try importing each ML lib separately so mypy users don't have to
     # have both installed to use type-checking.
     try:
+        
         from sklearn.ensemble import (  # type: ignore # noqa: F401
             RandomForestClassifier,
             RandomForestRegressor,
         )
+        from sklearn.pipeline import Pipeline
         from sklearn.tree import (  # type: ignore # noqa: F401
             DecisionTreeClassifier,
             DecisionTreeRegressor,
@@ -429,7 +436,7 @@ class MLModel:
         return True
 
 
-    def export_model(self) -> sklearn.pipeline.Pipeline:
+    def export_model(self) -> "Pipeline":
         """_summary_
 
         Returns
@@ -444,8 +451,8 @@ class MLModel:
         ValueError
             _description_
         """
-
-        from .exporters.es_gradient_boosting_models import ESGradientBoostingRegressor, ESGradientBoostingClassifier
+        from sklearn.compose import ColumnTransformer
+        from sklearn.pipeline import Pipeline
 
         if self.model_type == TYPE_CLASSIFICATION:
             model = ESGradientBoostingClassifier(es_client=self._client, model_id=self._model_id)
@@ -454,7 +461,7 @@ class MLModel:
         else:
             raise NotImplementedError
 
-        preprocessors = model.definition["preprocessors"]
+        preprocessors = model._definition["preprocessors"]
         transformers = []
         for p in preprocessors:
             encoding_type = list(p.keys())[0]
@@ -474,9 +481,10 @@ class MLModel:
             verbose_feature_names_out=False,
         )
 
-        pipeline = sklearn.pipeline.Pipeline(
+        pipeline = Pipeline(
             steps=[("preprocessor", preprocessor), ("es_model", model)]
         )
+       
         # TODO checks?
         return pipeline
 
