@@ -592,7 +592,8 @@ class TestMLModel:
     @requires_sklearn
     def test_export_regressor(self, regression_model_id):
         ed_flights = ed.DataFrame(ES_TEST_CLIENT, FLIGHTS_SMALL_INDEX_NAME).head(10)
-        X = ed.eland_to_pandas(ed_flights)
+        types = dict(ed_flights.dtypes)
+        X = ed_flights.to_pandas().astype(types)
 
         model = MLModel(es_client=ES_TEST_CLIENT, model_id=regression_model_id)
         pipeline = model.export_model()

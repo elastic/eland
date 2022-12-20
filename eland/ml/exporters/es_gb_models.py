@@ -16,45 +16,47 @@
 #  under the License.
 
 from abc import ABC, abstractmethod
-from typing import (
-    Tuple,
-    Set,
-    List,
-    Literal,
-    Mapping,
-    Any,
-    Union,
-    Tuple,
-)
+from typing import Any, List, Literal, Mapping, Set, Tuple, Union, Optional
+
 import numpy as np
-from numpy.typing import ArrayLike, DTypeLike
 import scipy as sp
-import pandas as pd
-
-from ._sklearn_deserializers import Tree
-from eland.ml.common import TYPE_CLASSIFICATION, TYPE_REGRESSION
-from eland.common import ensure_es_client
-
 from elasticsearch import Elasticsearch
-import sklearn
+from numpy.typing import ArrayLike
+from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.ensemble import GradientBoostingClassifier, GradientBoostingRegressor
 from sklearn.ensemble._gb_losses import (
     BinomialDeviance,
-    MultinomialDeviance,
-    LeastSquaresError,
     HuberLossFunction,
+    LeastSquaresError,
 )
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
-from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.utils.validation import check_array
+
+from eland.common import ensure_es_client
+from eland.ml.common import TYPE_CLASSIFICATION, TYPE_REGRESSION
+
+from ._sklearn_deserializers import Tree
 
 
 class ESGradientBoostingModel(ABC):
+    """
+    Abstract class for converting Elastic ML model into sklearn Pipeline.
+    """
+
     def __init__(
         self,
         es_client: Union[str, List[str], Tuple[str, ...], "Elasticsearch"],
         model_id: str,
     ) -> None:
+        """
+        Parameters
+        ----------
+        es_client : Elasticsearch client argument(s)
+            - elasticsearch-py parameters or
+            - elasticsearch-py instance
+        model_id : str
+            The unique identifier of the trained inference model in Elasticsearch.
+        """
         self.es_client: Elasticsearch = ensure_es_client(es_client)
         self.model_id = model_id
 
@@ -82,6 +84,22 @@ class ESGradientBoostingModel(ABC):
         self.n_estimators = (
             len(trained_models) - 1
         )  # 0's tree is the constant estimator
+
+    def _initialize_estimators(self, DecisionTreeType) -> None:
+        self.estimators_ = np.ndarray((len(self._trees) - 1, 1), dtype=DecisionTreeType)
+        self.n_estimators_ = self.estimators_.shape[0]
+
+        for i in range(self.n_estimators_):
+            estimator = DecisionTreeRegressor()
+            estimator.tree_ = self._trees[i + 1].tree_
+            estimator.n_features_in_ = self.n_features_in_
+            estimator.max_depth = self._max_depth
+            estimator.max_features_ = self.max_features_
+            self.estimators_[i, 0] = estimator
+
+    def _extract_common_parameters(self) -> None:
+        self.n_features_in_ = len(self.feature_names_in_)
+        self.max_features_ = self.n_features_in_
 
     @property
     def _max_depth(self) -> int:
@@ -118,31 +136,21 @@ class ESGradientBoostingModel(ABC):
 
         return feature_names, input_field_names
 
+    def fit(self, X, y, sample_weight=None, monitor=None) -> None:
+        """
+        Override of the sklearn fit() method. It does nothing since Elastic ML models are
+        trained in the Elastic Stack or imported.
+        """
+        # Do nothing, model if fitted using Elasticsearch API
+        pass
+
     @property
     @abstractmethod
     def analysis_type(self):
+        """
+        Type of the data frame analysis. It can be classification or regression.
+        """
         pass
-
-    def fit(self, X, y, sample_weight=None, monitor=None) -> None:
-        # do nothing, model if fitted using elasticsearch API
-        pass
-
-    def _extract_common_parameters(self) -> None:
-        self.n_features_in_ = len(self.feature_names_in_)
-        self.max_features_ = self.n_features_in_
-
-    def initialize_estimators(self, DecisionTreeType) -> None:
-
-        self.estimators_ = np.ndarray((len(self._trees) - 1, 1), dtype=DecisionTreeType)
-        self.n_estimators_ = self.estimators_.shape[0]
-
-        for i in range(self.n_estimators_):
-            estimator = DecisionTreeRegressor()
-            estimator.tree_ = self._trees[i + 1].tree_
-            estimator.n_features_in_ = self.n_features_in_
-            estimator.max_depth = self._max_depth
-            estimator.max_features_ = self.max_features_
-            self.estimators_[i, 0] = estimator
 
     @abstractmethod
     def _initialize_init_(self) -> Union[DummyClassifier, DummyRegressor]:
@@ -150,11 +158,31 @@ class ESGradientBoostingModel(ABC):
 
 
 class ESGradientBoostingClassifier(ESGradientBoostingModel, GradientBoostingClassifier):
+    """
+    Elastic ML model wrapper compatible with sklearn GradientBoostingClassifier.
+    """
+
     def __init__(
         self,
         es_client: Union[str, List[str], Tuple[str, ...], "Elasticsearch"],
         model_id: str,
     ) -> None:
+        """
+        Parameters
+        ----------
+        es_client : Elasticsearch client argument(s)
+            - elasticsearch-py parameters or
+            - elasticsearch-py instance
+        model_id : str
+            The unique identifier of the trained inference model in Elasticsearch.
+
+        Raises
+        ------
+        NotImplementedError
+            Multi-class classification is not supported at the moment.
+        ValueError
+            The classifier should be defined for at least 2 classes.
+        """
         ESGradientBoostingModel.__init__(self, es_client, model_id)
         self._extract_common_parameters()
         GradientBoostingClassifier.__init__(
@@ -180,7 +208,7 @@ class ESGradientBoostingClassifier(ESGradientBoostingModel, GradientBoostingClas
             raise ValueError(f"At least 2 classes required. got {self.n_classes_}.")
 
         self.init_ = self._initialize_init_()
-        self.initialize_estimators(DecisionTreeClassifier)
+        self._initialize_estimators(DecisionTreeClassifier)
 
     @property
     def analysis_type(self) -> Literal["classification"]:
@@ -205,33 +233,96 @@ class ESGradientBoostingClassifier(ESGradientBoostingModel, GradientBoostingClas
 
         return estimator
 
-    def predict_proba(self, X, feature_names_in: List[str]) -> "ArrayLike":
-        if X.shape[1] != len(feature_names_in):
-            raise ValueError(
-                f"Dimension mismatch: X with {X.shape[1]} columns has to be the same size as feature_names_in with {len(feature_names_in)}."
-            )
-        X = pd.DataFrame(X, columns=feature_names_in)[self.feature_names_in_].to_numpy()
+    def predict_proba(
+        self, X, feature_names_in: Optional[Union["ArrayLike", List[str]]] = None
+    ) -> "ArrayLike":
+        """Predict class probabilities for X.
+
+        Parameters
+        ----------
+        X : array-like of shape (n_samples, n_features)
+            The input samples.
+        feature_names_in : {array of string, list of string} of length n_features.
+            Feature names of the corresponding columns in X. Important, since the column list
+            can be extended by ColumnTransformer through the pipeline. By default None.
+
+        Returns
+        -------
+        ArrayLike of shape (n_samples, n_classes)
+            The class probabilities of the input samples. The order of the
+            classes corresponds to that in the attribute :term:`classes_`.
+        """
+        if feature_names_in:
+            if X.shape[1] != len(feature_names_in):
+                raise ValueError(
+                    f"Dimension mismatch: X with {X.shape[1]} columns has to be the same size as feature_names_in with {len(feature_names_in)}."
+                )
+            if isinstance(feature_names_in, np.ndarray):
+                feature_names_in = feature_names_in.tolist()
+            # select columns used by the model in the correct order
+            X = X[:, [feature_names_in.index(fn) for fn in self.feature_names_in_]]
 
         X = check_array(X)
         return GradientBoostingClassifier.predict_proba(self, X)
 
-    def predict(self, X, feature_names_in: List[str]) -> "ArrayLike":
-        if X.shape[1] != len(feature_names_in):
-            raise ValueError(
-                f"Dimension mismatch: X with {X.shape[1]} columns has to be the same size as feature_names_in with {len(feature_names_in)}."
-            )
-        X = pd.DataFrame(X, columns=feature_names_in)[self.feature_names_in_].to_numpy()
+    def predict(
+        self,
+        X: "ArrayLike",
+        feature_names_in: Optional[Union["ArrayLike", List[str]]] = None,
+    ) -> "ArrayLike":
+        """Predict class for X.
+
+        Parameters
+        ----------
+        X : array-like of shape (n_samples, n_features)
+            The input samples.
+        feature_names_in : {array of string, list of string} of length n_features.
+            Feature names of the corresponding columns in X. Important, since the column list
+            can be extended by ColumnTransformer through the pipeline. By default None.
+
+        Returns
+        -------
+        ArrayLike of shape (n_samples,)
+            The predicted values.
+        """
+        if feature_names_in:
+            if X.shape[1] != len(feature_names_in):
+                raise ValueError(
+                    f"Dimension mismatch: X with {X.shape[1]} columns has to be the same size as feature_names_in with {len(feature_names_in)}."
+                )
+            if isinstance(feature_names_in, np.ndarray):
+                feature_names_in = feature_names_in.tolist()
+            # select columns used by the model in the correct order
+            X = X[:, [feature_names_in.index(fn) for fn in self.feature_names_in_]]
 
         X = check_array(X)
         return GradientBoostingClassifier.predict(self, X)
 
 
 class ESGradientBoostingRegressor(ESGradientBoostingModel, GradientBoostingRegressor):
+    """
+    Elastic ML model wrapper compatible with sklearn GradientBoostingRegressor.
+    """
+
     def __init__(
         self,
         es_client: Union[str, List[str], Tuple[str, ...], "Elasticsearch"],
         model_id: str,
     ) -> None:
+        """
+        Parameters
+        ----------
+        es_client : Elasticsearch client argument(s)
+            - elasticsearch-py parameters or
+            - elasticsearch-py instance
+        model_id : str
+            The unique identifier of the trained inference model in Elasticsearch.
+
+        Raises
+        ------
+        NotImplementedError
+            Only MSE, MSLE, and Huber loss functions are supported.
+        """
         ESGradientBoostingModel.__init__(self, es_client, model_id)
         self._extract_common_parameters()
         GradientBoostingRegressor.__init__(
@@ -242,12 +333,10 @@ class ESGradientBoostingRegressor(ESGradientBoostingModel, GradientBoostingRegre
         )
 
         self.n_outputs = 1
-
-        # TODO works only for a single case
         loss_function = self._trained_model_result["trained_model_configs"][0][
             "metadata"
         ]["analytics_config"]["analysis"][self.analysis_type]["loss_function"]
-        if loss_function == "mse":
+        if loss_function == "mse" or loss_function == "msle":
             self.criterion = "squared_error"
             self._loss = LeastSquaresError()
         elif loss_function == "huber":
@@ -260,11 +349,11 @@ class ESGradientBoostingRegressor(ESGradientBoostingModel, GradientBoostingRegre
             self._loss = HuberLossFunction(loss_parameter)
         else:
             raise NotImplementedError(
-                "Only MSE and Huber loss functions are supported. MSLE is not supporte by sklearn."
+                "Only MSE, MSLE and Huber loss functions are supported."
             )
 
         self.init_ = self._initialize_init_()
-        self.initialize_estimators(DecisionTreeRegressor)
+        self._initialize_estimators(DecisionTreeRegressor)
 
     @property
     def analysis_type(self) -> Literal["regression"]:
@@ -280,12 +369,35 @@ class ESGradientBoostingRegressor(ESGradientBoostingModel, GradientBoostingRegre
         estimator.n_outputs_ = 1
         return estimator
 
-    def predict(self, X, feature_names_in: List[str]) -> "ArrayLike":
-        if X.shape[1] != len(feature_names_in):
-            raise ValueError(
-                f"Dimension mismatch: X with {X.shape[1]} columns has to be the same size as feature_names_in with {len(feature_names_in)}."
-            )
-        X = pd.DataFrame(X, columns=feature_names_in)[self.feature_names_in_].to_numpy()
+    def predict(
+        self,
+        X: "ArrayLike",
+        feature_names_in: Optional[Union["ArrayLike", List[str]]] = None,
+    ) -> "ArrayLike":
+        """Predict targets for X.
+
+        Parameters
+        ----------
+        X : array-like of shape (n_samples, n_features)
+            The input samples.
+        feature_names_in : {array of string, list of string} of length n_features.
+            Feature names of the corresponding columns in X. Important, since the column list
+            can be extended by ColumnTransformer through the pipeline. By default None.
+
+        Returns
+        -------
+        ArrayLike of shape (n_samples,)
+            The predicted values.
+        """
+        if feature_names_in:
+            if X.shape[1] != len(feature_names_in):
+                raise ValueError(
+                    f"Dimension mismatch: X with {X.shape[1]} columns has to be the same size as feature_names_in with {len(feature_names_in)}."
+                )
+            if isinstance(X, np.ndarray):
+                feature_names_in = feature_names_in.tolist()
+            # select columns used by the model in the correct order
+            X = X[:, [feature_names_in.index(fn) for fn in self.feature_names_in_]]
 
         X = check_array(X)
         return GradientBoostingRegressor.predict(self, X)
