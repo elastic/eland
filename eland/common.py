@@ -345,5 +345,5 @@ def es_version(es_client: Elasticsearch) -> Tuple[int, int, int]:
             )
 
     else:
-        eland_es_version = es_client._eland_es_version  # type: ignore
+        eland_es_version = es_client._eland_es_version
     return eland_es_version
