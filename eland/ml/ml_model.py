@@ -461,7 +461,10 @@ class MLModel:
         else:
             raise NotImplementedError
 
-        preprocessors = model._definition["preprocessors"]
+        if "preprocessors" in model._definition:
+            preprocessors = model._definition["preprocessors"]
+        else:
+            preprocessors = []
         transformers = []
         for p in preprocessors:
             encoding_type = list(p.keys())[0]

@@ -15,9 +15,9 @@
 #  specific language governing permissions and limitations
 #  under the License.
 
+import numpy as np
 import sklearn
 from sklearn.preprocessing import FunctionTransformer
-import numpy as np
 
 
 class Tree:
@@ -38,7 +38,10 @@ class Tree:
         feature_names = json_tree["feature_names"]
         for json_node in json_tree["tree_structure"]:
             node_id = json_node["node_index"]
-            n_node_samples[node_id] = json_node["number_samples"]
+            if "number_samples" in json_node:
+                n_node_samples[node_id] = json_node["number_samples"] 
+            else:
+                n_node_samples[node_id] = 0
 
             if "leaf_value" not in json_node:
                 children_left[node_id] = json_node["left_child"]
@@ -63,6 +66,7 @@ class Tree:
             values=value,
             node_index=0,
         )
+        self.n_outputs = value.shape[-1]
 
         # initialize the sklearn tree
         self.tree_ = sklearn.tree._tree.Tree(

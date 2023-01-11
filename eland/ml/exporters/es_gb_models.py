@@ -16,7 +16,7 @@
 #  under the License.
 
 from abc import ABC, abstractmethod
-from typing import Any, List, Literal, Mapping, Set, Tuple, Union, Optional
+from typing import Any, List, Literal, Mapping, Optional, Set, Tuple, Union
 
 import numpy as np
 import scipy as sp
@@ -66,8 +66,17 @@ class ESGradientBoostingModel(ABC):
             include=["hyperparameters", "definition"],
         )
 
+        if 'metadata' not in self._trained_model_result["trained_model_configs"][0]:
+            raise ValueError(
+                    "Error initializing sklearn classifier. Incorrect prior class probability. " + \
+                    "Note: only export of models trained in the Elastic Stack is supported."
+                )
+
+        preprocessors = []
+        if "preprocessors" in self._definition:
+            preprocessors = self._definition["preprocessors"]
         self.feature_names_in_, self.input_field_names = self._get_feature_names_in_(
-            self._definition["preprocessors"],
+            preprocessors,
             self._definition["trained_model"]["ensemble"]["feature_names"],
             self._trained_model_result["trained_model_configs"][0]["input"][
                 "field_names"
@@ -104,6 +113,10 @@ class ESGradientBoostingModel(ABC):
     @property
     def _max_depth(self) -> int:
         return max(map(lambda x: x.max_depth, self._trees))
+
+    @property
+    def _n_outputs(self) -> int:
+        return self._trees[0].n_outputs
 
     @property
     def _definition(self) -> Mapping[Union[str, int], Any]:
@@ -192,13 +205,24 @@ class ESGradientBoostingClassifier(ESGradientBoostingModel, GradientBoostingClas
             max_depth=self._max_depth,
         )
 
-        self.classes_ = np.array(
-            self._definition["trained_model"]["ensemble"]["classification_labels"]
-        )
-        self.n_classes_ = len(self.classes_)
+        if "classification_labels" in self._definition["trained_model"]["ensemble"]:
+            self.classes_ = np.array(
+                self._definition["trained_model"]["ensemble"]["classification_labels"]
+            )
+        else:
+            self.classes_ = None
+
+        self.n_outputs = self._n_outputs
+        if self.classes_ is not None:
+            self.n_classes_ = len(self.classes_)
+        elif self.n_outputs <= 2:
+            self.n_classes_ = 2
+        else:
+            self.n_classes_ = self.n_outputs
+
         if self.n_classes_ == 2:
             self._loss = BinomialDeviance(self.n_classes_)
-            self.n_outputs = 1
+            # self.n_outputs = 1
         elif self.n_classes_ > 2:
             raise NotImplementedError("Only binary classification is implemented.")
             # TODO: implement business logic for multiclass classification
@@ -225,6 +249,11 @@ class ESGradientBoostingClassifier(ESGradientBoostingModel, GradientBoostingClas
 
         if self.n_classes_ == 2:
             log_odds = self._trees[0].tree_.value.flatten()[0]
+            if np.isnan(log_odds):
+                raise ValueError(
+                    "Error initializing sklearn classifier. Incorrect prior class probability. " + \
+                    "Note: only export of models trained in the Elastic Stack is supported."
+                )
             class_prior = sp.special.expit(log_odds)
             estimator.class_prior_ = np.array([1 - class_prior, class_prior])
         else:
@@ -252,7 +281,7 @@ class ESGradientBoostingClassifier(ESGradientBoostingModel, GradientBoostingClas
             The class probabilities of the input samples. The order of the
             classes corresponds to that in the attribute :term:`classes_`.
         """
-        if feature_names_in:
+        if feature_names_in is not None:
             if X.shape[1] != len(feature_names_in):
                 raise ValueError(
                     f"Dimension mismatch: X with {X.shape[1]} columns has to be the same size as feature_names_in with {len(feature_names_in)}."
@@ -285,7 +314,7 @@ class ESGradientBoostingClassifier(ESGradientBoostingModel, GradientBoostingClas
         ArrayLike of shape (n_samples,)
             The predicted values.
         """
-        if feature_names_in:
+        if feature_names_in is not None:
             if X.shape[1] != len(feature_names_in):
                 raise ValueError(
                     f"Dimension mismatch: X with {X.shape[1]} columns has to be the same size as feature_names_in with {len(feature_names_in)}."
@@ -389,7 +418,7 @@ class ESGradientBoostingRegressor(ESGradientBoostingModel, GradientBoostingRegre
         ArrayLike of shape (n_samples,)
             The predicted values.
         """
-        if feature_names_in:
+        if feature_names_in is not None:
             if X.shape[1] != len(feature_names_in):
                 raise ValueError(
                     f"Dimension mismatch: X with {X.shape[1]} columns has to be the same size as feature_names_in with {len(feature_names_in)}."

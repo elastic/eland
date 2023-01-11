@@ -15,9 +15,10 @@
 #  specific language governing permissions and limitations
 #  under the License.
 
+from operator import itemgetter
+
 import numpy as np
 import pytest
-from operator import itemgetter
 
 import eland as ed
 from eland.ml import MLModel
@@ -83,8 +84,8 @@ def check_prediction_equality(es_model: MLModel, py_model, test_data):
 
 
 def yield_model_id(analysis, analyzed_fields):
-    import string
     import random
+    import string
     import time
 
     suffix = "".join(random.choices(string.ascii_lowercase, k=4))
@@ -600,7 +601,7 @@ class TestMLModel:
         pipeline.fit(X)
 
         predictions_sklearn = pipeline.predict(
-            X, feature_names_in = pipeline["preprocessor"].get_feature_names_out()
+            X, feature_names_in=pipeline["preprocessor"].get_feature_names_out()
         )
         response = ES_TEST_CLIENT.ml.infer_trained_model(
             model_id=regression_model_id,
@@ -656,3 +657,69 @@ class TestMLModel:
             prediction_proba_sklearn, prediction_proba_es
         )
         np.testing.assert_array_equal(predictions_sklearn, predictions_es)
+
+    @requires_xgboost
+    @requires_sklearn
+    @pytest.mark.parametrize("objective", ["binary:logistic", "reg:squarederror"])
+    def test_xgb_import_export(self, objective):
+        booster = "gbtree"
+
+        if objective.startswith("binary:"):
+            training_data = datasets.make_classification(n_features=5)
+            xgb_model = XGBClassifier(
+                booster=booster, objective=objective, use_label_encoder=False
+            )
+        else:
+            training_data = datasets.make_regression(n_features=5)
+            xgb_model = XGBRegressor(
+                booster=booster, objective=objective, use_label_encoder=False
+            )
+
+        # Train model
+        xgb_model.fit(training_data[0], training_data[1])
+
+        # Serialise the models to Elasticsearch
+        feature_names = ["feature0", "feature1", "feature2", "feature3", "feature4"]
+        model_id = "test_xgb_model"
+
+        es_model = MLModel.import_model(
+            ES_TEST_CLIENT, model_id, xgb_model, feature_names, es_if_exists="replace"
+        )
+
+        # Export suppose to fail
+        with pytest.raises(ValueError) as ex:
+            es_model.export_model()
+        assert ex.match("Error initializing sklearn classifier.")
+
+        # Clean up
+        es_model.delete_model()
+
+    @requires_lightgbm
+    @pytest.mark.parametrize("objective", ["regression", "binary"])
+    def test_lgbm_import_export(self, objective):
+        booster = "gbdt"
+        if objective == "binary":
+            training_data = datasets.make_classification(n_features=5)
+            lgbm_model = LGBMClassifier(boosting_type=booster, objective=objective)
+        else:
+            training_data = datasets.make_regression(n_features=5)
+            lgbm_model = LGBMRegressor(boosting_type=booster, objective=objective)
+
+        # Train model
+        lgbm_model.fit(training_data[0], training_data[1])
+
+        # Serialise the models to Elasticsearch
+        feature_names = ["feature0", "feature1", "feature2", "feature3", "feature4"]
+        model_id = "test_lgbm_model"
+
+        es_model = MLModel.import_model(
+            ES_TEST_CLIENT, model_id, lgbm_model, feature_names, es_if_exists="replace"
+        )
+
+        # Export suppose to fail
+        with pytest.raises(ValueError) as ex:
+            es_model.export_model()
+        assert ex.match("Error initializing sklearn classifier.")
+
+        # Clean up
+        es_model.delete_model()
