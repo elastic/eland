@@ -116,8 +116,8 @@ def yield_model_id(analysis, analyzed_fields):
     ES_TEST_CLIENT.ml.delete_trained_model(model_id=model_id)
 
 
-@pytest.fixture()
-def regression_model_id():
+@pytest.fixture(params=[[0, 4], [0, 1], range(5)])
+def regression_model_id(request):
     analysis = {
         "regression": {
             "dependent_variable": "FlightDelayMin",
@@ -131,21 +131,23 @@ def regression_model_id():
             "early_stopping_enabled": True,
         }
     }
+    all_includes = [
+        "FlightDelayMin",
+        "FlightDelayType",
+        "FlightTimeMin",
+        "DistanceMiles",
+        "OriginAirportID",
+    ]
+    includes = [all_includes[i] for i in request.param]
     analyzed_fields = {
-        "includes": [
-            "FlightDelayMin",
-            "FlightDelayType",
-            "FlightTimeMin",
-            "DistanceMiles",
-            "OriginAirportID",
-        ],
+        "includes": includes,
         "excludes": [],
     }
     yield from yield_model_id(analysis=analysis, analyzed_fields=analyzed_fields)
 
 
-@pytest.fixture()
-def classification_model_id():
+@pytest.fixture(params=[[0, 6], [5, 6], range(7)])
+def classification_model_id(request):
     analysis = {
         "classification": {
             "dependent_variable": "Cancelled",
@@ -160,16 +162,18 @@ def classification_model_id():
             "early_stopping_enabled": True,
         }
     }
+    all_includes = [
+        "OriginWeather",
+        "OriginAirportID",
+        "DestCityName",
+        "DestWeather",
+        "DestRegion",
+        "AvgTicketPrice",
+        "Cancelled",
+    ]
+    includes = [all_includes[i] for i in request.param]
     analyzed_fields = {
-        "includes": [
-            "OriginWeather",
-            "OriginAirportID",
-            "DestCityName",
-            "DestWeather",
-            "DestRegion",
-            "AvgTicketPrice",
-            "Cancelled",
-        ],
+        "includes": includes,
         "excludes": [],
     }
     yield from yield_model_id(analysis=analysis, analyzed_fields=analyzed_fields)
