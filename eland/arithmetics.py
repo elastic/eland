@@ -33,6 +33,7 @@ class ArithmeticObject(ABC):
     def value(self) -> str:
         pass
 
+    @property
     @abstractmethod
     def dtype(self) -> "DTypeLike":
         pass
