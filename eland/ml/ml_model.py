@@ -437,7 +437,7 @@ class MLModel:
 
 
     def export_model(self) -> "Pipeline":
-        """_summary_
+        """Export Elastic ML model as sklearn Pipeline.
 
         Returns
         -------
@@ -447,9 +447,10 @@ class MLModel:
         Raises
         ------
         ValueError
-            _description_
-        ValueError
-            _description_
+            The model is expected to be trained in Elastic Stack. Models initially imported 
+            from xgboost, lgbm, or sklearn are not supported.
+        NotImplementedError
+            Only regression and binary classification models are supported currently.
         """
         from sklearn.compose import ColumnTransformer
         from sklearn.pipeline import Pipeline
@@ -488,7 +489,6 @@ class MLModel:
             steps=[("preprocessor", preprocessor), ("es_model", model)]
         )
        
-        # TODO checks?
         return pipeline
 
     @property

@@ -56,6 +56,12 @@ class ESGradientBoostingModel(ABC):
             - elasticsearch-py instance
         model_id : str
             The unique identifier of the trained inference model in Elasticsearch.
+
+        Raises
+        ------
+        ValueError
+            The model is expected to be trained in Elastic Stack. Models initially imported 
+            from xgboost, lgbm, or sklearn are not supported.
         """
         self.es_client: Elasticsearch = ensure_es_client(es_client)
         self.model_id = model_id
@@ -225,9 +231,6 @@ class ESGradientBoostingClassifier(ESGradientBoostingModel, GradientBoostingClas
             # self.n_outputs = 1
         elif self.n_classes_ > 2:
             raise NotImplementedError("Only binary classification is implemented.")
-            # TODO: implement business logic for multiclass classification
-            # self._loss = MultinomialDeviance(self.n_classes_)
-            # self.n_outputs = self.n_classes_
         else:
             raise ValueError(f"At least 2 classes required. got {self.n_classes_}.")
 
@@ -257,7 +260,6 @@ class ESGradientBoostingClassifier(ESGradientBoostingModel, GradientBoostingClas
             class_prior = sp.special.expit(log_odds)
             estimator.class_prior_ = np.array([1 - class_prior, class_prior])
         else:
-            # TODO: implement business logic for multiclass classification
             raise NotImplementedError("Only binary classification is implemented.")
 
         return estimator

@@ -21,6 +21,10 @@ from sklearn.preprocessing import FunctionTransformer
 
 
 class Tree:
+    """Wrapper to create sklearn Tree objects from Elastic ML tree
+    description in JSON format.
+    """
+
     def __init__(self, json_tree, feature_names_map):
         TREE_LEAF = -1
 
@@ -39,7 +43,7 @@ class Tree:
         for json_node in json_tree["tree_structure"]:
             node_id = json_node["node_index"]
             if "number_samples" in json_node:
-                n_node_samples[node_id] = json_node["number_samples"] 
+                n_node_samples[node_id] = json_node["number_samples"]
             else:
                 n_node_samples[node_id] = 0
 
@@ -139,6 +143,10 @@ class Tree:
 
 
 class TargetMeanEncoder(FunctionTransformer):
+    """FunctionTransformer implementation of the target mean encoder, which is
+    deserialized from the Elastic ML preprocessor description in JSON formats.
+    """
+
     def __init__(self, preprocessor):
         self.preprocessor = preprocessor
         target_map = self.preprocessor["target_mean_encoding"]["target_map"]
@@ -163,6 +171,10 @@ class TargetMeanEncoder(FunctionTransformer):
 
 
 class FrequencyEncoder(FunctionTransformer):
+    """FunctionTransformer implementation of the frequency encoder, which is
+    deserialized from the Elastic ML preprocessor description in JSON format.
+    """
+
     def __init__(self, preprocessor):
         self.preprocessor = preprocessor
         frequency_map = self.preprocessor["frequency_encoding"]["frequency_map"]
@@ -184,6 +196,10 @@ class FrequencyEncoder(FunctionTransformer):
 
 
 class OneHotEncoder(sklearn.preprocessing.OneHotEncoder):
+    """Wrapper for sklearn one-hot encoder, which is deserialized from the
+    Elastic ML preprocessor description in JSON format.
+    """
+
     def __init__(self, preprocessor):
         self.preprocessor = preprocessor
         self.field_name_in = self.preprocessor["one_hot_encoding"]["field"]
