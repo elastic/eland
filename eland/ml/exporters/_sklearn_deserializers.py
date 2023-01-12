@@ -181,17 +181,20 @@ class FrequencyEncoder(FunctionTransformer):
         feature_name_out = self.preprocessor["frequency_encoding"]["feature_name"]
         self.field_name_in = self.preprocessor["frequency_encoding"]["field"]
         fallback_value = 0.0
-        func = lambda column: np.array(
-            [
-                frequency_map[str(category)]
-                if category in frequency_map
-                else fallback_value
-                for category in column
-            ]
-        ).reshape(-1, 1)
-        feature_names_out = lambda ft, carr: [
-            feature_name_out if c == self.field_name_in else c for c in carr
-        ]
+
+        def func(column):
+            return np.array(
+                [
+                    frequency_map[str(category)]
+                    if category in frequency_map
+                    else fallback_value
+                    for category in column
+                ]
+            ).reshape(-1, 1)
+
+        def feature_names_out(ft, carr):
+            return [feature_name_out if c == self.field_name_in else c for c in carr]
+
         super().__init__(func=func, feature_names_out=feature_names_out)
 
 

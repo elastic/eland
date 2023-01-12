@@ -60,7 +60,7 @@ class ESGradientBoostingModel(ABC):
         Raises
         ------
         ValueError
-            The model is expected to be trained in Elastic Stack. Models initially imported 
+            The model is expected to be trained in Elastic Stack. Models initially imported
             from xgboost, lgbm, or sklearn are not supported.
         """
         self.es_client: Elasticsearch = ensure_es_client(es_client)
@@ -72,11 +72,11 @@ class ESGradientBoostingModel(ABC):
             include=["hyperparameters", "definition"],
         )
 
-        if 'metadata' not in self._trained_model_result["trained_model_configs"][0]:
+        if "metadata" not in self._trained_model_result["trained_model_configs"][0]:
             raise ValueError(
-                    "Error initializing sklearn classifier. Incorrect prior class probability. " + \
-                    "Note: only export of models trained in the Elastic Stack is supported."
-                )
+                "Error initializing sklearn classifier. Incorrect prior class probability. "
+                + "Note: only export of models trained in the Elastic Stack is supported."
+            )
 
         preprocessors = []
         if "preprocessors" in self._definition:
@@ -254,8 +254,8 @@ class ESGradientBoostingClassifier(ESGradientBoostingModel, GradientBoostingClas
             log_odds = self._trees[0].tree_.value.flatten()[0]
             if np.isnan(log_odds):
                 raise ValueError(
-                    "Error initializing sklearn classifier. Incorrect prior class probability. " + \
-                    "Note: only export of models trained in the Elastic Stack is supported."
+                    "Error initializing sklearn classifier. Incorrect prior class probability. "
+                    + "Note: only export of models trained in the Elastic Stack is supported."
                 )
             class_prior = sp.special.expit(log_odds)
             estimator.class_prior_ = np.array([1 - class_prior, class_prior])

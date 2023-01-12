@@ -42,12 +42,12 @@ if TYPE_CHECKING:
     # Try importing each ML lib separately so mypy users don't have to
     # have both installed to use type-checking.
     try:
-        
+
         from sklearn.ensemble import (  # type: ignore # noqa: F401
             RandomForestClassifier,
             RandomForestRegressor,
         )
-        from sklearn.pipeline import Pipeline
+        from sklearn.pipeline import Pipeline  # type: ignore # noqa: F401
         from sklearn.tree import (  # type: ignore # noqa: F401
             DecisionTreeClassifier,
             DecisionTreeRegressor,
@@ -435,7 +435,6 @@ class MLModel:
             return False
         return True
 
-
     def export_model(self) -> "Pipeline":
         """Export Elastic ML model as sklearn Pipeline.
 
@@ -447,18 +446,22 @@ class MLModel:
         Raises
         ------
         ValueError
-            The model is expected to be trained in Elastic Stack. Models initially imported 
+            The model is expected to be trained in Elastic Stack. Models initially imported
             from xgboost, lgbm, or sklearn are not supported.
         NotImplementedError
             Only regression and binary classification models are supported currently.
         """
-        from sklearn.compose import ColumnTransformer
+        from sklearn.compose import ColumnTransformer  # type: ignore # noqa: F401
         from sklearn.pipeline import Pipeline
 
         if self.model_type == TYPE_CLASSIFICATION:
-            model = ESGradientBoostingClassifier(es_client=self._client, model_id=self._model_id)
+            model = ESGradientBoostingClassifier(
+                es_client=self._client, model_id=self._model_id
+            )
         elif self.model_type == TYPE_REGRESSION:
-            model = ESGradientBoostingRegressor(es_client=self._client, model_id=self._model_id)
+            model = ESGradientBoostingRegressor(
+                es_client=self._client, model_id=self._model_id
+            )
         else:
             raise NotImplementedError
 
@@ -485,10 +488,8 @@ class MLModel:
             verbose_feature_names_out=False,
         )
 
-        pipeline = Pipeline(
-            steps=[("preprocessor", preprocessor), ("es_model", model)]
-        )
-       
+        pipeline = Pipeline(steps=[("preprocessor", preprocessor), ("es_model", model)])
+
         return pipeline
 
     @property
