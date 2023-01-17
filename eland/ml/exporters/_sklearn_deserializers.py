@@ -15,6 +15,8 @@
 #  specific language governing permissions and limitations
 #  under the License.
 
+from typing import Any, Dict, Mapping, Union
+
 import numpy as np
 import sklearn
 from sklearn.preprocessing import FunctionTransformer
@@ -25,7 +27,11 @@ class Tree:
     description in JSON format.
     """
 
-    def __init__(self, json_tree, feature_names_map):
+    def __init__(
+        self,
+        json_tree: Mapping[Union[str, int], Any],
+        feature_names_map: Dict[str, int],
+    ):
         TREE_LEAF = -1
 
         node_count = len(json_tree["tree_structure"])
@@ -109,7 +115,7 @@ class Tree:
 
     @staticmethod
     def _compute_expectations(
-        children_left, children_right, node_sample_weight, values, node_index, depth=0
+        children_left, children_right, node_sample_weight, values, node_index
     ) -> int:
         if children_right[node_index] == -1:
             return 0
@@ -117,27 +123,23 @@ class Tree:
         left_index = children_left[node_index]
         right_index = children_right[node_index]
         depth_left = Tree._compute_expectations(
-            children_left,
-            children_right,
-            node_sample_weight,
-            values,
-            left_index,
-            depth + 1,
+            children_left, children_right, node_sample_weight, values, left_index
         )
         depth_right = Tree._compute_expectations(
-            children_left,
-            children_right,
-            node_sample_weight,
-            values,
-            right_index,
-            depth + 1,
+            children_left, children_right, node_sample_weight, values, right_index
         )
         left_weight = node_sample_weight[left_index]
         right_weight = node_sample_weight[right_index]
 
         v = (
-            left_weight * values[left_index, :] + right_weight * values[right_index, :]
-        ) / (left_weight + right_weight)
+            (
+                left_weight * values[left_index, :]
+                + right_weight * values[right_index, :]
+            )
+            / (left_weight + right_weight)
+            if left_weight + right_weight > 0
+            else 0
+        )
         values[node_index, :] = v
         return max(depth_left, depth_right) + 1
 
@@ -147,7 +149,7 @@ class TargetMeanEncoder(FunctionTransformer):
     deserialized from the Elastic ML preprocessor description in JSON formats.
     """
 
-    def __init__(self, preprocessor):
+    def __init__(self, preprocessor: Mapping[Union[str, int], Any]):
         self.preprocessor = preprocessor
         target_map = self.preprocessor["target_mean_encoding"]["target_map"]
         feature_name_out = self.preprocessor["target_mean_encoding"]["feature_name"]
@@ -175,7 +177,7 @@ class FrequencyEncoder(FunctionTransformer):
     deserialized from the Elastic ML preprocessor description in JSON format.
     """
 
-    def __init__(self, preprocessor):
+    def __init__(self, preprocessor: Mapping[Union[str, int], Any]):
         self.preprocessor = preprocessor
         frequency_map = self.preprocessor["frequency_encoding"]["frequency_map"]
         feature_name_out = self.preprocessor["frequency_encoding"]["feature_name"]
@@ -203,7 +205,7 @@ class OneHotEncoder(sklearn.preprocessing.OneHotEncoder):
     Elastic ML preprocessor description in JSON format.
     """
 
-    def __init__(self, preprocessor):
+    def __init__(self, preprocessor: Mapping[Union[str, int], Any]):
         self.preprocessor = preprocessor
         self.field_name_in = self.preprocessor["one_hot_encoding"]["field"]
         self.cats = [list(self.preprocessor["one_hot_encoding"]["hot_map"].keys())]

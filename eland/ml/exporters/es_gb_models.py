@@ -59,6 +59,8 @@ class ESGradientBoostingModel(ABC):
 
         Raises
         ------
+        RuntimeError
+            On failure to retrieve trained model information to the specified model ID.
         ValueError
             The model is expected to be trained in Elastic Stack. Models initially imported
             from xgboost, lgbm, or sklearn are not supported.
@@ -71,6 +73,14 @@ class ESGradientBoostingModel(ABC):
             decompress_definition=True,
             include=["hyperparameters", "definition"],
         )
+
+        if (
+            "trained_model_configs" not in self._trained_model_result
+            or len(self._trained_model_result["trained_model_configs"]) == 0
+        ):
+            raise RuntimeError(
+                f"Failed to retrieve the trained model for model ID {self.model_id!r}"
+            )
 
         if "metadata" not in self._trained_model_result["trained_model_configs"][0]:
             raise ValueError(
@@ -105,7 +115,7 @@ class ESGradientBoostingModel(ABC):
         self.n_estimators_ = self.estimators_.shape[0]
 
         for i in range(self.n_estimators_):
-            estimator = DecisionTreeRegressor()
+            estimator = DecisionTreeType()
             estimator.tree_ = self._trees[i + 1].tree_
             estimator.n_features_in_ = self.n_features_in_
             estimator.max_depth = self._max_depth
@@ -132,22 +142,27 @@ class ESGradientBoostingModel(ABC):
         self, preprocessors, feature_names, field_names
     ) -> Tuple[List[str], Set[str]]:
         input_field_names = set()
+
+        def add_input_field_name(preprocessor_type: str, feature_name: str) -> None:
+            if feature_name in feature_names:
+                input_field_names.add(preprocessor[preprocessor_type]["field"])
+
         for preprocessor in preprocessors:
             if "target_mean_encoding" in preprocessor:
-                feature_name = preprocessor["target_mean_encoding"]["feature_name"]
-                if feature_name in feature_names:
-                    input_field_names.add(preprocessor["target_mean_encoding"]["field"])
+                add_input_field_name(
+                    "target_mean_encoding",
+                    preprocessor["target_mean_encoding"]["feature_name"],
+                )
             elif "frequency_encoding" in preprocessor:
-                feature_name = preprocessor["frequency_encoding"]["feature_name"]
-                if feature_name in feature_names:
-                    input_field_names.add(preprocessor["frequency_encoding"]["field"])
-
+                add_input_field_name(
+                    "frequency_encoding",
+                    preprocessor["frequency_encoding"]["feature_name"],
+                )
             elif "one_hot_encoding" in preprocessor:
                 for feature_name in preprocessor["one_hot_encoding"][
                     "hot_map"
                 ].values():
-                    if feature_name in feature_names:
-                        input_field_names.add(preprocessor["one_hot_encoding"]["field"])
+                    add_input_field_name("one_hot_encoding", feature_name)
 
         for field_name in field_names:
             if field_name in feature_names and field_name not in input_field_names:
