@@ -19,6 +19,7 @@ from operator import itemgetter
 
 import numpy as np
 import pytest
+import shap
 
 import eland as ed
 from eland.ml import MLModel
@@ -158,7 +159,7 @@ def classification_model_id(request):
             "training_percent": 50,
             "randomize_seed": 1000,
             "num_top_classes": -1,
-            "class_assignment_objective": "maximize_minimum_recall",
+            "class_assignment_objective": "maximize_accuracy",
             "early_stopping_enabled": True,
         }
     }
@@ -621,6 +622,13 @@ class TestMLModel:
         )
         np.testing.assert_array_almost_equal(predictions_sklearn, predictions_es)
 
+        import pandas as pd
+        X_transformed = pipeline["preprocessor"].transform(X=X)
+        X_transformed = pd.DataFrame(X_transformed, columns=pipeline['preprocessor'].get_feature_names_out())
+        explainer = shap.TreeExplainer(pipeline['es_model'])
+        shap_values = explainer.shap_values(X_transformed[pipeline['es_model'].feature_names_in_])
+        np.testing.assert_array_almost_equal(predictions_sklearn, shap_values.sum(axis=1)+explainer.expected_value)
+
     @requires_sklearn
     def test_export_classification(self, classification_model_id):
         ed_flights = ed.DataFrame(ES_TEST_CLIENT, FLIGHTS_SMALL_INDEX_NAME).head(10)
@@ -661,6 +669,18 @@ class TestMLModel:
             prediction_proba_sklearn, prediction_proba_es
         )
         np.testing.assert_array_equal(predictions_sklearn, predictions_es)
+
+        import pandas as pd
+        import scipy as sp
+        X_transformed = pipeline["preprocessor"].transform(X=X)
+        X_transformed = pd.DataFrame(X_transformed, columns=pipeline['preprocessor'].get_feature_names_out())
+        explainer = shap.TreeExplainer(pipeline['es_model'])
+        shap_values = explainer.shap_values(X_transformed[pipeline['es_model'].feature_names_in_])
+        logodds = shap_values.sum(axis=1)+explainer.expected_value
+        prediction_proba_shap = sp.special.expit(logodds)
+        # use probability of the predicted class
+        prediction_proba_shap[prediction_proba_shap < 0.5] = 1 - prediction_proba_shap[prediction_proba_shap < 0.5]
+        np.testing.assert_array_almost_equal(prediction_proba_sklearn, prediction_proba_shap)
 
     @requires_xgboost
     @requires_sklearn
