@@ -36,6 +36,7 @@ from eland.common import ensure_es_client
 from eland.ml.common import TYPE_CLASSIFICATION, TYPE_REGRESSION
 
 from ._sklearn_deserializers import Tree
+from .common import ModelDefinitionKeyError
 
 
 class ESGradientBoostingModel(ABC):
@@ -87,7 +88,6 @@ class ESGradientBoostingModel(ABC):
                 "Error initializing sklearn classifier. Incorrect prior class probability. "
                 + "Note: only export of models trained in the Elastic Stack is supported."
             )
-
         preprocessors = []
         if "preprocessors" in self._definition:
             preprocessors = self._definition["preprocessors"]
@@ -106,16 +106,15 @@ class ESGradientBoostingModel(ABC):
         for trained_model in trained_models:
             self._trees.append(Tree(trained_model["tree"], feature_names_map))
 
-        self.n_estimators = (
-            len(trained_models) - 1
-        )  # 0's tree is the constant estimator
+        # 0's tree is the constant estimator
+        self.n_estimators = len(trained_models) - 1
 
-    def _initialize_estimators(self, DecisionTreeType) -> None:
-        self.estimators_ = np.ndarray((len(self._trees) - 1, 1), dtype=DecisionTreeType)
+    def _initialize_estimators(self, decision_tree_type) -> None:
+        self.estimators_ = np.ndarray((len(self._trees) - 1, 1), dtype=decision_tree_type)
         self.n_estimators_ = self.estimators_.shape[0]
 
         for i in range(self.n_estimators_):
-            estimator = DecisionTreeType()
+            estimator = decision_tree_type()
             estimator.tree_ = self._trees[i + 1].tree_
             estimator.n_features_in_ = self.n_features_in_
             estimator.max_depth = self._max_depth
@@ -217,40 +216,44 @@ class ESGradientBoostingClassifier(ESGradientBoostingModel, GradientBoostingClas
         ValueError
             The classifier should be defined for at least 2 classes.
         """
-        ESGradientBoostingModel.__init__(self, es_client, model_id)
-        self._extract_common_parameters()
-        GradientBoostingClassifier.__init__(
-            self,
-            learning_rate=1.0,
-            n_estimators=self.n_estimators,
-            max_depth=self._max_depth,
-        )
 
-        if "classification_labels" in self._definition["trained_model"]["ensemble"]:
-            self.classes_ = np.array(
-                self._definition["trained_model"]["ensemble"]["classification_labels"]
+        try:
+            ESGradientBoostingModel.__init__(self, es_client, model_id)
+            self._extract_common_parameters()
+            GradientBoostingClassifier.__init__(
+                self,
+                learning_rate=1.0,
+                n_estimators=self.n_estimators,
+                max_depth=self._max_depth,
             )
-        else:
-            self.classes_ = None
 
-        self.n_outputs = self._n_outputs
-        if self.classes_ is not None:
-            self.n_classes_ = len(self.classes_)
-        elif self.n_outputs <= 2:
-            self.n_classes_ = 2
-        else:
-            self.n_classes_ = self.n_outputs
+            if "classification_labels" in self._definition["trained_model"]["ensemble"]:
+                self.classes_ = np.array(
+                    self._definition["trained_model"]["ensemble2"]["classification_labels"]
+                )
+            else:
+                self.classes_ = None
+        
+            self.n_outputs = self._n_outputs
+            if self.classes_ is not None:
+                self.n_classes_ = len(self.classes_)
+            elif self.n_outputs <= 2:
+                self.n_classes_ = 2
+            else:
+                self.n_classes_ = self.n_outputs
 
-        if self.n_classes_ == 2:
-            self._loss = BinomialDeviance(self.n_classes_)
-            # self.n_outputs = 1
-        elif self.n_classes_ > 2:
-            raise NotImplementedError("Only binary classification is implemented.")
-        else:
-            raise ValueError(f"At least 2 classes required. got {self.n_classes_}.")
+            if self.n_classes_ == 2:
+                self._loss = BinomialDeviance(self.n_classes_)
+                # self.n_outputs = 1
+            elif self.n_classes_ > 2:
+                raise NotImplementedError("Only binary classification is implemented.")
+            else:
+                raise ValueError(f"At least 2 classes required. got {self.n_classes_}.")
 
-        self.init_ = self._initialize_init_()
-        self._initialize_estimators(DecisionTreeClassifier)
+            self.init_ = self._initialize_init_()
+            self._initialize_estimators(DecisionTreeClassifier)
+        except KeyError as ex:
+            raise ModelDefinitionKeyError(ex) from ex
 
     @property
     def analysis_type(self) -> Literal["classification"]:
@@ -369,37 +372,40 @@ class ESGradientBoostingRegressor(ESGradientBoostingModel, GradientBoostingRegre
         NotImplementedError
             Only MSE, MSLE, and Huber loss functions are supported.
         """
-        ESGradientBoostingModel.__init__(self, es_client, model_id)
-        self._extract_common_parameters()
-        GradientBoostingRegressor.__init__(
-            self,
-            learning_rate=1.0,
-            n_estimators=self.n_estimators,
-            max_depth=self._max_depth,
-        )
-
-        self.n_outputs = 1
-        loss_function = self._trained_model_result["trained_model_configs"][0][
-            "metadata"
-        ]["analytics_config"]["analysis"][self.analysis_type]["loss_function"]
-        if loss_function == "mse" or loss_function == "msle":
-            self.criterion = "squared_error"
-            self._loss = LeastSquaresError()
-        elif loss_function == "huber":
-            loss_parameter = loss_function = self._trained_model_result[
-                "trained_model_configs"
-            ][0]["metadata"]["analytics_config"]["analysis"][self.analysis_type][
-                "loss_function_parameter"
-            ]
-            self.criterion = "huber"
-            self._loss = HuberLossFunction(loss_parameter)
-        else:
-            raise NotImplementedError(
-                "Only MSE, MSLE and Huber loss functions are supported."
+        try:
+            ESGradientBoostingModel.__init__(self, es_client, model_id)
+            self._extract_common_parameters()
+            GradientBoostingRegressor.__init__(
+                self,
+                learning_rate=1.0,
+                n_estimators=self.n_estimators,
+                max_depth=self._max_depth,
             )
 
-        self.init_ = self._initialize_init_()
-        self._initialize_estimators(DecisionTreeRegressor)
+            self.n_outputs = 1
+            loss_function = self._trained_model_result["trained_model_configs"][0][
+                "metadata"
+            ]["analytics_config"]["analysis"][self.analysis_type]["loss_function"]
+            if loss_function == "mse" or loss_function == "msle":
+                self.criterion = "squared_error"
+                self._loss = LeastSquaresError()
+            elif loss_function == "huber":
+                loss_parameter = loss_function = self._trained_model_result[
+                    "trained_model_configs"
+                ][0]["metadata"]["analytics_config"]["analysis"][self.analysis_type][
+                    "loss_function_parameter"
+                ]
+                self.criterion = "huber"
+                self._loss = HuberLossFunction(loss_parameter)
+            else:
+                raise NotImplementedError(
+                    "Only MSE, MSLE and Huber loss functions are supported."
+                )
+
+            self.init_ = self._initialize_init_()
+            self._initialize_estimators(DecisionTreeRegressor)
+        except KeyError as ex:
+            raise ModelDefinitionKeyError(ex) from ex
 
     @property
     def analysis_type(self) -> Literal["regression"]:
