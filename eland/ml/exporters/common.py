@@ -19,6 +19,7 @@ from typing import Dict, Any
 
 import eland
 
+
 class ModelDefinitionKeyError(Exception):
     """
     This exception is raised when a key is not found in the model definition.
@@ -39,7 +40,9 @@ class ModelDefinitionKeyError(Exception):
         self.missed_key = ex.args[0]
 
     def __str__(self):
-        return f"Key \"{self.missed_key}\" is not available. " + \
-            "The model definition may have changed. " + \
-            "Make sure you are using an Elasticsearch version compatible " + \
-            f"with Eland {eland.__version__}."
+        return (
+            f'Key "{self.missed_key}" is not available. '
+            + "The model definition may have changed. "
+            + "Make sure you are using an Elasticsearch version compatible "
+            + f"with Eland {eland.__version__}."
+        )

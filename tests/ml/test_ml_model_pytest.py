@@ -623,11 +623,18 @@ class TestMLModel:
         np.testing.assert_array_almost_equal(predictions_sklearn, predictions_es)
 
         import pandas as pd
+
         X_transformed = pipeline["preprocessor"].transform(X=X)
-        X_transformed = pd.DataFrame(X_transformed, columns=pipeline['preprocessor'].get_feature_names_out())
-        explainer = shap.TreeExplainer(pipeline['es_model'])
-        shap_values = explainer.shap_values(X_transformed[pipeline['es_model'].feature_names_in_])
-        np.testing.assert_array_almost_equal(predictions_sklearn, shap_values.sum(axis=1)+explainer.expected_value)
+        X_transformed = pd.DataFrame(
+            X_transformed, columns=pipeline["preprocessor"].get_feature_names_out()
+        )
+        explainer = shap.TreeExplainer(pipeline["es_model"])
+        shap_values = explainer.shap_values(
+            X_transformed[pipeline["es_model"].feature_names_in_]
+        )
+        np.testing.assert_array_almost_equal(
+            predictions_sklearn, shap_values.sum(axis=1) + explainer.expected_value
+        )
 
     @requires_sklearn
     def test_export_classification(self, classification_model_id):
@@ -671,16 +678,24 @@ class TestMLModel:
         np.testing.assert_array_equal(predictions_sklearn, predictions_es)
 
         import pandas as pd
-        import scipy as sp
+
         X_transformed = pipeline["preprocessor"].transform(X=X)
-        X_transformed = pd.DataFrame(X_transformed, columns=pipeline['preprocessor'].get_feature_names_out())
-        explainer = shap.TreeExplainer(pipeline['es_model'])
-        shap_values = explainer.shap_values(X_transformed[pipeline['es_model'].feature_names_in_])
-        logodds = shap_values.sum(axis=1)+explainer.expected_value
-        prediction_proba_shap = sp.special.expit(logodds)
+        X_transformed = pd.DataFrame(
+            X_transformed, columns=pipeline["preprocessor"].get_feature_names_out()
+        )
+        explainer = shap.TreeExplainer(pipeline["es_model"])
+        shap_values = explainer.shap_values(
+            X_transformed[pipeline["es_model"].feature_names_in_]
+        )
+        log_odds = shap_values.sum(axis=1) + explainer.expected_value
+        prediction_proba_shap = 1 / (1 + np.exp(-log_odds))
         # use probability of the predicted class
-        prediction_proba_shap[prediction_proba_shap < 0.5] = 1 - prediction_proba_shap[prediction_proba_shap < 0.5]
-        np.testing.assert_array_almost_equal(prediction_proba_sklearn, prediction_proba_shap)
+        prediction_proba_shap[prediction_proba_shap < 0.5] = (
+            1 - prediction_proba_shap[prediction_proba_shap < 0.5]
+        )
+        np.testing.assert_array_almost_equal(
+            prediction_proba_sklearn, prediction_proba_shap
+        )
 
     @requires_xgboost
     @requires_sklearn

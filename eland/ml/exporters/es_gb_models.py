@@ -15,11 +15,10 @@
 #  specific language governing permissions and limitations
 #  under the License.
 
-from abc import ABC, abstractmethod
+from abc import ABC
 from typing import Any, List, Literal, Mapping, Optional, Set, Tuple, Union
 
 import numpy as np
-import scipy as sp
 from elasticsearch import Elasticsearch
 from numpy.typing import ArrayLike
 from sklearn.dummy import DummyClassifier, DummyRegressor
@@ -91,7 +90,10 @@ class ESGradientBoostingModel(ABC):
         preprocessors = []
         if "preprocessors" in self._definition:
             preprocessors = self._definition["preprocessors"]
-        self.feature_names_in_, self.input_field_names = self._get_feature_names_in_(
+        (
+            self.feature_names_in_,
+            self.input_field_names,
+        ) = ESGradientBoostingModel._get_feature_names_in_(
             preprocessors,
             self._definition["trained_model"]["ensemble"]["feature_names"],
             self._trained_model_result["trained_model_configs"][0]["input"][
@@ -110,7 +112,9 @@ class ESGradientBoostingModel(ABC):
         self.n_estimators = len(trained_models) - 1
 
     def _initialize_estimators(self, decision_tree_type) -> None:
-        self.estimators_ = np.ndarray((len(self._trees) - 1, 1), dtype=decision_tree_type)
+        self.estimators_ = np.ndarray(
+            (len(self._trees) - 1, 1), dtype=decision_tree_type
+        )
         self.n_estimators_ = self.estimators_.shape[0]
 
         for i in range(self.n_estimators_):
@@ -137,8 +141,9 @@ class ESGradientBoostingModel(ABC):
     def _definition(self) -> Mapping[Union[str, int], Any]:
         return self._trained_model_result["trained_model_configs"][0]["definition"]
 
+    @staticmethod
     def _get_feature_names_in_(
-        self, preprocessors, feature_names, field_names
+        preprocessors, feature_names, field_names
     ) -> Tuple[List[str], Set[str]]:
         input_field_names = set()
 
@@ -169,24 +174,26 @@ class ESGradientBoostingModel(ABC):
 
         return feature_names, input_field_names
 
+    @property
+    def preprocessors(self) -> List[Any]:
+        """
+        Returns the list of preprocessor JSON definitions.
+
+        Returns
+        -------
+        List[Any]
+            List of preprocessors definitions or [].
+        """
+        if "preprocessors" in self._definition:
+            return self._definition["preprocessors"]
+        return []
+
     def fit(self, X, y, sample_weight=None, monitor=None) -> None:
         """
         Override of the sklearn fit() method. It does nothing since Elastic ML models are
         trained in the Elastic Stack or imported.
         """
         # Do nothing, model if fitted using Elasticsearch API
-        pass
-
-    @property
-    @abstractmethod
-    def analysis_type(self):
-        """
-        Type of the data frame analysis. It can be classification or regression.
-        """
-        pass
-
-    @abstractmethod
-    def _initialize_init_(self) -> Union[DummyClassifier, DummyRegressor]:
         pass
 
 
@@ -216,7 +223,7 @@ class ESGradientBoostingClassifier(ESGradientBoostingModel, GradientBoostingClas
         ValueError
             The classifier should be defined for at least 2 classes.
         ModelDefinitionKeyError
-            If required data cannot be extracted from the model definition due to a schema change. 
+            If required data cannot be extracted from the model definition due to a schema change.
         """
 
         try:
@@ -231,11 +238,13 @@ class ESGradientBoostingClassifier(ESGradientBoostingModel, GradientBoostingClas
 
             if "classification_labels" in self._definition["trained_model"]["ensemble"]:
                 self.classes_ = np.array(
-                    self._definition["trained_model"]["ensemble"]["classification_labels"]
+                    self._definition["trained_model"]["ensemble"][
+                        "classification_labels"
+                    ]
                 )
             else:
                 self.classes_ = None
-        
+
             self.n_outputs = self._n_outputs
             if self.classes_ is not None:
                 self.n_classes_ = len(self.classes_)
@@ -277,7 +286,7 @@ class ESGradientBoostingClassifier(ESGradientBoostingModel, GradientBoostingClas
                     "Error initializing sklearn classifier. Incorrect prior class probability. "
                     + "Note: only export of models trained in the Elastic Stack is supported."
                 )
-            class_prior = sp.special.expit(log_odds)
+            class_prior = 1 / (1 + np.exp(-log_odds))
             estimator.class_prior_ = np.array([1 - class_prior, class_prior])
         else:
             raise NotImplementedError("Only binary classification is implemented.")

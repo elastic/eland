@@ -445,9 +445,13 @@ class MLModel:
 
         Raises
         ------
+        AssertionError
+            If preprocessors JSON definition has unexpected schema.
         ValueError
             The model is expected to be trained in Elastic Stack. Models initially imported
             from xgboost, lgbm, or sklearn are not supported.
+        ValueError
+            If unexpected categorical encoding is found in the list of preprocessors.
         NotImplementedError
             Only regression and binary classification models are supported currently.
         """
@@ -463,14 +467,11 @@ class MLModel:
                 es_client=self._client, model_id=self._model_id
             )
         else:
-            raise NotImplementedError
+            raise NotImplementedError("Only regression and binary classification models are supported currently.")
 
-        if "preprocessors" in model._definition:
-            preprocessors = model._definition["preprocessors"]
-        else:
-            preprocessors = []
         transformers = []
-        for p in preprocessors:
+        for p in model.preprocessors:
+            assert len(p) == 1, f"Unexpected preprocessor data structure: {p}. One-key mapping expected."
             encoding_type = list(p.keys())[0]
             field = p[encoding_type]["field"]
             if encoding_type == "frequency_encoding":
@@ -482,6 +483,9 @@ class MLModel:
             elif encoding_type == "one_hot_encoding":
                 transform = OneHotEncoder(p)
                 transformers.append((f"{field}_{encoding_type}", transform, [field]))
+            else:
+                raise ValueError(f"Unexpected categorical encoding type {encoding_type} found. " +
+                "Expected encodings: frequency_encoding, target_mean_encoding, one_hot_encoding.")
         preprocessor = ColumnTransformer(
             transformers=transformers,
             remainder="passthrough",
