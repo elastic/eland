@@ -115,7 +115,7 @@ class ESGradientBoostingModel(ABC):
 
         for i in range(self.n_estimators_):
             estimator = decision_tree_type()
-            estimator.tree_ = self._trees[i + 1].tree_
+            estimator.tree_ = self._trees[i + 1].tree
             estimator.n_features_in_ = self.n_features_in_
             estimator.max_depth = self._max_depth
             estimator.max_features_ = self.max_features_
@@ -215,6 +215,8 @@ class ESGradientBoostingClassifier(ESGradientBoostingModel, GradientBoostingClas
             Multi-class classification is not supported at the moment.
         ValueError
             The classifier should be defined for at least 2 classes.
+        ModelDefinitionKeyError
+            If required data cannot be extracted from the model definition due to a schema change. 
         """
 
         try:
@@ -229,7 +231,7 @@ class ESGradientBoostingClassifier(ESGradientBoostingModel, GradientBoostingClas
 
             if "classification_labels" in self._definition["trained_model"]["ensemble"]:
                 self.classes_ = np.array(
-                    self._definition["trained_model"]["ensemble2"]["classification_labels"]
+                    self._definition["trained_model"]["ensemble"]["classification_labels"]
                 )
             else:
                 self.classes_ = None
@@ -269,7 +271,7 @@ class ESGradientBoostingClassifier(ESGradientBoostingModel, GradientBoostingClas
         estimator._strategy = estimator.strategy
 
         if self.n_classes_ == 2:
-            log_odds = self._trees[0].tree_.value.flatten()[0]
+            log_odds = self._trees[0].tree.value.flatten()[0]
             if np.isnan(log_odds):
                 raise ValueError(
                     "Error initializing sklearn classifier. Incorrect prior class probability. "
@@ -371,6 +373,8 @@ class ESGradientBoostingRegressor(ESGradientBoostingModel, GradientBoostingRegre
         ------
         NotImplementedError
             Only MSE, MSLE, and Huber loss functions are supported.
+        ModelDefinitionKeyError
+            If required data cannot be extracted from the model definition due to a schema change.
         """
         try:
             ESGradientBoostingModel.__init__(self, es_client, model_id)
@@ -412,7 +416,7 @@ class ESGradientBoostingRegressor(ESGradientBoostingModel, GradientBoostingRegre
         return TYPE_REGRESSION
 
     def _initialize_init_(self) -> DummyRegressor:
-        constant = self._trees[0].tree_.value[0]
+        constant = self._trees[0].tree.value[0]
         estimator = DummyRegressor(
             strategy="constant",
             constant=constant,

@@ -21,8 +21,6 @@ import numpy as np
 import sklearn
 from sklearn.preprocessing import FunctionTransformer
 
-from .common import ModelDefinitionKeyError
-
 
 class Tree:
     """Wrapper to create sklearn Tree objects from Elastic ML tree
@@ -81,7 +79,7 @@ class Tree:
         self.n_outputs = value.shape[-1]
 
         # initialize the sklearn tree
-        self.tree_ = sklearn.tree._tree.Tree(
+        self.tree = sklearn.tree._tree.Tree(
             len(feature_names), np.array([1], dtype=int), 1
         )
         node_state = np.array(
@@ -113,7 +111,7 @@ class Tree:
             "nodes": node_state,
             "values": value,
         }
-        self.tree_.__setstate__(state)
+        self.tree.__setstate__(state)
 
     @staticmethod
     def _compute_expectations(
