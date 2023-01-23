@@ -15,6 +15,8 @@
 #  specific language governing permissions and limitations
 #  under the License.
 
+import gzip
+import json
 import os
 from datetime import timedelta
 
@@ -30,15 +32,21 @@ from tests import (
     ECOMMERCE_DF_FILE_NAME,
     ECOMMERCE_INDEX_NAME,
     ES_TEST_CLIENT,
-    FLIGHTS_DF_FILE_NAME,
+    FLIGHTS_FILE_NAME,
     FLIGHTS_INDEX_NAME,
     FLIGHTS_SMALL_INDEX_NAME,
 )
 
-_pd_flights = pd.read_json(FLIGHTS_DF_FILE_NAME).sort_index()
+_ed_flights = ed.DataFrame(ES_TEST_CLIENT, FLIGHTS_INDEX_NAME)
+flight_records = []
+with gzip.open(FLIGHTS_FILE_NAME) as f:
+    for json_obj in f:
+        flight_records.append(json.loads(json_obj))
+_pd_flights = pd.DataFrame.from_records(flight_records).reindex(
+    _ed_flights.columns, axis=1
+)
 _pd_flights["timestamp"] = pd.to_datetime(_pd_flights["timestamp"])
 _pd_flights.index = _pd_flights.index.map(str)  # make index 'object' not int
-_ed_flights = ed.DataFrame(ES_TEST_CLIENT, FLIGHTS_INDEX_NAME)
 
 _pd_flights_small = _pd_flights.head(48)
 _ed_flights_small = ed.DataFrame(ES_TEST_CLIENT, FLIGHTS_SMALL_INDEX_NAME)

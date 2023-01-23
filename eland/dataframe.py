@@ -1172,8 +1172,8 @@ class DataFrame(NDFrame):
         )
 
         # Our fake dataframe has incorrect number of rows (max_rows*2+1) - write out
-        # the correct number of rows
-        if show_dimensions:
+        # the correct number of rows (if DataFrame is not empty)
+        if show_dimensions and len(self.index) > 0:
             _buf.write(f"\n\n[{len(self.index)} rows x {len(self.columns)} columns]")
 
         if buf is None:
