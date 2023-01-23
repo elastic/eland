@@ -467,11 +467,15 @@ class MLModel:
                 es_client=self._client, model_id=self._model_id
             )
         else:
-            raise NotImplementedError("Only regression and binary classification models are supported currently.")
+            raise NotImplementedError(
+                "Only regression and binary classification models are supported currently."
+            )
 
         transformers = []
         for p in model.preprocessors:
-            assert len(p) == 1, f"Unexpected preprocessor data structure: {p}. One-key mapping expected."
+            assert (
+                len(p) == 1
+            ), f"Unexpected preprocessor data structure: {p}. One-key mapping expected."
             encoding_type = list(p.keys())[0]
             field = p[encoding_type]["field"]
             if encoding_type == "frequency_encoding":
@@ -484,8 +488,10 @@ class MLModel:
                 transform = OneHotEncoder(p)
                 transformers.append((f"{field}_{encoding_type}", transform, [field]))
             else:
-                raise ValueError(f"Unexpected categorical encoding type {encoding_type} found. " +
-                "Expected encodings: frequency_encoding, target_mean_encoding, one_hot_encoding.")
+                raise ValueError(
+                    f"Unexpected categorical encoding type {encoding_type} found. "
+                    + "Expected encodings: frequency_encoding, target_mean_encoding, one_hot_encoding."
+                )
         preprocessor = ColumnTransformer(
             transformers=transformers,
             remainder="passthrough",
