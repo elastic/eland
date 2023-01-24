@@ -590,7 +590,7 @@ class TestMLModel:
 
         check_prediction_equality(
             es_model, classifier, random_rows(training_data[0], 20)
-        ) @ requires_sklearn
+        )
 
         # Clean up
         es_model.delete_model()
