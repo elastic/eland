@@ -736,7 +736,9 @@ class Series(NDFrame):
         dtype: datetime64[ns]
 
         """
-        return self._query_compiler.mode(is_dataframe=False, es_size=es_size)
+        result = self._query_compiler.mode(is_dataframe=False, es_size=es_size)
+        result.name = self.name
+        return result
 
     def es_match(
         self,
