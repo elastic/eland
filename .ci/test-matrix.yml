@@ -1,12 +1,11 @@
 ---
 
 ELASTICSEARCH_VERSION:
-  - '8.1.0-SNAPSHOT'
-  - '8.0.0-SNAPSHOT'
+  - '8.6.0-SNAPSHOT'
+  - '8.7.0-SNAPSHOT'
 
 PANDAS_VERSION:
-  - '1.2.0'
-  - '1.3.0'
+  - '1.5.0'
 
 PYTHON_VERSION:
   - '3.10'
