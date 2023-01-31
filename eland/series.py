@@ -714,7 +714,7 @@ class Series(NDFrame):
         >>> ed_ecommerce = ed.DataFrame('http://localhost:9200', 'ecommerce')
         >>> ed_ecommerce["day_of_week"].mode()
         0    Thursday
-        dtype: object
+        Name: day_of_week, dtype: object
 
         >>> ed_ecommerce["order_date"].mode()
         0   2016-12-02 20:36:58
@@ -727,16 +727,18 @@ class Series(NDFrame):
         7   2016-12-15 11:38:24
         8   2016-12-22 19:39:22
         9   2016-12-24 06:21:36
-        dtype: datetime64[ns]
+        Name: order_date, dtype: datetime64[ns]
 
         >>> ed_ecommerce["order_date"].mode(es_size=3)
         0   2016-12-02 20:36:58
         1   2016-12-04 23:44:10
         2   2016-12-08 06:21:36
-        dtype: datetime64[ns]
+        Name: order_date, dtype: datetime64[ns]
 
         """
-        return self._query_compiler.mode(is_dataframe=False, es_size=es_size)
+        result = self._query_compiler.mode(is_dataframe=False, es_size=es_size)
+        result.name = self.name
+        return result
 
     def es_match(
         self,
