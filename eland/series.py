@@ -714,7 +714,7 @@ class Series(NDFrame):
         >>> ed_ecommerce = ed.DataFrame('http://localhost:9200', 'ecommerce')
         >>> ed_ecommerce["day_of_week"].mode()
         0    Thursday
-        dtype: object
+        Name: day_of_week, dtype: object
 
         >>> ed_ecommerce["order_date"].mode()
         0   2016-12-02 20:36:58
