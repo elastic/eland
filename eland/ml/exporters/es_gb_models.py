@@ -21,6 +21,11 @@ from typing import Any, List, Literal, Mapping, Optional, Set, Tuple, Union
 import numpy as np
 from elasticsearch import Elasticsearch
 from numpy.typing import ArrayLike
+
+from .._optional import import_optional_dependency
+
+import_optional_dependency("sklearn", on_version="warn")
+
 from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.ensemble import GradientBoostingClassifier, GradientBoostingRegressor
 from sklearn.ensemble._gb_losses import (
@@ -271,7 +276,6 @@ class ESGradientBoostingClassifier(ESGradientBoostingModel, GradientBoostingClas
         return TYPE_CLASSIFICATION
 
     def _initialize_init_(self) -> DummyClassifier:
-
         estimator = DummyClassifier(strategy="prior")
 
         estimator.n_classes_ = self.n_classes_

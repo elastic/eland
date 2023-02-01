@@ -21,18 +21,9 @@ import elasticsearch
 import numpy as np
 
 from eland.common import ensure_es_client, es_version
-from eland.ml.exporters._sklearn_deserializers import (
-    FrequencyEncoder,
-    OneHotEncoder,
-    TargetMeanEncoder,
-)
 from eland.utils import deprecated_api
 
 from .common import TYPE_CLASSIFICATION, TYPE_REGRESSION
-from .exporters.es_gb_models import (
-    ESGradientBoostingClassifier,
-    ESGradientBoostingRegressor,
-)
 from .transformers import get_model_transformer
 
 if TYPE_CHECKING:
@@ -42,7 +33,6 @@ if TYPE_CHECKING:
     # Try importing each ML lib separately so mypy users don't have to
     # have both installed to use type-checking.
     try:
-
         from sklearn.ensemble import (  # type: ignore # noqa: F401
             RandomForestClassifier,
             RandomForestRegressor,
@@ -457,6 +447,16 @@ class MLModel:
         """
         from sklearn.compose import ColumnTransformer  # type: ignore # noqa: F401
         from sklearn.pipeline import Pipeline
+
+        from .exporters._sklearn_deserializers import (
+            FrequencyEncoder,
+            OneHotEncoder,
+            TargetMeanEncoder,
+        )
+        from .exporters.es_gb_models import (
+            ESGradientBoostingClassifier,
+            ESGradientBoostingRegressor,
+        )
 
         if self.model_type == TYPE_CLASSIFICATION:
             model = ESGradientBoostingClassifier(

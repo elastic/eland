@@ -19,7 +19,6 @@ from operator import itemgetter
 
 import numpy as np
 import pytest
-import shap
 
 import eland as ed
 from eland.ml import MLModel
@@ -48,16 +47,26 @@ try:
 except ImportError:
     HAS_LIGHTGBM = False
 
+try:
+    import shap
+
+    HAS_SHAP = True
+except ImportError:
+    HAS_SHAP = False
+
 
 requires_sklearn = pytest.mark.skipif(
-    not HAS_SKLEARN, reason="This test requires 'scikit-learn' package to run"
+    not HAS_SKLEARN, reason="This test requires 'scikit-learn' package to run."
 )
 requires_xgboost = pytest.mark.skipif(
-    not HAS_XGBOOST, reason="This test requires 'xgboost' package to run"
+    not HAS_XGBOOST, reason="This test requires 'xgboost' package to run."
+)
+requires_shap = pytest.mark.skipif(
+    not HAS_SHAP, reason="This tests requries 'shap' package to run."
 )
 requires_no_ml_extras = pytest.mark.skipif(
     HAS_SKLEARN or HAS_XGBOOST,
-    reason="This test requires 'scikit-learn' and 'xgboost' to not be installed",
+    reason="This test requires 'scikit-learn' and 'xgboost' to not be installed.",
 )
 
 requires_lightgbm = pytest.mark.skipif(
@@ -596,6 +605,7 @@ class TestMLModel:
         es_model.delete_model()
 
     @requires_sklearn
+    @requires_shap
     def test_export_regressor(self, regression_model_id):
         ed_flights = ed.DataFrame(ES_TEST_CLIENT, FLIGHTS_SMALL_INDEX_NAME).head(10)
         types = dict(ed_flights.dtypes)

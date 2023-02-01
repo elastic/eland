@@ -18,6 +18,11 @@
 from typing import Any, Dict
 
 import numpy as np
+
+from .._optional import import_optional_dependency
+
+import_optional_dependency("sklearn", on_version="warn")
+
 import sklearn
 from sklearn.preprocessing import FunctionTransformer
 
