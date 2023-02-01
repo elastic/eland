@@ -61,7 +61,7 @@ def format(session):
     session.install("black", "isort", "flynt")
     session.run("python", "utils/license-headers.py", "fix", *SOURCE_FILES)
     session.run("flynt", *SOURCE_FILES)
-    session.run("black", "--target-version=py37", *SOURCE_FILES)
+    session.run("black", "--target-version=py38", *SOURCE_FILES)
     session.run("isort", "--profile=black", *SOURCE_FILES)
     lint(session)
 
@@ -73,7 +73,7 @@ def lint(session):
     session.install("black", "flake8", "mypy", "isort", "numpy")
     session.install("--pre", "elasticsearch>=8.3,<9")
     session.run("python", "utils/license-headers.py", "check", *SOURCE_FILES)
-    session.run("black", "--check", "--target-version=py37", *SOURCE_FILES)
+    session.run("black", "--check", "--target-version=py38", *SOURCE_FILES)
     session.run("isort", "--check", "--profile=black", *SOURCE_FILES)
     session.run("flake8", "--ignore=E501,W503,E402,E712,E203", *SOURCE_FILES)
 
@@ -138,6 +138,7 @@ def test(session, pandas_version: str):
             "scikit-learn",
             "xgboost",
             "lightgbm",
+            "shap",
         )
         session.run("pytest", "tests/ml/")
 
