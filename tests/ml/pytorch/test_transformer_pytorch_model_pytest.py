@@ -230,6 +230,7 @@ AUTO_TASK_RESULTS = [
     ("sentence-transformers/any_bert", "BERTMaskedLM", None, "text_embedding"),
     ("sentence-transformers/any_roberta", "RoBERTaMaskedLM", None, "text_embedding"),
     ("sentence-transformers/mpnet", "MPNetMaskedLM", None, "text_embedding"),
+    ("sentence-transformers/any_bert", "BertModel", None, "text_embedding"),
     ("anynermodel", "BERTForTokenClassification", None, "ner"),
     ("anynermodel", "MPNetForTokenClassification", None, "ner"),
     ("anynermodel", "RoBERTaForTokenClassification", None, "ner"),

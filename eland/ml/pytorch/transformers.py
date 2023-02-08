@@ -130,6 +130,8 @@ def task_type_from_model_config(model_config: PretrainedConfig) -> Optional[str]
                 for t in task_type:
                     potential_task_types.add(t)
     if len(potential_task_types) == 0:
+        if model_config.name_or_path.startswith("sentence-transformers/"):
+            return "text_embedding"
         return None
     if (
         "text_classification" in potential_task_types
