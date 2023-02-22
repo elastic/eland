@@ -12,7 +12,7 @@ tqdm<5
 #
 scikit-learn>=0.22.1,<2
 xgboost>=0.90,<2
-lightgbm>=2,<4
+#lightgbm>=2,<4
 
 # PyTorch doesn't support Python 3.10 yet (pytorch/pytorch#66424)
 
