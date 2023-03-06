@@ -49,9 +49,9 @@ from eland.ml.pytorch.nlp_ml_model import (
     NlpTrainedModelConfig,
     PassThroughInferenceOptions,
     QuestionAnsweringInferenceOptions,
-    SlimInferenceOptions,
     TextClassificationInferenceOptions,
     TextEmbeddingInferenceOptions,
+    TextExpansionInferenceOptions,
     TextSimilarityInferenceOptions,
     TrainedModelInput,
     ZeroShotClassificationInferenceOptions,
@@ -61,10 +61,10 @@ from eland.ml.pytorch.traceable_model import TraceableModel
 DEFAULT_OUTPUT_KEY = "sentence_embedding"
 SUPPORTED_TASK_TYPES = {
     "fill_mask",
-    "ner",
-    "slim",
+    "ner",    
     "text_classification",
     "text_embedding",
+    "text_expansion",
     "zero_shot_classification",
     "question_answering",
     "text_similarity",
@@ -85,7 +85,7 @@ ZERO_SHOT_LABELS = {"contradiction", "neutral", "entailment"}
 TASK_TYPE_TO_INFERENCE_CONFIG = {
     "fill_mask": FillMaskInferenceOptions,
     "ner": NerInferenceOptions,
-    "slim": SlimInferenceOptions,
+    "text_expansion": TextExpansionInferenceOptions,
     "text_classification": TextClassificationInferenceOptions,
     "text_embedding": TextEmbeddingInferenceOptions,
     "zero_shot_classification": ZeroShotClassificationInferenceOptions,

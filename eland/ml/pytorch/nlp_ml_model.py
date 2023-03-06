@@ -124,18 +124,6 @@ class InferenceConfig:
         }
 
 
-class SlimInferenceOptions(InferenceConfig):
-    def __init__(
-        self,
-        *,
-        tokenization: NlpTokenizationConfig,
-        results_field: t.Optional[str] = None,
-    ):
-        super().__init__(configuration_type="slim")
-        self.tokenization = tokenization
-        self.results_field = results_field
-
-
 class TextClassificationInferenceOptions(InferenceConfig):
     def __init__(
         self,
@@ -252,6 +240,18 @@ class TextEmbeddingInferenceOptions(InferenceConfig):
         results_field: t.Optional[str] = None,
     ):
         super().__init__(configuration_type="text_embedding")
+        self.tokenization = tokenization
+        self.results_field = results_field
+
+
+class TextExpansionInferenceOptions(InferenceConfig):
+    def __init__(
+        self,
+        *,
+        tokenization: NlpTokenizationConfig,
+        results_field: t.Optional[str] = None,
+    ):
+        super().__init__(configuration_type="text_expansion")
         self.tokenization = tokenization
         self.results_field = results_field
 
