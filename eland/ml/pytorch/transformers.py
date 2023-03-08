@@ -51,6 +51,7 @@ from eland.ml.pytorch.nlp_ml_model import (
     QuestionAnsweringInferenceOptions,
     TextClassificationInferenceOptions,
     TextEmbeddingInferenceOptions,
+    TextExpansionInferenceOptions,
     TextSimilarityInferenceOptions,
     TrainedModelInput,
     ZeroShotClassificationInferenceOptions,
@@ -63,6 +64,7 @@ SUPPORTED_TASK_TYPES = {
     "ner",
     "text_classification",
     "text_embedding",
+    "text_expansion",
     "zero_shot_classification",
     "question_answering",
     "text_similarity",
@@ -83,6 +85,7 @@ ZERO_SHOT_LABELS = {"contradiction", "neutral", "entailment"}
 TASK_TYPE_TO_INFERENCE_CONFIG = {
     "fill_mask": FillMaskInferenceOptions,
     "ner": NerInferenceOptions,
+    "text_expansion": TextExpansionInferenceOptions,
     "text_classification": TextClassificationInferenceOptions,
     "text_embedding": TextEmbeddingInferenceOptions,
     "zero_shot_classification": ZeroShotClassificationInferenceOptions,
