@@ -61,7 +61,7 @@ from eland.ml.pytorch.traceable_model import TraceableModel
 DEFAULT_OUTPUT_KEY = "sentence_embedding"
 SUPPORTED_TASK_TYPES = {
     "fill_mask",
-    "ner",    
+    "ner",
     "text_classification",
     "text_embedding",
     "text_expansion",
