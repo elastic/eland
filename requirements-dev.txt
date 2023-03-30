@@ -2,8 +2,8 @@
 # Basic requirements
 #
 elasticsearch>=8.3,<9
-pandas>=1.2,<2
-matplotlib<4
+pandas>=1.5
+matplotlib>=3.6
 numpy<2
 tqdm<5
 
@@ -12,7 +12,6 @@ tqdm<5
 #
 scikit-learn>=0.22.1,<2
 xgboost>=0.90,<2
-scikit-learn>=0.22.1,<2
 lightgbm>=2,<4
 
 # PyTorch doesn't support Python 3.10 yet (pytorch/pytorch#66424)
@@ -30,6 +29,7 @@ pytest>=5.2.1
 pytest-mock
 pytest-cov
 nbval
+shap==0.41.0
 
 #
 # Docs

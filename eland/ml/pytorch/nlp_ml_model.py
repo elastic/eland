@@ -244,6 +244,18 @@ class TextEmbeddingInferenceOptions(InferenceConfig):
         self.results_field = results_field
 
 
+class TextExpansionInferenceOptions(InferenceConfig):
+    def __init__(
+        self,
+        *,
+        tokenization: NlpTokenizationConfig,
+        results_field: t.Optional[str] = None,
+    ):
+        super().__init__(configuration_type="text_expansion")
+        self.tokenization = tokenization
+        self.results_field = results_field
+
+
 class TrainedModelInput:
     def __init__(self, *, field_names: t.List[str]):
         self.field_names = field_names

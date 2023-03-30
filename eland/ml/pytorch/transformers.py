@@ -51,6 +51,7 @@ from eland.ml.pytorch.nlp_ml_model import (
     QuestionAnsweringInferenceOptions,
     TextClassificationInferenceOptions,
     TextEmbeddingInferenceOptions,
+    TextExpansionInferenceOptions,
     TextSimilarityInferenceOptions,
     TrainedModelInput,
     ZeroShotClassificationInferenceOptions,
@@ -63,6 +64,7 @@ SUPPORTED_TASK_TYPES = {
     "ner",
     "text_classification",
     "text_embedding",
+    "text_expansion",
     "zero_shot_classification",
     "question_answering",
     "text_similarity",
@@ -83,6 +85,7 @@ ZERO_SHOT_LABELS = {"contradiction", "neutral", "entailment"}
 TASK_TYPE_TO_INFERENCE_CONFIG = {
     "fill_mask": FillMaskInferenceOptions,
     "ner": NerInferenceOptions,
+    "text_expansion": TextExpansionInferenceOptions,
     "text_classification": TextClassificationInferenceOptions,
     "text_embedding": TextEmbeddingInferenceOptions,
     "zero_shot_classification": ZeroShotClassificationInferenceOptions,
@@ -125,11 +128,13 @@ def task_type_from_model_config(model_config: PretrainedConfig) -> Optional[str]
         return None
     potential_task_types: Set[str] = set()
     for architecture in model_config.architectures:
-        for (substr, task_type) in ARCHITECTURE_TO_TASK_TYPE.items():
+        for substr, task_type in ARCHITECTURE_TO_TASK_TYPE.items():
             if substr in architecture:
                 for t in task_type:
                     potential_task_types.add(t)
     if len(potential_task_types) == 0:
+        if model_config.name_or_path.startswith("sentence-transformers/"):
+            return "text_embedding"
         return None
     if (
         "text_classification" in potential_task_types
@@ -384,7 +389,6 @@ class _DPREncoderWrapper(nn.Module):  # type: ignore
 
     @staticmethod
     def from_pretrained(model_id: str) -> Optional[Any]:
-
         config = AutoConfig.from_pretrained(model_id)
 
         def is_compatible() -> bool:

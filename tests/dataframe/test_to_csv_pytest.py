@@ -102,7 +102,6 @@ class TestDataFrameToCSV(TestData):
         ES_TEST_CLIENT.indices.delete(index=test_index)
 
     def test_pd_to_csv_without_filepath(self):
-
         ed_flights = self.ed_flights()
         pd_flights = self.pd_flights()
 
