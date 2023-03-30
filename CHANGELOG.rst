@@ -2,6 +2,27 @@
 Changelog
 =========
 
+8.7.0 (2023-03-30)
+------------------
+
+Added
+^^^^^
+
+* Added a new NLP model task type "text_similarity" (`#486`_)
+* Added a new NLP model task type "text_expansion" (`#520`_)
+* Added support for exporting an Elastic ML model as a scikit-learn pipeline via ``MLModel.export_model()`` (`#509`_)
+
+Fixed
+^^^^^
+
+* Fixed an issue that occurred when LightGBM was installed but libomp wasn't installed on the system. (`#499`_)
+
+.. _#486: https://github.com/elastic/eland/pull/486
+.. _#499: https://github.com/elastic/eland/pull/499
+.. _#509: https://github.com/elastic/eland/pull/509
+.. _#520: https://github.com/elastic/eland/pull/520
+
+
 8.3.0 (2022-07-11)
 ------------------
 
