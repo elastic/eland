@@ -71,7 +71,7 @@ def lint(session):
     # Install numpy to use its mypy plugin
     # https://numpy.org/devdocs/reference/typing.html#mypy-plugin
     session.install("black", "flake8", "mypy", "isort", "numpy")
-    session.install("--pre", "elasticsearch>=8.3,<9")
+    session.install("--pre", "elasticsearch>=8.7,<9")
     session.run("python", "utils/license-headers.py", "check", *SOURCE_FILES)
     session.run("black", "--check", "--target-version=py38", *SOURCE_FILES)
     session.run("isort", "--check", "--profile=black", *SOURCE_FILES)
@@ -119,8 +119,8 @@ def test(session, pandas_version: str):
         "--nbval",
     )
 
-    # PyTorch doesn't support Python 3.10 yet
-    if session.python == "3.10":
+    # PyTorch doesn't support Python 3.11 yet
+    if session.python == "3.11":
         pytest_args += ("--ignore=eland/ml/pytorch",)
     session.run(
         *pytest_args,

@@ -59,9 +59,9 @@ extras = {
     "scikit-learn": ["scikit-learn>=0.22.1,<2"],
     "lightgbm": ["lightgbm>=2,<4"],
     "pytorch": [
-        "torch>=1.11.0,<1.12.0",
+        "torch>=1.13.1,<2.0",
         "sentence-transformers>=2.1.0,<=2.2.2",
-        "transformers[torch]>=4.12.0,<=4.20.1",
+        "transformers[torch]>=4.12.0,<=4.27.4",
     ],
 }
 extras["all"] = list({dep for deps in extras.values() for dep in deps})
@@ -82,7 +82,7 @@ setup(
     keywords="elastic eland pandas python",
     packages=find_packages(include=["eland", "eland.*"]),
     install_requires=[
-        "elasticsearch>=8.3,<9",
+        "elasticsearch>=8.7,<9",
         "pandas>=1.5",
         "matplotlib>=3.6",
         "numpy<2",
