@@ -95,8 +95,7 @@ $ docker run -it --rm --network host \
     eland_import_hub_model \
       --url http://host.docker.internal:9200/ \
       --hub-model-id elastic/distilbert-base-cased-finetuned-conll03-english \
-      --task-type ner \
-      --start
+      --task-type ner
 ```
 
 ### Connecting to Elasticsearch 
@@ -237,6 +236,17 @@ $ eland_import_hub_model \
   --task-type ner \
   --start
 ```
+
+The example above will automatically start a model deployment. This is a
+good shortcut for initial experimentation, but for anything that needs
+good throughput you should omit the `--start` argument from the Eland
+command line and instead start the model using the ML UI in Kibana.
+The `--start` argument will deploy the model with one allocation and one
+thread per allocation, which will not offer good performance. When starting
+the model deployment using the ML UI in Kibana or the Elasticsearch
+[API](https://www.elastic.co/guide/en/elasticsearch/reference/current/start-trained-model-deployment.html)
+you will be able to set the threading options to make best use of your
+hardware.
 
 ```python
 >>> import elasticsearch
