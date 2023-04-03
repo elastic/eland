@@ -399,7 +399,7 @@ class _DPREncoderWrapper(nn.Module):  # type: ignore
             is_supported_architecture = has_architectures and (
                 config.architectures[0] in _DPREncoderWrapper._SUPPORTED_MODELS_NAMES
             )
-            return is_dpr_model and has_architectures and is_supported_architecture
+            return is_dpr_model and is_supported_architecture
 
         if is_compatible():
             model = getattr(transformers, config.architectures[0]).from_pretrained(
