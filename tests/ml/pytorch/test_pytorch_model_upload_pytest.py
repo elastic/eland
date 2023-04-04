@@ -38,7 +38,7 @@ from tests import ES_TEST_CLIENT, ES_VERSION
 
 pytestmark = [
     pytest.mark.skipif(
-        ES_VERSION < (8, 0, 0),
+        ES_VERSION < (8, 7, 0),
         reason="This test requires at least Elasticsearch version 8.0.0",
     ),
     pytest.mark.skipif(
