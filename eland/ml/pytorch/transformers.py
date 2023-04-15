@@ -107,6 +107,7 @@ SUPPORTED_TOKENIZERS = (
     transformers.RobertaTokenizer,
     transformers.BartTokenizer,
     transformers.SqueezeBertTokenizer,
+    transformers.BertJapaneseTokenizer,
 )
 SUPPORTED_TOKENIZERS_NAMES = ", ".join(sorted([str(x) for x in SUPPORTED_TOKENIZERS]))
 
