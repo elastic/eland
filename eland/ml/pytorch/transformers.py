@@ -62,6 +62,7 @@ DEFAULT_OUTPUT_KEY = "sentence_embedding"
 SUPPORTED_TASK_TYPES = {
     "fill_mask",
     "ner",
+    "pass_through",
     "text_classification",
     "text_embedding",
     "text_expansion",
@@ -393,11 +394,13 @@ class _DPREncoderWrapper(nn.Module):  # type: ignore
 
         def is_compatible() -> bool:
             is_dpr_model = config.model_type == "dpr"
-            has_architectures = len(config.architectures) == 1
-            is_supported_architecture = (
+            has_architectures = (
+                config.architectures is not None and len(config.architectures) == 1
+            )
+            is_supported_architecture = has_architectures and (
                 config.architectures[0] in _DPREncoderWrapper._SUPPORTED_MODELS_NAMES
             )
-            return is_dpr_model and has_architectures and is_supported_architecture
+            return is_dpr_model and is_supported_architecture
 
         if is_compatible():
             model = getattr(transformers, config.architectures[0]).from_pretrained(
@@ -506,6 +509,15 @@ class _TraceableNerModel(_TraceableClassificationModel):
                 "Hugging Face Inc. is a company based in New York City. "
                 "Its headquarters are in DUMBO, therefore very close to the Manhattan Bridge."
             ),
+            padding="max_length",
+            return_tensors="pt",
+        )
+
+
+class _TraceablePassThroughModel(_TransformerTraceableModel):
+    def _prepare_inputs(self) -> transformers.BatchEncoding:
+        return self._tokenizer(
+            "This is an example sentence.",
             padding="max_length",
             return_tensors="pt",
         )
@@ -717,6 +729,11 @@ class TransformerModel:
             )
             model = _DistilBertWrapper.try_wrapping(model)
             return _TraceableTextSimilarityModel(self._tokenizer, model)
+        elif self._task_type == "pass_through":
+            model = transformers.AutoModel.from_pretrained(
+                self._model_id, torchscript=True
+            )
+            return _TraceablePassThroughModel(self._tokenizer, model)
         else:
             raise TypeError(
                 f"Unknown task type {self._task_type}, must be one of: {SUPPORTED_TASK_TYPES_NAMES}"
