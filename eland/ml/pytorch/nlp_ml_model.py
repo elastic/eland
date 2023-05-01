@@ -88,6 +88,28 @@ class NlpBertTokenizationConfig(NlpTokenizationConfig):
         self.do_lower_case = do_lower_case
 
 
+class NlpBertJapaneseTokenizationConfig(NlpTokenizationConfig):
+    def __init__(
+        self,
+        *,
+        do_lower_case: t.Optional[bool] = None,
+        with_special_tokens: t.Optional[bool] = None,
+        max_sequence_length: t.Optional[int] = None,
+        truncate: t.Optional[
+            t.Union["t.Literal['first', 'none', 'second']", str]
+        ] = None,
+        span: t.Optional[int] = None,
+    ):
+        super().__init__(
+            configuration_type="bert_ja",
+            with_special_tokens=with_special_tokens,
+            max_sequence_length=max_sequence_length,
+            truncate=truncate,
+            span=span,
+        )
+        self.do_lower_case = do_lower_case
+
+
 class NlpMPNetTokenizationConfig(NlpTokenizationConfig):
     def __init__(
         self,
@@ -272,7 +294,8 @@ class NlpTrainedModelConfig:
         *,
         description: str,
         inference_config: InferenceConfig,
-        input: TrainedModelInput = TrainedModelInput(field_names=["text_field"]),
+        input: TrainedModelInput = TrainedModelInput(
+            field_names=["text_field"]),
         metadata: t.Optional[dict] = None,
         model_type: t.Union["t.Literal['pytorch']", str] = "pytorch",
         default_field_map: t.Optional[t.Mapping[str, str]] = None,
