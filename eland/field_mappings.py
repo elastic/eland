@@ -42,6 +42,8 @@ from pandas.core.dtypes.common import (  # type: ignore
 )
 from pandas.core.dtypes.inference import is_list_like
 
+from .common import es_version
+
 if TYPE_CHECKING:
     from elasticsearch import Elasticsearch
     from numpy.typing import DTypeLike
@@ -213,7 +215,7 @@ class FieldMappings:
 
         # Get all fields (including all nested) and then all field_caps
         all_fields = FieldMappings._extract_fields_from_mapping(get_mapping)
-        all_fields_caps = client.field_caps(index=index_pattern, fields="*")
+        all_fields_caps = _compat_field_caps(client, index=index_pattern, fields="*")
 
         # Get top level (not sub-field multifield) mappings
         source_fields = FieldMappings._extract_fields_from_mapping(
@@ -925,3 +927,34 @@ def verify_mapping_compatibility(
             f"DataFrame dtypes and Elasticsearch index mapping "
             f"aren't compatible:\n{problems_message}"
         )
+
+
+def _compat_field_caps(client, fields, index=None):
+    """The field_caps API moved it's 'fields' parameter to the HTTP request body
+    in Elasticsearch 8.5.0 (previously was only accepted in the query string).
+    This can cause some unfortunate errors for users of Eland against old server
+    versions because at that point the version of the Elasticsearch client actually
+    matters for compatibility, which can be unexpected by consumers of *only* Eland.
+
+    Our work-around below is to force the parameter in the query string on older server versions.
+    """
+
+    # If the server version is 8.5.0 or later we don't need
+    # the query string work-around. Sending via any client
+    # version should be just fine.
+    if es_version(client) >= (8, 5, 0):
+        return client.field_caps(index=index, fields=fields)
+
+    # Otherwise we need to force sending via the query string.
+    from elasticsearch._sync.client import SKIP_IN_PATH, _quote
+
+    if index not in SKIP_IN_PATH:
+        __path = f"/{_quote(index)}/_field_caps"
+    else:
+        __path = "/_field_caps"
+    __query: Dict[str, Any] = {}
+    if fields is not None:
+        __query["fields"] = fields
+    return client.perform_request(
+        "POST", __path, params=__query, headers={"accept": "application/json"}
+    )
