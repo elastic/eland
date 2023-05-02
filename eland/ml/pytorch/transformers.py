@@ -650,8 +650,13 @@ class TransformerModel:
                 classification_labels=self._traceable_model.classification_labels(),
             )
         elif self._task_type == "text_embedding":
-            sample_embedding, _ = self._traceable_model.sample_output()
-            embedding_size = sample_embedding.size(-1)
+            sample_embedding = self._traceable_model.sample_output()
+            if type(sample_embedding) is tuple:
+                text_embedding, _ = sample_embedding
+            else:
+                text_embedding = sample_embedding
+
+            embedding_size = text_embedding.size(-1)
             inference_config = TASK_TYPE_TO_INFERENCE_CONFIG[self._task_type](
                 tokenization=tokenization_config,
                 embedding_size=embedding_size,
