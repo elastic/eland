@@ -42,8 +42,8 @@ from transformers import (
 from eland.ml.pytorch.nlp_ml_model import (
     FillMaskInferenceOptions,
     NerInferenceOptions,
-    NlpBertTokenizationConfig,
     NlpBertJapaneseTokenizationConfig,
+    NlpBertTokenizationConfig,
     NlpMPNetTokenizationConfig,
     NlpRobertaTokenizationConfig,
     NlpTokenizationConfig,
@@ -109,8 +109,7 @@ SUPPORTED_TOKENIZERS = (
     transformers.BartTokenizer,
     transformers.SqueezeBertTokenizer,
 )
-SUPPORTED_TOKENIZERS_NAMES = ", ".join(
-    sorted([str(x) for x in SUPPORTED_TOKENIZERS]))
+SUPPORTED_TOKENIZERS_NAMES = ", ".join(sorted([str(x) for x in SUPPORTED_TOKENIZERS]))
 
 TracedModelTypes = Union[
     torch.nn.Module,
@@ -397,8 +396,7 @@ class _DPREncoderWrapper(nn.Module):  # type: ignore
         def is_compatible() -> bool:
             is_dpr_model = config.model_type == "dpr"
             has_architectures = (
-                config.architectures is not None and len(
-                    config.architectures) == 1
+                config.architectures is not None and len(config.architectures) == 1
             )
             is_supported_architecture = has_architectures and (
                 config.architectures[0] in _DPREncoderWrapper._SUPPORTED_MODELS_NAMES
@@ -472,8 +470,7 @@ class _TransformerTraceableModel(TraceableModel):
             del inputs["token_type_ids"]
             return (inputs["input_ids"], inputs["attention_mask"])
 
-        position_ids = torch.arange(
-            inputs["input_ids"].size(1), dtype=torch.long)
+        position_ids = torch.arange(inputs["input_ids"].size(1), dtype=torch.long)
         inputs["position_ids"] = position_ids
         return (
             inputs["input_ids"],
@@ -490,8 +487,7 @@ class _TransformerTraceableModel(TraceableModel):
 class _TraceableClassificationModel(_TransformerTraceableModel, ABC):
     def classification_labels(self) -> Optional[List[str]]:
         id_label_items = self._model.config.id2label.items()
-        labels = [v for _, v in sorted(
-            id_label_items, key=lambda kv: kv[0])]  # type: ignore
+        labels = [v for _, v in sorted(id_label_items, key=lambda kv: kv[0])]  # type: ignore
 
         # Make classes like I-PER into I_PER which fits Java enumerations
         return [label.replace("-", "_") for label in labels]
@@ -603,8 +599,7 @@ class TransformerModel:
 
     def _load_vocab(self) -> Dict[str, List[str]]:
         vocab_items = self._tokenizer.get_vocab().items()
-        vocabulary = [k for k, _ in sorted(
-            vocab_items, key=lambda kv: kv[1])]  # type: ignore
+        vocabulary = [k for k, _ in sorted(vocab_items, key=lambda kv: kv[1])]  # type: ignore
         vocab_obj = {
             "vocabulary": vocabulary,
         }
@@ -625,27 +620,34 @@ class TransformerModel:
                 ).get(self._model_id),
             )
         elif isinstance(
-            self._tokenizer, (transformers.RobertaTokenizer,
-                              transformers.BartTokenizer)
+            self._tokenizer, (transformers.RobertaTokenizer, transformers.BartTokenizer)
         ):
             return NlpRobertaTokenizationConfig(
-                add_prefix_space=getattr(
-                    self._tokenizer, "add_prefix_space", None),
+                add_prefix_space=getattr(self._tokenizer, "add_prefix_space", None),
                 max_sequence_length=getattr(
                     self._tokenizer, "max_model_input_sizes", dict()
                 ).get(self._model_id),
             )
         else:
-            japanese_morphological_tokenizers = ['mecab']
-            tokenizationConfig = NlpBertTokenizationConfig
-            if (hasattr(self._tokenizer, 'word_tokenizer_type') and self._tokenizer.word_tokenizer_type in japanese_morphological_tokenizers):
-                tokenizationConfig = NlpBertJapaneseTokenizationConfig
-            return tokenizationConfig(
-                do_lower_case=getattr(self._tokenizer, "do_lower_case", None),
-                max_sequence_length=getattr(
-                    self._tokenizer, "max_model_input_sizes", dict()
-                ).get(self._model_id),
-            )
+            japanese_morphological_tokenizers = ["mecab"]
+            if (
+                hasattr(self._tokenizer, "word_tokenizer_type")
+                and self._tokenizer.word_tokenizer_type
+                in japanese_morphological_tokenizers
+            ):
+                return NlpBertJapaneseTokenizationConfig(
+                    do_lower_case=getattr(self._tokenizer, "do_lower_case", None),
+                    max_sequence_length=getattr(
+                        self._tokenizer, "max_model_input_sizes", dict()
+                    ).get(self._model_id),
+                )
+            else:
+                return NlpBertTokenizationConfig(
+                    do_lower_case=getattr(self._tokenizer, "do_lower_case", None),
+                    max_sequence_length=getattr(
+                        self._tokenizer, "max_model_input_sizes", dict()
+                    ).get(self._model_id),
+                )
 
     def _create_config(self) -> NlpTrainedModelConfig:
         tokenization_config = self._create_tokenization_config()
@@ -717,8 +719,7 @@ class TransformerModel:
             return _TraceableTextClassificationModel(self._tokenizer, model)
 
         elif self._task_type == "text_embedding":
-            model = _SentenceTransformerWrapperModule.from_pretrained(
-                self._model_id)
+            model = _SentenceTransformerWrapperModule.from_pretrained(self._model_id)
             if not model:
                 model = _DPREncoderWrapper.from_pretrained(self._model_id)
             if not model:
@@ -734,8 +735,7 @@ class TransformerModel:
             model = _DistilBertWrapper.try_wrapping(model)
             return _TraceableZeroShotClassificationModel(self._tokenizer, model)
         elif self._task_type == "question_answering":
-            model = _QuestionAnsweringWrapperModule.from_pretrained(
-                self._model_id)
+            model = _QuestionAnsweringWrapperModule.from_pretrained(self._model_id)
             return _TraceableQuestionAnsweringModel(self._tokenizer, model)
         elif self._task_type == "text_similarity":
             model = transformers.AutoModelForSequenceClassification.from_pretrained(

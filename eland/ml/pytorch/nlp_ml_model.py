@@ -294,8 +294,7 @@ class NlpTrainedModelConfig:
         *,
         description: str,
         inference_config: InferenceConfig,
-        input: TrainedModelInput = TrainedModelInput(
-            field_names=["text_field"]),
+        input: TrainedModelInput = TrainedModelInput(field_names=["text_field"]),
         metadata: t.Optional[dict] = None,
         model_type: t.Union["t.Literal['pytorch']", str] = "pytorch",
         default_field_map: t.Optional[t.Mapping[str, str]] = None,
