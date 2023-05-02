@@ -136,6 +136,13 @@ class TestTraceableModel(TraceableModel, ABC):
             ),
         )
 
+    def sample_output(self) -> torch.Tensor:
+        input_ids = torch.tensor(np.array(range(0, len(TEST_BERT_VOCAB))))
+        attention_mask = torch.tensor([1] * len(TEST_BERT_VOCAB))
+        token_type_ids = torch.tensor([0] * len(TEST_BERT_VOCAB))
+        position_ids = torch.arange(len(TEST_BERT_VOCAB), dtype=torch.long)
+        return self._model(input_ids, attention_mask, token_type_ids, position_ids)
+
 
 class NerModule(nn.Module):
     def forward(

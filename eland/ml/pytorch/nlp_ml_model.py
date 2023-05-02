@@ -238,10 +238,12 @@ class TextEmbeddingInferenceOptions(InferenceConfig):
         *,
         tokenization: NlpTokenizationConfig,
         results_field: t.Optional[str] = None,
+        embedding_size: t.Optional[int] = None,
     ):
         super().__init__(configuration_type="text_embedding")
         self.tokenization = tokenization
         self.results_field = results_field
+        self.embedding_size = embedding_size
 
 
 class TextExpansionInferenceOptions(InferenceConfig):
