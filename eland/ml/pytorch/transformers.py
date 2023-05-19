@@ -572,7 +572,7 @@ class _TraceableTextSimilarityModel(_TransformerTraceableModel):
 
 
 class TransformerModel:
-    def __init__(self, model_id: str, task_type: str, quantize: bool = False):
+    def __init__(self, model_id: str, task_type: str, es_major_version: int, es_minor_version: int, quantize: bool = False):
         self._model_id = model_id
         self._task_type = task_type.replace("-", "_")
 
@@ -594,7 +594,7 @@ class TransformerModel:
         if quantize:
             self._traceable_model.quantize()
         self._vocab = self._load_vocab()
-        self._config = self._create_config()
+        self._config = self._create_config(es_major_version, es_minor_version)
 
     def _load_vocab(self) -> Dict[str, List[str]]:
         vocab_items = self._tokenizer.get_vocab().items()
@@ -635,7 +635,7 @@ class TransformerModel:
                 ).get(self._model_id),
             )
 
-    def _create_config(self) -> NlpTrainedModelConfig:
+    def _create_config(self, es_major_version: int, es_minor_version: int) -> NlpTrainedModelConfig:
         tokenization_config = self._create_tokenization_config()
 
         # Set squad well known defaults
@@ -650,17 +650,23 @@ class TransformerModel:
                 classification_labels=self._traceable_model.classification_labels(),
             )
         elif self._task_type == "text_embedding":
-            sample_embedding = self._traceable_model.sample_output()
-            if type(sample_embedding) is tuple:
-                text_embedding, _ = sample_embedding
+            # The embedding_size paramater was added in Elasticsearch 8.8
+            if es_major_version <= 8 and es_minor_version < 8:
+                inference_config = TASK_TYPE_TO_INFERENCE_CONFIG[self._task_type](
+                    tokenization=tokenization_config
+                )
             else:
-                text_embedding = sample_embedding
+                sample_embedding = self._traceable_model.sample_output()
+                if type(sample_embedding) is tuple:
+                    text_embedding, _ = sample_embedding
+                else:
+                    text_embedding = sample_embedding
 
-            embedding_size = text_embedding.size(-1)
-            inference_config = TASK_TYPE_TO_INFERENCE_CONFIG[self._task_type](
-                tokenization=tokenization_config,
-                embedding_size=embedding_size,
-            )
+                embedding_size = text_embedding.size(-1)
+                inference_config = TASK_TYPE_TO_INFERENCE_CONFIG[self._task_type](
+                    tokenization=tokenization_config,
+                    embedding_size=embedding_size,
+                )
         else:
             inference_config = TASK_TYPE_TO_INFERENCE_CONFIG[self._task_type](
                 tokenization=tokenization_config

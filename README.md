@@ -255,7 +255,7 @@ hardware.
 >>> from eland.ml.pytorch.transformers import TransformerModel
 
 # Load a Hugging Face transformers model directly from the model hub
->>> tm = TransformerModel("elastic/distilbert-base-cased-finetuned-conll03-english", "ner")
+>>> tm = TransformerModel("elastic/distilbert-base-cased-finetuned-conll03-english", "ner", 8, 8)
 Downloading: 100%|██████████| 257/257 [00:00<00:00, 108kB/s]
 Downloading: 100%|██████████| 954/954 [00:00<00:00, 372kB/s]
 Downloading: 100%|██████████| 208k/208k [00:00<00:00, 668kB/s] 
