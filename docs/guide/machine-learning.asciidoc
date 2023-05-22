@@ -65,11 +65,15 @@ $ eland_import_hub_model <authentication> \ <1>
 ------------------------
 >>> import elasticsearch
 >>> from pathlib import Path
+>>> from eland.common import es_version
 >>> from eland.ml.pytorch import PyTorchModel
 >>> from eland.ml.pytorch.transformers import TransformerModel
 
+>>> es = elasticsearch.Elasticsearch("http://elastic:mlqa_admin@localhost:9200)
+>>> es_cluster_version = es_version(es)
+
 # Load a Hugging Face transformers model directly from the model hub
->>> tm = TransformerModel("elastic/distilbert-base-cased-finetuned-conll03-english", "ner")
+>>> tm = TransformerModel("elastic/distilbert-base-cased-finetuned-conll03-english", "ner", es_cluster_version)
 Downloading: 100%|██████████| 257/257 [00:00<00:00, 108kB/s]
 Downloading: 100%|██████████| 954/954 [00:00<00:00, 372kB/s]
 Downloading: 100%|██████████| 208k/208k [00:00<00:00, 668kB/s] 
@@ -82,7 +86,6 @@ Downloading: 100%|██████████| 249M/249M [00:23<00:00, 11.2MB
 >>> model_path, config, vocab_path = tm.save(tmp_path)
 
 # Import model into Elasticsearch
->>> es = elasticsearch.Elasticsearch("http://elastic:mlqa_admin@localhost:9200", timeout=300)  # 5 minute timeout
 >>> ptm = PyTorchModel(es, tm.elasticsearch_model_id())
 >>> ptm.import_model(model_path=model_path, config_path=None, vocab_path=vocab_path, config=config)
 100%|██████████| 63/63 [00:12<00:00,  5.02it/s]
