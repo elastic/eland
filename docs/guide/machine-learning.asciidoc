@@ -137,7 +137,7 @@ information on the supported architectures.
 example:
 +
 --
-[source,console]
+[source,bash]
 ----
 git clone https://huggingface.co/dslim/bert-base-NER
 ----
@@ -149,7 +149,7 @@ https://huggingface.co/dslim/bert-base-NER.
 directory of the cloned model to install it:
 +
 --
-[source,console]
+[source,bash]
 ----
 eland_import_hub_model \
       --url 'XXXX' \
@@ -159,7 +159,7 @@ eland_import_hub_model \
 If you use the Docker image to run `eland_import_hub_model` you must bind mount 
 the model directory, so the container can read the files:
 
-[source,console]
+[source,bash]
 ----
 docker run --mount type=bind,source=/PATH/TO/MODELS,destination=/models,readonly -it --rm elastic/eland \
     eland_import_hub_model \
