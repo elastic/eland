@@ -31,6 +31,7 @@ import sys
 import tempfile
 import textwrap
 
+import torch
 from elastic_transport.client_utils import DEFAULT
 from elasticsearch import AuthenticationException, Elasticsearch
 
@@ -150,12 +151,27 @@ def get_es_client(cli_args):
             es_args['basic_auth'] = (cli_args.es_username, cli_args.es_password)
 
         es_client = Elasticsearch(**es_args)
-        es_info = es_client.info()
-        logger.info(f"Connected to cluster named '{es_info['cluster_name']}' (version: {es_info['version']['number']})")
-
         return es_client
     except AuthenticationException as e:
         logger.error(e)
+        exit(1)
+
+def check_cluster_version(es_client): 
+    es_info = es_client.info()
+    logger.info(f"Connected to cluster named '{es_info['cluster_name']}' (version: {es_info['version']['number']})")
+
+    major_version = int(es_info['version']['number'].split(".")[0])
+    minor_version = int(es_info['version']['number'].split(".")[1])
+
+    # NLP models added in 8
+    if major_version < 8:
+        logger.error(f"Elasticsearch version {major_version} does not support NLP models. Please upgrade Elasticsearch to the latest version")
+        exit(1)
+
+    # PyTorch was upgraded to version 1.13.1 in 8.7.
+    # and is incompatible with earlier versions
+    if major_version == 8 and minor_version < 7:
+        logger.error(f"Eland uses PyTorch version {torch.__version__} which is incompatible with Elasticsearch versions prior to 8.7. Please upgrade Elasticsearch to at least version 8.7")
         exit(1)
 
 
@@ -189,6 +205,7 @@ if __name__ == "__main__":
     # Connect to ES
     logger.info("Establishing connection to Elasticsearch")
     es = get_es_client(args)
+    check_cluster_version(es)
 
     # Trace and save model, then upload it from temp file
     with tempfile.TemporaryDirectory() as tmp_dir:
