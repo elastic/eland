@@ -156,12 +156,13 @@ def get_es_client(cli_args):
         logger.error(e)
         exit(1)
 
-def check_cluster_version(es_client): 
+def check_cluster_version(es_client):
     es_info = es_client.info()
     logger.info(f"Connected to cluster named '{es_info['cluster_name']}' (version: {es_info['version']['number']})")
 
-    major_version = int(es_info['version']['number'].split(".")[0])
-    minor_version = int(es_info['version']['number'].split(".")[1])
+    sem_ver = es_info['version']['number'].split(".")
+    major_version = int(sem_ver[0])
+    minor_version = int(sem_ver[1])
 
     # NLP models added in 8
     if major_version < 8:
@@ -173,6 +174,8 @@ def check_cluster_version(es_client):
     if major_version == 8 and minor_version < 7:
         logger.error(f"Eland uses PyTorch version {torch.__version__} which is incompatible with Elasticsearch versions prior to 8.7. Please upgrade Elasticsearch to at least version 8.7")
         exit(1)
+
+    return (major_version, minor_version, int(sem_ver[2]))
 
 
 if __name__ == "__main__":
@@ -204,14 +207,14 @@ if __name__ == "__main__":
     # Connect to ES
     logger.info("Establishing connection to Elasticsearch")
     es = get_es_client(args)
-    check_cluster_version(es)
+    cluster_version = check_cluster_version(es)
 
     # Trace and save model, then upload it from temp file
     with tempfile.TemporaryDirectory() as tmp_dir:
         logger.info(f"Loading HuggingFace transformer tokenizer and model '{args.hub_model_id}'")
 
         try:
-            tm = TransformerModel(args.hub_model_id, args.task_type, args.quantize)
+            tm = TransformerModel(args.hub_model_id, args.task_type, cluster_version, args.quantize)
             model_path, config, vocab_path = tm.save(tmp_dir)
         except TaskTypeError as err:
             logger.error(f"Failed to get model for task type, please provide valid task type via '--task-type' parameter. Caused by {err}")
