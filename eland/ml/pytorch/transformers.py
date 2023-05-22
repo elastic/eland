@@ -740,6 +740,9 @@ class TransformerModel:
                 f"Unknown task type {self._task_type}, must be one of: {SUPPORTED_TASK_TYPES_NAMES}"
             )
 
+    def elasticsearch_model_id(self) -> str:
+        return elasticsearch_model_id(self._model_id)
+
     def save(self, path: str) -> Tuple[str, NlpTrainedModelConfig, str]:
         # save traced model
         model_path = self._traceable_model.save(path)
