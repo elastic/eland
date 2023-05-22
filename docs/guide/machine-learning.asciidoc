@@ -126,8 +126,10 @@ You can install models in a restricted or closed network by pointing the
 `eland_import_hub_model` script to local files. 
 
 **Requirements**
-
++
+--
 * https://git-lfs.com/[Git Large File Storage] installed.
+--
 
 . Select a model you want to use from Hugging Face. Refer to the 
 {ml-docs}/ml-nlp-model-ref.html[compatible third party model] list for more 
