@@ -22,6 +22,7 @@ libraries such as sentence-transformers.
 
 import json
 import os.path
+import re
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
@@ -740,8 +741,7 @@ class TransformerModel:
             )
 
     def elasticsearch_model_id(self) -> str:
-        # Elasticsearch model IDs need to be a specific format: no special chars, all lowercase, max 64 chars
-        return self._model_id.replace("/", "__").lower()[:64]
+        return elasticsearch_model_id(self._model_id)
 
     def save(self, path: str) -> Tuple[str, NlpTrainedModelConfig, str]:
         # save traced model
@@ -753,3 +753,21 @@ class TransformerModel:
             json.dump(self._vocab, outfile)
 
         return model_path, self._config, vocab_path
+
+
+def elasticsearch_model_id(model_id: str) -> str:
+    """
+    Elasticsearch model IDs need to be a specific format:
+    no special chars, all lowercase, max 64 chars. If the
+    Id is longer than 64 charaters take the last 64- in the
+    case where the id is long file path this captures the
+    model name.
+
+    Ids starting with __ are not valid elasticsearch Ids,
+    # this might be the case if model_id is a file path
+    """
+
+    id = re.sub(r"[\s\\/]", "__", model_id).lower()[-64:]
+    if id.startswith("__"):
+        id = id.removeprefix("__")
+    return id
