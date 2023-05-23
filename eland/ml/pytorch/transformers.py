@@ -578,6 +578,7 @@ class TransformerModel:
         model_id: str,
         task_type: str,
         es_version: Tuple[int, int, int],
+        *,
         quantize: bool = False,
     ):
         self._model_id = model_id

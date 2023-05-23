@@ -84,7 +84,9 @@ def setup_and_tear_down():
 
 def download_model_and_start_deployment(tmp_dir, quantize, model_id, task):
     print("Loading HuggingFace transformer tokenizer and model")
-    tm = TransformerModel(model_id, task, ES_VERSION, quantize)
+    tm = TransformerModel(
+        model_id=model_id, task_type=task, es_version=ES_VERSION, quantize=quantize
+    )
     model_path, config, vocab_path = tm.save(tmp_dir)
     ptm = PyTorchModel(ES_TEST_CLIENT, tm.elasticsearch_model_id())
     try:
