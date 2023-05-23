@@ -35,6 +35,8 @@ import torch
 from elastic_transport.client_utils import DEFAULT
 from elasticsearch import AuthenticationException, Elasticsearch
 
+from eland.common import parse_es_version
+
 MODEL_HUB_URL = "https://huggingface.co"
 
 
@@ -161,9 +163,9 @@ def check_cluster_version(es_client):
     es_info = es_client.info()
     logger.info(f"Connected to cluster named '{es_info['cluster_name']}' (version: {es_info['version']['number']})")
 
-    sem_ver = es_info['version']['number'].split(".")
-    major_version = int(sem_ver[0])
-    minor_version = int(sem_ver[1])
+    sem_ver = parse_es_version(es_info['version']['number'])
+    major_version = sem_ver[0]
+    minor_version = sem_ver[1]
 
     # NLP models added in 8
     if major_version < 8:
@@ -176,7 +178,7 @@ def check_cluster_version(es_client):
         logger.error(f"Eland uses PyTorch version {torch.__version__} which is incompatible with Elasticsearch versions prior to 8.7. Please upgrade Elasticsearch to at least version 8.7")
         exit(1)
 
-    return (major_version, minor_version, int(sem_ver[2]))
+    return sem_ver
 
 if __name__ == "__main__":
     # Configure logging
