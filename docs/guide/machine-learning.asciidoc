@@ -126,16 +126,14 @@ You can install models in a restricted or closed network by pointing the
 `eland_import_hub_model` script to local files. 
 
 **Requirements**
-+
---
-* https://git-lfs.com/[Git Large File Storage] installed.
---
 
-. Select a model you want to use from Hugging Face. Refer to the 
+* https://git-lfs.com/[Git Large File Storage] installed.
+
+1. Select a model you want to use from Hugging Face. Refer to the 
 {ml-docs}/ml-nlp-model-ref.html[compatible third party model] list for more 
 information on the supported architectures. 
 
-. Clone the selected model from Hugging Face by using the model URL. For 
+2. Clone the selected model from Hugging Face by using the model URL. For 
 example:
 +
 --
@@ -147,7 +145,7 @@ This command results in a local copy of
 https://huggingface.co/dslim/bert-base-NER.
 --
 
-. Use the `eland_import_hub_model` script with the `--hub-model-id` set to the 
+3. Use the `eland_import_hub_model` script with the `--hub-model-id` set to the 
 directory of the cloned model to install it:
 +
 --
