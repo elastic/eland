@@ -146,7 +146,7 @@ set -x
 docker run \
   --name "$NODE_NAME" \
   --network "$NETWORK_NAME" \
-  --env ES_JAVA_OPTS=-"Xms1g -Xmx1g" \
+  --env ES_JAVA_OPTS=-"Xms2g -Xmx2g" \
   "${environment[@]}" \
   "${volumes[@]}" \
   --publish "$HTTP_PORT":9200 \
