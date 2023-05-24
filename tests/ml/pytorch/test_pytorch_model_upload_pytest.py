@@ -117,7 +117,7 @@ class TestPytorchModel:
             ptm.infer(docs=[{"text_field": text_input}])
 
             if ES_VERSION >= (8, 8, 0):
-                configs = ES_TEST_CLIENT.ml.get_trained_models(model_id=model_id)
+                configs = ES_TEST_CLIENT.ml.get_trained_models(model_id=ptm.model_id)
                 assert (
                     int(
                         configs["trained_model_configs"][0]["inference_config"][
