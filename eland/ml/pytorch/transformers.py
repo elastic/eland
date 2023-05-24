@@ -577,10 +577,33 @@ class TransformerModel:
         self,
         model_id: str,
         task_type: str,
-        es_version: Tuple[int, int, int],
         *,
+        es_version: Optional[Tuple[int, int, int]],
         quantize: bool = False,
     ):
+        """
+        Loads a model from the Hugging Face repository or local file and creates
+        the configuration for upload to Elasticsearch.
+
+        Parameters
+        ----------
+        model_id: str
+            A Hugging Face model Id or a file path to the directory containing
+            the model files.
+
+        task_type: str
+            One of the supported task types.
+
+        es_version: Optional[Tuple[int, int, int]]
+            The Elasticsearch cluster version.
+            Certain features are created only if the target cluster is
+            a high enough version to support them. If not set only
+            universally supported features are added.
+
+        quantize: bool, default False
+            Quantize the model.
+        """
+
         self._model_id = model_id
         self._task_type = task_type.replace("-", "_")
 
@@ -643,7 +666,9 @@ class TransformerModel:
                 ).get(self._model_id),
             )
 
-    def _create_config(self, es_version: Tuple[int, int, int]) -> NlpTrainedModelConfig:
+    def _create_config(
+        self, es_version: Optional[Tuple[int, int, int]]
+    ) -> NlpTrainedModelConfig:
         tokenization_config = self._create_tokenization_config()
 
         # Set squad well known defaults
@@ -659,7 +684,8 @@ class TransformerModel:
             )
         elif self._task_type == "text_embedding":
             # The embedding_size paramater was added in Elasticsearch 8.8
-            if es_version[0] <= 8 and es_version[1] < 8:
+            # If the version is not known use the basic config
+            if es_version is None or (es_version[0] <= 8 and es_version[1] < 8):
                 inference_config = TASK_TYPE_TO_INFERENCE_CONFIG[self._task_type](
                     tokenization=tokenization_config
                 )
