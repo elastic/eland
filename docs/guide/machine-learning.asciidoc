@@ -125,8 +125,9 @@ Replace the `$ELASTICSEARCH_URL` with the URL for your Elasticsearch cluster. Fo
 You can install models in a restricted or closed network by pointing the 
 `eland_import_hub_model` script to local files. 
 
-For an offline install of a Hugging Face model the model first needs to be cloned locally,
-Git and https://git-lfs.com/[Git Large File Storage] are required to be installed in your system.
+For an offline install of a Hugging Face model, the model first needs to be 
+cloned locally, Git and https://git-lfs.com/[Git Large File Storage] are 
+required to be installed in your system.
 
 1. Select a model you want to use from Hugging Face. Refer to the 
 {ml-docs}/ml-nlp-model-ref.html[compatible third party model] list for more 
@@ -157,6 +158,7 @@ eland_import_hub_model \
       --es-username elastic --es-password XXX \
       --es-model-id bert-base-ner
 ----
+
 If you use the Docker image to run `eland_import_hub_model` you must bind mount 
 the model directory, so the container can read the files:
 
@@ -170,6 +172,11 @@ docker run --mount type=bind,source=/PATH/TO/MODELS,destination=/models,readonly
       --es-username elastic --es-password XXX \
       --es-model-id bert-base-ner
 ----
+Once it's uploaded to {es}, the model will have the ID specified by 
+`--es-model-id`. If it is not set, the model ID is derived from 
+`--hub-model-id`; spaces and path delimiters are converted to double 
+underscores `__`.
+
 --
 
 
