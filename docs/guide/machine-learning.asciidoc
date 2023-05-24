@@ -42,9 +42,9 @@ model in {es}.
 IMPORTANT: You need to use PyTorch `1.13` or earlier to import an NLP model. 
 Run `pip install torch==1.13` to install the aproppriate version of PyTorch.
 
-For NLP tasks, Eland enables you to import PyTorch trained BERT models into {es}. 
-Models can be either plain PyTorch models, or supported 
-https://huggingface.co/transformers[transformers] models from the
+For NLP tasks, Eland enables you to import PyTorch models into {es}. Use the 
+`eland_import_hub_model` script to download and install supported 
+https://huggingface.co/transformers[transformer models] from the
 https://huggingface.co/models[Hugging Face model hub]. For example:
 
 [source,bash]
@@ -61,32 +61,6 @@ $ eland_import_hub_model <authentication> \ <1>
 <4> Specify the type of NLP task. Supported values are `fill_mask`, `ner`,
 `question_answering`, `text_classification`, `text_embedding`, and `zero_shot_classification`.
 
-[source,python]
-------------------------
->>> import elasticsearch
->>> from pathlib import Path
->>> from eland.ml.pytorch import PyTorchModel
->>> from eland.ml.pytorch.transformers import TransformerModel
-
-# Load a Hugging Face transformers model directly from the model hub
->>> tm = TransformerModel("elastic/distilbert-base-cased-finetuned-conll03-english", "ner")
-Downloading: 100%|██████████| 257/257 [00:00<00:00, 108kB/s]
-Downloading: 100%|██████████| 954/954 [00:00<00:00, 372kB/s]
-Downloading: 100%|██████████| 208k/208k [00:00<00:00, 668kB/s] 
-Downloading: 100%|██████████| 112/112 [00:00<00:00, 43.9kB/s]
-Downloading: 100%|██████████| 249M/249M [00:23<00:00, 11.2MB/s]
-
-# Export the model in a TorchScript representation which Elasticsearch uses
->>> tmp_path = "models"
->>> Path(tmp_path).mkdir(parents=True, exist_ok=True)
->>> model_path, config, vocab_path = tm.save(tmp_path)
-
-# Import model into Elasticsearch
->>> es = elasticsearch.Elasticsearch("http://elastic:mlqa_admin@localhost:9200", timeout=300)  # 5 minute timeout
->>> ptm = PyTorchModel(es, tm.elasticsearch_model_id())
->>> ptm.import_model(model_path=model_path, config_path=None, vocab_path=vocab_path, config=config)
-100%|██████████| 63/63 [00:12<00:00,  5.02it/s]
-------------------------
 
 [discrete]
 [[ml-nlp-pytorch-docker]]
