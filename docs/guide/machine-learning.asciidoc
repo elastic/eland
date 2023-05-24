@@ -125,8 +125,8 @@ Replace the `$ELASTICSEARCH_URL` with the URL for your Elasticsearch cluster. Fo
 You can install models in a restricted or closed network by pointing the 
 `eland_import_hub_model` script to local files. 
 
-To be able to complete the process below, make sure that 
-https://git-lfs.com/[Git Large File Storage] is installed in your system.
+For an offline install of a Hugging Face model the model first needs to be cloned locally,
+Git and https://git-lfs.com/[Git Large File Storage] are required to be installed in your system.
 
 1. Select a model you want to use from Hugging Face. Refer to the 
 {ml-docs}/ml-nlp-model-ref.html[compatible third party model] list for more 
@@ -141,7 +141,7 @@ example:
 git clone https://huggingface.co/dslim/bert-base-NER
 ----
 This command results in a local copy of 
-https://huggingface.co/dslim/bert-base-NER.
+of the model in the directory `bert-base-NER`.
 --
 
 3. Use the `eland_import_hub_model` script with the `--hub-model-id` set to the 
@@ -153,7 +153,9 @@ directory of the cloned model to install it:
 eland_import_hub_model \
       --url 'XXXX' \
       --hub-model-id /PATH/TO/MODEL \
-      --task-type ner --insecure --es-model-id bert-base-ner
+      --task-type ner \
+      --es-username elastic --es-password XXX \
+      --es-model-id bert-base-ner
 ----
 If you use the Docker image to run `eland_import_hub_model` you must bind mount 
 the model directory, so the container can read the files:
@@ -164,7 +166,9 @@ docker run --mount type=bind,source=/PATH/TO/MODELS,destination=/models,readonly
     eland_import_hub_model \
       --url 'XXXX' \
       --hub-model-id /models/bert-base-NER \
-      --task-type ner --insecure --es-model-id bert-base-ner
+      --task-type ner \
+      --es-username elastic --es-password XXX \
+      --es-model-id bert-base-ner
 ----
 --
 
