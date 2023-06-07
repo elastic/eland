@@ -578,7 +578,7 @@ class TransformerModel:
         model_id: str,
         task_type: str,
         *,
-        es_version: Optional[Tuple[int, int, int]],
+        es_version: Optional[Tuple[int, int, int]] = None,
         quantize: bool = False,
     ):
         """
