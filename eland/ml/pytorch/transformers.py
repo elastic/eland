@@ -22,6 +22,7 @@ libraries such as sentence-transformers.
 
 import json
 import os.path
+import re
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
@@ -573,7 +574,37 @@ class _TraceableTextSimilarityModel(_TransformerTraceableModel):
 
 
 class TransformerModel:
-    def __init__(self, model_id: str, task_type: str, quantize: bool = False):
+    def __init__(
+        self,
+        model_id: str,
+        task_type: str,
+        *,
+        es_version: Optional[Tuple[int, int, int]] = None,
+        quantize: bool = False,
+    ):
+        """
+        Loads a model from the Hugging Face repository or local file and creates
+        the configuration for upload to Elasticsearch.
+
+        Parameters
+        ----------
+        model_id: str
+            A Hugging Face model Id or a file path to the directory containing
+            the model files.
+
+        task_type: str
+            One of the supported task types.
+
+        es_version: Optional[Tuple[int, int, int]]
+            The Elasticsearch cluster version.
+            Certain features are created only if the target cluster is
+            a high enough version to support them. If not set only
+            universally supported features are added.
+
+        quantize: bool, default False
+            Quantize the model.
+        """
+
         self._model_id = model_id
         self._task_type = task_type.replace("-", "_")
 
@@ -595,7 +626,7 @@ class TransformerModel:
         if quantize:
             self._traceable_model.quantize()
         self._vocab = self._load_vocab()
-        self._config = self._create_config()
+        self._config = self._create_config(es_version)
 
     def _load_vocab(self) -> Dict[str, List[str]]:
         vocab_items = self._tokenizer.get_vocab().items()
@@ -649,7 +680,9 @@ class TransformerModel:
                     ).get(self._model_id),
                 )
 
-    def _create_config(self) -> NlpTrainedModelConfig:
+    def _create_config(
+        self, es_version: Optional[Tuple[int, int, int]]
+    ) -> NlpTrainedModelConfig:
         tokenization_config = self._create_tokenization_config()
 
         # Set squad well known defaults
@@ -664,12 +697,24 @@ class TransformerModel:
                 classification_labels=self._traceable_model.classification_labels(),
             )
         elif self._task_type == "text_embedding":
-            sample_embedding, _ = self._traceable_model.sample_output()
-            embedding_size = sample_embedding.size(-1)
-            inference_config = TASK_TYPE_TO_INFERENCE_CONFIG[self._task_type](
-                tokenization=tokenization_config,
-                embedding_size=embedding_size,
-            )
+            # The embedding_size paramater was added in Elasticsearch 8.8
+            # If the version is not known use the basic config
+            if es_version is None or (es_version[0] <= 8 and es_version[1] < 8):
+                inference_config = TASK_TYPE_TO_INFERENCE_CONFIG[self._task_type](
+                    tokenization=tokenization_config
+                )
+            else:
+                sample_embedding = self._traceable_model.sample_output()
+                if type(sample_embedding) is tuple:
+                    text_embedding, _ = sample_embedding
+                else:
+                    text_embedding = sample_embedding
+
+                embedding_size = text_embedding.size(-1)
+                inference_config = TASK_TYPE_TO_INFERENCE_CONFIG[self._task_type](
+                    tokenization=tokenization_config,
+                    embedding_size=embedding_size,
+                )
         else:
             inference_config = TASK_TYPE_TO_INFERENCE_CONFIG[self._task_type](
                 tokenization=tokenization_config
@@ -754,8 +799,7 @@ class TransformerModel:
             )
 
     def elasticsearch_model_id(self) -> str:
-        # Elasticsearch model IDs need to be a specific format: no special chars, all lowercase, max 64 chars
-        return self._model_id.replace("/", "__").lower()[:64]
+        return elasticsearch_model_id(self._model_id)
 
     def save(self, path: str) -> Tuple[str, NlpTrainedModelConfig, str]:
         # save traced model
@@ -767,3 +811,21 @@ class TransformerModel:
             json.dump(self._vocab, outfile)
 
         return model_path, self._config, vocab_path
+
+
+def elasticsearch_model_id(model_id: str) -> str:
+    """
+    Elasticsearch model IDs need to be a specific format:
+    no special chars, all lowercase, max 64 chars. If the
+    Id is longer than 64 charaters take the last 64- in the
+    case where the id is long file path this captures the
+    model name.
+
+    Ids starting with __ are not valid elasticsearch Ids,
+    # this might be the case if model_id is a file path
+    """
+
+    id = re.sub(r"[\s\\/]", "__", model_id).lower()[-64:]
+    if id.startswith("__"):
+        id = id.removeprefix("__")
+    return id
