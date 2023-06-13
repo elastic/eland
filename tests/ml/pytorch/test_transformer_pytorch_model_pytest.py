@@ -34,7 +34,7 @@ except ImportError:
 try:
     import torch  # noqa: F401
     from torch import Tensor, nn  # noqa: F401
-    from transformers import PretrainedConfig  # noqa: F401
+    from transformers import PretrainedConfig, elasticsearch_model_id  # noqa: F401
 
     from eland.ml.pytorch import (  # noqa: F401
         NlpBertTokenizationConfig,
@@ -135,6 +135,13 @@ class TestTraceableModel(TraceableModel, ABC):
                 position_ids,
             ),
         )
+
+    def sample_output(self) -> torch.Tensor:
+        input_ids = torch.tensor(np.array(range(0, len(TEST_BERT_VOCAB))))
+        attention_mask = torch.tensor([1] * len(TEST_BERT_VOCAB))
+        token_type_ids = torch.tensor([0] * len(TEST_BERT_VOCAB))
+        position_ids = torch.arange(len(TEST_BERT_VOCAB), dtype=torch.long)
+        return self._model(input_ids, attention_mask, token_type_ids, position_ids)
 
 
 class NerModule(nn.Module):
@@ -331,3 +338,21 @@ class TestPytorchModelUpload:
             )
         )
         assert task_type_from_model_config(model_config=config) == expected_task
+
+    def test_elasticsearch_model_id(self):
+        model_id_from_path = elasticsearch_model_id(r"/foo/bar")
+        assert model_id_from_path == "foo_bar"
+
+        model_id_from_path = elasticsearch_model_id(r"\BAZ\with space")
+        assert model_id_from_path == "baz__with__space"
+
+        model_id_from_path = elasticsearch_model_id(r"/foo/with tab\tback\slash")
+        assert model_id_from_path == "foo__with__space__back__slash"
+
+        long_id_left_truncated = elasticsearch_model_id(
+            "/foo/bar/64charactersoftext64charactersoftext64charactersoftext64charofte"
+        )
+        assert (
+            long_id_left_truncated
+            == "64charactersoftext64charactersoftext64charactersoftext64charofte"
+        )
