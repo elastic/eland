@@ -66,6 +66,26 @@ class NlpRobertaTokenizationConfig(NlpTokenizationConfig):
         self.add_prefix_space = add_prefix_space
 
 
+class NlpXLMRobertaTokenizationConfig(NlpTokenizationConfig):
+    def __init__(
+        self,
+        *,
+        with_special_tokens: t.Optional[bool] = None,
+        max_sequence_length: t.Optional[int] = None,
+        truncate: t.Optional[
+            t.Union["t.Literal['first', 'none', 'second']", str]
+        ] = None,
+        span: t.Optional[int] = None,
+    ):
+        super().__init__(
+            configuration_type="xlm_roberta",
+            with_special_tokens=with_special_tokens,
+            max_sequence_length=max_sequence_length,
+            truncate=truncate,
+            span=span,
+        )
+
+
 class NlpBertTokenizationConfig(NlpTokenizationConfig):
     def __init__(
         self,

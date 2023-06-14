@@ -31,6 +31,7 @@ __all__ = [
     "NlpTrainedModelConfig",
     "NlpBertTokenizationConfig",
     "NlpRobertaTokenizationConfig",
+    "NlpXLMRobertaTokenizationConfig",
     "NlpMPNetTokenizationConfig",
     "task_type_from_model_config",
 ]
