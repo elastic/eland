@@ -99,6 +99,7 @@ TASK_TYPE_TO_INFERENCE_CONFIG = {
 SUPPORTED_TASK_TYPES_NAMES = ", ".join(sorted(SUPPORTED_TASK_TYPES))
 SUPPORTED_TOKENIZERS = (
     transformers.BertTokenizer,
+    transformers.BertJapaneseTokenizer,
     transformers.MPNetTokenizer,
     transformers.DPRContextEncoderTokenizer,
     transformers.DPRQuestionEncoderTokenizer,
