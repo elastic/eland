@@ -58,6 +58,7 @@ release = version
 # ones.
 extensions = [
     "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
     "sphinx.ext.doctest",
     "sphinx.ext.extlinks",
     "matplotlib.sphinxext.plot_directive",
