@@ -43,6 +43,7 @@ from transformers import (
 from eland.ml.pytorch.nlp_ml_model import (
     FillMaskInferenceOptions,
     NerInferenceOptions,
+    NlpBertJapaneseTokenizationConfig,
     NlpBertTokenizationConfig,
     NlpMPNetTokenizationConfig,
     NlpRobertaTokenizationConfig,
@@ -99,6 +100,7 @@ TASK_TYPE_TO_INFERENCE_CONFIG = {
 SUPPORTED_TASK_TYPES_NAMES = ", ".join(sorted(SUPPORTED_TASK_TYPES))
 SUPPORTED_TOKENIZERS = (
     transformers.BertTokenizer,
+    transformers.BertJapaneseTokenizer,
     transformers.MPNetTokenizer,
     transformers.DPRContextEncoderTokenizer,
     transformers.DPRQuestionEncoderTokenizer,
@@ -684,12 +686,25 @@ class TransformerModel:
                 ).get(self._model_id),
             )
         else:
-            return NlpBertTokenizationConfig(
-                do_lower_case=getattr(self._tokenizer, "do_lower_case", None),
-                max_sequence_length=getattr(
-                    self._tokenizer, "max_model_input_sizes", dict()
-                ).get(self._model_id),
-            )
+            japanese_morphological_tokenizers = ["mecab"]
+            if (
+                hasattr(self._tokenizer, "word_tokenizer_type")
+                and self._tokenizer.word_tokenizer_type
+                in japanese_morphological_tokenizers
+            ):
+                return NlpBertJapaneseTokenizationConfig(
+                    do_lower_case=getattr(self._tokenizer, "do_lower_case", None),
+                    max_sequence_length=getattr(
+                        self._tokenizer, "max_model_input_sizes", dict()
+                    ).get(self._model_id),
+                )
+            else:
+                return NlpBertTokenizationConfig(
+                    do_lower_case=getattr(self._tokenizer, "do_lower_case", None),
+                    max_sequence_length=getattr(
+                        self._tokenizer, "max_model_input_sizes", dict()
+                    ).get(self._model_id),
+                )
 
     def _create_config(
         self, es_version: Optional[Tuple[int, int, int]]
