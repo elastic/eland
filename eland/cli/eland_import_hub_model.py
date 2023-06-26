@@ -41,6 +41,8 @@ MODEL_HUB_URL = "https://huggingface.co"
 
 
 def get_arg_parser():
+    from eland.ml.pytorch.transformers import SUPPORTED_TASK_TYPES
+
     parser = argparse.ArgumentParser()
     location_args = parser.add_mutually_exclusive_group(required=True)
     location_args.add_argument(
@@ -180,7 +182,8 @@ def check_cluster_version(es_client):
 
     return sem_ver
 
-if __name__ == "__main__":
+
+def main():
     # Configure logging
     logging.basicConfig(format='%(asctime)s %(levelname)s : %(message)s')
     logger = logging.getLogger(__name__)
@@ -254,3 +257,5 @@ if __name__ == "__main__":
     logger.info(f"Model successfully imported with id '{ptm.model_id}'")
 
 
+if __name__ == "__main__":
+    main()
