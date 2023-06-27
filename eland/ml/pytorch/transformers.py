@@ -494,7 +494,7 @@ class _TransformerTraceableModel(TraceableModel):
 class _TraceableClassificationModel(_TransformerTraceableModel, ABC):
     def classification_labels(self) -> Optional[List[str]]:
         id_label_items = self._model.config.id2label.items()
-        labels = [v for _, v in sorted(id_label_items, key=lambda kv: kv[0])]  # type: ignore
+        labels = [v for _, v in sorted(id_label_items, key=lambda kv: kv[0])]
 
         # Make classes like I-PER into I_PER which fits Java enumerations
         return [label.replace("-", "_") for label in labels]
@@ -636,7 +636,7 @@ class TransformerModel:
 
     def _load_vocab(self) -> Dict[str, List[str]]:
         vocab_items = self._tokenizer.get_vocab().items()
-        vocabulary = [k for k, _ in sorted(vocab_items, key=lambda kv: kv[1])]  # type: ignore
+        vocabulary = [k for k, _ in sorted(vocab_items, key=lambda kv: kv[1])]
         vocab_obj = {
             "vocabulary": vocabulary,
         }
