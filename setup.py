@@ -88,8 +88,8 @@ setup(
         "numpy>=1.2.0,<1.24",
     ],
     entry_points={
-        "console_scripts": ("eland_import_hub_model="
-                            "eland.cli.eland_import_hub_model:main")
+        "console_scripts": "eland_import_hub_model="
+        "eland.cli.eland_import_hub_model:main"
     },
     python_requires=">=3.8",
     package_data={"eland": ["py.typed"]},

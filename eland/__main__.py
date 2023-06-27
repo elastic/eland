@@ -15,7 +15,7 @@
 #  specific language governing permissions and limitations
 #  under the License.
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     from eland.cli import eland_import_hub_model
 
     eland_import_hub_model.main()
