@@ -205,8 +205,7 @@ def main():
                 \033[1m{sys.executable} -m pip install 'eland[pytorch]'
             \033[0m"""))
         exit(1)
-    else:
-        assert SUPPORTED_TASK_TYPES
+    assert SUPPORTED_TASK_TYPES
 
     # Parse arguments
     args = get_arg_parser().parse_args()
