@@ -103,23 +103,31 @@ def download_model_and_start_deployment(tmp_dir, quantize, model_id, task):
 
 
 class TestPytorchModel:
-
     def __init__(self):
         # quantization does not work on Mac with ARM processor
         import platform
-        self.quantize = True if not (platform.system() == "Darwin" and platform.machine() == "arm64") else False
+
+        self.quantize = (
+            True
+            if not (platform.system() == "Darwin" and platform.machine() == "arm64")
+            else False
+        )
 
     @pytest.mark.parametrize("model_id,task,text_input,value", TEXT_PREDICTION_MODELS)
     def test_text_prediction(self, model_id, task, text_input, value):
         with tempfile.TemporaryDirectory() as tmp_dir:
-            ptm = download_model_and_start_deployment(tmp_dir, self.quantize, model_id, task)
+            ptm = download_model_and_start_deployment(
+                tmp_dir, self.quantize, model_id, task
+            )
             result = ptm.infer(docs=[{"text_field": text_input}])
             assert result["predicted_value"] == value
 
     @pytest.mark.parametrize("model_id,task,text_input", TEXT_EMBEDDING_MODELS)
     def test_text_embedding(self, model_id, task, text_input):
         with tempfile.TemporaryDirectory() as tmp_dir:
-            ptm = download_model_and_start_deployment(tmp_dir, self.quantize, model_id, task)
+            ptm = download_model_and_start_deployment(
+                tmp_dir, self.quantize, model_id, task
+            )
             ptm.infer(docs=[{"text_field": text_input}])
 
             if ES_VERSION >= (8, 8, 0):

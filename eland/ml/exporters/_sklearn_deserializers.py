@@ -97,7 +97,7 @@ class Tree:
                     impurity[i],
                     n_node_samples[i],
                     weighted_n_node_samples[i],
-                    True
+                    True,
                 )
                 for i in range(node_count)
             ],
@@ -112,8 +112,8 @@ class Tree:
                     "weighted_n_node_samples",
                     "missing_go_to_left",
                 ],
-                "formats": ["<i8", "<i8", "<i8", "<f8", "<f8", "<i8", "<f8", "u1"]
-            }
+                "formats": ["<i8", "<i8", "<i8", "<f8", "<f8", "<i8", "<f8", "u1"],
+            },
         )
         state = {
             "max_depth": self.max_depth,
