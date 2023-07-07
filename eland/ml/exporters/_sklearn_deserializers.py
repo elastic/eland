@@ -97,18 +97,23 @@ class Tree:
                     impurity[i],
                     n_node_samples[i],
                     weighted_n_node_samples[i],
+                    True
                 )
                 for i in range(node_count)
             ],
-            dtype=[
-                ("left_child", "<i8"),
-                ("right_child", "<i8"),
-                ("feature", "<i8"),
-                ("threshold", "<f8"),
-                ("impurity", "<f8"),
-                ("n_node_samples", "<i8"),
-                ("weighted_n_node_samples", "<f8"),
-            ],
+            dtype={
+                "names": [
+                    "left_child",
+                    "right_child",
+                    "feature",
+                    "threshold",
+                    "impurity",
+                    "n_node_samples",
+                    "weighted_n_node_samples",
+                    "missing_go_to_left",
+                ],
+                "formats": ["<i8", "<i8", "<i8", "<f8", "<f8", "<i8", "<f8", "u1"]
+            }
         )
         state = {
             "max_depth": self.max_depth,

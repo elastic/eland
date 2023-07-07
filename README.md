@@ -244,8 +244,8 @@ command line and instead start the model using the ML UI in Kibana.
 The `--start` argument will deploy the model with one allocation and one
 thread per allocation, which will not offer good performance. When starting
 the model deployment using the ML UI in Kibana or the Elasticsearch
-[API](https://www.elastic.co/guide/en/elasticsearch/reference/current/start-trained-model-deployment.html)
-you will be able to set the threading options to make best use of your
+[API](https://www.elastic.co/guide/en/elasticsearch/reference/current/infer-trained-model.html)
+you will be able to set the threading options to make the best use of your
 hardware.
 
 ```python
