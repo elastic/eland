@@ -104,14 +104,10 @@ def download_model_and_start_deployment(tmp_dir, quantize, model_id, task):
 
 class TestPytorchModel:
     def __init__(self):
-        # quantization does not work on Mac with ARM processor
+        # quantization does not work on ARM processors
         import platform
 
-        self.quantize = (
-            True
-            if not (platform.system() == "Darwin" and platform.machine() == "arm64")
-            else False
-        )
+        self.quantize = True if platform.machine() != "arm64" else False
 
     @pytest.mark.parametrize("model_id,task,text_input,value", TEXT_PREDICTION_MODELS)
     def test_text_prediction(self, model_id, task, text_input, value):
