@@ -104,13 +104,13 @@ def download_model_and_start_deployment(tmp_dir, quantize, model_id, task):
 
 class TestPytorchModel:
     def __init__(self):
-        # quantization does not work on Mac with ARM processor
+        # quantization does not work on ARM processors
+        # TODO: It seems that PyTorch 2.0 supports OneDNN for aarch64. We should
+        # revisit this when we upgrade to PyTorch 2.0.
         import platform
 
         self.quantize = (
-            True
-            if not (platform.system() == "Darwin" and platform.machine() == "arm64")
-            else False
+            True if platform.machine() not in ["arm64", "aarch64"] else False
         )
 
     @pytest.mark.parametrize("model_id,task,text_input,value", TEXT_PREDICTION_MODELS)

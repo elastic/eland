@@ -56,7 +56,7 @@ with open(path.join(here, "README.md"), "r", "utf-8") as f:
 
 extras = {
     "xgboost": ["xgboost>=0.90,<2"],
-    "scikit-learn": ["scikit-learn>=0.22.1,<2"],
+    "scikit-learn": ["scikit-learn>=1.3,<2"],
     "lightgbm": ["lightgbm>=2,<4"],
     "pytorch": [
         "torch>=1.13.1,<2.0",
