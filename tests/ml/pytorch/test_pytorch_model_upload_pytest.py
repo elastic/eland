@@ -107,7 +107,9 @@ class TestPytorchModel:
         # quantization does not work on ARM processors
         import platform
 
-        self.quantize = True if platform.machine() not in ["arm64", "aarch64"] else False
+        self.quantize = (
+            True if platform.machine() not in ["arm64", "aarch64"] else False
+        )
 
     @pytest.mark.parametrize("model_id,task,text_input,value", TEXT_PREDICTION_MODELS)
     def test_text_prediction(self, model_id, task, text_input, value):
