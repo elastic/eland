@@ -134,7 +134,7 @@ class PyTorchModel:
         __body: Dict[str, Any] = {}
         __body["docs"] = docs
 
-        __path = f"/_ml/trained_models/{_quote(self.model_id)}/_infer"
+        __path = f"/_ml/trained_models/{_quote(self.model_id)}/deployment/_infer"
         __query: Dict[str, Any] = {}
         __query["timeout"] = timeout
         __headers = {"accept": "application/json", "content-type": "application/json"}
