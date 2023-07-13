@@ -1,4 +1,18 @@
 steps:
+  - label: ":terminal: Lint code"
+    env:
+      PYTHON_VERSION: 3
+    agents:
+      provider: "gcp"
+    commands:
+      - ./.buildkite/lint-code.sh
+  - label: ":books: Build documentation"
+    env:
+      PYTHON_VERSION: 3.9-bookworm
+    agents:
+      provider: "gcp"
+    commands:
+      - ./.buildkite/build-documentation.sh
   - label: "Eland :python: {{ matrix.python }} :elasticsearch: {{ matrix.stack }}"
     agents:
       provider: "gcp"
