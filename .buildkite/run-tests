@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+#
+# Version 1.0
+# - Moved to .ci folder and seperated out `run-repository.sh`
+
+if [[ -z $ELASTICSEARCH_VERSION ]]; then
+  echo -e "\033[31;1mERROR:\033[0m Required environment variable [ELASTICSEARCH_VERSION] not set\033[0m"
+  exit 1
+fi
+set -euxo pipefail
+
+TEST_SUITE=${TEST_SUITE-xpack}
+NODE_NAME=localhost
+PANDAS_VERSION=${PANDAS_VERSION-1.5.0}
+
+elasticsearch_image=elasticsearch
+elasticsearch_url=http://elastic:changeme@${NODE_NAME}:9200
+if [[ $TEST_SUITE != "xpack" ]]; then
+  elasticsearch_image=elasticsearch-${TEST_SUITE}
+  elasticsearch_url=http://${NODE_NAME}:9200
+fi
+
+function cleanup {
+  status=$?
+  set +x
+  ELASTICSEARCH_VERSION=${elasticsearch_image}:${ELASTICSEARCH_VERSION} \
+    NODE_NAME=${NODE_NAME} \
+    NETWORK_NAME=elasticsearch \
+    CLEANUP=true \
+    bash ./.buildkite/run-elasticsearch.sh
+  # Report status and exit
+  if [[ "$status" == "0" ]]; then
+    echo -e "\n\033[32;1mSUCCESS run-tests\033[0m"
+    exit 0
+  else
+    echo -e "\n\033[31;1mFAILURE during run-tests\033[0m"
+    exit ${status}
+  fi
+}
+trap cleanup EXIT
+
+echo "--- :elasticsearch: Starting Elasticsearch"
+
+ELASTICSEARCH_VERSION=${elasticsearch_image}:${ELASTICSEARCH_VERSION} \
+  NODE_NAME=${NODE_NAME} \
+  NETWORK_NAME=host \
+  DETACH=true \
+  bash .buildkite/run-elasticsearch.sh
+
+echo "+++ :python: Run tests"
+
+ELASTICSEARCH_CONTAINER=${elasticsearch_image}:${ELASTICSEARCH_VERSION} \
+  NETWORK_NAME=host \
+  NODE_NAME=${NODE_NAME} \
+  ELASTICSEARCH_URL=${elasticsearch_url} \
+  TEST_SUITE=${TEST_SUITE} \
+  PANDAS_VERSION=${PANDAS_VERSION} \
+  bash .buildkite/run-repository.sh
