@@ -25,7 +25,7 @@ echo -e "\033[34;1mINFO:\033[0m PANDAS_VERSION ${PANDAS_VERSION}\033[0m"
 
 echo -e "\033[1m>>>>> Build [elastic/eland container] >>>>>>>>>>>>>>>>>>>>>>>>>>>>>\033[0m"
 
-docker build --file .ci/Dockerfile --tag elastic/eland --build-arg PYTHON_VERSION=${PYTHON_VERSION} .
+docker build --file .buildkite/Dockerfile --tag elastic/eland --build-arg PYTHON_VERSION=${PYTHON_VERSION} .
 
 echo -e "\033[1m>>>>> Run [elastic/eland container] >>>>>>>>>>>>>>>>>>>>>>>>>>>>>\033[0m"
 

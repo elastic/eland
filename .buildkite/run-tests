@@ -29,7 +29,7 @@ function cleanup {
     NODE_NAME=${NODE_NAME} \
     NETWORK_NAME=elasticsearch \
     CLEANUP=true \
-    bash ./.ci/run-elasticsearch.sh
+    bash ./.buildkite/run-elasticsearch.sh
   # Report status and exit
   if [[ "$status" == "0" ]]; then
     echo -e "\n\033[32;1mSUCCESS run-tests\033[0m"
@@ -47,7 +47,7 @@ ELASTICSEARCH_VERSION=${elasticsearch_image}:${ELASTICSEARCH_VERSION} \
   NODE_NAME=${NODE_NAME} \
   NETWORK_NAME=host \
   DETACH=true \
-  bash .ci/run-elasticsearch.sh
+  bash .buildkite/run-elasticsearch.sh
 
 echo -e "\033[1m>>>>> Repository specific tests >>>>>>>>>>>>>>>>>>>>>>>>>>>>>\033[0m"
 
@@ -57,5 +57,5 @@ ELASTICSEARCH_CONTAINER=${elasticsearch_image}:${ELASTICSEARCH_VERSION} \
   ELASTICSEARCH_URL=${elasticsearch_url} \
   TEST_SUITE=${TEST_SUITE} \
   PANDAS_VERSION=${PANDAS_VERSION} \
-  bash .ci/run-repository.sh
+  bash .buildkite/run-repository.sh
 

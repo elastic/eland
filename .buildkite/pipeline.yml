@@ -1,0 +1,38 @@
+steps:
+  - label: ":terminal: Lint code"
+    env:
+      PYTHON_VERSION: 3
+    agents:
+      provider: "gcp"
+    commands:
+      - ./.buildkite/lint-code.sh
+  - label: ":books: Build documentation"
+    env:
+      PYTHON_VERSION: 3.9-bookworm
+    agents:
+      provider: "gcp"
+    commands:
+      - ./.buildkite/build-documentation.sh
+  - label: "Eland :python: {{ matrix.python }} :elasticsearch: {{ matrix.stack }}"
+    agents:
+      provider: "gcp"
+    env:
+      PYTHON_VERSION: "{{ matrix.python }}"
+      PANDAS_VERSION: "{{ matrix.pandas }}"
+      TEST_SUITE: "xpack"
+      ELASTICSEARCH_VERSION: "{{ matrix.stack }}"
+    matrix:
+      setup:
+        python:
+          - '3.10'
+          - '3.9'
+          - '3.8'
+        pandas:
+          - '1.2.0'
+          - '1.3.0'
+        stack:
+          - '7.x-SNAPSHOT'
+          - '7.11-SNAPSHOT'
+          - '7.14-SNAPSHOT'
+          - '8.0-SNAPSHOT'
+    command: ./.buildkite/run-tests
