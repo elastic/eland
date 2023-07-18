@@ -24,12 +24,15 @@ import json
 import os.path
 import re
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, List, Optional, Set, Tuple, Union, Callable
+from functools import partial
+import random
 
 import torch  # type: ignore
 import transformers  # type: ignore
 from sentence_transformers import SentenceTransformer  # type: ignore
-from torch import Tensor, nn
+from torch import Tensor, nn  # type: ignore
+from torch.profiler import profile  # type: ignore
 from transformers import (
     AutoConfig,
     AutoModel,
@@ -746,6 +749,24 @@ class TransformerModel:
                 tokenization=tokenization_config
             )
 
+        # add static and dynamic memory state size to metadata
+        static_memory_size = self._get_model_memory(self._traceable_model)
+
+        get_inputs = partial(
+            self.get_model_inputs, self._traceable_model, self._tokenizer
+        )
+        transient_memory_size = self._get_transient_memory(
+            self._traceable_model, get_inputs, 1
+        )
+        peak_memory_size = self._get_peak_memory(
+            static_memory_size, transient_memory_size
+        )
+        metadata = {
+            "static_memory_size": static_memory_size,
+            "transient_memory_size": transient_memory_size,
+            "peak_memory_size": peak_memory_size,
+        }
+
         return NlpTrainedModelConfig(
             description=f"Model {self._model_id} for task type '{self._task_type}'",
             model_type="pytorch",
@@ -753,7 +774,55 @@ class TransformerModel:
             input=TrainedModelInput(
                 field_names=["text_field"],
             ),
+            metadata=metadata,
         )
+
+    def _get_model_memory(self, model: nn.Module) -> float:
+        psize = sum(
+            param.nelement() * param.element_size() for param in model.parameters()
+        )
+        bsize = sum(
+            buffer.nelement() * buffer.element_size() for buffer in model.buffers()
+        )
+        return (psize + bsize) / 1024**2  # in MB
+
+    def _get_transient_memory(
+        self, model: nn.Module, get_inputs: Callable, batch_size: int
+    ) -> float:
+        batch_1 = get_inputs(1)
+        batch_2 = get_inputs(2)
+
+        activities = [torch.profiler.ProfilerActivity.CPU]
+        with profile(activities=activities, profile_memory=True) as prof:
+            model(batch_1)
+        mem1 = prof.key_averages().total_average().cpu_memory_usage / 1024**2
+
+        if batch_size == 1:
+            return mem1  # in MB
+
+        with profile(activities=activities, profile_memory=True) as prof:
+            model(batch_2)
+        mem2 = prof.key_averages().total_average().cpu_memory_usage / 1024**2
+
+        return mem1 + (mem2 - mem1) * (batch_size - 1)  # in MB
+
+    def _get_peak_memory(self, size_model_mb: float, transient: float) -> float:
+        return max(2 * size_model_mb, size_model_mb + transient)
+
+    def _get_model_inputs(
+        self, model: nn.Model, tokenizer: Tokenizer, batch_size: int
+    ) -> dict[str, list[str]]:
+        module = model.vocab_weight_model.transformer  # ???
+        max_length: int = (
+            module.config.max_position_embeddings
+        )  # TODO: there should be other ways to get max_length at this point
+        vocab: list[str] = list(tokenizer.get_vocab().keys())
+
+        inputs: list[str] = [
+            " ".join(random.choices(vocab, k=max_length)) for _ in range(batch_size)
+        ]
+
+        return {"t": inputs}  # TODO: there should be a different key
 
     def _create_traceable_model(self) -> TraceableModel:
         if self._task_type == "auto":
