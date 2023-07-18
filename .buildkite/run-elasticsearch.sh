@@ -37,6 +37,11 @@ NETWORK_NAME=${NETWORK_NAME-"$network_default"}
 
 set +x
 
+# Set vm.max_map_count kernel setting to 262144 if we're in CI
+if [[ "$BUILDKITE" == "true" ]]; then
+  sudo sysctl -w vm.max_map_count=262144
+fi
+
 function cleanup_volume {
   if [[ "$(docker volume ls -q -f name=$1)" ]]; then
     echo -e "\033[34;1mINFO:\033[0m Removing volume $1\033[0m"
