@@ -426,7 +426,6 @@ class MLModel:
     def _trained_model_config(self) -> Dict[str, Any]:
         """Lazily loads an ML models 'trained_model_config' information"""
         if self._trained_model_config_cache is None:
-
             # In Elasticsearch 7.7 and earlier you can't get
             # target type without pulling the model definition
             # so we check the version first.

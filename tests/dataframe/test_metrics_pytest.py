@@ -419,7 +419,6 @@ class TestDataFrameMetrics(TestData):
             assert calculated_values.shape == (2,)
 
     def test_aggs_count(self):
-
         pd_flights = self.pd_flights().filter(self.filter_data)
         ed_flights = self.ed_flights().filter(self.filter_data)
 

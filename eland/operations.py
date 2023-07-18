@@ -213,7 +213,6 @@ class Operations:
     def idx(
         self, query_compiler: "QueryCompiler", axis: int, sort_order: str
     ) -> pd.Series:
-
         if axis == 1:
             # Fetch idx on Columns
             raise NotImplementedError(
@@ -282,7 +281,6 @@ class Operations:
         numeric_only: bool = False,
         dropna: bool = True,
     ) -> Union[pd.DataFrame, pd.Series]:
-
         results = self._metric_aggs(
             query_compiler,
             pd_aggs=pd_aggs,
@@ -533,7 +531,6 @@ class Operations:
         # weights = [10066.,   263.,   386.,   264.,   273.,   390.,   324.,   438.,   261.,   252.,    142.]
         # So sum last 2 buckets
         for field in numeric_source_fields:
-
             # in case of series let plotting.ed_hist_series thrown an exception
             if not response.get("aggregations"):
                 continue
@@ -749,7 +746,7 @@ class Operations:
                     if pd_agg in {"max", "min", "median", "sum", "mode"}:
                         # 'sum' isn't representable with bool, use int64
                         if pd_agg == "sum" and field.is_bool:
-                            agg_value = np.int64(agg_value)
+                            agg_value = np.int64(agg_value)  # type: ignore
                         else:
                             agg_value = field.np_dtype.type(agg_value)
 
@@ -774,7 +771,6 @@ class Operations:
         is_dataframe: bool = True,
         numeric_only: Optional[bool] = True,
     ) -> Union[pd.DataFrame, pd.Series]:
-
         percentiles = [
             quantile_to_percentile(x)
             for x in (
@@ -1026,7 +1022,6 @@ class Operations:
             buckets: Sequence[Dict[str, Any]] = composite_buckets["buckets"]
 
             if after_key:
-
                 # yield the bucket which contains the result
                 yield buckets
 
@@ -1201,7 +1196,6 @@ class Operations:
     def to_pandas(
         self, query_compiler: "QueryCompiler", show_progress: bool = False
     ) -> pd.DataFrame:
-
         df_list: List[pd.DataFrame] = []
         i = 0
         for df in self.search_yield_pandas_dataframes(query_compiler=query_compiler):
@@ -1576,7 +1570,6 @@ def _search_with_pit_and_search_after(
     body: Dict[str, Any],
     max_number_of_hits: Optional[int],
 ) -> Generator[List[Dict[str, Any]], None, None]:
-
     # No documents, no reason to send a search.
     if max_number_of_hits == 0:
         return

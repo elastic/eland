@@ -189,7 +189,6 @@ class _DPREncoderWrapper(nn.Module):  # type: ignore
 
     @staticmethod
     def from_pretrained(model_id: str) -> Optional[Any]:
-
         config = AutoConfig.from_pretrained(model_id)
 
         def is_compatible() -> bool:

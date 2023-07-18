@@ -30,7 +30,6 @@ SOURCE_FILES = ("setup.py", "noxfile.py", "eland/", "docs/", "utils/", "tests/",
 TYPED_FILES = (
     "eland/actions.py",
     "eland/arithmetics.py",
-    "eland/common.py",
     "eland/etl.py",
     "eland/filter.py",
     "eland/index.py",
@@ -46,7 +45,6 @@ TYPED_FILES = (
     "eland/ml/ml_model.py",
     "eland/ml/pytorch/__init__.py",
     "eland/ml/pytorch/_pytorch_model.py",
-    "eland/ml/pytorch/transformers.py",
     "eland/ml/transformers/__init__.py",
     "eland/ml/transformers/base.py",
     "eland/ml/transformers/lightgbm.py",
@@ -71,7 +69,7 @@ def lint(session):
     # Install numpy to use its mypy plugin
     # https://numpy.org/devdocs/reference/typing.html#mypy-plugin
     session.install("black", "flake8", "mypy", "isort", "numpy")
-    session.install("--pre", "elasticsearch")
+    session.install("--pre", "elasticsearch>=7.11,<8")
     session.run("python", "utils/license-headers.py", "check", *SOURCE_FILES)
     session.run("black", "--check", "--target-version=py37", *SOURCE_FILES)
     session.run("isort", "--check", "--profile=black", *SOURCE_FILES)

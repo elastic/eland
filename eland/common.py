@@ -309,8 +309,10 @@ def elasticsearch_date_to_pandas_date(
 def ensure_es_client(
     es_client: Union[str, List[str], Tuple[str, ...], Elasticsearch]
 ) -> Elasticsearch:
+    if isinstance(es_client, tuple):
+        es_client = list(es_client)
     if not isinstance(es_client, Elasticsearch):
-        es_client = Elasticsearch(es_client)
+        es_client = Elasticsearch(es_client)  # type: ignore[arg-type]
     return es_client
 
 
@@ -330,9 +332,9 @@ def es_version(es_client: Elasticsearch) -> Tuple[int, int, int]:
         eland_es_version = cast(
             Tuple[int, int, int], tuple(int(x) for x in match.groups())
         )
-        es_client._eland_es_version = eland_es_version  # type: ignore
+        es_client._eland_es_version = eland_es_version
     else:
-        eland_es_version = es_client._eland_es_version  # type: ignore
+        eland_es_version = es_client._eland_es_version
     return eland_es_version
 
 

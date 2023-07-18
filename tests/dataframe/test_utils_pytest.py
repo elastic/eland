@@ -145,7 +145,6 @@ class TestDataFrameUtils(TestData):
         # assert_pandas_eland_frame_equal(pd_df, self.ed_flights())
 
     def test_es_type_override_error(self):
-
         df = self.pd_flights().filter(
             ["AvgTicketPrice", "Cancelled", "dayOfWeek", "timestamp", "DestCountry"]
         )
