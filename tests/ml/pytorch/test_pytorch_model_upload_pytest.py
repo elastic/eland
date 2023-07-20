@@ -113,15 +113,13 @@ def download_model_and_start_deployment(tmp_dir, quantize, model_id, task):
 
 class TestPytorchModel:
     @property
-    def quantize(self) -> bool: 
+    def quantize(self) -> bool:
         # quantization does not work on ARM processors
         # TODO: It seems that PyTorch 2.0 supports OneDNN for aarch64. We should
         # revisit this when we upgrade to PyTorch 2.0.
         import platform
 
-        return (
-            True if platform.machine() not in ["arm64", "aarch64"] else False
-        )
+        return True if platform.machine() not in ["arm64", "aarch64"] else False
 
     @pytest.mark.parametrize("model_id,task,text_input,value", TEXT_PREDICTION_MODELS)
     def test_text_prediction(self, model_id, task, text_input, value, quantize):
@@ -130,7 +128,7 @@ class TestPytorchModel:
                 tmp_dir, self.quantize, model_id, task
             )
             result = ptm.infer(docs=[{"text_field": text_input}])
-            assert result['inference_results'][0]['predicted_value'] == value
+            assert result["inference_results"][0]["predicted_value"] == value
 
     @pytest.mark.parametrize("model_id,task,text_input", TEXT_EMBEDDING_MODELS)
     def test_text_embedding(self, model_id, task, text_input, quantize):

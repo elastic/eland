@@ -813,16 +813,14 @@ class TransformerModel:
         )
         return (psize + bsize) / 1024**2  # in MB
 
-    def _get_transient_memory(
-        self, max_seq_length: int, batch_size: int
-    ) -> float:
+    def _get_transient_memory(self, max_seq_length: int, batch_size: int) -> float:
         """
         Returns the transient memory size of the model in MB.
 
         Parameters
         ----------
         max_seq_length : Optional[int]
-            Maximum sequence length to use for the model. 
+            Maximum sequence length to use for the model.
         batch_size : int
             Batch size to use for the model.
         """
