@@ -25,14 +25,13 @@ import os.path
 import random
 import re
 from abc import ABC, abstractmethod
-from functools import partial
-from math import trunc
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 import torch  # type: ignore
 import transformers  # type: ignore
 from sentence_transformers import SentenceTransformer  # type: ignore
 from torch import Tensor, nn
+from torch.profiler import profile
 from transformers import (
     AutoConfig,
     AutoModel,
