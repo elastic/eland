@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 #  Licensed to Elasticsearch B.V. under one or more contributor
 #  license agreements. See the NOTICE file distributed with
 #  this work for additional information regarding copyright
@@ -209,9 +207,9 @@ def main():
             textwrap.dedent(
                 f"""\
             \033[31mFailed to run because module '{e.name}' is not available.\033[0m
-            
+
             This script requires PyTorch extras to run. You can install these by running:
-            
+
                 \033[1m{sys.executable} -m pip install 'eland[pytorch]'
             \033[0m"""
             )
@@ -274,15 +272,15 @@ def main():
         logger.info(f"Creating model with id '{ptm.model_id}'")
         ptm.put_config(config=config)
 
-        logger.info(f"Uploading model definition")
+        logger.info("Uploading model definition")
         ptm.put_model(model_path)
 
-        logger.info(f"Uploading model vocabulary")
+        logger.info("Uploading model vocabulary")
         ptm.put_vocab(vocab_path)
 
     # Start the deployed model
     if args.start:
-        logger.info(f"Starting model deployment")
+        logger.info("Starting model deployment")
         ptm.start()
 
     logger.info(f"Model successfully imported with id '{ptm.model_id}'")
