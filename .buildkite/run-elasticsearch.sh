@@ -16,7 +16,12 @@ fi
 
 set -euxo pipefail
 
-SCRIPT_PATH=$(dirname $(realpath -s $0))
+# realpath on MacOS use different flags than on Linux
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  SCRIPT_PATH=$(dirname $(realpath $0))
+else 
+  SCRIPT_PATH=$(dirname $(realpath -s $0))
+fi
 
 moniker=$(echo "$ELASTICSEARCH_VERSION" | tr -C "[:alnum:]" '-')
 suffix=rest-test
@@ -132,7 +137,7 @@ url="http://elastic:$ELASTIC_PASSWORD@$NODE_NAME"
 docker_pull_attempts=0
 until [ "$docker_pull_attempts" -ge 5 ]
 do
-   docker pull docker.elastic.co/elasticsearch/"$ELASTICSEARCH_VERSION" && break
+   docker pull docker.elastic.co/elasticsearch/$ELASTICSEARCH_VERSION && break
    docker_pull_attempts=$((docker_pull_attempts+1))
    sleep 10
 done
