@@ -66,3 +66,7 @@ class TraceableModel(ABC):
         trace_model = torch.jit.freeze(trace_model)
         torch.jit.save(trace_model, model_path)
         return model_path
+    
+    @property
+    def model(self) -> nn.Module:
+        return self._model

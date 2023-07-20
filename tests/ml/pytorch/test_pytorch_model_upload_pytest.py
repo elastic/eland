@@ -121,7 +121,7 @@ class TestPytorchModel:
                 tmp_dir, self.quantize, model_id, task
             )
             result = ptm.infer(docs=[{"text_field": text_input}])
-            assert result["predicted_value"] == value
+            assert result['inference_results'][0]['predicted_value'] == value
 
     @pytest.mark.parametrize("model_id,task,text_input", TEXT_EMBEDDING_MODELS)
     def test_text_embedding(self, model_id, task, text_input):
