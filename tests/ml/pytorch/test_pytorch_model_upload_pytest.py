@@ -126,9 +126,11 @@ class TestPytorchModel:
     @pytest.mark.parametrize("model_id,task,text_input,value", TEXT_PREDICTION_MODELS)
     def test_text_prediction(self, model_id, task, text_input, value, quantize):
         with tempfile.TemporaryDirectory() as tmp_dir:
-            ptm = download_model_and_start_deployment(tmp_dir, quantize, model_id, task)
-            results = ptm.infer(docs=[{"text_field": text_input}])
-            assert results.body["inference_results"][0]["predicted_value"] == value
+            ptm = download_model_and_start_deployment(
+                tmp_dir, self.quantize, model_id, task
+            )
+            result = ptm.infer(docs=[{"text_field": text_input}])
+            assert result['inference_results'][0]['predicted_value'] == value
 
     @pytest.mark.parametrize("model_id,task,text_input", TEXT_EMBEDDING_MODELS)
     def test_text_embedding(self, model_id, task, text_input, quantize):
