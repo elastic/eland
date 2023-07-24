@@ -831,7 +831,9 @@ class TransformerModel:
             self._traceable_model.model(**inputs_1)
         mem1 = prof.key_averages().total_average().cpu_memory_usage / 1024**2
 
-        # Get the memory usage of the model with a batch size of 2.
+        # This is measuring memory usage of the model with a batch size of 2 and 
+        # then linearly extrapolating it to get the memory usage of the model for 
+        # a batch size of batch_size.
         if batch_size == 1:
             return mem1  # in MB
         else:
