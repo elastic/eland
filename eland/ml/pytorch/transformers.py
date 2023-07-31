@@ -732,7 +732,7 @@ class TransformerModel:
             else:
                 sample_embedding = self._traceable_model.sample_output()
                 if type(sample_embedding) is tuple:
-                    text_embedding, _ = sample_embedding
+                    text_embedding, *_ = sample_embedding
                 else:
                     text_embedding = sample_embedding
 
