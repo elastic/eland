@@ -102,7 +102,7 @@ class SymmetricAPIChecker:
 
     def check_exception(self, ed_exc, pd_exc):
         """Checks that either an exception was raised or not from both eland and pandas"""
-        assert (ed_exc is None) == (pd_exc is None) and type(ed_exc) == type(pd_exc)
+        assert (ed_exc is None) == (pd_exc is None) and isinstance(ed_exc, type(pd_exc))
         if pd_exc is not None:
             raise pd_exc
 
