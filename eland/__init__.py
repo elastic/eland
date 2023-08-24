@@ -16,6 +16,8 @@
 #  under the License.
 
 from ._version import (  # noqa: F401
+    __author__,
+    __author_email__,
     __description__,
     __maintainer__,
     __maintainer_email__,
