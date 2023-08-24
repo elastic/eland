@@ -1,4 +1,4 @@
-eland.groupby.DataFrameGroupBy.sum
+﻿eland.groupby.DataFrameGroupBy.sum
 ==================================
 
 .. currentmodule:: eland.groupby

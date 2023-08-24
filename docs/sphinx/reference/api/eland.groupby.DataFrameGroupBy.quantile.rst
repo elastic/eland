@@ -1,4 +1,4 @@
-eland.groupby.DataFrameGroupBy.quantile
+﻿eland.groupby.DataFrameGroupBy.quantile
 =======================================
 
 .. currentmodule:: eland.groupby

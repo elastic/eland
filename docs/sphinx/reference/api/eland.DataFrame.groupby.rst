@@ -1,4 +1,4 @@
-eland.DataFrame.groupby
+﻿eland.DataFrame.groupby
 =======================
 
 .. currentmodule:: eland

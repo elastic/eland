@@ -1,5 +1,5 @@
-eland.pandas_to_eland
-=====================
+﻿eland.pandas\_to\_eland
+=======================
 
 .. currentmodule:: eland
 

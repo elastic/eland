@@ -1,4 +1,4 @@
-eland.groupby.DataFrameGroupBy.count
+﻿eland.groupby.DataFrameGroupBy.count
 ====================================
 
 .. currentmodule:: eland.groupby

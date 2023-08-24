@@ -1,4 +1,4 @@
-eland.DataFrame.nunique
+﻿eland.DataFrame.nunique
 =======================
 
 .. currentmodule:: eland

@@ -1,4 +1,4 @@
-eland.DataFrame.info
+﻿eland.DataFrame.info
 ====================
 
 .. currentmodule:: eland

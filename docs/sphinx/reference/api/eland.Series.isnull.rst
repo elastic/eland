@@ -1,4 +1,4 @@
-eland.Series.isnull
+﻿eland.Series.isnull
 ===================
 
 .. currentmodule:: eland

@@ -1,4 +1,4 @@
-eland.Series.div
+﻿eland.Series.div
 ================
 
 .. currentmodule:: eland

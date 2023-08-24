@@ -1,6 +1,6 @@
-eland.DataFrame.size
+﻿eland.DataFrame.size
 ====================
 
 .. currentmodule:: eland
 
-.. autoattribute:: DataFrame.size
+.. autoproperty:: DataFrame.size

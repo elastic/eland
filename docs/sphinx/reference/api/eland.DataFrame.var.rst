@@ -1,4 +1,4 @@
-eland.DataFrame.var
+﻿eland.DataFrame.var
 ===================
 
 .. currentmodule:: eland

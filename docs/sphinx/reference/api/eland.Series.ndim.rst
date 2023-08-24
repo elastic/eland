@@ -1,6 +1,6 @@
-eland.Series.ndim
+﻿eland.Series.ndim
 =================
 
 .. currentmodule:: eland
 
-.. autoattribute:: Series.ndim
+.. autoproperty:: Series.ndim

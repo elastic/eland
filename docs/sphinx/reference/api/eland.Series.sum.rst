@@ -1,4 +1,4 @@
-eland.Series.sum
+﻿eland.Series.sum
 ================
 
 .. currentmodule:: eland

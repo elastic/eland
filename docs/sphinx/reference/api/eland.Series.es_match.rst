@@ -1,5 +1,5 @@
-eland.Series.es_match
-=====================
+﻿eland.Series.es\_match
+======================
 
 .. currentmodule:: eland
 

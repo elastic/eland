@@ -1,5 +1,5 @@
-eland.DataFrame.select_dtypes
-=============================
+﻿eland.DataFrame.select\_dtypes
+==============================
 
 .. currentmodule:: eland
 

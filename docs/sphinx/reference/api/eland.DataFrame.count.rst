@@ -1,4 +1,4 @@
-eland.DataFrame.count
+﻿eland.DataFrame.count
 =====================
 
 .. currentmodule:: eland

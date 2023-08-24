@@ -1,4 +1,4 @@
-eland.DataFrame.get
+﻿eland.DataFrame.get
 ===================
 
 .. currentmodule:: eland

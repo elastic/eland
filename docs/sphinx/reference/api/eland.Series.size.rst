@@ -1,6 +1,6 @@
-eland.Series.size
+﻿eland.Series.size
 =================
 
 .. currentmodule:: eland
 
-.. autoattribute:: Series.size
+.. autoproperty:: Series.size

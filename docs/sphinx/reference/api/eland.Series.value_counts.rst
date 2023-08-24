@@ -1,5 +1,5 @@
-eland.Series.value_counts
-=========================
+﻿eland.Series.value\_counts
+==========================
 
 .. currentmodule:: eland
 

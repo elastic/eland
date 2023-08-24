@@ -1,5 +1,5 @@
-eland.DataFrame.to_html
-=======================
+﻿eland.DataFrame.to\_html
+========================
 
 .. currentmodule:: eland
 
