@@ -1,6 +1,6 @@
-eland.Series.index
+﻿eland.Series.index
 ==================
 
 .. currentmodule:: eland
 
-.. autoattribute:: Series.index
+.. autoproperty:: Series.index

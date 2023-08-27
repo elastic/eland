@@ -1,4 +1,4 @@
-eland.ml.MLModel.predict
+﻿eland.ml.MLModel.predict
 ========================
 
 .. currentmodule:: eland.ml

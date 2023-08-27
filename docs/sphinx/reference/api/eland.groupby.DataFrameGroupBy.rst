@@ -1,15 +1,36 @@
-eland.groupby.DataFrameGroupBy
+﻿eland.groupby.DataFrameGroupBy
 ==============================
 
 .. currentmodule:: eland.groupby
 
 .. autoclass:: DataFrameGroupBy
 
+   
+   .. automethod:: __init__
 
-..
-   HACK -- the point here is that we don't want this to appear in the output, but the autosummary should still generate the pages.
+   
+   .. rubric:: Methods
+
    .. autosummary::
-      :toctree:
+   
+      ~DataFrameGroupBy.__init__
+      ~DataFrameGroupBy.agg
+      ~DataFrameGroupBy.aggregate
+      ~DataFrameGroupBy.count
+      ~DataFrameGroupBy.mad
+      ~DataFrameGroupBy.max
+      ~DataFrameGroupBy.mean
+      ~DataFrameGroupBy.median
+      ~DataFrameGroupBy.min
+      ~DataFrameGroupBy.mode
+      ~DataFrameGroupBy.nunique
+      ~DataFrameGroupBy.quantile
+      ~DataFrameGroupBy.std
+      ~DataFrameGroupBy.sum
+      ~DataFrameGroupBy.var
+   
+   
 
-      DataFrame.abs
-      DataFrame.add
+   
+   
+   

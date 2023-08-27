@@ -1,4 +1,4 @@
-eland.groupby.DataFrameGroupBy.median
+﻿eland.groupby.DataFrameGroupBy.median
 =====================================
 
 .. currentmodule:: eland.groupby

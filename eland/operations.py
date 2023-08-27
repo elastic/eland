@@ -210,7 +210,6 @@ class Operations:
     def idx(
         self, query_compiler: "QueryCompiler", axis: int, sort_order: str
     ) -> pd.Series:
-
         if axis == 1:
             # Fetch idx on Columns
             raise NotImplementedError(
@@ -279,7 +278,6 @@ class Operations:
         numeric_only: bool = False,
         dropna: bool = True,
     ) -> Union[pd.DataFrame, pd.Series]:
-
         results = self._metric_aggs(
             query_compiler,
             pd_aggs=pd_aggs,
@@ -530,7 +528,6 @@ class Operations:
         # weights = [10066.,   263.,   386.,   264.,   273.,   390.,   324.,   438.,   261.,   252.,    142.]
         # So sum last 2 buckets
         for field in numeric_source_fields:
-
             # in case of series let plotting.ed_hist_series thrown an exception
             if not response.get("aggregations"):
                 continue
@@ -746,7 +743,7 @@ class Operations:
                     if pd_agg in {"max", "min", "median", "sum", "mode"}:
                         # 'sum' isn't representable with bool, use int64
                         if pd_agg == "sum" and field.is_bool:
-                            agg_value = np.int64(agg_value)
+                            agg_value = np.int64(agg_value)  # type: ignore
                         else:
                             agg_value = field.np_dtype.type(agg_value)
 
@@ -771,7 +768,6 @@ class Operations:
         is_dataframe: bool = True,
         numeric_only: Optional[bool] = True,
     ) -> Union[pd.DataFrame, pd.Series]:
-
         percentiles = [
             quantile_to_percentile(x)
             for x in (
@@ -801,7 +797,6 @@ class Operations:
             return df if is_dataframe else df.transpose().iloc[0]
 
     def unique(self, query_compiler: "QueryCompiler") -> pd.Series:
-
         query_params, _ = self._resolve_tasks(query_compiler)
         body = Query(query_params.query)
 
@@ -1052,7 +1047,6 @@ class Operations:
             buckets: Sequence[Dict[str, Any]] = composite_buckets["buckets"]
 
             if after_key:
-
                 # yield the bucket which contains the result
                 yield buckets
 

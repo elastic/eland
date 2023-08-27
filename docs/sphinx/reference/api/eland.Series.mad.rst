@@ -1,4 +1,4 @@
-eland.Series.mad
+﻿eland.Series.mad
 ================
 
 .. currentmodule:: eland

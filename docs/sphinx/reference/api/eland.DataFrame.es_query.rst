@@ -1,5 +1,5 @@
-eland.DataFrame.es_query
-========================
+﻿eland.DataFrame.es\_query
+=========================
 
 .. currentmodule:: eland
 

@@ -1,4 +1,4 @@
-eland.Series.rsubtract
+﻿eland.Series.rsubtract
 ======================
 
 .. currentmodule:: eland

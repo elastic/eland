@@ -1,4 +1,4 @@
-eland.Series.rdivide
+﻿eland.Series.rdivide
 ====================
 
 .. currentmodule:: eland

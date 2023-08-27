@@ -1,4 +1,4 @@
-eland.Series.rfloordiv
+﻿eland.Series.rfloordiv
 ======================
 
 .. currentmodule:: eland

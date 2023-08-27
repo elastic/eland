@@ -1,4 +1,4 @@
-eland.Series.divide
+﻿eland.Series.divide
 ===================
 
 .. currentmodule:: eland

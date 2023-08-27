@@ -1,6 +1,6 @@
-eland.DataFrame.shape
+﻿eland.DataFrame.shape
 =====================
 
 .. currentmodule:: eland
 
-.. autoattribute:: DataFrame.shape
+.. autoproperty:: DataFrame.shape

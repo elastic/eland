@@ -1,4 +1,4 @@
-eland.Series.truediv
+﻿eland.Series.truediv
 ====================
 
 .. currentmodule:: eland

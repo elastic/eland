@@ -1,4 +1,4 @@
-eland.DataFrame.min
+﻿eland.DataFrame.min
 ===================
 
 .. currentmodule:: eland

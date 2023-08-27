@@ -93,5 +93,9 @@ try:
         "LGBMClassifierTransformer",
     ]
     _MODEL_TRANSFORMERS.update(_LIGHTGBM_MODEL_TRANSFORMERS)
-except ImportError:
+    # LightGBM may be installed but missing a required library
+    # (e.g. libomp) in which case an OSError is thrown. Allow
+    # the error to happen here so that code using other features
+    # is not blocked by the missing dependency
+except (ImportError, OSError):
     pass

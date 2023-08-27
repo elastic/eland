@@ -1,5 +1,5 @@
-eland.Series.isna
-==================
+﻿eland.Series.isna
+=================
 
 .. currentmodule:: eland
 

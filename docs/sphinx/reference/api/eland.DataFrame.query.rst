@@ -1,4 +1,4 @@
-eland.DataFrame.query
+﻿eland.DataFrame.query
 =====================
 
 .. currentmodule:: eland

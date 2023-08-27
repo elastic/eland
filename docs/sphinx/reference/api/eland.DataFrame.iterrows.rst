@@ -1,4 +1,4 @@
-eland.DataFrame.iterrows
+﻿eland.DataFrame.iterrows
 ========================
 
 .. currentmodule:: eland

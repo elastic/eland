@@ -1,5 +1,5 @@
-eland.ml.MLModel.import_model
-=============================
+﻿eland.ml.MLModel.import\_model
+==============================
 
 .. currentmodule:: eland.ml
 

@@ -1,4 +1,4 @@
-eland.Series.notna
+﻿eland.Series.notna
 ==================
 
 .. currentmodule:: eland

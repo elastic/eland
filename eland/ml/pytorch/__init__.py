@@ -16,5 +16,22 @@
 #  under the License.
 
 from eland.ml.pytorch._pytorch_model import PyTorchModel  # noqa: F401
+from eland.ml.pytorch.nlp_ml_model import (
+    NlpBertTokenizationConfig,
+    NlpMPNetTokenizationConfig,
+    NlpRobertaTokenizationConfig,
+    NlpTrainedModelConfig,
+)
+from eland.ml.pytorch.traceable_model import TraceableModel  # noqa: F401
+from eland.ml.pytorch.transformers import task_type_from_model_config
 
-__all__ = ["PyTorchModel"]
+__all__ = [
+    "PyTorchModel",
+    "TraceableModel",
+    "NlpTrainedModelConfig",
+    "NlpBertTokenizationConfig",
+    "NlpRobertaTokenizationConfig",
+    "NlpXLMRobertaTokenizationConfig",
+    "NlpMPNetTokenizationConfig",
+    "task_type_from_model_config",
+]

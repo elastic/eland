@@ -1,5 +1,5 @@
-eland.DataFrame.to_pandas
-=========================
+﻿eland.Series.to\_pandas
+=======================
 
 .. currentmodule:: eland
 

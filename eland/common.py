@@ -322,15 +322,7 @@ def es_version(es_client: Elasticsearch) -> Tuple[int, int, int]:
     eland_es_version: Tuple[int, int, int]
     if not hasattr(es_client, "_eland_es_version"):
         version_info = es_client.info()["version"]["number"]
-        match = re.match(r"^(\d+)\.(\d+)\.(\d+)", version_info)
-        if match is None:
-            raise ValueError(
-                f"Unable to determine Elasticsearch version. "
-                f"Received: {version_info}"
-            )
-        eland_es_version = cast(
-            Tuple[int, int, int], tuple(int(x) for x in match.groups())
-        )
+        eland_es_version = parse_es_version(version_info)
         es_client._eland_es_version = eland_es_version  # type: ignore
 
         # Raise a warning if the major version of the library doesn't match the
@@ -345,5 +337,18 @@ def es_version(es_client: Elasticsearch) -> Tuple[int, int, int]:
             )
 
     else:
-        eland_es_version = es_client._eland_es_version  # type: ignore
+        eland_es_version = es_client._eland_es_version
     return eland_es_version
+
+
+def parse_es_version(version: str) -> Tuple[int, int, int]:
+    """
+    Parse the semantic version from a string e.g. '8.8.0'
+    Extensions such as '-SNAPSHOT' are ignored
+    """
+    match = re.match(r"^(\d+)\.(\d+)\.(\d+)", version)
+    if match is None:
+        raise ValueError(
+            f"Unable to determine Elasticsearch version. " f"Received: {version}"
+        )
+    return cast(Tuple[int, int, int], tuple(int(x) for x in match.groups()))

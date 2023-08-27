@@ -1,4 +1,4 @@
-eland.Series.mean
+﻿eland.Series.mean
 =================
 
 .. currentmodule:: eland

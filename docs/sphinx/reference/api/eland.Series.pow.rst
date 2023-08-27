@@ -1,4 +1,4 @@
-eland.Series.pow
+﻿eland.Series.pow
 ================
 
 .. currentmodule:: eland

@@ -1,5 +1,5 @@
-eland.Series.mode
-====================
+﻿eland.Series.mode
+=================
 
 .. currentmodule:: eland
 

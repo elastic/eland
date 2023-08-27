@@ -1,4 +1,4 @@
-eland.Series.describe
+﻿eland.Series.describe
 =====================
 
 .. currentmodule:: eland

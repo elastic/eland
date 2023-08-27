@@ -1,6 +1,6 @@
-eland.Series.es_dtypes
-======================
+﻿eland.Series.es\_dtypes
+=======================
 
 .. currentmodule:: eland
 
-.. autoattribute:: Series.es_dtypes
+.. autoproperty:: Series.es_dtypes

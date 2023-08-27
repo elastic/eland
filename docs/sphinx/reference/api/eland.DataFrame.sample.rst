@@ -1,4 +1,4 @@
-eland.DataFrame.sample
+﻿eland.DataFrame.sample
 ======================
 
 .. currentmodule:: eland

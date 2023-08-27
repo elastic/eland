@@ -1,4 +1,4 @@
-eland.groupby.DataFrameGroupBy.min
+﻿eland.groupby.DataFrameGroupBy.min
 ==================================
 
 .. currentmodule:: eland.groupby

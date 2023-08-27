@@ -1,4 +1,4 @@
-eland.DataFrame.aggregate
+﻿eland.DataFrame.aggregate
 =========================
 
 .. currentmodule:: eland
