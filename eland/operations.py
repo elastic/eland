@@ -1218,57 +1218,53 @@ class Operations:
             ["count", "mean", "std", "min", "25%", "50%", "75%", "max"]
         )
 
-    def to_pandas(
-        self,
-        query_compiler: "QueryCompiler",
-        show_progress: bool = False,
-        to_csv: bool = False,
-        **csv_kwargs: Union[bool, str],
-    ) -> Optional[Union[pd.DataFrame, str]]:
-
-        write_header: bool = True
-        _ = csv_kwargs.pop("mode", None)
-        _ = csv_kwargs.pop("header", None)
-
-        # Return a csv string if file path is not provided.
+    def to_csv(self,
+               query_compiler,
+               path_or_buf=None,
+               header=True,
+               mode="w",
+               show_progress=False,
+               **kwargs):
         result = []
-        path_or_buf = csv_kwargs.pop("path_or_buf", None)
+        processed = 0
+        for i, df in enumerate(self.search_yield_pandas_dataframes(query_compiler=query_compiler)):
+            processed += df.shape[0]
+            # TODO can we rely that progress reporting is a multiple of the chunk size?
+            if processed % DEFAULT_PROGRESS_REPORTING_NUM_ROWS == 0:
+                print(f"{datetime.now()}: read {processed} rows")
+            result.append(
+                df.to_csv(
+                    path_or_buf=path_or_buf,
+                    # start appending after the first batch
+                    mode=mode if i == 0 else "a",
+                    # only write the header for the first batch, if wanted at all
+                    header=header if i == 0 else False,
+                    **kwargs,
+                )
+            )
+        if path_or_buf is None:
+            return "".join(result)
 
+    def to_pandas(
+        self, query_compiler: "QueryCompiler", show_progress: bool = False
+    ) -> pd.DataFrame:
         df_list: List[pd.DataFrame] = []
         i = 0
-
         for df in self.search_yield_pandas_dataframes(query_compiler=query_compiler):
             if show_progress:
                 i = i + df.shape[0]
                 if i % DEFAULT_PROGRESS_REPORTING_NUM_ROWS == 0:
                     print(f"{datetime.now()}: read {i} rows")
-
-            if to_csv:
-                result.append(
-                    df.to_csv(
-                        path_or_buf=path_or_buf,
-                        mode="w" if write_header else "a",
-                        header=True if write_header else False,
-                        **csv_kwargs,
-                    )
-                )
-                write_header = False
-            else:
-                df_list.append(df)
+            df_list.append(df)
 
         if show_progress:
             print(f"{datetime.now()}: read {i} rows")
 
-        if to_csv and path_or_buf is None:
-            return "".join(result)
-        elif not to_csv:
-            # pd.concat() can't handle an empty list
-            # because there aren't defined columns.
-            if not df_list:
-                return query_compiler._empty_pd_ef()
-            return pd.concat(df_list)
-        else:
-            return None
+        # pd.concat() can't handle an empty list
+        # because there aren't defined columns.
+        if not df_list:
+            return query_compiler._empty_pd_ef()
+        return pd.concat(df_list)
 
     def search_yield_pandas_dataframes(
         self, query_compiler: "QueryCompiler"

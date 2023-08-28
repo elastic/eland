@@ -512,7 +512,7 @@ class QueryCompiler:
         Returns:
             If path_or_buf is None, returns the resulting csv format as a string. Otherwise returns None.
         """
-        return self._operations.to_pandas(query_compiler=self, to_csv=True, **kwargs)
+        return self._operations.to_csv(query_compiler=self, **kwargs)
 
     def search_yield_pandas_dataframes(self) -> Generator["pd.DataFrame", None, None]:
         return self._operations.search_yield_pandas_dataframes(self)
