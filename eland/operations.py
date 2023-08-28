@@ -1219,7 +1219,7 @@ class Operations:
         )
 
     def to_csv(self,
-               query_compiler,
+               query_compiler: "QueryCompiler",
                path_or_buf=None,
                header=True,
                mode="w",
@@ -1230,7 +1230,7 @@ class Operations:
         for i, df in enumerate(self.search_yield_pandas_dataframes(query_compiler=query_compiler)):
             processed += df.shape[0]
             # TODO can we rely that progress reporting is a multiple of the chunk size?
-            if processed % DEFAULT_PROGRESS_REPORTING_NUM_ROWS == 0:
+            if show_progress and processed % DEFAULT_PROGRESS_REPORTING_NUM_ROWS == 0:
                 print(f"{datetime.now()}: read {processed} rows")
             result.append(
                 df.to_csv(
