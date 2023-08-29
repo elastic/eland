@@ -21,6 +21,7 @@ libraries such as sentence-transformers.
 """
 
 import json
+import logging
 import os.path
 import random
 import re
@@ -62,6 +63,8 @@ from eland.ml.pytorch.nlp_ml_model import (
     ZeroShotClassificationInferenceOptions,
 )
 from eland.ml.pytorch.traceable_model import TraceableModel
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_OUTPUT_KEY = "sentence_embedding"
 SUPPORTED_TASK_TYPES = {
@@ -772,20 +775,23 @@ class TransformerModel:
             )
 
         # add static and dynamic memory state size to metadata
-        static_memory_size = self._get_model_memory()
+        per_deployment_memory_bytes = self._get_model_memory()
 
-        transient_memory_size = self._get_transient_memory(
+        per_allocation_memory_bytes = self._get_transient_memory(
             tokenization_config.max_sequence_length, 1
         )
-        peak_memory_size = self._get_peak_memory(
-            static_memory_size, transient_memory_size
+        peak_memory_bytes = self._get_peak_memory(
+            per_deployment_memory_bytes, per_allocation_memory_bytes
         )
         # TODO: final field names are subject to change
         metadata = {
-            "static_memory_size": static_memory_size,
-            "transient_memory_size": transient_memory_size,
-            "peak_memory_size": peak_memory_size,
+            "per_deployment_memory_bytes": per_deployment_memory_bytes,
+            "per_allocation_memory_bytes": per_allocation_memory_bytes,
+            "peak_memory_bytes": peak_memory_bytes,
         }
+
+        # TODO: remove this once memory metadata is supported by ES
+        logger.info("Model metadata: %s", metadata)
 
         return NlpTrainedModelConfig(
             description=f"Model {self._model_id} for task type '{self._task_type}'",
@@ -794,13 +800,12 @@ class TransformerModel:
             input=TrainedModelInput(
                 field_names=["text_field"],
             ),
-            # TODO: uncomment this line once memory metadata is supported by ES
-            # metadata=metadata,
+            metadata=metadata,
         )
 
     def _get_model_memory(self) -> float:
         """
-        Returns the static memory size of the model in MB.
+        Returns the static memory size of the model in bytes.
         """
         psize = sum(
             param.nelement() * param.element_size()
@@ -810,11 +815,11 @@ class TransformerModel:
             buffer.nelement() * buffer.element_size()
             for buffer in self._traceable_model.model.buffers()
         )
-        return (psize + bsize) / 1024**2  # in MB
+        return (psize + bsize) 
 
     def _get_transient_memory(self, max_seq_length: int, batch_size: int) -> float:
         """
-        Returns the transient memory size of the model in MB.
+        Returns the transient memory size of the model in bytes.
 
         Parameters
         ----------
@@ -829,21 +834,24 @@ class TransformerModel:
         inputs_1 = self._get_model_inputs(max_seq_length, 1)
         with profile(activities=activities, profile_memory=True) as prof:
             self._traceable_model.model(**inputs_1)
-        mem1 = prof.key_averages().total_average().cpu_memory_usage / 1024**2
+        mem1 = prof.key_averages().total_average().cpu_memory_usage 
 
         # This is measuring memory usage of the model with a batch size of 2 and 
         # then linearly extrapolating it to get the memory usage of the model for 
         # a batch size of batch_size.
         if batch_size == 1:
-            return mem1  # in MB
+            return mem1  
         else:
             inputs_2 = self._get_model_inputs(max_seq_length, 2)
             with profile(activities=activities, profile_memory=True) as prof:
                 self._traceable_model.model(**inputs_2)
-            mem2 = prof.key_averages().total_average().cpu_memory_usage / 1024**2
-            return mem1 + (mem2 - mem1) * (batch_size - 1)  # in MB
+            mem2 = prof.key_averages().total_average().cpu_memory_usage 
+            return mem1 + (mem2 - mem1) * (batch_size - 1)  
 
     def _get_peak_memory(self, size_model_mb: float, transient: float) -> float:
+        """
+        Returns the peak memory size of the model in bytes.
+        """
         return max(2 * size_model_mb, size_model_mb + transient)
 
     def _get_model_inputs(
