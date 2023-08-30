@@ -942,7 +942,13 @@ def _compat_field_caps(client, fields, index=None):
     # If the server version is 8.5.0 or later we don't need
     # the query string work-around. Sending via any client
     # version should be just fine.
-    if es_version(client) >= (8, 5, 0):
+    try:
+        elastic_version = es_version(client)
+    # If we lack sufficient permission to determine the Elasticsearch version,
+    # to be sure we use the workaround for versions smaller than 8.5.0
+    except elasticsearch.AuthorizationException:
+        elastic_version = None
+    if elastic_version and elastic_version >= (8, 5, 0):
         return client.field_caps(index=index, fields=fields)
 
     # Otherwise we need to force sending via the query string.
