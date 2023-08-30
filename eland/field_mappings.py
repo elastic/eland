@@ -30,6 +30,7 @@ from typing import (
     Union,
 )
 
+import elasticsearch
 import numpy as np
 import pandas as pd  # type: ignore
 from pandas.core.dtypes.common import (  # type: ignore
