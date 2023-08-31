@@ -2,6 +2,47 @@
 Changelog
 =========
 
+8.9.0 (2023-08-24)
+------------------
+
+Added
+^^^^^
+
+* Simplify embedding model support and loading (`#569`_)
+* Make eland_import_hub_model easier to find on Windows (`#559`_)
+* Update trained model inference endpoint (`#556`_)
+* Add BertJapaneseTokenizer support with bert_ja tokenization configuration (`#534`_)
+* Add ability to upload xlm-roberta tokenized models (`#518`_)
+* Tolerate different model output formats when measuring embedding size (`#535`_)
+* Generate valid NLP model id from file path (`#541`_)
+* Upgrade torch to 1.13.1 and check the cluster version before uploading a NLP model (`#522`_)
+* Set embedding_size config parameter for Text Embedding models (`#532`_)
+* Add support for the pass_through task (`#526`_)
+
+Fixed
+^^^^^
+
+* Fixed black to comply with the code style (`#557`_)
+* Fixed No module named 'torch' (`#553`_)
+* Fix autosummary directive by removing hack autosummaries (`#548`_)
+* Prevent TypeError with None check (`#525`_)
+
+.. _#518: https://github.com/elastic/eland/pull/518
+.. _#522: https://github.com/elastic/eland/pull/522
+.. _#525: https://github.com/elastic/eland/pull/525
+.. _#526: https://github.com/elastic/eland/pull/526
+.. _#532: https://github.com/elastic/eland/pull/532
+.. _#534: https://github.com/elastic/eland/pull/534
+.. _#535: https://github.com/elastic/eland/pull/535
+.. _#541: https://github.com/elastic/eland/pull/541
+.. _#548: https://github.com/elastic/eland/pull/548
+.. _#553: https://github.com/elastic/eland/pull/553
+.. _#556: https://github.com/elastic/eland/pull/556
+.. _#557: https://github.com/elastic/eland/pull/557
+.. _#559: https://github.com/elastic/eland/pull/559
+.. _#569: https://github.com/elastic/eland/pull/569
+
+
 8.7.0 (2023-03-30)
 ------------------
 

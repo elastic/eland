@@ -1,6 +1,6 @@
-eland.Series.shape
+﻿eland.Series.shape
 ==================
 
 .. currentmodule:: eland
 
-.. autoattribute:: Series.shape
+.. autoproperty:: Series.shape

@@ -1,4 +1,4 @@
-eland.Series.rmultiply
+﻿eland.Series.rmultiply
 ======================
 
 .. currentmodule:: eland

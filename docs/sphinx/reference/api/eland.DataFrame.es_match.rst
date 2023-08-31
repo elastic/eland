@@ -1,5 +1,5 @@
-eland.DataFrame.es_match
-========================
+﻿eland.DataFrame.es\_match
+=========================
 
 .. currentmodule:: eland
 

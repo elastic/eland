@@ -1,5 +1,5 @@
-eland.ml.MLModel.delete_model
-=============================
+﻿eland.ml.MLModel.delete\_model
+==============================
 
 .. currentmodule:: eland.ml
 

@@ -1,4 +1,4 @@
-eland.groupby.DataFrameGroupBy.nunique
+﻿eland.groupby.DataFrameGroupBy.nunique
 ======================================
 
 .. currentmodule:: eland.groupby

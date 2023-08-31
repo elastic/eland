@@ -1,5 +1,5 @@
-eland.DataFrame.idxmax
-========================
+﻿eland.DataFrame.idxmax
+======================
 
 .. currentmodule:: eland
 

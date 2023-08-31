@@ -1,4 +1,4 @@
-eland.Series.sample
+﻿eland.Series.sample
 ===================
 
 .. currentmodule:: eland

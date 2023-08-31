@@ -1,5 +1,5 @@
-eland.Series.es_info
-====================
+﻿eland.Series.es\_info
+=====================
 
 .. currentmodule:: eland
 

@@ -1,4 +1,4 @@
-eland.groupby.DataFrameGroupBy.max
+﻿eland.groupby.DataFrameGroupBy.max
 ==================================
 
 .. currentmodule:: eland.groupby

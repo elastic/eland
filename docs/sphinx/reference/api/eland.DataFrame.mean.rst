@@ -1,4 +1,4 @@
-eland.DataFrame.mean
+﻿eland.DataFrame.mean
 ====================
 
 .. currentmodule:: eland

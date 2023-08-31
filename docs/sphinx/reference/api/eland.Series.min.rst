@@ -1,4 +1,4 @@
-eland.Series.min
+﻿eland.Series.min
 ================
 
 .. currentmodule:: eland

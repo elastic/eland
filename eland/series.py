@@ -1486,8 +1486,9 @@ class Series(NDFrame):
         Examples
         --------
         >>> s = ed.DataFrame('http://localhost:9200', 'flights')['AvgTicketPrice']
-        >>> int(s.median())
-        640
+        >>> m = int(s.median())
+        >>> print(m == 639 or m == 640) # required for ES >= 8.9, see https://github.com/elastic/elasticsearch/pull/96904
+        True
         """
         results = super().median(numeric_only=numeric_only)
         return results.squeeze()

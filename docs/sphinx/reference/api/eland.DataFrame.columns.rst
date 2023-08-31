@@ -1,6 +1,6 @@
-eland.DataFrame.columns
+﻿eland.DataFrame.columns
 =======================
 
 .. currentmodule:: eland
 
-.. autoattribute:: DataFrame.columns
+.. autoproperty:: DataFrame.columns

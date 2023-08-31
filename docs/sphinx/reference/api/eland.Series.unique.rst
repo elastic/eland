@@ -1,5 +1,5 @@
-eland.Series.unique
-====================
+﻿eland.Series.unique
+===================
 
 .. currentmodule:: eland
 

@@ -1,5 +1,5 @@
-eland.DataFrame.es_info
-=======================
+﻿eland.DataFrame.es\_info
+========================
 
 .. currentmodule:: eland
 

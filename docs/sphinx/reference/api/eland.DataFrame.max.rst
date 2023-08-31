@@ -1,4 +1,4 @@
-eland.DataFrame.max
+﻿eland.DataFrame.max
 ===================
 
 .. currentmodule:: eland

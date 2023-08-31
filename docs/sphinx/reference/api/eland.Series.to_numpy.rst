@@ -1,5 +1,5 @@
-eland.Series.to_numpy
-=====================
+﻿eland.Series.to\_numpy
+======================
 
 .. currentmodule:: eland
 

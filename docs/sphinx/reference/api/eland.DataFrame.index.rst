@@ -1,6 +1,6 @@
-eland.DataFrame.index
+﻿eland.DataFrame.index
 =====================
 
 .. currentmodule:: eland
 
-.. autoattribute:: DataFrame.index
+.. autoproperty:: DataFrame.index

@@ -1,4 +1,4 @@
-eland.DataFrame.filter
+﻿eland.DataFrame.filter
 ======================
 
 .. currentmodule:: eland
