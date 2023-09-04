@@ -114,8 +114,8 @@ or a string containing the host to connect to:
 ```python
 import eland as ed
 
-# Connecting to an Elasticsearch instance running on 'localhost:9200'
-df = ed.DataFrame("localhost:9200", es_index_pattern="flights")
+# Connecting to an Elasticsearch instance running on 'http://localhost:9200'
+df = ed.DataFrame("http://localhost:9200", es_index_pattern="flights")
 
 # Connecting to an Elastic Cloud instance
 from elasticsearch import Elasticsearch
@@ -143,7 +143,7 @@ without overloading your machine.
 >>> import eland as ed
 
 >>> # Connect to 'flights' index via localhost Elasticsearch node
->>> df = ed.DataFrame('localhost:9200', 'flights')
+>>> df = ed.DataFrame('http://localhost:9200', 'flights')
 
 # eland.DataFrame instance has the same API as pandas.DataFrame
 # except all data is in Elasticsearch. See .info() memory usage.
@@ -217,7 +217,7 @@ libraries to be serialized and used as an inference model in Elasticsearch.
 
 # Import the model into Elasticsearch
 >>> es_model = MLModel.import_model(
-    es_client="localhost:9200",
+    es_client="http://localhost:9200",
     model_id="xgb-classifier",
     model=xgb_model,
     feature_names=["f0", "f1", "f2", "f3", "f4"],
