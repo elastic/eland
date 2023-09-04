@@ -205,10 +205,12 @@ libraries to be serialized and used as an inference model in Elasticsearch.
 ➤ [Read more about Machine Learning in Elasticsearch](https://www.elastic.co/guide/en/machine-learning/current/ml-getting-started.html)
 
 ```python
+>>> from sklearn import datasets
 >>> from xgboost import XGBClassifier
 >>> from eland.ml import MLModel
 
 # Train and exercise an XGBoost ML model locally
+>>> training_data = datasets.make_classification(n_features=5)
 >>> xgb_model = XGBClassifier(booster="gbtree")
 >>> xgb_model.fit(training_data[0], training_data[1])
 
