@@ -122,7 +122,7 @@ from elasticsearch import Elasticsearch
 
 es = Elasticsearch(
     cloud_id="cluster-name:...",
-    http_auth=("elastic", "<password>")
+    basic_auth=("elastic", "<password>")
 )
 df = ed.DataFrame(es, es_index_pattern="flights")
 ```
