@@ -114,15 +114,15 @@ or a string containing the host to connect to:
 ```python
 import eland as ed
 
-# Connecting to an Elasticsearch instance running on 'localhost:9200'
-df = ed.DataFrame("localhost:9200", es_index_pattern="flights")
+# Connecting to an Elasticsearch instance running on 'http://localhost:9200'
+df = ed.DataFrame("http://localhost:9200", es_index_pattern="flights")
 
 # Connecting to an Elastic Cloud instance
 from elasticsearch import Elasticsearch
 
 es = Elasticsearch(
     cloud_id="cluster-name:...",
-    http_auth=("elastic", "<password>")
+    basic_auth=("elastic", "<password>")
 )
 df = ed.DataFrame(es, es_index_pattern="flights")
 ```
@@ -143,7 +143,7 @@ without overloading your machine.
 >>> import eland as ed
 
 >>> # Connect to 'flights' index via localhost Elasticsearch node
->>> df = ed.DataFrame('localhost:9200', 'flights')
+>>> df = ed.DataFrame('http://localhost:9200', 'flights')
 
 # eland.DataFrame instance has the same API as pandas.DataFrame
 # except all data is in Elasticsearch. See .info() memory usage.
@@ -205,10 +205,12 @@ libraries to be serialized and used as an inference model in Elasticsearch.
 ➤ [Read more about Machine Learning in Elasticsearch](https://www.elastic.co/guide/en/machine-learning/current/ml-getting-started.html)
 
 ```python
+>>> from sklearn import datasets
 >>> from xgboost import XGBClassifier
 >>> from eland.ml import MLModel
 
 # Train and exercise an XGBoost ML model locally
+>>> training_data = datasets.make_classification(n_features=5)
 >>> xgb_model = XGBClassifier(booster="gbtree")
 >>> xgb_model.fit(training_data[0], training_data[1])
 
@@ -217,7 +219,7 @@ libraries to be serialized and used as an inference model in Elasticsearch.
 
 # Import the model into Elasticsearch
 >>> es_model = MLModel.import_model(
-    es_client="localhost:9200",
+    es_client="http://localhost:9200",
     model_id="xgb-classifier",
     model=xgb_model,
     feature_names=["f0", "f1", "f2", "f3", "f4"],
