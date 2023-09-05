@@ -947,7 +947,11 @@ def _compat_field_caps(client, fields, index=None):
         elastic_version = es_version(client)
     # If we lack sufficient permission to determine the Elasticsearch version,
     # to be sure we use the workaround for versions smaller than 8.5.0
-    except elasticsearch.AuthorizationException:
+    except elasticsearch.AuthorizationException as e:
+        raise RuntimeWarning("Couldn't determine Elasticsearch host's version. "
+                             "Probably missing monitor/main permissions. "
+                             "Continuing with the query string work-around. "
+                             "Original exception: " + str(e))
         elastic_version = None
     if elastic_version and elastic_version >= (8, 5, 0):
         return client.field_caps(index=index, fields=fields)
