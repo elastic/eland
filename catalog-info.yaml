@@ -1,0 +1,93 @@
+# Declare a Backstage Component that represents the Eland application.
+---
+# yaml-language-server: $schema=https://json.schemastore.org/catalog-info.json
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: eland
+  description: Python Client and Toolkit for DataFrames, Big Data, Machine Learning and ETL in Elasticsearch
+  annotations:
+    backstage.io/source-location: url:https://github.com/elastic/eland/
+    github.com/project-slug: elastic/eland
+    github.com/team-slug: elastic/ml-core
+    buildkite.com/project-slug: elastic/eland
+  tags:
+    - elasticsearch
+    - python
+    - machine-learning
+    - big-data
+    - etl
+  links:
+    - title: Eland docs
+      url: https://eland.readthedocs.io/
+spec:
+  type: application
+  owner: group:ml-core
+  lifecycle: production
+  dependsOn:
+    - resource:eland-pipeline
+    - resource:eland-releaser-docker-pipeline
+
+# yaml-language-server: $schema=https://gist.githubusercontent.com/elasticmachine/988b80dae436cafea07d9a4a460a011d/raw/e57ee3bed7a6f73077a3f55a38e76e40ec87a7cf/rre.schema.json
+---
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: eland-pipeline
+  description: Run Eland tests
+  links:
+    - title: Pipeline
+      url: https://buildkite.com/elastic/eland
+
+spec:
+  type: buildkite-pipeline
+  owner: group:ml-core
+  system: buildkite
+
+  implementation:
+    apiVersion: buildkite.elastic.dev/v1
+    kind: Pipeline
+    metadata:
+      name: Eland
+      description: Eland Python
+    spec:
+      pipeline_file: .buildkite/pipeline.yml
+      repository: elastic/eland
+      teams:
+        ml-core: {}
+        clients-team: {}
+        everyone:
+          access_level: READ_ONLY
+
+# yaml-language-server: $schema=https://gist.githubusercontent.com/elasticmachine/988b80dae436cafea07d9a4a460a011d/raw/e57ee3bed7a6f73077a3f55a38e76e40ec87a7cf/rre.schema.json
+---
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: eland-release-docker-pipeline
+  description: Release Docker Artifacts for Eland
+  links:
+    - title: Pipeline
+      url: https://buildkite.com/elastic/eland-release-docker
+
+spec:
+  type: buildkite-pipeline
+  owner: group:ml-core
+  system: buildkite
+
+  implementation:
+    apiVersion: buildkite.elastic.dev/v1
+    kind: Pipeline
+    metadata:
+      name: Eland - Release Docker
+      description: Release Docker Artifacts for Eland
+    spec:
+      pipeline_file: .buildkite/release-docker/pipeline.yml
+      provider_settings:
+        trigger_mode: none
+      repository: elastic/eland
+      teams:
+        ml-core: {}
+        clients-team: {}
+        everyone:
+          access_level: READ_ONLY
