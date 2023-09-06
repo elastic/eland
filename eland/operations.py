@@ -1218,16 +1218,20 @@ class Operations:
             ["count", "mean", "std", "min", "25%", "50%", "75%", "max"]
         )
 
-    def to_csv(self,
-               query_compiler: "QueryCompiler",
-               path_or_buf=None,
-               header=True,
-               mode="w",
-               show_progress=False,
-               **kwargs):
+    def to_csv(
+        self,
+        query_compiler: "QueryCompiler",
+        path_or_buf=None,
+        header=True,
+        mode="w",
+        show_progress=False,
+        **kwargs,
+    ):
         result = []
         processed = 0
-        for i, df in enumerate(self.search_yield_pandas_dataframes(query_compiler=query_compiler)):
+        for i, df in enumerate(
+            self.search_yield_pandas_dataframes(query_compiler=query_compiler)
+        ):
             processed += df.shape[0]
             if show_progress and processed % DEFAULT_PROGRESS_REPORTING_NUM_ROWS == 0:
                 print(f"{datetime.now()}: read {processed} rows")
