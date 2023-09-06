@@ -1218,15 +1218,15 @@ class Operations:
             ["count", "mean", "std", "min", "25%", "50%", "75%", "max"]
         )
 
-    def to_csv(
+    def to_csv(  # type: ignore
         self,
         query_compiler: "QueryCompiler",
         path_or_buf=None,
-        header=True,
-        mode="w",
-        show_progress=False,
+        header: bool = True,
+        mode: str = "w",
+        show_progress: bool = False,
         **kwargs,
-    ):
+    ) -> Optional[str]:
         result = []
         processed = 0
         for i, df in enumerate(
