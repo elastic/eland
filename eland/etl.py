@@ -307,7 +307,6 @@ def csv_to_eland(  # type: ignore
     names=None,
     index_col=None,
     usecols=None,
-    squeeze=False,
     prefix=None,
     mangle_dupe_cols=True,
     # General Parsing Configuration
@@ -485,7 +484,6 @@ def csv_to_eland(  # type: ignore
         "usecols": usecols,
         "verbose": verbose,
         "encoding": encoding,
-        "squeeze": squeeze,
         "memory_map": memory_map,
         "float_precision": float_precision,
         "na_filter": na_filter,
