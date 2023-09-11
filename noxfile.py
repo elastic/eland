@@ -100,7 +100,7 @@ def lint(session):
             session.error("\n" + "\n".join(sorted(set(errors))))
 
 
-@nox.session(python=["3.8", "3.9", "3.10"])
+@nox.session(python=["3.8", "3.9", "3.10", "3.11"])
 @nox.parametrize("pandas_version", ["1.5.0"])
 def test(session, pandas_version: str):
     session.install("-r", "requirements-dev.txt")
