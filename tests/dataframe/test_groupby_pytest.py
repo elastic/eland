@@ -27,6 +27,15 @@ from tests.common import TestData
 PANDAS_MAJOR_VERSION = int(pd.__version__.split('.')[0])
 
 
+# The mean absolute difference (mad) aggregation has been removed from
+# pandas with major version 2:
+# https://github.com/pandas-dev/pandas/issues/11787
+# To compare whether eland's version of it works, we need to implement
+# it here ourselves.
+def mad(x):
+    return abs(x - x.mean()).mean()
+
+
 class TestGroupbyDataFrame(TestData):
     funcs = ["max", "min", "mean", "sum"]
     filter_data = [
@@ -74,7 +83,7 @@ class TestGroupbyDataFrame(TestData):
     @pytest.mark.parametrize("dropna", [True, False])
     @pytest.mark.parametrize("pd_agg", ["max", "min", "mean", "sum", "median"])
     def test_groupby_aggs_numeric_only_true(self, pd_agg, dropna):
-        # Pandas has numeric_only  applicable for the above aggs with groupby only.
+        # Pandas has numeric_only applicable for the above aggs with groupby only.
 
         pd_flights = self.pd_flights().filter(self.filter_data)
         ed_flights = self.ed_flights().filter(self.filter_data)
@@ -98,7 +107,12 @@ class TestGroupbyDataFrame(TestData):
         pd_flights = self.pd_flights().filter(self.filter_data)
         ed_flights = self.ed_flights().filter(self.filter_data)
 
-        pd_groupby = getattr(pd_flights.groupby("Cancelled", dropna=dropna), pd_agg)()
+        # The mad aggregation has been removed in Pandas 2, so we need to use
+        # our own implementation if we run the tests with Pandas 2 or higher
+        if PANDAS_MAJOR_VERSION >= 2 and pd_agg == "mad":
+            pd_groupby = pd_flights.groupby("Cancelled", dropna=dropna).aggregate(mad)
+        else:
+            pd_groupby = getattr(pd_flights.groupby("Cancelled", dropna=dropna), pd_agg)()
         ed_groupby = getattr(ed_flights.groupby("Cancelled", dropna=dropna), pd_agg)(
             numeric_only=True
         )
@@ -214,13 +228,6 @@ class TestGroupbyDataFrame(TestData):
         pd_flights = self.pd_flights().filter(self.filter_data + ["DestCountry"])
         ed_flights = self.ed_flights().filter(self.filter_data + ["DestCountry"])
 
-        # The mean absolute difference (mad) aggregation has been removed from
-        # pandas with major version 2:
-        # https://github.com/pandas-dev/pandas/issues/11787
-        # To compare whether eland's version of it works, we need to implement
-        # it here ourselves.
-        def mad(x):
-            return abs(x - x.mean()).mean()
 
         if PANDAS_MAJOR_VERSION < 2:
             pd_mad = pd_flights.groupby("DestCountry").mad()
