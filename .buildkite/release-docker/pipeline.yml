@@ -1,0 +1,14 @@
+steps:
+  - input: "Build parameters"
+    fields:
+      - text: "RELEASE_VERSION"
+        key: "RELEASE_VERSION"
+        default: ""
+        hint: "The version to release e.g. '2.8.0'."
+
+  - wait
+  - label: "Release Docker Artifacts for Eland"
+    command: docker -v  # TODO: Actually release Eland
+    # Run on GCP to use `docker`
+    agents:
+      provider: gcp
