@@ -24,6 +24,9 @@ from pandas.testing import assert_frame_equal, assert_index_equal, assert_series
 from tests.common import TestData
 
 
+PANDAS_MAJOR_VERSION = int(pd.__version__.split('.')[0])
+
+
 class TestGroupbyDataFrame(TestData):
     funcs = ["max", "min", "mean", "sum"]
     filter_data = [
@@ -211,14 +214,28 @@ class TestGroupbyDataFrame(TestData):
         pd_flights = self.pd_flights().filter(self.filter_data + ["DestCountry"])
         ed_flights = self.ed_flights().filter(self.filter_data + ["DestCountry"])
 
-        pd_mad = pd_flights.groupby("DestCountry").mad()
+        # The mean absolute difference (mad) aggregation has been removed from
+        # pandas with major version 2:
+        # https://github.com/pandas-dev/pandas/issues/11787
+        # To compare whether eland's version of it works, we need to implement
+        # it here ourselves.
+        def mad(x):
+            return abs(x - x.mean()).mean()
+
+        if PANDAS_MAJOR_VERSION < 2:
+            pd_mad = pd_flights.groupby("DestCountry").mad()
+        else:
+            pd_mad = pd_flights.groupby("DestCountry").aggregate(mad)
         ed_mad = ed_flights.groupby("DestCountry").mad()
 
         assert_index_equal(pd_mad.columns, ed_mad.columns)
         assert_index_equal(pd_mad.index, ed_mad.index)
         assert_series_equal(pd_mad.dtypes, ed_mad.dtypes)
 
-        pd_min_mad = pd_flights.groupby("DestCountry").aggregate(["min", "mad"])
+        if PANDAS_MAJOR_VERSION < 2:
+            pd_min_mad = pd_flights.groupby("DestCountry").aggregate(["min", "mad"])
+        else:
+            pd_min_mad = pd_flights.groupby("DestCountry").aggregate(["min", mad])
         ed_min_mad = ed_flights.groupby("DestCountry").aggregate(["min", "mad"])
 
         assert_index_equal(pd_min_mad.columns, ed_min_mad.columns)
