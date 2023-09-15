@@ -30,6 +30,7 @@ from typing import (
     Union,
 )
 
+import elasticsearch
 import numpy as np
 import pandas as pd  # type: ignore
 from pandas.core.dtypes.common import (  # type: ignore
@@ -946,7 +947,19 @@ def _compat_field_caps(client, fields, index=None):
     # If the server version is 8.5.0 or later we don't need
     # the query string work-around. Sending via any client
     # version should be just fine.
-    if es_version(client) >= (8, 5, 0):
+    try:
+        elastic_version = es_version(client)
+    # If we lack sufficient permission to determine the Elasticsearch version,
+    # to be sure we use the workaround for versions smaller than 8.5.0
+    except elasticsearch.AuthorizationException as e:
+        raise RuntimeWarning(
+            "Couldn't determine Elasticsearch host's version. "
+            "Probably missing monitor/main permissions. "
+            "Continuing with the query string work-around. "
+            "Original exception: " + repr(e)
+        )
+        elastic_version = None
+    if elastic_version and elastic_version >= (8, 5, 0):
         return client.field_caps(index=index, fields=fields)
 
     # Otherwise we need to force sending via the query string.
