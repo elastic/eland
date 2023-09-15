@@ -76,6 +76,7 @@ class TestSeriesArithmetics(TestData):
             assert_pandas_eland_series_equal(
                 pd_series,
                 ed_series,
+                check_exact=False,
                 rtol=1e-3,  # previously known as check_less_precise
             )
 
