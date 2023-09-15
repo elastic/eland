@@ -952,7 +952,7 @@ def _compat_field_caps(client, fields, index=None):
             "Couldn't determine Elasticsearch host's version. "
             "Probably missing monitor/main permissions. "
             "Continuing with the query string work-around. "
-            "Original exception: " + str(e)
+            "Original exception: " + repr(e)
         )
         elastic_version = None
     if elastic_version and elastic_version >= (8, 5, 0):
