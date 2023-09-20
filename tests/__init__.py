@@ -21,7 +21,7 @@ import pandas as pd
 from elasticsearch import Elasticsearch
 
 from eland.common import es_version
-from eland.dataload import (
+from eland.dataload import (  # noqa: F401
     ECOMMERCE_INDEX_NAME,
     ECOMMERCE_MAPPING,
     FLIGHTS_INDEX_NAME,
