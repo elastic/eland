@@ -31,6 +31,7 @@ TYPED_FILES = (
     "eland/actions.py",
     "eland/arithmetics.py",
     "eland/common.py",
+    "eland/dataload.py",
     "eland/etl.py",
     "eland/filter.py",
     "eland/index.py",
@@ -184,6 +185,7 @@ def docs(session):
                     "--inplace",
                     "--execute",
                     str(BASE_DIR / "docs/sphinx/examples" / filename),
+                    env={"DOCS_BUILD": "1"},
                 )
 
     session.cd("docs")

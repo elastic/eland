@@ -19,6 +19,7 @@ import pandas as pd
 from elasticsearch import helpers
 from elasticsearch._sync.client import Elasticsearch
 
+from eland import pandas_to_es
 from tests import (
     ECOMMERCE_FILE_NAME,
     ECOMMERCE_INDEX_NAME,
@@ -51,38 +52,8 @@ def _setup_data(es):
         index_name = data[1]
         mapping = data[2]
 
-        # Delete index
-        print("Deleting index:", index_name)
-        es.options(ignore_status=[400, 404]).indices.delete(index=index_name)
-        print("Creating index:", index_name)
-        es.indices.create(index=index_name, **mapping)
-
         df = pd.read_json(json_file_name, lines=True)
-
-        actions = []
-        n = 0
-
-        print("Adding", df.shape[0], "items to index:", index_name)
-        for index, row in df.iterrows():
-            values = row.to_dict()
-            # make timestamp datetime 2018-01-01T12:09:35
-            # values['timestamp'] = datetime.strptime(values['timestamp'], '%Y-%m-%dT%H:%M:%S')
-
-            # Use integer as id field for repeatable results
-            action = {"_index": index_name, "_source": values, "_id": str(n)}
-
-            actions.append(action)
-
-            n = n + 1
-
-            if n % 10000 == 0:
-                helpers.bulk(es, actions)
-                actions = []
-
-        helpers.bulk(es, actions)
-        actions = []
-
-        print("Done", index_name)
+        pandas_to_es(df, es, index_name, mapping)
 
 
 def _update_max_compilations_limit(es: Elasticsearch, limit="10000/1m"):
