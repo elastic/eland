@@ -549,7 +549,7 @@ class FieldMappings:
                     f"{repr(non_existing_columns)[1:-1]} column(s) not in given dataframe"
                 )
 
-        for column, dtype in dataframe.dtypes.iteritems():
+        for column, dtype in dataframe.dtypes.items():
             if es_type_overrides is not None and column in es_type_overrides:
                 es_dtype = es_type_overrides[column]
                 if es_dtype == "text":
