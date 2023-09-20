@@ -42,7 +42,7 @@ if TYPE_CHECKING:
 
 from elasticsearch._sync.client.utils import _quote
 
-DEFAULT_CHUNK_SIZE = 4 * 1024 * 1024  # 4MB
+DEFAULT_CHUNK_SIZE = 1024 * 1024  # 1MB
 DEFAULT_TIMEOUT = "60s"
 
 
