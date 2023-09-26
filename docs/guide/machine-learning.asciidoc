@@ -160,7 +160,7 @@ underscores `__`.
 
 The following authentication options are available when using the import script:
 
-* username and password authentication (specified with the `-u` and `-p` options):
+* Elasticsearch username and password authentication (specified with the `-u` and `-p` options):
 +
 --
 [source,bash]
@@ -170,7 +170,7 @@ eland_import_hub_model -u <username> -p <password> --cloud-id <cloud-id> ...
 These `-u` and `-p` options also work when you use `--url`.
 --
 
-* username and password authentication (embedded in the URL):
+* Elasticsearch username and password authentication (embedded in the URL):
 +
 --
 [source,bash]
@@ -179,11 +179,20 @@ eland_import_hub_model --url https://<user>:<password>@<hostname>:<port> ...
 --------------------------------------------------
 --
 
-* API key authentication:
+* Elasticsearch API key authentication:
 +
 --
 [source,bash]
 --------------------------------------------------
 eland_import_hub_model --es-api-key <api-key> --url https://<hostname>:<port> ...
+--------------------------------------------------
+--
+
+* HuggingFace Hub access token (for private models):
++
+--
+[source,bash]
+--------------------------------------------------
+eland_import_hub_model --hub-access-token <access-token> ...
 --------------------------------------------------
 --
