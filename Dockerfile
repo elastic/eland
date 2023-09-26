@@ -1,4 +1,4 @@
-FROM debian:bullseye-20230522
+FROM debian:bullseye-20230904
 
 RUN apt-get update && \
     apt-get install -y build-essential pkg-config cmake \
