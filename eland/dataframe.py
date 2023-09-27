@@ -1302,6 +1302,7 @@ class DataFrame(NDFrame):
         compression="infer",
         quoting=None,
         quotechar='"',
+        line_terminator=None,  # maybe add a deprecation warning for this one
         lineterminator=None,
         chunksize=None,
         tupleize_cols=None,
@@ -1331,7 +1332,7 @@ class DataFrame(NDFrame):
             "compression": compression,
             "quoting": quoting,
             "quotechar": quotechar,
-            "lineterminator": lineterminator,
+            "lineterminator": lineterminator or line_terminator,
             "chunksize": chunksize,
             "date_format": date_format,
             "doublequote": doublequote,
