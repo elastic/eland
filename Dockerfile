@@ -1,10 +1,14 @@
 # syntax=docker/dockerfile:1
 FROM python:3.10-slim
 
-RUN apt-get update && \
-    apt-get install -y build-essential pkg-config cmake \
-                       libzip-dev libjpeg-dev && \
-    apt-get clean
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && apt-get install -y \
+      build-essential \
+      pkg-config \
+      cmake \
+      libzip-dev \
+      libjpeg-dev
 
 ADD . /eland
 WORKDIR /eland
