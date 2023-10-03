@@ -79,24 +79,19 @@ specifying different package names.
 
 ### Docker
 
-Users wishing to use Eland without installing it, in order to just run the available scripts, can build the Docker
-container:
+Users wishing to use Eland without installing it, in order to just run the available scripts, can use the Docker
+image.
+It can be used interactively:
 
 ```bash
-$ docker build -t elastic/eland .
-```
-
-The container can now be used interactively:
-
-```bash
-$ docker run -it --rm --network host elastic/eland
+$ docker run -it --rm --network host docker.elastic.co/eland/eland
 ```
 
 Running installed scripts is also possible without an interactive shell, e.g.:
 
 ```bash
 $ docker run -it --rm --network host \
-    elastic/eland \
+    docker.elastic.co/eland/eland \
     eland_import_hub_model \
       --url http://host.docker.internal:9200/ \
       --hub-model-id elastic/distilbert-base-cased-finetuned-conll03-english \
