@@ -1,14 +1,28 @@
 steps:
   - input: "Build parameters"
     fields:
-      - text: "RELEASE_VERSION"
+      - text: "Release version"
         key: "RELEASE_VERSION"
         default: ""
-        hint: "The version to release e.g. '2.8.0'."
-
+        format: "\\d{1,}.\\d{1,}.\\d{1,}"
+        hint: "The version to release e.g. '8.10.0' (without the v prefix)."
+      - select: "Environment"
+        key: "ENVIRONMENT"
+        options:
+          - label: "Staging"
+            value: "staging"
+          - label: "Production"
+            value: "production"
   - wait
   - label: "Release Docker Artifacts for Eland"
-    command: docker -v  # TODO: Actually release Eland
+    command: |
+      set -eo pipefail
+
+      export RELEASE_VERSION=$(buildkite-agent meta-data get RELEASE_VERSION)
+      export ENVIRONMENT=$(buildkite-agent meta-data get ENVIRONMENT)
+      export BUILDKIT_PROGRESS=plain
+
+      bash .buildkite/release-docker/run.sh
     # Run on GCP to use `docker`
     agents:
       provider: gcp
