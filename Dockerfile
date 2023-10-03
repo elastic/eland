@@ -8,6 +8,7 @@ RUN apt-get update && \
 ADD . /eland
 WORKDIR /eland
 
-RUN python3 -m pip install --no-cache-dir --disable-pip-version-check .[all]
+RUN --mount=type=cache,target=/root/.cache python3 -m pip install torch==1.13.1+cpu --extra-index-url https://download.pytorch.org/whl/cpu
+RUN --mount=type=cache,target=/root/.cache python3 -m pip install --no-cache-dir --disable-pip-version-check .[all]
 
 CMD ["/bin/sh"]
