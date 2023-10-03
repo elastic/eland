@@ -79,7 +79,7 @@ specifying different package names.
 
 ### Docker
 
-Users wishing to use Eland without installing it, in order to just run the available scripts, can use the Docker
+If you want to use Eland without installing it just to run the available scripts, use the Docker
 image.
 It can be used interactively:
 
