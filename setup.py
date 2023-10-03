@@ -86,6 +86,7 @@ setup(
         "pandas>=1.5,<2",
         "matplotlib>=3.6",
         "numpy>=1.2.0,<1.24",
+        "packaging",
     ],
     entry_points={
         "console_scripts": "eland_import_hub_model=eland.cli.eland_import_hub_model:main"
