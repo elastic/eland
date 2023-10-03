@@ -1,4 +1,5 @@
-FROM python:3.10-slim-bookworm@sha256:d364435d339ad318ac4c533b9fbe709739f9ba006b0721fd25e8592d0bb857cb
+# syntax=docker/dockerfile:1
+FROM python:3.10-slim
 
 RUN apt-get update && \
     apt-get install -y build-essential pkg-config cmake \
