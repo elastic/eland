@@ -22,11 +22,14 @@ pushd eland
 git checkout "v${RELEASE_VERSION}"
 git --no-pager show
 
-docker build -t "$docker_registry/eland/eland:$RELEASE_VERSION" "$PWD"
-docker push "$docker_registry/eland/eland:$RELEASE_VERSION"
-
-docker tag "$docker_registry/eland/eland:$RELEASE_VERSION" "$docker_registry/eland/eland:latest"
-docker push "$docker_registry/eland/eland:latest"
+# Create builder that supports QEMU emulation (needed for linux/arm64)
+docker buildx rm --force eland-multiarch-builder || true
+docker buildx create --name eland-multiarch-builder --bootstrap --use
+docker buildx build --push \
+  --tag "$docker_registry/eland/eland:$RELEASE_VERSION" \
+  --tag "$docker_registry/eland/eland:latest" \
+  --platform linux/amd64,linux/arm64 \
+  "$PWD"
 
 popd
 popd
