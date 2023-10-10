@@ -68,22 +68,18 @@ $ eland_import_hub_model <authentication> \ <1>
 
 IMPORTANT: To use the Docker container, you need to clone the Eland repository: https://github.com/elastic/eland
 
-If you want to use Eland without installing it, you can build the Docker container to run the available scripts:
+If you want to use Eland without installing it, you can use the Docker image:
+
+You can use the container interactively:
 
 ```bash
-$ docker build -t elastic/eland .
-```
-
-You can now use the container interactively:
-
-```bash
-$ docker run -it --rm --network host elastic/eland
+$ docker run -it --rm --network host docker.elastic.co/eland/eland
 ```
 
 Running installed scripts is also possible without an interactive shell, for example:
 
 ```bash
-docker run -it --rm elastic/eland \
+docker run -it --rm docker.elastic.co/eland/eland \
     eland_import_hub_model \
       --url $ELASTICSEARCH_URL \
       --hub-model-id elastic/distilbert-base-uncased-finetuned-conll03-english \
@@ -138,7 +134,7 @@ the model directory, so the container can read the files:
 
 [source,bash]
 ----
-docker run --mount type=bind,source=/PATH/TO/MODELS,destination=/models,readonly -it --rm elastic/eland \
+docker run --mount type=bind,source=/PATH/TO/MODELS,destination=/models,readonly -it --rm docker.elastic.co/eland/eland \
     eland_import_hub_model \
       --url 'XXXX' \
       --hub-model-id /models/bert-base-NER \
