@@ -84,7 +84,7 @@ def main():
 
 .. currentmodule:: eland
 
-.. automethod:: { attr.replace('eland.', '') }
+.. automethod:: {attr.replace('eland.', '')}
 """
                     )
 

@@ -983,7 +983,7 @@ class DataFrame(NDFrame):
                 index=self._query_compiler._index_pattern, metric=["store"]
             )["_all"]["total"]["store"]["size_in_bytes"]
             lines.append(
-                f"Elasticsearch storage usage: {_sizeof_fmt(storage_usage,size_qualifier)}\n"
+                f"Elasticsearch storage usage: {_sizeof_fmt(storage_usage, size_qualifier)}\n"
             )
 
         fmt.buffer_put_lines(buf, lines)
