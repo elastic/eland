@@ -2,6 +2,16 @@
 Changelog
 =========
 
+8.10.1 (2023-10-11)
+-------------------
+
+Fixed
+^^^^^
+
+* Fixed direct usage of TransformerModel (`#619`_)
+
+.. _#619: https://github.com/elastic/eland/pull/619
+
 8.10.0 (2023-10-09)
 -------------------
 
