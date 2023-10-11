@@ -112,6 +112,8 @@ def test(session, pandas_version: str):
         "python",
         "-m",
         "pytest",
+        "-ra",
+        "--tb=native",
         "--cov-report=term-missing",
         "--cov=eland/",
         "--cov-config=setup.cfg",

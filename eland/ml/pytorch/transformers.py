@@ -584,7 +584,7 @@ class TransformerModel:
         self,
         *,
         model_id: str,
-        access_token: Optional[str],
+        access_token: Optional[str] = None,
         task_type: str,
         es_version: Optional[Tuple[int, int, int]] = None,
         quantize: bool = False,

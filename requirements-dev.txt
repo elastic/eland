@@ -22,7 +22,7 @@ lightgbm>=2,<4
 torch>=1.13.1,<2.0; python_version<'3.11'
 # Versions known to be compatible with PyTorch 1.13.1
 sentence-transformers>=2.1.0,<=2.2.2; python_version<'3.11'
-transformers[torch]>=4.12.0,<=4.27.4; python_version<'3.11'
+transformers[torch]>=4.31.0,<=4.33.2; python_version<'3.11'
 
 #
 # Testing
