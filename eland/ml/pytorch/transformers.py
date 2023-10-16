@@ -179,9 +179,9 @@ class _QuestionAnsweringWrapperModule(nn.Module):  # type: ignore
         self.config = model.config
 
     @staticmethod
-    def from_pretrained(model_id: str) -> Optional[Any]:
+    def from_pretrained(model_id: str, *, token: Optional[str] = None) -> Optional[Any]:
         model = AutoModelForQuestionAnswering.from_pretrained(
-            model_id, torchscript=True
+            model_id, token=token, torchscript=True
         )
         if isinstance(
             model.config,
@@ -292,9 +292,12 @@ class _SentenceTransformerWrapperModule(nn.Module):  # type: ignore
 
     @staticmethod
     def from_pretrained(
-        model_id: str, output_key: str = DEFAULT_OUTPUT_KEY
+        model_id: str,
+        *,
+        token: Optional[str] = None,
+        output_key: str = DEFAULT_OUTPUT_KEY,
     ) -> Optional[Any]:
-        model = AutoModel.from_pretrained(model_id, torchscript=True)
+        model = AutoModel.from_pretrained(model_id, token=token, torchscript=True)
         if isinstance(
             model.config,
             (
@@ -393,8 +396,8 @@ class _DPREncoderWrapper(nn.Module):  # type: ignore
         self.config = model.config
 
     @staticmethod
-    def from_pretrained(model_id: str) -> Optional[Any]:
-        config = AutoConfig.from_pretrained(model_id)
+    def from_pretrained(model_id: str, *, token: Optional[str] = None) -> Optional[Any]:
+        config = AutoConfig.from_pretrained(model_id, token=token)
 
         def is_compatible() -> bool:
             is_dpr_model = config.model_type == "dpr"
@@ -579,11 +582,12 @@ class _TraceableTextSimilarityModel(_TransformerTraceableModel):
 class TransformerModel:
     def __init__(
         self,
+        *,
         model_id: str,
         task_type: str,
-        *,
         es_version: Optional[Tuple[int, int, int]] = None,
         quantize: bool = False,
+        access_token: Optional[str] = None,
     ):
         """
         Loads a model from the Hugging Face repository or local file and creates
@@ -609,14 +613,14 @@ class TransformerModel:
         """
 
         self._model_id = model_id
+        self._access_token = access_token
         self._task_type = task_type.replace("-", "_")
 
         # load Hugging Face model and tokenizer
         # use padding in the tokenizer to ensure max length sequences are used for tracing (at call time)
         #  - see: https://huggingface.co/transformers/serialization.html#dummy-inputs-and-standard-lengths
         self._tokenizer = transformers.AutoTokenizer.from_pretrained(
-            self._model_id,
-            use_fast=False,
+            self._model_id, token=self._access_token, use_fast=False
         )
 
         # check for a supported tokenizer
@@ -729,7 +733,7 @@ class TransformerModel:
             else:
                 sample_embedding = self._traceable_model.sample_output()
                 if type(sample_embedding) is tuple:
-                    text_embedding, _ = sample_embedding
+                    text_embedding = sample_embedding[0]
                 else:
                     text_embedding = sample_embedding
 
@@ -755,7 +759,7 @@ class TransformerModel:
     def _create_traceable_model(self) -> TraceableModel:
         if self._task_type == "auto":
             model = transformers.AutoModel.from_pretrained(
-                self._model_id, torchscript=True
+                self._model_id, token=self._access_token, torchscript=True
             )
             maybe_task_type = task_type_from_model_config(model.config)
             if maybe_task_type is None:
@@ -767,54 +771,58 @@ class TransformerModel:
 
         if self._task_type == "fill_mask":
             model = transformers.AutoModelForMaskedLM.from_pretrained(
-                self._model_id, torchscript=True
+                self._model_id, token=self._access_token, torchscript=True
             )
             model = _DistilBertWrapper.try_wrapping(model)
             return _TraceableFillMaskModel(self._tokenizer, model)
 
         elif self._task_type == "ner":
             model = transformers.AutoModelForTokenClassification.from_pretrained(
-                self._model_id, torchscript=True
+                self._model_id, token=self._access_token, torchscript=True
             )
             model = _DistilBertWrapper.try_wrapping(model)
             return _TraceableNerModel(self._tokenizer, model)
 
         elif self._task_type == "text_classification":
             model = transformers.AutoModelForSequenceClassification.from_pretrained(
-                self._model_id, torchscript=True
+                self._model_id, token=self._access_token, torchscript=True
             )
             model = _DistilBertWrapper.try_wrapping(model)
             return _TraceableTextClassificationModel(self._tokenizer, model)
 
         elif self._task_type == "text_embedding":
-            model = _DPREncoderWrapper.from_pretrained(self._model_id)
+            model = _DPREncoderWrapper.from_pretrained(
+                self._model_id, token=self._access_token
+            )
             if not model:
                 model = _SentenceTransformerWrapperModule.from_pretrained(
-                    self._model_id
+                    self._model_id, token=self._access_token
                 )
             return _TraceableTextEmbeddingModel(self._tokenizer, model)
 
         elif self._task_type == "zero_shot_classification":
             model = transformers.AutoModelForSequenceClassification.from_pretrained(
-                self._model_id, torchscript=True
+                self._model_id, token=self._access_token, torchscript=True
             )
             model = _DistilBertWrapper.try_wrapping(model)
             return _TraceableZeroShotClassificationModel(self._tokenizer, model)
 
         elif self._task_type == "question_answering":
-            model = _QuestionAnsweringWrapperModule.from_pretrained(self._model_id)
+            model = _QuestionAnsweringWrapperModule.from_pretrained(
+                self._model_id, token=self._access_token
+            )
             return _TraceableQuestionAnsweringModel(self._tokenizer, model)
 
         elif self._task_type == "text_similarity":
             model = transformers.AutoModelForSequenceClassification.from_pretrained(
-                self._model_id, torchscript=True
+                self._model_id, token=self._access_token, torchscript=True
             )
             model = _DistilBertWrapper.try_wrapping(model)
             return _TraceableTextSimilarityModel(self._tokenizer, model)
 
         elif self._task_type == "pass_through":
             model = transformers.AutoModel.from_pretrained(
-                self._model_id, torchscript=True
+                self._model_id, token=self._access_token, torchscript=True
             )
             return _TraceablePassThroughModel(self._tokenizer, model)
 

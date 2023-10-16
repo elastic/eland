@@ -59,6 +59,12 @@ def get_arg_parser():
         "e.g. dbmdz/bert-large-cased-finetuned-conll03-english",
     )
     parser.add_argument(
+        "--hub-access-token",
+        required=False,
+        default=os.environ.get("HUB_ACCESS_TOKEN"),
+        help="The Hugging Face access token, needed to access private models",
+    )
+    parser.add_argument(
         "--es-model-id",
         required=False,
         default=None,
@@ -234,6 +240,7 @@ def main():
         try:
             tm = TransformerModel(
                 model_id=args.hub_model_id,
+                access_token=args.hub_access_token,
                 task_type=args.task_type,
                 es_version=cluster_version,
                 quantize=args.quantize,

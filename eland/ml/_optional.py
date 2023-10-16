@@ -15,10 +15,11 @@
 #  specific language governing permissions and limitations
 #  under the License.
 
-import distutils.version
 import importlib
 import warnings
 from typing import TYPE_CHECKING, Any, Optional
+
+import packaging.version
 
 if TYPE_CHECKING:
     from types import ModuleType
@@ -30,7 +31,7 @@ if TYPE_CHECKING:
 # The license for this library can be found NOTICE.txt and the code can be
 # https://raw.githubusercontent.com/pandas-dev/pandas/v1.0.1/pandas/compat/_optional.py
 
-VERSIONS = {"xgboost": "0.90", "sklearn": "0.22.1"}
+VERSIONS = {"xgboost": "0.90", "sklearn": "1.3"}
 
 # Update install.rst when updating versions!
 
@@ -104,7 +105,9 @@ def import_optional_dependency(
     minimum_version = VERSIONS.get(name)
     if minimum_version:
         version = _get_version(module)
-        if distutils.version.LooseVersion(version) < minimum_version:
+        if packaging.version.parse(version) < packaging.version.Version(
+            minimum_version
+        ):
             assert on_version in {"warn", "raise", "ignore"}
             msg = version_message.format(
                 minimum_version=minimum_version, name=name, actual_version=version

@@ -38,7 +38,6 @@ CLASSIFIERS = [
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
@@ -61,7 +60,7 @@ extras = {
     "pytorch": [
         "torch>=1.13.1,<2.0",
         "sentence-transformers>=2.1.0,<=2.2.2",
-        "transformers[torch]>=4.12.0,<=4.27.4",
+        "transformers[torch]>=4.31.0,<=4.33.2",
     ],
 }
 extras["all"] = list({dep for deps in extras.values() for dep in deps})
@@ -86,6 +85,7 @@ setup(
         "pandas>=1.5,<2",
         "matplotlib>=3.6",
         "numpy>=1.2.0,<1.24",
+        "packaging",
     ],
     entry_points={
         "console_scripts": "eland_import_hub_model=eland.cli.eland_import_hub_model:main"
