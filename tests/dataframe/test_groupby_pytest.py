@@ -23,8 +23,7 @@ from pandas.testing import assert_frame_equal, assert_index_equal, assert_series
 
 from tests.common import TestData
 
-
-PANDAS_MAJOR_VERSION = int(pd.__version__.split('.')[0])
+PANDAS_MAJOR_VERSION = int(pd.__version__.split(".")[0])
 
 
 # The mean absolute difference (mad) aggregation has been removed from
@@ -112,7 +111,9 @@ class TestGroupbyDataFrame(TestData):
         if PANDAS_MAJOR_VERSION >= 2 and pd_agg == "mad":
             pd_groupby = pd_flights.groupby("Cancelled", dropna=dropna).aggregate(mad)
         else:
-            pd_groupby = getattr(pd_flights.groupby("Cancelled", dropna=dropna), pd_agg)()
+            pd_groupby = getattr(
+                pd_flights.groupby("Cancelled", dropna=dropna), pd_agg
+            )()
         ed_groupby = getattr(ed_flights.groupby("Cancelled", dropna=dropna), pd_agg)(
             numeric_only=True
         )
@@ -227,7 +228,6 @@ class TestGroupbyDataFrame(TestData):
     def test_groupby_dataframe_mad(self):
         pd_flights = self.pd_flights().filter(self.filter_data + ["DestCountry"])
         ed_flights = self.ed_flights().filter(self.filter_data + ["DestCountry"])
-
 
         if PANDAS_MAJOR_VERSION < 2:
             pd_mad = pd_flights.groupby("DestCountry").mad()
