@@ -2,6 +2,49 @@
 Changelog
 =========
 
+8.10.1 (2023-10-11)
+-------------------
+
+Fixed
+^^^^^
+
+* Fixed direct usage of TransformerModel (`#619`_)
+
+.. _#619: https://github.com/elastic/eland/pull/619
+
+8.10.0 (2023-10-09)
+-------------------
+
+Added
+^^^^^
+
+* Published pre-built Docker images to docker.elastic.co/eland/eland (`#613`_)
+* Allowed importing private HuggingFace models (`#608`_)
+* Added Apple Silicon (arm64) support to Docker image (`#615`_)
+* Allowed importing some DPR models like ance-dpr-context-multi (`#573`_)
+* Allowed using the Pandas API without monitoring/main permissions (`#581`_)
+
+Changed
+^^^^^^^
+
+* Updated Docker image to Debian 12 Bookworm (`#613`_)
+* Reduced Docker image size by not installing unused PyTorch GPU support on amd64 (`#615`_)
+* Reduced model chunk size to 1MB (`#605`_)
+
+Fixed
+^^^^^
+
+* Fixed deprecations in preparation of Pandas 2.0 support (`#593`_, `#596`_)
+
+.. _#613: https://github.com/elastic/eland/pull/613
+.. _#608: https://github.com/elastic/eland/pull/608
+.. _#615: https://github.com/elastic/eland/pull/615
+.. _#573: https://github.com/elastic/eland/pull/573
+.. _#581: https://github.com/elastic/eland/pull/581
+.. _#605: https://github.com/elastic/eland/pull/605
+.. _#593: https://github.com/elastic/eland/pull/593
+.. _#596: https://github.com/elastic/eland/pull/596
+
 8.9.0 (2023-08-24)
 ------------------
 
