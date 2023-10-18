@@ -31,7 +31,20 @@ from eland.ml.pytorch import (
     TextSimilarityInferenceOptions,
     ZeroShotClassificationInferenceOptions,
 )
-from eland.ml.pytorch.transformers import TransformerModel
+
+try:
+    import sklearn  # noqa: F401
+
+    HAS_SKLEARN = True
+except ImportError:
+    HAS_SKLEARN = False
+
+try:
+    from eland.ml.pytorch.transformers import TransformerModel
+
+    HAS_TRANSFORMERS = True
+except ImportError:
+    HAS_TRANSFORMERS = False
 
 try:
     import torch  # noqa: F401
@@ -44,11 +57,14 @@ from tests import ES_VERSION
 
 pytestmark = [
     pytest.mark.skipif(
-        ES_VERSION < (8, 0, 0),
-        reason="This test requires at least Elasticsearch version 8.0.0",
+        ES_VERSION < (8, 7, 0),
+        reason="Eland uses Pytorch 1.13.1, versions of Elasticsearch prior to 8.7.0 are incompatible with PyTorch 1.13.1",
     ),
     pytest.mark.skipif(
-        not HAS_PYTORCH, reason="This test requires 'pytorch' package to run"
+        not HAS_SKLEARN, reason="This test requires 'scikit-learn' package to run"
+    ),
+    pytest.mark.skipif(
+        not HAS_TRANSFORMERS, reason="This test requires 'transformers' package to run"
     ),
 ]
 
