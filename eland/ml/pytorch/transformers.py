@@ -629,7 +629,10 @@ class TransformerModel:
                 f"Tokenizer type {self._tokenizer} not supported, must be one of: {SUPPORTED_TOKENIZERS_NAMES}"
             )
 
-        self._traceable_model = self._create_traceable_model()
+        (
+            self._transformers_model,
+            self._traceable_model,
+        ) = self._create_traceable_model()
         if quantize:
             self._traceable_model.quantize()
         self._vocab = self._load_vocab()
@@ -664,27 +667,23 @@ class TransformerModel:
         return vocab_obj
 
     def _create_tokenization_config(self) -> NlpTokenizationConfig:
+        _max_sequence_length = self._find_max_sequence_length()
+
         if isinstance(self._tokenizer, transformers.MPNetTokenizer):
             return NlpMPNetTokenizationConfig(
                 do_lower_case=getattr(self._tokenizer, "do_lower_case", None),
-                max_sequence_length=getattr(
-                    self._tokenizer, "max_model_input_sizes", dict()
-                ).get(self._model_id),
+                max_sequence_length=_max_sequence_length,
             )
         elif isinstance(
             self._tokenizer, (transformers.RobertaTokenizer, transformers.BartTokenizer)
         ):
             return NlpRobertaTokenizationConfig(
                 add_prefix_space=getattr(self._tokenizer, "add_prefix_space", None),
-                max_sequence_length=getattr(
-                    self._tokenizer, "max_model_input_sizes", dict()
-                ).get(self._model_id),
+                max_sequence_length=_max_sequence_length,
             )
         elif isinstance(self._tokenizer, transformers.XLMRobertaTokenizer):
             return NlpXLMRobertaTokenizationConfig(
-                max_sequence_length=getattr(
-                    self._tokenizer, "max_model_input_sizes", dict()
-                ).get(self._model_id),
+                max_sequence_length=_max_sequence_length
             )
         else:
             japanese_morphological_tokenizers = ["mecab"]
@@ -695,17 +694,37 @@ class TransformerModel:
             ):
                 return NlpBertJapaneseTokenizationConfig(
                     do_lower_case=getattr(self._tokenizer, "do_lower_case", None),
-                    max_sequence_length=getattr(
-                        self._tokenizer, "max_model_input_sizes", dict()
-                    ).get(self._model_id),
+                    max_sequence_length=_max_sequence_length,
                 )
             else:
                 return NlpBertTokenizationConfig(
                     do_lower_case=getattr(self._tokenizer, "do_lower_case", None),
-                    max_sequence_length=getattr(
-                        self._tokenizer, "max_model_input_sizes", dict()
-                    ).get(self._model_id),
+                    max_sequence_length=_max_sequence_length,
                 )
+
+    def _find_max_sequence_length(self) -> int:
+        # Sometimes the max_... values are present but contain
+        # a random or very large value.
+        REASONABLE_MAX_LENGTH = 8192
+        max_len = getattr(self._tokenizer, "max_model_input_sizes", dict()).get(
+            self._model_id
+        )
+        if max_len is not None and max_len < REASONABLE_MAX_LENGTH:
+            return int(max_len)
+
+        max_len = getattr(self._tokenizer, "model_max_length", None)
+        if max_len is not None and max_len < REASONABLE_MAX_LENGTH:
+            return int(max_len)
+
+        model_config = getattr(self._transformers_model, "config", None)
+        if model_config is None:
+            raise ValueError("Cannot determine model max input length")
+
+        max_len = getattr(model_config, "max_position_embeddings", None)
+        if max_len is not None and max_len < REASONABLE_MAX_LENGTH:
+            return int(max_len)
+
+        raise ValueError("Cannot determine model max input length")
 
     def _create_config(
         self, es_version: Optional[Tuple[int, int, int]]
@@ -756,7 +775,7 @@ class TransformerModel:
             ),
         )
 
-    def _create_traceable_model(self) -> TraceableModel:
+    def _create_traceable_model(self) -> Tuple[Any, TraceableModel]:
         if self._task_type == "auto":
             model = transformers.AutoModel.from_pretrained(
                 self._model_id, token=self._access_token, torchscript=True
@@ -774,21 +793,21 @@ class TransformerModel:
                 self._model_id, token=self._access_token, torchscript=True
             )
             model = _DistilBertWrapper.try_wrapping(model)
-            return _TraceableFillMaskModel(self._tokenizer, model)
+            return (model, _TraceableFillMaskModel(self._tokenizer, model))
 
         elif self._task_type == "ner":
             model = transformers.AutoModelForTokenClassification.from_pretrained(
                 self._model_id, token=self._access_token, torchscript=True
             )
             model = _DistilBertWrapper.try_wrapping(model)
-            return _TraceableNerModel(self._tokenizer, model)
+            return (model, _TraceableNerModel(self._tokenizer, model))
 
         elif self._task_type == "text_classification":
             model = transformers.AutoModelForSequenceClassification.from_pretrained(
                 self._model_id, token=self._access_token, torchscript=True
             )
             model = _DistilBertWrapper.try_wrapping(model)
-            return _TraceableTextClassificationModel(self._tokenizer, model)
+            return (model, _TraceableTextClassificationModel(self._tokenizer, model))
 
         elif self._task_type == "text_embedding":
             model = _DPREncoderWrapper.from_pretrained(
@@ -798,33 +817,36 @@ class TransformerModel:
                 model = _SentenceTransformerWrapperModule.from_pretrained(
                     self._model_id, token=self._access_token
                 )
-            return _TraceableTextEmbeddingModel(self._tokenizer, model)
+            return (model, _TraceableTextEmbeddingModel(self._tokenizer, model))
 
         elif self._task_type == "zero_shot_classification":
             model = transformers.AutoModelForSequenceClassification.from_pretrained(
                 self._model_id, token=self._access_token, torchscript=True
             )
             model = _DistilBertWrapper.try_wrapping(model)
-            return _TraceableZeroShotClassificationModel(self._tokenizer, model)
+            return (
+                model,
+                _TraceableZeroShotClassificationModel(self._tokenizer, model),
+            )
 
         elif self._task_type == "question_answering":
             model = _QuestionAnsweringWrapperModule.from_pretrained(
                 self._model_id, token=self._access_token
             )
-            return _TraceableQuestionAnsweringModel(self._tokenizer, model)
+            return (model, _TraceableQuestionAnsweringModel(self._tokenizer, model))
 
         elif self._task_type == "text_similarity":
             model = transformers.AutoModelForSequenceClassification.from_pretrained(
                 self._model_id, token=self._access_token, torchscript=True
             )
             model = _DistilBertWrapper.try_wrapping(model)
-            return _TraceableTextSimilarityModel(self._tokenizer, model)
+            return (model, _TraceableTextSimilarityModel(self._tokenizer, model))
 
         elif self._task_type == "pass_through":
             model = transformers.AutoModel.from_pretrained(
                 self._model_id, token=self._access_token, torchscript=True
             )
-            return _TraceablePassThroughModel(self._tokenizer, model)
+            return (model, _TraceablePassThroughModel(self._tokenizer, model))
 
         else:
             raise TypeError(
