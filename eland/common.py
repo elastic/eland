@@ -311,7 +311,7 @@ def ensure_es_client(
     if isinstance(es_client, tuple):
         es_client = list(es_client)
     if not isinstance(es_client, Elasticsearch):
-        es_client = Elasticsearch(es_client)
+        es_client = Elasticsearch(es_client)  # type: ignore[arg-type]
     return es_client
 
 
