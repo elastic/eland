@@ -245,8 +245,13 @@ class _TwoParameterQuestionAnsweringWrapper(_QuestionAnsweringWrapperModule):
 
 class _DistilBertWrapper(nn.Module):  # type: ignore
     """
-    A simple wrapper around DistilBERT model which makes the model inputs
-    conform to Elasticsearch's native inference processor interface.
+    In Elasticsearch the BERT tokenizer is used for DistilBERT models but
+    the BERT tokenizer produces 4 inputs where DistilBERT models expect 2.
+
+    Wrap the model's forward function in a method that accepts the 4
+    arguments passed to a BERT model then discard the token_type_ids
+    and the position_ids to match the wrapped DistilBERT model forward
+    function
     """
 
     def __init__(self, model: transformers.PreTrainedModel):
@@ -293,18 +298,19 @@ class _SentenceTransformerWrapperModule(nn.Module):  # type: ignore
     @staticmethod
     def from_pretrained(
         model_id: str,
+        tokenizer: PreTrainedTokenizer,
         *,
         token: Optional[str] = None,
         output_key: str = DEFAULT_OUTPUT_KEY,
     ) -> Optional[Any]:
         model = AutoModel.from_pretrained(model_id, token=token, torchscript=True)
         if isinstance(
-            model.config,
+            tokenizer,
             (
-                transformers.MPNetConfig,
-                transformers.XLMRobertaConfig,
+                transformers.BartTokenizer,
+                transformers.MPNetTokenizer,
                 transformers.RobertaConfig,
-                transformers.BartConfig,
+                transformers.XLMRobertaTokenizer,
             ),
         ):
             return _TwoParameterSentenceTransformerWrapper(model, output_key)
@@ -466,12 +472,12 @@ class _TransformerTraceableModel(TraceableModel):
                 inputs["input_ids"].size(1), dtype=torch.long
             )
         if isinstance(
-            self._model.config,
+            self._tokenizer,
             (
-                transformers.MPNetConfig,
-                transformers.XLMRobertaConfig,
-                transformers.RobertaConfig,
-                transformers.BartConfig,
+                transformers.BartTokenizer,
+                transformers.MPNetTokenizer,
+                transformers.RobertaTokenizer,
+                transformers.XLMRobertaTokenizer,
             ),
         ):
             del inputs["token_type_ids"]
@@ -812,7 +818,7 @@ class TransformerModel:
             )
             if not model:
                 model = _SentenceTransformerWrapperModule.from_pretrained(
-                    self._model_id, token=self._access_token
+                    self._model_id, self._tokenizer, token=self._access_token
                 )
             return _TraceableTextEmbeddingModel(self._tokenizer, model)
 
