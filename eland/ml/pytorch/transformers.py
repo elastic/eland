@@ -629,10 +629,7 @@ class TransformerModel:
                 f"Tokenizer type {self._tokenizer} not supported, must be one of: {SUPPORTED_TOKENIZERS_NAMES}"
             )
 
-        (
-            self._transformers_model,
-            self._traceable_model,
-        ) = self._create_traceable_model()
+        self._traceable_model = self._create_traceable_model()
         if quantize:
             self._traceable_model.quantize()
         self._vocab = self._load_vocab()
@@ -716,7 +713,7 @@ class TransformerModel:
         if max_len is not None and max_len < REASONABLE_MAX_LENGTH:
             return int(max_len)
 
-        model_config = getattr(self._transformers_model, "config", None)
+        model_config = getattr(self._traceable_model._model, "config", None)
         if model_config is None:
             raise ValueError("Cannot determine model max input length")
 
@@ -775,7 +772,7 @@ class TransformerModel:
             ),
         )
 
-    def _create_traceable_model(self) -> Tuple[Any, TraceableModel]:
+    def _create_traceable_model(self) -> _TransformerTraceableModel:
         if self._task_type == "auto":
             model = transformers.AutoModel.from_pretrained(
                 self._model_id, token=self._access_token, torchscript=True
@@ -793,21 +790,21 @@ class TransformerModel:
                 self._model_id, token=self._access_token, torchscript=True
             )
             model = _DistilBertWrapper.try_wrapping(model)
-            return (model, _TraceableFillMaskModel(self._tokenizer, model))
+            return _TraceableFillMaskModel(self._tokenizer, model)
 
         elif self._task_type == "ner":
             model = transformers.AutoModelForTokenClassification.from_pretrained(
                 self._model_id, token=self._access_token, torchscript=True
             )
             model = _DistilBertWrapper.try_wrapping(model)
-            return (model, _TraceableNerModel(self._tokenizer, model))
+            return _TraceableNerModel(self._tokenizer, model)
 
         elif self._task_type == "text_classification":
             model = transformers.AutoModelForSequenceClassification.from_pretrained(
                 self._model_id, token=self._access_token, torchscript=True
             )
             model = _DistilBertWrapper.try_wrapping(model)
-            return (model, _TraceableTextClassificationModel(self._tokenizer, model))
+            return _TraceableTextClassificationModel(self._tokenizer, model)
 
         elif self._task_type == "text_embedding":
             model = _DPREncoderWrapper.from_pretrained(
@@ -817,36 +814,33 @@ class TransformerModel:
                 model = _SentenceTransformerWrapperModule.from_pretrained(
                     self._model_id, token=self._access_token
                 )
-            return (model, _TraceableTextEmbeddingModel(self._tokenizer, model))
+            return _TraceableTextEmbeddingModel(self._tokenizer, model)
 
         elif self._task_type == "zero_shot_classification":
             model = transformers.AutoModelForSequenceClassification.from_pretrained(
                 self._model_id, token=self._access_token, torchscript=True
             )
             model = _DistilBertWrapper.try_wrapping(model)
-            return (
-                model,
-                _TraceableZeroShotClassificationModel(self._tokenizer, model),
-            )
+            return _TraceableZeroShotClassificationModel(self._tokenizer, model)
 
         elif self._task_type == "question_answering":
             model = _QuestionAnsweringWrapperModule.from_pretrained(
                 self._model_id, token=self._access_token
             )
-            return (model, _TraceableQuestionAnsweringModel(self._tokenizer, model))
+            return _TraceableQuestionAnsweringModel(self._tokenizer, model)
 
         elif self._task_type == "text_similarity":
             model = transformers.AutoModelForSequenceClassification.from_pretrained(
                 self._model_id, token=self._access_token, torchscript=True
             )
             model = _DistilBertWrapper.try_wrapping(model)
-            return (model, _TraceableTextSimilarityModel(self._tokenizer, model))
+            return _TraceableTextSimilarityModel(self._tokenizer, model)
 
         elif self._task_type == "pass_through":
             model = transformers.AutoModel.from_pretrained(
                 self._model_id, token=self._access_token, torchscript=True
             )
-            return (model, _TraceablePassThroughModel(self._tokenizer, model))
+            return _TraceablePassThroughModel(self._tokenizer, model)
 
         else:
             raise TypeError(
