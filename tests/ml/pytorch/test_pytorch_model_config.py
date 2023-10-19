@@ -19,19 +19,6 @@ import tempfile
 
 import pytest
 
-from eland.ml.pytorch import (
-    FillMaskInferenceOptions,
-    NerInferenceOptions,
-    NlpBertTokenizationConfig,
-    NlpMPNetTokenizationConfig,
-    NlpRobertaTokenizationConfig,
-    QuestionAnsweringInferenceOptions,
-    TextClassificationInferenceOptions,
-    TextEmbeddingInferenceOptions,
-    TextSimilarityInferenceOptions,
-    ZeroShotClassificationInferenceOptions,
-)
-
 try:
     import sklearn  # noqa: F401
 
@@ -49,9 +36,23 @@ except ImportError:
 try:
     import torch  # noqa: F401
 
+    from eland.ml.pytorch import (
+        FillMaskInferenceOptions,
+        NerInferenceOptions,
+        NlpBertTokenizationConfig,
+        NlpMPNetTokenizationConfig,
+        NlpRobertaTokenizationConfig,
+        QuestionAnsweringInferenceOptions,
+        TextClassificationInferenceOptions,
+        TextEmbeddingInferenceOptions,
+        TextSimilarityInferenceOptions,
+        ZeroShotClassificationInferenceOptions,
+    )
+
     HAS_PYTORCH = True
 except ImportError:
     HAS_PYTORCH = False
+
 
 from tests import ES_VERSION
 
