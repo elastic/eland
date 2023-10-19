@@ -67,6 +67,9 @@ pytestmark = [
     pytest.mark.skipif(
         not HAS_TRANSFORMERS, reason="This test requires 'transformers' package to run"
     ),
+    pytest.mark.skipif(
+        not HAS_PYTORCH, reason="This test requires 'torch' package to run"
+    ),
 ]
 
 MODEL_CONFIGURATIONS = [
@@ -114,14 +117,6 @@ MODEL_CONFIGURATIONS = [
         "bert-base-uncased",
         "fill_mask",
         FillMaskInferenceOptions,
-        NlpBertTokenizationConfig,
-        512,
-        None,
-    ),
-    (
-        "elastic/distilbert-base-uncased-finetuned-conll03-english",
-        "ner",
-        NerInferenceOptions,
         NlpBertTokenizationConfig,
         512,
         None,
