@@ -25,13 +25,6 @@ import pytest
 from elasticsearch import NotFoundError
 
 try:
-    import sklearn  # noqa: F401
-
-    HAS_SKLEARN = True
-except ImportError:
-    HAS_SKLEARN = False
-
-try:
     import torch  # noqa: F401
     from torch import Tensor, nn  # noqa: F401
     from transformers import PretrainedConfig, elasticsearch_model_id  # noqa: F401
@@ -66,9 +59,6 @@ pytestmark = [
     pytest.mark.skipif(
         ES_VERSION < (8, 0, 0),
         reason="This test requires at least Elasticsearch version 8.0.0",
-    ),
-    pytest.mark.skipif(
-        not HAS_SKLEARN, reason="This test requires 'scikit-learn' package to run"
     ),
     pytest.mark.skipif(
         not HAS_PYTORCH, reason="This test requires 'pytorch' package to run"
