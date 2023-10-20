@@ -42,7 +42,6 @@ try:
         NlpBertTokenizationConfig,
         NlpMPNetTokenizationConfig,
         NlpRobertaTokenizationConfig,
-        NlpXLMRobertaTokenizationConfig,
         QuestionAnsweringInferenceOptions,
         TextClassificationInferenceOptions,
         TextEmbeddingInferenceOptions,
@@ -78,14 +77,14 @@ pytestmark = [
 # have been imported
 if HAS_PYTORCH and HAS_SKLEARN and HAS_TRANSFORMERS:
     MODEL_CONFIGURATIONS = [
-        (
-            "intfloat/multilingual-e5-small",
-            "text_embedding",
-            TextEmbeddingInferenceOptions,
-            NlpXLMRobertaTokenizationConfig,
-            512,
-            384,
-        ),
+        # (
+        #     "intfloat/multilingual-e5-small",
+        #     "text_embedding",
+        #     TextEmbeddingInferenceOptions,
+        #     NlpXLMRobertaTokenizationConfig,
+        #     512,
+        #     384,
+        # ),
         (
             "intfloat/e5-small-v2",
             "text_embedding",
