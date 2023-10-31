@@ -223,3 +223,5 @@ class TestModelConfguration:
             if task_type == "zero_shot_classification":
                 assert isinstance(config.inference_config.classification_labels, list)
                 assert len(config.inference_config.classification_labels) > 0
+
+            del tm
