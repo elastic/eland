@@ -136,7 +136,7 @@ def elasticsearch_date_to_pandas_date(
                 value, unit="s" if date_format == "epoch_second" else "ms"
             )
         except ValueError:
-            return pd.to_datetime(value)
+            return pd.to_datetime(value, errors='coerce')
     elif date_format == "epoch_millis":
         return pd.to_datetime(value, unit="ms")
     elif date_format == "epoch_second":
