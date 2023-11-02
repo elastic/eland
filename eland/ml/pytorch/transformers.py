@@ -32,7 +32,7 @@ import torch  # type: ignore
 import transformers  # type: ignore
 from sentence_transformers import SentenceTransformer  # type: ignore
 from torch import Tensor, nn
-from torch.profiler import profile
+from torch.profiler import profile  # type: ignore
 from transformers import (
     AutoConfig,
     AutoModel,
@@ -42,6 +42,7 @@ from transformers import (
     PreTrainedTokenizer,
     PreTrainedTokenizerFast,
 )
+from transformers.tokenization_utils_base import BatchEncoding  # type: ignore
 
 from eland.ml.pytorch.nlp_ml_model import (
     FillMaskInferenceOptions,
@@ -807,17 +808,19 @@ class TransformerModel:
         """
         Returns the static memory size of the model in bytes.
         """
-        psize = sum(
+        psize: float = sum(
             param.nelement() * param.element_size()
             for param in self._traceable_model.model.parameters()
         )
-        bsize = sum(
+        bsize: float = sum(
             buffer.nelement() * buffer.element_size()
             for buffer in self._traceable_model.model.buffers()
         )
         return psize + bsize
 
-    def _get_transient_memory(self, max_seq_length: int, batch_size: int) -> float:
+    def _get_transient_memory(
+        self, max_seq_length: Optional[int], batch_size: int
+    ) -> float:
         """
         Returns the transient memory size of the model in bytes.
 
@@ -834,19 +837,18 @@ class TransformerModel:
         inputs_1 = self._get_model_inputs(max_seq_length, 1)
         with profile(activities=activities, profile_memory=True) as prof:
             self._traceable_model.model(**inputs_1)
-        mem1 = prof.key_averages().total_average().cpu_memory_usage
+        mem1: float = prof.key_averages().total_average().cpu_memory_usage
 
         # This is measuring memory usage of the model with a batch size of 2 and
         # then linearly extrapolating it to get the memory usage of the model for
         # a batch size of batch_size.
         if batch_size == 1:
             return mem1
-        else:
-            inputs_2 = self._get_model_inputs(max_seq_length, 2)
-            with profile(activities=activities, profile_memory=True) as prof:
-                self._traceable_model.model(**inputs_2)
-            mem2 = prof.key_averages().total_average().cpu_memory_usage
-            return mem1 + (mem2 - mem1) * (batch_size - 1)
+        inputs_2 = self._get_model_inputs(max_seq_length, 2)
+        with profile(activities=activities, profile_memory=True) as prof:
+            self._traceable_model.model(**inputs_2)
+        mem2: float = prof.key_averages().total_average().cpu_memory_usage
+        return mem1 + (mem2 - mem1) * (batch_size - 1)
 
     def _get_peak_memory(self, size_model_mb: float, transient: float) -> float:
         """
@@ -858,7 +860,7 @@ class TransformerModel:
         self,
         max_length: Optional[int],
         batch_size: int,
-    ) -> Dict[str, List[str]]:
+    ) -> BatchEncoding:
         """
         Returns a random batch of inputs for the model.
 
@@ -881,7 +883,7 @@ class TransformerModel:
         ]
 
         # tokenize text
-        inputs = self._tokenizer(
+        inputs: BatchEncoding = self._tokenizer(
             texts, padding="max_length", return_tensors="pt", truncation=True
         )
 
