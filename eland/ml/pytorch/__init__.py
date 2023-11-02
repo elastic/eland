@@ -23,6 +23,7 @@ from eland.ml.pytorch.nlp_ml_model import (
     NlpMPNetTokenizationConfig,
     NlpRobertaTokenizationConfig,
     NlpTrainedModelConfig,
+    NlpXLMRobertaTokenizationConfig,
     QuestionAnsweringInferenceOptions,
     TextClassificationInferenceOptions,
     TextEmbeddingInferenceOptions,
