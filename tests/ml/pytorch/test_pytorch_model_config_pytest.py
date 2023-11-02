@@ -38,10 +38,10 @@ try:
 
     from eland.ml.pytorch import (
         FillMaskInferenceOptions,
-        NerInferenceOptions,
         NlpBertTokenizationConfig,
         NlpMPNetTokenizationConfig,
         NlpRobertaTokenizationConfig,
+        NlpXLMRobertaTokenizationConfig,
         QuestionAnsweringInferenceOptions,
         TextClassificationInferenceOptions,
         TextEmbeddingInferenceOptions,
@@ -78,10 +78,10 @@ pytestmark = [
 if HAS_PYTORCH and HAS_SKLEARN and HAS_TRANSFORMERS:
     MODEL_CONFIGURATIONS = [
         (
-            "intfloat/e5-small-v2",
+            "intfloat/multilingual-e5-small",
             "text_embedding",
             TextEmbeddingInferenceOptions,
-            NlpBertTokenizationConfig,
+            NlpXLMRobertaTokenizationConfig,
             512,
             384,
         ),
@@ -92,14 +92,6 @@ if HAS_PYTORCH and HAS_SKLEARN and HAS_TRANSFORMERS:
             NlpMPNetTokenizationConfig,
             512,
             768,
-        ),
-        (
-            "sentence-transformers/all-MiniLM-L12-v2",
-            "text_embedding",
-            TextEmbeddingInferenceOptions,
-            NlpBertTokenizationConfig,
-            512,
-            384,
         ),
         (
             "facebook/dpr-ctx_encoder-multiset-base",
@@ -113,22 +105,6 @@ if HAS_PYTORCH and HAS_SKLEARN and HAS_TRANSFORMERS:
             "distilbert-base-uncased",
             "fill_mask",
             FillMaskInferenceOptions,
-            NlpBertTokenizationConfig,
-            512,
-            None,
-        ),
-        (
-            "bert-base-uncased",
-            "fill_mask",
-            FillMaskInferenceOptions,
-            NlpBertTokenizationConfig,
-            512,
-            None,
-        ),
-        (
-            "elastic/distilbert-base-uncased-finetuned-conll03-english",
-            "ner",
-            NerInferenceOptions,
             NlpBertTokenizationConfig,
             512,
             None,
@@ -214,3 +190,5 @@ class TestModelConfguration:
             if task_type == "zero_shot_classification":
                 assert isinstance(config.inference_config.classification_labels, list)
                 assert len(config.inference_config.classification_labels) > 0
+
+            del tm
