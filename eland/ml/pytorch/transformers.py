@@ -815,7 +815,7 @@ class TransformerModel:
             buffer.nelement() * buffer.element_size()
             for buffer in self._traceable_model.model.buffers()
         )
-        return (psize + bsize) 
+        return psize + bsize
 
     def _get_transient_memory(self, max_seq_length: int, batch_size: int) -> float:
         """
@@ -834,19 +834,19 @@ class TransformerModel:
         inputs_1 = self._get_model_inputs(max_seq_length, 1)
         with profile(activities=activities, profile_memory=True) as prof:
             self._traceable_model.model(**inputs_1)
-        mem1 = prof.key_averages().total_average().cpu_memory_usage 
+        mem1 = prof.key_averages().total_average().cpu_memory_usage
 
-        # This is measuring memory usage of the model with a batch size of 2 and 
-        # then linearly extrapolating it to get the memory usage of the model for 
+        # This is measuring memory usage of the model with a batch size of 2 and
+        # then linearly extrapolating it to get the memory usage of the model for
         # a batch size of batch_size.
         if batch_size == 1:
-            return mem1  
+            return mem1
         else:
             inputs_2 = self._get_model_inputs(max_seq_length, 2)
             with profile(activities=activities, profile_memory=True) as prof:
                 self._traceable_model.model(**inputs_2)
-            mem2 = prof.key_averages().total_average().cpu_memory_usage 
-            return mem1 + (mem2 - mem1) * (batch_size - 1)  
+            mem2 = prof.key_averages().total_average().cpu_memory_usage
+            return mem1 + (mem2 - mem1) * (batch_size - 1)
 
     def _get_peak_memory(self, size_model_mb: float, transient: float) -> float:
         """
