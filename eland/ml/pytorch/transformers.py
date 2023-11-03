@@ -42,7 +42,6 @@ from transformers import (
     PreTrainedTokenizer,
     PreTrainedTokenizerFast,
 )
-from transformers.tokenization_utils_base import BatchEncoding  # type: ignore
 
 from eland.ml.pytorch.nlp_ml_model import (
     FillMaskInferenceOptions,
@@ -776,23 +775,16 @@ class TransformerModel:
             )
 
         # add static and dynamic memory state size to metadata
-        per_deployment_memory_bytes = self._get_model_memory()
+        per_deployment_memory_bytes = self._get_per_deployment_memory()
 
-        per_allocation_memory_bytes = self._get_transient_memory(
+        per_allocation_memory_bytes = self._get_per_allocation_memory(
             tokenization_config.max_sequence_length, 1
         )
-        peak_memory_bytes = self._get_peak_memory(
-            per_deployment_memory_bytes, per_allocation_memory_bytes
-        )
-        # TODO: final field names are subject to change
+
         metadata = {
             "per_deployment_memory_bytes": per_deployment_memory_bytes,
             "per_allocation_memory_bytes": per_allocation_memory_bytes,
-            "peak_memory_bytes": peak_memory_bytes,
         }
-
-        # TODO: remove this once memory metadata is supported by ES
-        logger.info("Model metadata: %s", metadata)
 
         return NlpTrainedModelConfig(
             description=f"Model {self._model_id} for task type '{self._task_type}'",
@@ -804,7 +796,7 @@ class TransformerModel:
             metadata=metadata,
         )
 
-    def _get_model_memory(self) -> float:
+    def _get_per_deployment_memory(self) -> float:
         """
         Returns the static memory size of the model in bytes.
         """
@@ -818,7 +810,7 @@ class TransformerModel:
         )
         return psize + bsize
 
-    def _get_transient_memory(
+    def _get_per_allocation_memory(
         self, max_seq_length: Optional[int], batch_size: int
     ) -> float:
         """
@@ -836,7 +828,7 @@ class TransformerModel:
         # Get the memory usage of the model with a batch size of 1.
         inputs_1 = self._get_model_inputs(max_seq_length, 1)
         with profile(activities=activities, profile_memory=True) as prof:
-            self._traceable_model.model(**inputs_1)
+            self._traceable_model.model(*inputs_1)
         mem1: float = prof.key_averages().total_average().cpu_memory_usage
 
         # This is measuring memory usage of the model with a batch size of 2 and
@@ -846,21 +838,15 @@ class TransformerModel:
             return mem1
         inputs_2 = self._get_model_inputs(max_seq_length, 2)
         with profile(activities=activities, profile_memory=True) as prof:
-            self._traceable_model.model(**inputs_2)
+            self._traceable_model.model(*inputs_2)
         mem2: float = prof.key_averages().total_average().cpu_memory_usage
         return mem1 + (mem2 - mem1) * (batch_size - 1)
-
-    def _get_peak_memory(self, size_model_mb: float, transient: float) -> float:
-        """
-        Returns the peak memory size of the model in bytes.
-        """
-        return max(2 * size_model_mb, size_model_mb + transient)
 
     def _get_model_inputs(
         self,
         max_length: Optional[int],
         batch_size: int,
-    ) -> BatchEncoding:
+    ) -> Tuple[Tensor, ...]:
         """
         Returns a random batch of inputs for the model.
 
@@ -883,16 +869,52 @@ class TransformerModel:
         ]
 
         # tokenize text
-        inputs: BatchEncoding = self._tokenizer(
-            texts, padding="max_length", return_tensors="pt", truncation=True
+        inputs: transformers.BatchEncoding = self._tokenizer(
+            texts,
+            padding="max_length",
+            return_tensors="pt",
+            truncation=True,
+            max_length=max_length,
         )
 
-        # add position_ids
-        if not isinstance(self._tokenizer, transformers.DistilBertTokenizer):
-            position_ids = torch.arange(inputs["input_ids"].size(1), dtype=torch.long)
-            inputs["position_ids"] = position_ids
+        return self._make_inputs_compatible(inputs)
 
-        return inputs
+    def _make_inputs_compatible(
+        self, inputs: transformers.BatchEncoding
+    ) -> Tuple[Tensor, ...]:
+        """ "
+        Make the input batch format compatible to the model's requirements.
+
+        Parameters
+        ----------
+        inputs : transformers.BatchEncoding
+            The input batch to make compatible.
+        """
+        # Add params when not provided by the tokenizer (e.g. DistilBERT), to conform to BERT interface
+        if "token_type_ids" not in inputs:
+            inputs["token_type_ids"] = torch.zeros(
+                inputs["input_ids"].size(1), dtype=torch.long
+            )
+        if isinstance(
+            self._tokenizer,
+            (
+                transformers.BartTokenizer,
+                transformers.MPNetTokenizer,
+                transformers.RobertaTokenizer,
+                transformers.XLMRobertaTokenizer,
+            ),
+        ):
+            del inputs["token_type_ids"]
+            return (inputs["input_ids"], inputs["attention_mask"])
+
+        position_ids = torch.arange(inputs["input_ids"].size(1), dtype=torch.long)
+        inputs["position_ids"] = position_ids
+        return (
+            inputs["input_ids"],
+            inputs["attention_mask"],
+            inputs["token_type_ids"],
+            inputs["position_ids"],
+        )
 
     def _create_traceable_model(self) -> _TransformerTraceableModel:
         if self._task_type == "auto":
