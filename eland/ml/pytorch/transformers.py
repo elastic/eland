@@ -21,7 +21,6 @@ libraries such as sentence-transformers.
 """
 
 import json
-import logging
 import os.path
 import random
 import re
@@ -63,8 +62,6 @@ from eland.ml.pytorch.nlp_ml_model import (
     ZeroShotClassificationInferenceOptions,
 )
 from eland.ml.pytorch.traceable_model import TraceableModel
-
-logger = logging.getLogger(__name__)
 
 DEFAULT_OUTPUT_KEY = "sentence_embedding"
 SUPPORTED_TASK_TYPES = {
