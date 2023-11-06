@@ -70,7 +70,7 @@ class TestMetricSourceFields(TestData):
         assert pd_metric.columns.to_list() == ed_fields
         assert len(es_date_formats) == len(ed_dtypes)
         assert set(es_date_formats) == set(
-            {"strict_date_hour_minute_second", None}
+            {"strict_date_optional_time", None}
         )  # TODO - test position of date_format
 
     def test_ecommerce_selected_non_metric_source_fields(self):
