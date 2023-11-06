@@ -173,6 +173,15 @@ class TestModelConfguration:
             assert ["text_field"] == config.input.field_names
             assert isinstance(config.inference_config, config_type)
             tokenization = config.inference_config.tokenization
+            assert isinstance(config.metadata, dict)
+            assert (
+                "per_deployment_memory_bytes" in config.metadata
+                and config.metadata["per_deployment_memory_bytes"] > 0
+            )
+            assert (
+                "per_allocation_memory_bytes" in config.metadata
+                and config.metadata["per_allocation_memory_bytes"] > 0
+            )
             assert isinstance(tokenization, tokenizer_type)
             assert max_sequence_len == tokenization.max_sequence_length
 
