@@ -1,5 +1,5 @@
-eland.ml.MLModel.exists_model
-=============================
+﻿eland.ml.MLModel.exists\_model
+==============================
 
 .. currentmodule:: eland.ml
 

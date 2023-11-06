@@ -78,6 +78,7 @@ Computations / Descriptive Stats
    Series.std
    Series.var
    Series.nunique
+   Series.unique
    Series.value_counts
    Series.mode
    Series.quantile

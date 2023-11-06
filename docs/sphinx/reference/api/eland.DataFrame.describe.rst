@@ -1,4 +1,4 @@
-eland.DataFrame.describe
+﻿eland.DataFrame.describe
 ========================
 
 .. currentmodule:: eland

@@ -714,7 +714,7 @@ class Series(NDFrame):
         >>> ed_ecommerce = ed.DataFrame('http://localhost:9200', 'ecommerce')
         >>> ed_ecommerce["day_of_week"].mode()
         0    Thursday
-        dtype: object
+        Name: day_of_week, dtype: object
 
         >>> ed_ecommerce["order_date"].mode()
         0   2016-12-02 20:36:58
@@ -727,16 +727,18 @@ class Series(NDFrame):
         7   2016-12-15 11:38:24
         8   2016-12-22 19:39:22
         9   2016-12-24 06:21:36
-        dtype: datetime64[ns]
+        Name: order_date, dtype: datetime64[ns]
 
         >>> ed_ecommerce["order_date"].mode(es_size=3)
         0   2016-12-02 20:36:58
         1   2016-12-04 23:44:10
         2   2016-12-08 06:21:36
-        dtype: datetime64[ns]
+        Name: order_date, dtype: datetime64[ns]
 
         """
-        return self._query_compiler.mode(is_dataframe=False, es_size=es_size)
+        result = self._query_compiler.mode(is_dataframe=False, es_size=es_size)
+        result.name = self.name
+        return result
 
     def es_match(
         self,
@@ -1484,8 +1486,9 @@ class Series(NDFrame):
         Examples
         --------
         >>> s = ed.DataFrame('http://localhost:9200', 'flights')['AvgTicketPrice']
-        >>> int(s.median())
-        640
+        >>> m = int(s.median())
+        >>> print(m == 639 or m == 640) # required for ES >= 8.9, see https://github.com/elastic/elasticsearch/pull/96904
+        True
         """
         results = super().median(numeric_only=numeric_only)
         return results.squeeze()
@@ -1559,6 +1562,24 @@ class Series(NDFrame):
         """
         results = super().nunique()
         return results.squeeze()
+
+    def unique(self) -> pd.Series:
+        """
+            Returns all unique values within a Series.
+            Note that behavior is slightly different between pandas and Eland: pandas will return values in the order
+            they're first seen and Eland returns values in sorted order.
+
+        Returns
+        -------
+        pd.Series
+            A series containing unique values of given series is returned.
+
+        See Also
+        --------
+        :pandas_api_docs:`pandas.Series.unique`
+
+        """
+        return self._query_compiler.unique()
 
     def var(self, numeric_only: Optional[bool] = None) -> pd.Series:
         """

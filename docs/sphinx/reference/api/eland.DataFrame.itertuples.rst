@@ -1,4 +1,4 @@
-eland.DataFrame.itertuples
+﻿eland.DataFrame.itertuples
 ==========================
 
 .. currentmodule:: eland

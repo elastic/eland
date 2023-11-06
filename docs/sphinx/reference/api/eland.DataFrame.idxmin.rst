@@ -1,5 +1,5 @@
-eland.DataFrame.idxmin
-========================
+﻿eland.DataFrame.idxmin
+======================
 
 .. currentmodule:: eland
 

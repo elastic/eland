@@ -1,15 +1,22 @@
-eland.groupby.GroupBy
+﻿eland.groupby.GroupBy
 =====================
 
 .. currentmodule:: eland.groupby
 
 .. autoclass:: GroupBy
 
+   
+   .. automethod:: __init__
 
-..
-   HACK -- the point here is that we don't want this to appear in the output, but the autosummary should still generate the pages.
+   
+   .. rubric:: Methods
+
    .. autosummary::
-      :toctree:
+   
+      ~GroupBy.__init__
+   
+   
 
-      DataFrame.abs
-      DataFrame.add
+   
+   
+   

@@ -1,4 +1,4 @@
-eland.Series.max
+﻿eland.Series.max
 ================
 
 .. currentmodule:: eland

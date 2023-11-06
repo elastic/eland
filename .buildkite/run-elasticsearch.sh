@@ -37,6 +37,11 @@ NETWORK_NAME=${NETWORK_NAME-"$network_default"}
 
 set +x
 
+# Set vm.max_map_count kernel setting to 262144 if we're in CI
+if [[ "$BUILDKITE" == "true" ]]; then
+  sudo sysctl -w vm.max_map_count=262144
+fi
+
 function cleanup_volume {
   if [[ "$(docker volume ls -q -f name=$1)" ]]; then
     echo -e "\033[34;1mINFO:\033[0m Removing volume $1\033[0m"
@@ -44,7 +49,7 @@ function cleanup_volume {
   fi
 }
 function container_running {
-  if [[ "$(docker ps -q -f name=$1)" ]]; then 
+  if [[ "$(docker ps -q -f name=$1)" ]]; then
     return 0;
     else return 1;
   fi
@@ -106,6 +111,12 @@ environment=($(cat <<-END
   --env node.attr.testattr=test
   --env path.repo=/tmp
   --env repositories.url.allowed_urls=http://snapshot.test*
+  --env ELASTIC_PASSWORD=$ELASTIC_PASSWORD
+  --env xpack.license.self_generated.type=trial
+  --env xpack.security.enabled=false
+  --env xpack.security.http.ssl.enabled=false
+  --env xpack.security.transport.ssl.enabled=false
+  --env xpack.ml.max_machine_memory_percent=90
 END
 ))
 
@@ -114,22 +125,7 @@ volumes=($(cat <<-END
 END
 ))
 
-if [[ "$ELASTICSEARCH_VERSION" != *oss* ]]; then
-  environment+=($(cat <<-END
-    --env ELASTIC_PASSWORD=$ELASTIC_PASSWORD
-    --env xpack.license.self_generated.type=trial
-    --env xpack.security.enabled=false
-    --env xpack.security.http.ssl.enabled=false
-    --env xpack.security.transport.ssl.enabled=false
-    --env xpack.ml.max_machine_memory_percent=90
-END
-))
-fi
-
-url="http://$NODE_NAME"
-if [[ "$ELASTICSEARCH_VERSION" != *oss* ]]; then
-  url="http://elastic:$ELASTIC_PASSWORD@$NODE_NAME"
-fi
+url="http://elastic:$ELASTIC_PASSWORD@$NODE_NAME"
 
 # Pull the container, retry on failures up to 5 times with
 # short delays between each attempt. Fixes most transient network errors.
@@ -146,7 +142,7 @@ set -x
 docker run \
   --name "$NODE_NAME" \
   --network "$NETWORK_NAME" \
-  --env ES_JAVA_OPTS=-"Xms1g -Xmx1g" \
+  --env ES_JAVA_OPTS=-"Xms2g -Xmx2g" \
   "${environment[@]}" \
   "${volumes[@]}" \
   --publish "$HTTP_PORT":9200 \

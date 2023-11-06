@@ -1,5 +1,5 @@
-eland.Series.to_string
-======================
+﻿eland.Series.to\_string
+=======================
 
 .. currentmodule:: eland
 

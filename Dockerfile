@@ -1,14 +1,28 @@
-FROM debian:11.1
+# syntax=docker/dockerfile:1
+FROM python:3.10-slim
 
-RUN apt-get update && \
-    apt-get install -y build-essential pkg-config cmake \
-                       python3-dev python3-pip python3-venv \
-                       libzip-dev libjpeg-dev && \
-    apt-get clean
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && apt-get install -y \
+      build-essential \
+      pkg-config \
+      cmake \
+      libzip-dev \
+      libjpeg-dev
 
 ADD . /eland
 WORKDIR /eland
 
-RUN python3 -m pip install --no-cache-dir --disable-pip-version-check .[all]
+ARG TARGETPLATFORM
+RUN --mount=type=cache,target=/root/.cache/pip \
+    if [ "$TARGETPLATFORM" = "linux/amd64" ]; then \
+      python3 -m pip install \
+        --no-cache-dir --disable-pip-version-check --extra-index-url https://download.pytorch.org/whl/cpu  \
+        torch==1.13.1+cpu .[all]; \
+    else \
+      python3 -m pip install \
+        --no-cache-dir --disable-pip-version-check \
+        .[all]; \
+    fi
 
 CMD ["/bin/sh"]

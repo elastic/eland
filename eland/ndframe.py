@@ -172,7 +172,7 @@ class NDFrame(ABC):
         head = self.head(head_rows).to_pandas()
         tail = self.tail(tail_rows).to_pandas()
 
-        return head.append(tail)
+        return pd.concat([head, tail])
 
     def __sizeof__(self) -> int:
         # Don't default to pandas, just return approximation TODO - make this more accurate

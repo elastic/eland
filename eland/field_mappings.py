@@ -30,17 +30,20 @@ from typing import (
     Union,
 )
 
+import elasticsearch
 import numpy as np
 import pandas as pd  # type: ignore
 from pandas.core.dtypes.common import (  # type: ignore
     is_bool_dtype,
     is_datetime64_any_dtype,
-    is_datetime_or_timedelta_dtype,
     is_float_dtype,
     is_integer_dtype,
     is_string_dtype,
+    is_timedelta64_dtype,
 )
 from pandas.core.dtypes.inference import is_list_like
+
+from .common import es_version
 
 if TYPE_CHECKING:
     from elasticsearch import Elasticsearch
@@ -84,7 +87,9 @@ class Field(NamedTuple):
 
     @property
     def is_timestamp(self) -> bool:
-        return is_datetime_or_timedelta_dtype(self.pd_dtype)
+        return is_datetime64_any_dtype(self.pd_dtype) or is_timedelta64_dtype(
+            self.pd_dtype
+        )
 
     @property
     def is_bool(self) -> bool:
@@ -213,7 +218,7 @@ class FieldMappings:
 
         # Get all fields (including all nested) and then all field_caps
         all_fields = FieldMappings._extract_fields_from_mapping(get_mapping)
-        all_fields_caps = client.field_caps(index=index_pattern, fields="*")
+        all_fields_caps = _compat_field_caps(client, index=index_pattern, fields="*")
 
         # Get top level (not sub-field multifield) mappings
         source_fields = FieldMappings._extract_fields_from_mapping(
@@ -504,7 +509,7 @@ class FieldMappings:
             es_dtype = "boolean"
         elif is_string_dtype(pd_dtype):
             es_dtype = "keyword"
-        elif is_datetime_or_timedelta_dtype(pd_dtype):
+        elif is_timedelta64_dtype(pd_dtype):
             es_dtype = "date"
         elif is_datetime64_any_dtype(pd_dtype):
             es_dtype = "date"
@@ -546,7 +551,7 @@ class FieldMappings:
                     f"{repr(non_existing_columns)[1:-1]} column(s) not in given dataframe"
                 )
 
-        for column, dtype in dataframe.dtypes.iteritems():
+        for column, dtype in dataframe.dtypes.items():
             if es_type_overrides is not None and column in es_type_overrides:
                 es_dtype = es_type_overrides[column]
                 if es_dtype == "text":
@@ -789,7 +794,9 @@ class FieldMappings:
                 pd_dtypes.append(np.dtype(pd_dtype))
                 es_field_names.append(es_field_name)
                 es_date_formats.append(es_date_format)
-            elif include_timestamp and is_datetime_or_timedelta_dtype(pd_dtype):
+            elif include_timestamp and (
+                is_datetime64_any_dtype(pd_dtype) or is_timedelta64_dtype(pd_dtype)
+            ):
                 pd_dtypes.append(np.dtype(pd_dtype))
                 es_field_names.append(es_field_name)
                 es_date_formats.append(es_date_format)
@@ -925,3 +932,46 @@ def verify_mapping_compatibility(
             f"DataFrame dtypes and Elasticsearch index mapping "
             f"aren't compatible:\n{problems_message}"
         )
+
+
+def _compat_field_caps(client, fields, index=None):
+    """The field_caps API moved it's 'fields' parameter to the HTTP request body
+    in Elasticsearch 8.5.0 (previously was only accepted in the query string).
+    This can cause some unfortunate errors for users of Eland against old server
+    versions because at that point the version of the Elasticsearch client actually
+    matters for compatibility, which can be unexpected by consumers of *only* Eland.
+
+    Our work-around below is to force the parameter in the query string on older server versions.
+    """
+
+    # If the server version is 8.5.0 or later we don't need
+    # the query string work-around. Sending via any client
+    # version should be just fine.
+    try:
+        elastic_version = es_version(client)
+    # If we lack sufficient permission to determine the Elasticsearch version,
+    # to be sure we use the workaround for versions smaller than 8.5.0
+    except elasticsearch.AuthorizationException as e:
+        raise RuntimeWarning(
+            "Couldn't determine Elasticsearch host's version. "
+            "Probably missing monitor/main permissions. "
+            "Continuing with the query string work-around. "
+            "Original exception: " + repr(e)
+        )
+        elastic_version = None
+    if elastic_version and elastic_version >= (8, 5, 0):
+        return client.field_caps(index=index, fields=fields)
+
+    # Otherwise we need to force sending via the query string.
+    from elasticsearch._sync.client import SKIP_IN_PATH, _quote
+
+    if index not in SKIP_IN_PATH:
+        __path = f"/{_quote(index)}/_field_caps"
+    else:
+        __path = "/_field_caps"
+    __query: Dict[str, Any] = {}
+    if fields is not None:
+        __query["fields"] = fields
+    return client.perform_request(
+        "POST", __path, params=__query, headers={"accept": "application/json"}
+    )

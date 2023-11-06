@@ -1,5 +1,5 @@
-eland.DataFrame.to_numpy
-========================
+﻿eland.DataFrame.to\_numpy
+=========================
 
 .. currentmodule:: eland
 

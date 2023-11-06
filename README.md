@@ -9,7 +9,7 @@
   <a href="https://pypi.org/project/eland"><img src="https://img.shields.io/pypi/v/eland.svg" alt="PyPI Version"></a>
   <a href="https://anaconda.org/conda-forge/eland"><img src="https://img.shields.io/conda/vn/conda-forge/eland"
       alt="Conda Version"></a>
-  <a href="https://pepy.tech/project/eland"><img src="https://pepy.tech/badge/eland" alt="Downloads"></a>
+  <a href="https://pepy.tech/project/eland"><img src="https://static.pepy.tech/badge/eland" alt="Downloads"></a>
   <a href="https://pypi.org/project/eland"><img src="https://img.shields.io/pypi/status/eland.svg"
       alt="Package Status"></a>
   <a href="https://clients-ci.elastic.co/job/elastic+eland+main"><img
@@ -41,6 +41,11 @@ Eland can be installed from [PyPI](https://pypi.org/project/eland) with Pip:
 $ python -m pip install eland
 ```
 
+If using Eland to upload NLP models to Elasticsearch install the PyTorch extras:
+```bash
+$ python -m pip install eland[pytorch]
+```
+
 Eland can also be installed from [Conda Forge](https://anaconda.org/conda-forge/eland) with Conda:
 
 ```bash
@@ -49,9 +54,14 @@ $ conda install -c conda-forge eland
 
 ### Compatibility
 
-- Supports Python 3.7+ and Pandas 1.3
-- Supports Elasticsearch clusters that are 7.11+, recommended 7.14 or later for all features to work.
-  Make sure your Eland major version matches the major version of your Elasticsearch cluster.
+- Supports Python 3.8, 3.9, 3.10 and Pandas 1.5
+- Supports Elasticsearch clusters that are 7.11+, recommended 8.3 or later for all features to work.
+  If you are using the NLP with PyTorch feature make sure your Eland minor version matches the minor 
+  version of your Elasticsearch cluster. For all other features it is sufficient for the major versions
+  to match.
+- You need to use PyTorch `1.13.1` or earlier to import an NLP model. 
+  Run `pip install torch==1.13.1` to install the aproppriate version of PyTorch.
+  
 
 ### Prerequisites
 
@@ -69,29 +79,23 @@ specifying different package names.
 
 ### Docker
 
-Users wishing to use Eland without installing it, in order to just run the available scripts, can build the Docker
-container:
+If you want to use Eland without installing it just to run the available scripts, use the Docker
+image.
+It can be used interactively:
 
 ```bash
-$ docker build -t elastic/eland .
-```
-
-The container can now be used interactively:
-
-```bash
-$ docker run -it --rm --network host elastic/eland
+$ docker run -it --rm --network host docker.elastic.co/eland/eland
 ```
 
 Running installed scripts is also possible without an interactive shell, e.g.:
 
 ```bash
 $ docker run -it --rm --network host \
-    elastic/eland \
+    docker.elastic.co/eland/eland \
     eland_import_hub_model \
       --url http://host.docker.internal:9200/ \
       --hub-model-id elastic/distilbert-base-cased-finetuned-conll03-english \
-      --task-type ner \
-      --start
+      --task-type ner
 ```
 
 ### Connecting to Elasticsearch 
@@ -105,15 +109,15 @@ or a string containing the host to connect to:
 ```python
 import eland as ed
 
-# Connecting to an Elasticsearch instance running on 'localhost:9200'
-df = ed.DataFrame("localhost:9200", es_index_pattern="flights")
+# Connecting to an Elasticsearch instance running on 'http://localhost:9200'
+df = ed.DataFrame("http://localhost:9200", es_index_pattern="flights")
 
 # Connecting to an Elastic Cloud instance
 from elasticsearch import Elasticsearch
 
 es = Elasticsearch(
     cloud_id="cluster-name:...",
-    http_auth=("elastic", "<password>")
+    basic_auth=("elastic", "<password>")
 )
 df = ed.DataFrame(es, es_index_pattern="flights")
 ```
@@ -134,7 +138,7 @@ without overloading your machine.
 >>> import eland as ed
 
 >>> # Connect to 'flights' index via localhost Elasticsearch node
->>> df = ed.DataFrame('localhost:9200', 'flights')
+>>> df = ed.DataFrame('http://localhost:9200', 'flights')
 
 # eland.DataFrame instance has the same API as pandas.DataFrame
 # except all data is in Elasticsearch. See .info() memory usage.
@@ -196,10 +200,12 @@ libraries to be serialized and used as an inference model in Elasticsearch.
 ➤ [Read more about Machine Learning in Elasticsearch](https://www.elastic.co/guide/en/machine-learning/current/ml-getting-started.html)
 
 ```python
+>>> from sklearn import datasets
 >>> from xgboost import XGBClassifier
 >>> from eland.ml import MLModel
 
 # Train and exercise an XGBoost ML model locally
+>>> training_data = datasets.make_classification(n_features=5)
 >>> xgb_model = XGBClassifier(booster="gbtree")
 >>> xgb_model.fit(training_data[0], training_data[1])
 
@@ -208,7 +214,7 @@ libraries to be serialized and used as an inference model in Elasticsearch.
 
 # Import the model into Elasticsearch
 >>> es_model = MLModel.import_model(
-    es_client="localhost:9200",
+    es_client="http://localhost:9200",
     model_id="xgb-classifier",
     model=xgb_model,
     feature_names=["f0", "f1", "f2", "f3", "f4"],
@@ -233,14 +239,29 @@ $ eland_import_hub_model \
   --start
 ```
 
+The example above will automatically start a model deployment. This is a
+good shortcut for initial experimentation, but for anything that needs
+good throughput you should omit the `--start` argument from the Eland
+command line and instead start the model using the ML UI in Kibana.
+The `--start` argument will deploy the model with one allocation and one
+thread per allocation, which will not offer good performance. When starting
+the model deployment using the ML UI in Kibana or the Elasticsearch
+[API](https://www.elastic.co/guide/en/elasticsearch/reference/current/start-trained-model-deployment.html)
+you will be able to set the threading options to make the best use of your
+hardware.
+
 ```python
 >>> import elasticsearch
 >>> from pathlib import Path
+>>> from eland.common import es_version
 >>> from eland.ml.pytorch import PyTorchModel
 >>> from eland.ml.pytorch.transformers import TransformerModel
 
+>>> es = elasticsearch.Elasticsearch("http://elastic:mlqa_admin@localhost:9200")
+>>> es_cluster_version = es_version(es)
+
 # Load a Hugging Face transformers model directly from the model hub
->>> tm = TransformerModel("elastic/distilbert-base-cased-finetuned-conll03-english", "ner")
+>>> tm = TransformerModel(model_id="elastic/distilbert-base-cased-finetuned-conll03-english", task_type="ner", es_version=es_cluster_version)
 Downloading: 100%|██████████| 257/257 [00:00<00:00, 108kB/s]
 Downloading: 100%|██████████| 954/954 [00:00<00:00, 372kB/s]
 Downloading: 100%|██████████| 208k/208k [00:00<00:00, 668kB/s] 
@@ -250,11 +271,10 @@ Downloading: 100%|██████████| 249M/249M [00:23<00:00, 11.2MB
 # Export the model in a TorchScrpt representation which Elasticsearch uses
 >>> tmp_path = "models"
 >>> Path(tmp_path).mkdir(parents=True, exist_ok=True)
->>> model_path, config_path, vocab_path = tm.save(tmp_path)
+>>> model_path, config, vocab_path = tm.save(tmp_path)
 
 # Import model into Elasticsearch
->>> es = elasticsearch.Elasticsearch("http://elastic:mlqa_admin@localhost:9200", timeout=300)  # 5 minute timeout
 >>> ptm = PyTorchModel(es, tm.elasticsearch_model_id())
->>> ptm.import_model(model_path, config_path, vocab_path)
+>>> ptm.import_model(model_path=model_path, config_path=None, vocab_path=vocab_path, config=config)
 100%|██████████| 63/63 [00:12<00:00,  5.02it/s]
 ```

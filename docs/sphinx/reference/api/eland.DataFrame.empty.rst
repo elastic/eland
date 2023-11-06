@@ -1,6 +1,6 @@
-eland.DataFrame.empty
+﻿eland.DataFrame.empty
 =====================
 
 .. currentmodule:: eland
 
-.. autoattribute:: DataFrame.empty
+.. autoproperty:: DataFrame.empty

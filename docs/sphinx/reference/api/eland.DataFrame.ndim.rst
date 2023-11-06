@@ -1,6 +1,6 @@
-eland.DataFrame.ndim
+﻿eland.DataFrame.ndim
 ====================
 
 .. currentmodule:: eland
 
-.. autoattribute:: DataFrame.ndim
+.. autoproperty:: DataFrame.ndim

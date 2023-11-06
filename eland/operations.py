@@ -210,7 +210,6 @@ class Operations:
     def idx(
         self, query_compiler: "QueryCompiler", axis: int, sort_order: str
     ) -> pd.Series:
-
         if axis == 1:
             # Fetch idx on Columns
             raise NotImplementedError(
@@ -279,7 +278,6 @@ class Operations:
         numeric_only: bool = False,
         dropna: bool = True,
     ) -> Union[pd.DataFrame, pd.Series]:
-
         results = self._metric_aggs(
             query_compiler,
             pd_aggs=pd_aggs,
@@ -530,7 +528,6 @@ class Operations:
         # weights = [10066.,   263.,   386.,   264.,   273.,   390.,   324.,   438.,   261.,   252.,    142.]
         # So sum last 2 buckets
         for field in numeric_source_fields:
-
             # in case of series let plotting.ed_hist_series thrown an exception
             if not response.get("aggregations"):
                 continue
@@ -746,7 +743,7 @@ class Operations:
                     if pd_agg in {"max", "min", "median", "sum", "mode"}:
                         # 'sum' isn't representable with bool, use int64
                         if pd_agg == "sum" and field.is_bool:
-                            agg_value = np.int64(agg_value)
+                            agg_value = np.int64(agg_value)  # type: ignore
                         else:
                             agg_value = field.np_dtype.type(agg_value)
 
@@ -771,7 +768,6 @@ class Operations:
         is_dataframe: bool = True,
         numeric_only: Optional[bool] = True,
     ) -> Union[pd.DataFrame, pd.Series]:
-
         percentiles = [
             quantile_to_percentile(x)
             for x in (
@@ -799,6 +795,32 @@ class Operations:
             return df.squeeze()
         else:
             return df if is_dataframe else df.transpose().iloc[0]
+
+    def unique(self, query_compiler: "QueryCompiler") -> pd.Series:
+        query_params, _ = self._resolve_tasks(query_compiler)
+        body = Query(query_params.query)
+
+        fields = query_compiler._mappings.all_source_fields()
+        assert len(fields) == 1  # Unique is only for eland.Series
+        field = fields[0]
+        bucket_key = f"unique_{field.column}"
+
+        body.composite_agg_bucket_terms(
+            name=bucket_key,
+            field=field.aggregatable_es_field_name,
+        )
+
+        # Composite aggregation
+        body.composite_agg_start(size=DEFAULT_PAGINATION_SIZE, name="unique_buckets")
+
+        unique_buckets: List[Any] = sum(
+            self.bucket_generator(query_compiler, body, agg_name="unique_buckets"), []  # type: ignore
+        )
+
+        return np.array(
+            [bucket["key"][bucket_key] for bucket in unique_buckets],
+            dtype=field.pd_dtype,
+        )
 
     def aggs_groupby(
         self,
@@ -920,7 +942,9 @@ class Operations:
             size=DEFAULT_PAGINATION_SIZE, name="groupby_buckets", dropna=dropna
         )
 
-        for buckets in self.bucket_generator(query_compiler, body):
+        for buckets in self.bucket_generator(
+            query_compiler, body, agg_name="groupby_buckets"
+        ):
             # We recieve response row-wise
             for bucket in buckets:
                 # groupby columns are added to result same way they are returned
@@ -984,7 +1008,7 @@ class Operations:
 
     @staticmethod
     def bucket_generator(
-        query_compiler: "QueryCompiler", body: "Query"
+        query_compiler: "QueryCompiler", body: "Query", agg_name: str
     ) -> Generator[Sequence[Dict[str, Any]], None, Sequence[Dict[str, Any]]]:
         """
             This can be used for all groupby operations.
@@ -1015,7 +1039,7 @@ class Operations:
             )
 
             # Pagination Logic
-            composite_buckets: Dict[str, Any] = res["aggregations"]["groupby_buckets"]
+            composite_buckets: Dict[str, Any] = res["aggregations"][agg_name]
 
             after_key: Optional[Dict[str, Any]] = composite_buckets.get(
                 "after_key", None
@@ -1023,12 +1047,11 @@ class Operations:
             buckets: Sequence[Dict[str, Any]] = composite_buckets["buckets"]
 
             if after_key:
-
                 # yield the bucket which contains the result
                 yield buckets
 
                 body.composite_agg_after_key(
-                    name="groupby_buckets",
+                    name=agg_name,
                     after_key=after_key,
                 )
             else:
@@ -1195,10 +1218,39 @@ class Operations:
             ["count", "mean", "std", "min", "25%", "50%", "75%", "max"]
         )
 
+    def to_csv(  # type: ignore
+        self,
+        query_compiler: "QueryCompiler",
+        path_or_buf=None,
+        header: bool = True,
+        mode: str = "w",
+        show_progress: bool = False,
+        **kwargs,
+    ) -> Optional[str]:
+        result = []
+        processed = 0
+        for i, df in enumerate(
+            self.search_yield_pandas_dataframes(query_compiler=query_compiler)
+        ):
+            processed += df.shape[0]
+            if show_progress and processed % DEFAULT_PROGRESS_REPORTING_NUM_ROWS == 0:
+                print(f"{datetime.now()}: read {processed} rows")
+            result.append(
+                df.to_csv(
+                    path_or_buf=path_or_buf,
+                    # start appending after the first batch
+                    mode=mode if i == 0 else "a",
+                    # only write the header for the first batch, if wanted at all
+                    header=header if i == 0 else False,
+                    **kwargs,
+                )
+            )
+        if path_or_buf is None:
+            return "".join(result)
+
     def to_pandas(
         self, query_compiler: "QueryCompiler", show_progress: bool = False
     ) -> pd.DataFrame:
-
         df_list: List[pd.DataFrame] = []
         i = 0
         for df in self.search_yield_pandas_dataframes(query_compiler=query_compiler):
@@ -1216,16 +1268,6 @@ class Operations:
         if not df_list:
             return query_compiler._empty_pd_ef()
         return pd.concat(df_list)
-
-    def to_csv(
-        self,
-        query_compiler: "QueryCompiler",
-        show_progress: bool = False,
-        **kwargs: Union[bool, str],
-    ) -> Optional[str]:
-        return self.to_pandas(  # type: ignore[no-any-return]
-            query_compiler=query_compiler, show_progress=show_progress
-        ).to_csv(**kwargs)
 
     def search_yield_pandas_dataframes(
         self, query_compiler: "QueryCompiler"

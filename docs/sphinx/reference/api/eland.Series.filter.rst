@@ -1,4 +1,4 @@
-eland.Series.filter
+﻿eland.Series.filter
 ===================
 
 .. currentmodule:: eland

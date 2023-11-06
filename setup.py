@@ -38,7 +38,6 @@ CLASSIFIERS = [
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
@@ -56,12 +55,12 @@ with open(path.join(here, "README.md"), "r", "utf-8") as f:
 
 extras = {
     "xgboost": ["xgboost>=0.90,<2"],
-    "scikit-learn": ["scikit-learn>=0.22.1,<1"],
+    "scikit-learn": ["scikit-learn>=1.3,<2"],
     "lightgbm": ["lightgbm>=2,<4"],
     "pytorch": [
-        "sentence-transformers>=2.1.0,<3",
-        "torch>=1.9.0,<2",
-        "transformers[torch]>=4.12.0,<5",
+        "torch>=1.13.1,<2.0",
+        "sentence-transformers>=2.1.0,<=2.2.2",
+        "transformers[torch]>=4.31.0,<=4.33.2",
     ],
 }
 extras["all"] = list({dep for deps in extras.values() for dep in deps})
@@ -82,13 +81,16 @@ setup(
     keywords="elastic eland pandas python",
     packages=find_packages(include=["eland", "eland.*"]),
     install_requires=[
-        "elasticsearch>=8,<9",
-        "pandas>=1.2,<1.4",
-        "matplotlib",
-        "numpy",
+        "elasticsearch>=8.3,<9",
+        "pandas>=1.5,<2",
+        "matplotlib>=3.6",
+        "numpy>=1.2.0,<1.24",
+        "packaging",
     ],
-    scripts=["bin/eland_import_hub_model"],
-    python_requires=">=3.7",
+    entry_points={
+        "console_scripts": "eland_import_hub_model=eland.cli.eland_import_hub_model:main"
+    },
+    python_requires=">=3.8",
     package_data={"eland": ["py.typed"]},
     include_package_data=True,
     zip_safe=False,

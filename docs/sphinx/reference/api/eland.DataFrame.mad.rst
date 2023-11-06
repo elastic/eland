@@ -1,4 +1,4 @@
-eland.DataFrame.mad
+﻿eland.DataFrame.mad
 ===================
 
 .. currentmodule:: eland

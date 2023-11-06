@@ -1,6 +1,6 @@
-eland.DataFrame.dtypes
+﻿eland.DataFrame.dtypes
 ======================
 
 .. currentmodule:: eland
 
-.. autoattribute:: DataFrame.dtypes
+.. autoproperty:: DataFrame.dtypes

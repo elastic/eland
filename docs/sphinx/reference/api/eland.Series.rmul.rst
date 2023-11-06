@@ -1,4 +1,4 @@
-eland.Series.rmul
+﻿eland.Series.rmul
 =================
 
 .. currentmodule:: eland

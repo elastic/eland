@@ -1,4 +1,4 @@
-eland.Series.nunique
+﻿eland.Series.nunique
 ====================
 
 .. currentmodule:: eland

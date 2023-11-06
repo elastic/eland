@@ -2,6 +2,167 @@
 Changelog
 =========
 
+8.10.1 (2023-10-11)
+-------------------
+
+Fixed
+^^^^^
+
+* Fixed direct usage of TransformerModel (`#619`_)
+
+.. _#619: https://github.com/elastic/eland/pull/619
+
+8.10.0 (2023-10-09)
+-------------------
+
+Added
+^^^^^
+
+* Published pre-built Docker images to docker.elastic.co/eland/eland (`#613`_)
+* Allowed importing private HuggingFace models (`#608`_)
+* Added Apple Silicon (arm64) support to Docker image (`#615`_)
+* Allowed importing some DPR models like ance-dpr-context-multi (`#573`_)
+* Allowed using the Pandas API without monitoring/main permissions (`#581`_)
+
+Changed
+^^^^^^^
+
+* Updated Docker image to Debian 12 Bookworm (`#613`_)
+* Reduced Docker image size by not installing unused PyTorch GPU support on amd64 (`#615`_)
+* Reduced model chunk size to 1MB (`#605`_)
+
+Fixed
+^^^^^
+
+* Fixed deprecations in preparation of Pandas 2.0 support (`#593`_, `#596`_)
+
+.. _#613: https://github.com/elastic/eland/pull/613
+.. _#608: https://github.com/elastic/eland/pull/608
+.. _#615: https://github.com/elastic/eland/pull/615
+.. _#573: https://github.com/elastic/eland/pull/573
+.. _#581: https://github.com/elastic/eland/pull/581
+.. _#605: https://github.com/elastic/eland/pull/605
+.. _#593: https://github.com/elastic/eland/pull/593
+.. _#596: https://github.com/elastic/eland/pull/596
+
+8.9.0 (2023-08-24)
+------------------
+
+Added
+^^^^^
+
+* Simplify embedding model support and loading (`#569`_)
+* Make eland_import_hub_model easier to find on Windows (`#559`_)
+* Update trained model inference endpoint (`#556`_)
+* Add BertJapaneseTokenizer support with bert_ja tokenization configuration (`#534`_)
+* Add ability to upload xlm-roberta tokenized models (`#518`_)
+* Tolerate different model output formats when measuring embedding size (`#535`_)
+* Generate valid NLP model id from file path (`#541`_)
+* Upgrade torch to 1.13.1 and check the cluster version before uploading a NLP model (`#522`_)
+* Set embedding_size config parameter for Text Embedding models (`#532`_)
+* Add support for the pass_through task (`#526`_)
+
+Fixed
+^^^^^
+
+* Fixed black to comply with the code style (`#557`_)
+* Fixed No module named 'torch' (`#553`_)
+* Fix autosummary directive by removing hack autosummaries (`#548`_)
+* Prevent TypeError with None check (`#525`_)
+
+.. _#518: https://github.com/elastic/eland/pull/518
+.. _#522: https://github.com/elastic/eland/pull/522
+.. _#525: https://github.com/elastic/eland/pull/525
+.. _#526: https://github.com/elastic/eland/pull/526
+.. _#532: https://github.com/elastic/eland/pull/532
+.. _#534: https://github.com/elastic/eland/pull/534
+.. _#535: https://github.com/elastic/eland/pull/535
+.. _#541: https://github.com/elastic/eland/pull/541
+.. _#548: https://github.com/elastic/eland/pull/548
+.. _#553: https://github.com/elastic/eland/pull/553
+.. _#556: https://github.com/elastic/eland/pull/556
+.. _#557: https://github.com/elastic/eland/pull/557
+.. _#559: https://github.com/elastic/eland/pull/559
+.. _#569: https://github.com/elastic/eland/pull/569
+
+
+8.7.0 (2023-03-30)
+------------------
+
+Added
+^^^^^
+
+* Added a new NLP model task type "text_similarity" (`#486`_)
+* Added a new NLP model task type "text_expansion" (`#520`_)
+* Added support for exporting an Elastic ML model as a scikit-learn pipeline via ``MLModel.export_model()`` (`#509`_)
+
+Fixed
+^^^^^
+
+* Fixed an issue that occurred when LightGBM was installed but libomp wasn't installed on the system. (`#499`_)
+
+.. _#486: https://github.com/elastic/eland/pull/486
+.. _#499: https://github.com/elastic/eland/pull/499
+.. _#509: https://github.com/elastic/eland/pull/509
+.. _#520: https://github.com/elastic/eland/pull/520
+
+
+8.3.0 (2022-07-11)
+------------------
+
+Added
+^^^^^
+
+* Added a new NLP model task type "auto" which infers the task type based on model configuration and architecture  (`#475`_)
+
+Changed
+^^^^^^^
+
+* Changed required version of 'torch' package to `>=1.11.0,<1.12` to match required PyTorch version for Elasticsearch 8.3 (was `>=1.9.0,<2`) (`#479`_)
+* Changed the default value of the `--task-type` parameter for the `eland_import_hub_model` CLI to be "auto" (`#475`_)
+
+Fixed
+^^^^^
+
+* Fixed decision tree classifier serialization to account for probabilities (`#465`_)
+* Fixed PyTorch model quantization (`#472`_)
+
+.. _#465: https://github.com/elastic/eland/pull/465
+.. _#472: https://github.com/elastic/eland/pull/472
+.. _#475: https://github.com/elastic/eland/pull/475
+.. _#479: https://github.com/elastic/eland/pull/479
+
+
+8.2.0 (2022-05-09)
+------------------
+
+Added
+^^^^^
+
+* Added support for passing Cloud ID via ``--cloud-id`` to ``eland_import_hub_model`` CLI tool (`#462`_)
+* Added support for authenticating via ``--es-username``, ``--es-password``, and ``--es-api-key`` to the ``eland_import_hub_model`` CLI tool (`#461`_)
+* Added support for XGBoost 1.6 (`#458`_)
+* Added support for ``question_answering`` NLP tasks (`#457`_)
+
+.. _#457: https://github.com/elastic/eland/pull/457
+.. _#458: https://github.com/elastic/eland/pull/458
+.. _#461: https://github.com/elastic/eland/pull/461
+.. _#462: https://github.com/elastic/eland/pull/462
+
+
+8.1.0 (2022-03-31)
+------------------
+
+Added
+^^^^^
+
+* Added support for ``eland.Series.unique()`` (`#448`_, contributed by `@V1NAY8`_)
+* Added ``--ca-certs`` and ``--insecure`` options to ``eland_import_hub_model`` for configuring TLS (`#441`_)
+
+.. _#448: https://github.com/elastic/eland/pull/448
+.. _#441: https://github.com/elastic/eland/pull/441
+
+
 8.0.0 (2022-02-10)
 ------------------
 

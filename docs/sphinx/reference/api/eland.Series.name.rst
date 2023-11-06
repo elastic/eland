@@ -1,6 +1,6 @@
-eland.Series.name
+﻿eland.Series.name
 =================
 
 .. currentmodule:: eland
 
-.. autoattribute:: Series.name
+.. autoproperty:: Series.name

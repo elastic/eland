@@ -1,4 +1,4 @@
-eland.Series.rename
+﻿eland.Series.rename
 ===================
 
 .. currentmodule:: eland

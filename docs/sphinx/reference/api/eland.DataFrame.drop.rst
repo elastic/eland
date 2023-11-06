@@ -1,4 +1,4 @@
-eland.DataFrame.drop
+﻿eland.DataFrame.drop
 ====================
 
 .. currentmodule:: eland

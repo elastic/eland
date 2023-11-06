@@ -1,4 +1,4 @@
-eland.DataFrame.sum
+﻿eland.DataFrame.sum
 ===================
 
 .. currentmodule:: eland
