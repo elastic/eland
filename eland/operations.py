@@ -1218,6 +1218,36 @@ class Operations:
             ["count", "mean", "std", "min", "25%", "50%", "75%", "max"]
         )
 
+    def to_csv(  # type: ignore
+        self,
+        query_compiler: "QueryCompiler",
+        path_or_buf=None,
+        header: bool = True,
+        mode: str = "w",
+        show_progress: bool = False,
+        **kwargs,
+    ) -> Optional[str]:
+        result = []
+        processed = 0
+        for i, df in enumerate(
+            self.search_yield_pandas_dataframes(query_compiler=query_compiler)
+        ):
+            processed += df.shape[0]
+            if show_progress and processed % DEFAULT_PROGRESS_REPORTING_NUM_ROWS == 0:
+                print(f"{datetime.now()}: read {processed} rows")
+            result.append(
+                df.to_csv(
+                    path_or_buf=path_or_buf,
+                    # start appending after the first batch
+                    mode=mode if i == 0 else "a",
+                    # only write the header for the first batch, if wanted at all
+                    header=header if i == 0 else False,
+                    **kwargs,
+                )
+            )
+        if path_or_buf is None:
+            return "".join(result)
+
     def to_pandas(
         self, query_compiler: "QueryCompiler", show_progress: bool = False
     ) -> pd.DataFrame:
@@ -1238,16 +1268,6 @@ class Operations:
         if not df_list:
             return query_compiler._empty_pd_ef()
         return pd.concat(df_list)
-
-    def to_csv(
-        self,
-        query_compiler: "QueryCompiler",
-        show_progress: bool = False,
-        **kwargs: Union[bool, str],
-    ) -> Optional[str]:
-        return self.to_pandas(  # type: ignore[no-any-return]
-            query_compiler=query_compiler, show_progress=show_progress
-        ).to_csv(**kwargs)
 
     def search_yield_pandas_dataframes(
         self, query_compiler: "QueryCompiler"
