@@ -2,6 +2,32 @@
 Changelog
 =========
 
+8.11.0 (2023-11-08)
+-------------------
+
+Added
+^^^^^
+
+* Support E5 small multilingual model (`#625`_)
+
+Changed
+^^^^^^^
+
+* Stream writes in ``ed.DataFrame.to_csv()`` (`#579`_)
+* Improve memory estimation for NLP models (`#568`_)
+
+Fixed
+^^^^^
+
+* Fixed deprecations in preparation of Pandas 2.0 support (`#602`_, `#603`_, contributed by `@bartbroere`_)
+
+
+.. _#568: https://github.com/elastic/eland/pull/568
+.. _#579: https://github.com/elastic/eland/pull/579
+.. _#602: https://github.com/elastic/eland/pull/602
+.. _#603: https://github.com/elastic/eland/pull/603
+.. _#625: https://github.com/elastic/eland/pull/625
+
 8.10.1 (2023-10-11)
 -------------------
 
@@ -34,8 +60,9 @@ Changed
 Fixed
 ^^^^^
 
-* Fixed deprecations in preparation of Pandas 2.0 support (`#593`_, `#596`_)
+* Fixed deprecations in preparation of Pandas 2.0 support (`#593`_, `#596`_, contributed by `@bartbroere`_)
 
+.. _@bartbroere: https://github.com/bartbroere
 .. _#613: https://github.com/elastic/eland/pull/613
 .. _#608: https://github.com/elastic/eland/pull/608
 .. _#615: https://github.com/elastic/eland/pull/615
