@@ -56,6 +56,7 @@ spec:
       teams:
         ml-core: {}
         clients-team: {}
+        es-docs: {}
         everyone:
           access_level: READ_ONLY
 
