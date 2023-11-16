@@ -146,6 +146,7 @@ else:
     MODEL_CONFIGURATIONS = []
 
 
+@pytest.mark.skip(reason="https://github.com/elastic/eland/issues/633")
 class TestModelConfguration:
     @pytest.mark.parametrize(
         "model_id,task_type,config_type,tokenizer_type,max_sequence_len,embedding_size",
