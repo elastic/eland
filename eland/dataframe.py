@@ -1302,7 +1302,7 @@ class DataFrame(NDFrame):
         compression="infer",
         quoting=None,
         quotechar='"',
-        line_terminator=None,  # maybe add a deprecation warning for this one
+        line_terminator=None,
         lineterminator=None,
         chunksize=None,
         tupleize_cols=None,
@@ -1318,6 +1318,13 @@ class DataFrame(NDFrame):
         --------
         :pandas_api_docs:`pandas.DataFrame.to_csv`
         """
+        if line_terminator:
+            warnings.warn(
+                "The line_terminator argument will be replaced by lineterminator",
+                PendingDeprecationWarning,
+                stacklevel=2,
+            )
+
         kwargs = {
             "path_or_buf": path_or_buf,
             "sep": sep,
