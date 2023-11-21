@@ -78,6 +78,14 @@ pytestmark = [
 if HAS_PYTORCH and HAS_SKLEARN and HAS_TRANSFORMERS:
     MODEL_CONFIGURATIONS = [
         (
+            "sentence-transformers/all-distilroberta-v1",
+            "text_embedding",
+            TextEmbeddingInferenceOptions,
+            NlpRobertaTokenizationConfig,
+            512,
+            768,
+        ),
+        (
             "intfloat/multilingual-e5-small",
             "text_embedding",
             TextEmbeddingInferenceOptions,
