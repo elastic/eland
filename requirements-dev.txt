@@ -4,9 +4,7 @@
 elasticsearch>=8.3,<9
 pandas>=1.5,<2
 matplotlib>=3.6
-# Shap is incompatible with NumPy >= 1.24 (elastic/eland#539)
-# Fix NumPy to a known good range of versions
-numpy>=1.2.0,<1.24
+numpy>=1.2.0,<2
 tqdm<5
 
 #
@@ -31,7 +29,7 @@ pytest>=5.2.1
 pytest-mock
 pytest-cov
 nbval
-shap==0.41.0
+shap==0.43.0
 
 #
 # Docs
