@@ -4,6 +4,7 @@ steps:
       PYTHON_VERSION: 3
     agents:
       provider: "gcp"
+      machineType: "n2-standard-2"
     commands:
       - ./.buildkite/lint-code.sh
   - label: ":books: Build documentation"
@@ -11,11 +12,13 @@ steps:
       PYTHON_VERSION: 3.9-bookworm
     agents:
       provider: "gcp"
+      machineType: "n2-standard-2"
     commands:
       - ./.buildkite/build-documentation.sh
   - label: "Eland :python: {{ matrix.python }} :elasticsearch: {{ matrix.stack }}"
     agents:
       provider: "gcp"
+      machineType: "n2-standard-4"      
     env:
       PYTHON_VERSION: "{{ matrix.python }}"
       PANDAS_VERSION: '1.5.0'

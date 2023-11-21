@@ -78,6 +78,14 @@ pytestmark = [
 if HAS_PYTORCH and HAS_SKLEARN and HAS_TRANSFORMERS:
     MODEL_CONFIGURATIONS = [
         (
+            "sentence-transformers/all-distilroberta-v1",
+            "text_embedding",
+            TextEmbeddingInferenceOptions,
+            NlpRobertaTokenizationConfig,
+            512,
+            768,
+        ),
+        (
             "intfloat/multilingual-e5-small",
             "text_embedding",
             TextEmbeddingInferenceOptions,
@@ -146,6 +154,7 @@ else:
     MODEL_CONFIGURATIONS = []
 
 
+@pytest.mark.skip(reason="https://github.com/elastic/eland/issues/633")
 class TestModelConfguration:
     @pytest.mark.parametrize(
         "model_id,task_type,config_type,tokenizer_type,max_sequence_len,embedding_size",
