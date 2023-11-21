@@ -311,7 +311,7 @@ class _SentenceTransformerWrapperModule(nn.Module):  # type: ignore
             (
                 transformers.BartTokenizer,
                 transformers.MPNetTokenizer,
-                transformers.RobertaConfig,
+                transformers.RobertaTokenizer,
                 transformers.XLMRobertaTokenizer,
             ),
         ):
