@@ -2,6 +2,28 @@
 Changelog
 =========
 
+8.11.1 (2023-11-22)
+-------------------
+Added
+^^^^^
+
+* Make demo notebook runnable in Colab (`#630`_)
+
+Changed
+^^^^^^^
+
+* Bump Shap version to 0.43 (`#636`_)
+
+Fixed
+^^^^^
+
+* Fix failed import of Sentence Transformer RoBERTa models  (`#637`_)
+
+
+.. _#630: https://github.com/elastic/eland/pull/630
+.. _#636: https://github.com/elastic/eland/pull/636
+.. _#637: https://github.com/elastic/eland/pull/637
+
 8.11.0 (2023-11-08)
 -------------------
 
