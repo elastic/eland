@@ -128,6 +128,19 @@ def get_arg_parser():
         "--ca-certs", required=False, default=DEFAULT, help="Path to CA bundle"
     )
 
+    parser.add_argument(
+        "--ingest-prefix",
+        required=False,
+        default=None,
+        help="String to prepend to model input at ingest",
+    )
+    parser.add_argument(
+        "--search-prefix",
+        required=False,
+        default=None,
+        help="String to prepend to model input at search",
+    )
+
     return parser
 
 
@@ -244,6 +257,8 @@ def main():
                 task_type=args.task_type,
                 es_version=cluster_version,
                 quantize=args.quantize,
+                ingest_prefix=args.ingest_prefix,
+                search_prefix=args.search_prefix,
             )
             model_path, config, vocab_path = tm.save(tmp_dir)
         except TaskTypeError as err:

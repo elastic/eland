@@ -154,13 +154,13 @@ else:
     MODEL_CONFIGURATIONS = []
 
 
-@pytest.mark.skip(reason="https://github.com/elastic/eland/issues/633")
 class TestModelConfguration:
+    @pytest.mark.skip(reason="https://github.com/elastic/eland/issues/633")
     @pytest.mark.parametrize(
         "model_id,task_type,config_type,tokenizer_type,max_sequence_len,embedding_size",
         MODEL_CONFIGURATIONS,
     )
-    def test_text_prediction(
+    def test_model_config(
         self,
         model_id,
         task_type,
@@ -170,7 +170,6 @@ class TestModelConfguration:
         embedding_size,
     ):
         with tempfile.TemporaryDirectory() as tmp_dir:
-            print("loading model " + model_id)
             tm = TransformerModel(
                 model_id=model_id,
                 task_type=task_type,
@@ -183,6 +182,7 @@ class TestModelConfguration:
             assert isinstance(config.inference_config, config_type)
             tokenization = config.inference_config.tokenization
             assert isinstance(config.metadata, dict)
+            assert config.prefix_strings is None
             assert (
                 "per_deployment_memory_bytes" in config.metadata
                 and config.metadata["per_deployment_memory_bytes"] > 0
@@ -210,3 +210,28 @@ class TestModelConfguration:
                 assert len(config.inference_config.classification_labels) > 0
 
             del tm
+
+    def test_model_config_with_prefix_string(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tm = TransformerModel(
+                model_id="sentence-transformers/all-distilroberta-v1",
+                task_type="text_embedding",
+                es_version=(8, 12, 0),
+                quantize=False,
+                ingest_prefix="INGEST:",
+                search_prefix="SEARCH:",
+            )
+            _, config, _ = tm.save(tmp_dir)
+            assert config.prefix_strings.to_dict()["ingest"] == "INGEST:"
+            assert config.prefix_strings.to_dict()["search"] == "SEARCH:"
+
+    def test_model_config_with_prefix_string_not_supported(self):
+        with pytest.raises(Exception):
+            TransformerModel(
+                model_id="sentence-transformers/all-distilroberta-v1",
+                task_type="text_embedding",
+                es_version=(8, 11, 0),
+                quantize=False,
+                ingest_prefix="INGEST:",
+                search_prefix="SEARCH:",
+            )

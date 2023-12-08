@@ -53,6 +53,7 @@ from eland.ml.pytorch.nlp_ml_model import (
     NlpTrainedModelConfig,
     NlpXLMRobertaTokenizationConfig,
     PassThroughInferenceOptions,
+    PrefixStrings,
     QuestionAnsweringInferenceOptions,
     TextClassificationInferenceOptions,
     TextEmbeddingInferenceOptions,
@@ -596,6 +597,8 @@ class TransformerModel:
         es_version: Optional[Tuple[int, int, int]] = None,
         quantize: bool = False,
         access_token: Optional[str] = None,
+        ingest_prefix: Optional[str] = None,
+        search_prefix: Optional[str] = None,
     ):
         """
         Loads a model from the Hugging Face repository or local file and creates
@@ -618,11 +621,22 @@ class TransformerModel:
 
         quantize: bool, default False
             Quantize the model.
+
+        access_token: Optional[str]
+            For the HuggingFace Hub private model access
+
+        ingest_prefix: Optional[str]
+            Prefix string to prepend to input at ingest
+
+        search_prefix: Optional[str]
+            Prefix string to prepend to input at search
         """
 
         self._model_id = model_id
         self._access_token = access_token
         self._task_type = task_type.replace("-", "_")
+        self._ingest_prefix = ingest_prefix
+        self._search_prefix = search_prefix
 
         # load Hugging Face model and tokenizer
         # use padding in the tokenizer to ensure max length sequences are used for tracing (at call time)
@@ -783,6 +797,19 @@ class TransformerModel:
             "per_allocation_memory_bytes": per_allocation_memory_bytes,
         }
 
+        prefix_strings = (
+            PrefixStrings(
+                ingest_prefix=self._ingest_prefix, search_prefix=self._search_prefix
+            )
+            if self._ingest_prefix or self._search_prefix
+            else None
+        )
+        prefix_strings_supported = es_version is None or es_version >= (8, 12, 0)
+        if not prefix_strings_supported and prefix_strings:
+            raise Exception(
+                f"The Elasticsearch cluster version {es_version} does not support prefix strings. Support was added in version 8.12.0"
+            )
+
         return NlpTrainedModelConfig(
             description=f"Model {self._model_id} for task type '{self._task_type}'",
             model_type="pytorch",
@@ -791,6 +818,7 @@ class TransformerModel:
                 field_names=["text_field"],
             ),
             metadata=metadata,
+            prefix_strings=prefix_strings,
         )
 
     def _get_per_deployment_memory(self) -> float:
