@@ -167,7 +167,7 @@ Configuring PyCharm And Running Tests
 - Install development requirements. Open terminal in virtual environment and run
    .. code-block:: bash
 
-      `pip install -r requirements-dev.txt`
+      pip install -r requirements-dev.txt
 
 - Setup Elasticsearch instance with docker 
    .. code-block:: bash
