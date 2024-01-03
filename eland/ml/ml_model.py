@@ -174,7 +174,6 @@ class MLModel:
                         "inference": {
                             "model_id": self._model_id,
                             "inference_config": {self.model_type: {}},
-                            # "inference_config": self.inference_config,
                             field_map_name: {},
                         }
                     }

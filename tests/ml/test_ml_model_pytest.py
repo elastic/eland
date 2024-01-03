@@ -308,6 +308,68 @@ class TestMLModel:
 
     @requires_sklearn
     @pytest.mark.parametrize("compress_model_definition", [True, False])
+    def test_learning_to_rank(self, compress_model_definition):
+        # Train model
+        training_data = datasets.make_regression(n_features=2)
+        regressor = DecisionTreeRegressor()
+        regressor.fit(training_data[0], training_data[1])
+
+        # Serialise the models to Elasticsearch
+        feature_names = [f"feature_{i}" for i in range(2)]
+        model_id = "test_learning_to_rank"
+        inference_config = {
+            "learning_to_rank": {
+                "feature_extractors": [
+                    {
+                        "query_extractor": {
+                            "feature_name": "feature_1",
+                            "query": {
+                                "script_score": {
+                                    "query": {"match_all": {}},
+                                    "script": {"source": 'return doc["price"].value;'},
+                                }
+                            },
+                        }
+                    },
+                    {
+                        "query_extractor": {
+                            "feature_name": "feature_2",
+                            "query": {"term": {"type": "TV"}},
+                        }
+                    },
+                ]
+            }
+        }
+
+        es_model = MLModel.import_model(
+            ES_TEST_CLIENT,
+            model_id,
+            regressor,
+            feature_names,
+            es_if_exists="replace",
+            es_compress_model_definition=compress_model_definition,
+            inference_config=inference_config,
+        )
+
+        # Verify the saved inference config contains the passed LTR config
+        response = ES_TEST_CLIENT.ml.get_trained_models(model_id=model_id)
+        assert response.meta.status == 200
+        assert response.body["count"] == 1
+        saved_inference_config = response.body["trained_model_configs"][0][
+            "inference_config"
+        ]
+        assert "learning_to_rank" in saved_inference_config
+        saved_ltr_config = saved_inference_config["learning_to_rank"]
+        assert all(
+            item in saved_ltr_config.items()
+            for item in inference_config["learning_to_rank"].items()
+        )
+
+        # Clean up
+        es_model.delete_model()
+
+    @requires_sklearn
+    @pytest.mark.parametrize("compress_model_definition", [True, False])
     def test_random_forest_classifier(self, compress_model_definition):
         # Train model
         training_data = datasets.make_classification(n_features=5)
