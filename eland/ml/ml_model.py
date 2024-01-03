@@ -254,6 +254,7 @@ class MLModel:
         classification_weights: Optional[List[float]] = None,
         es_if_exists: Optional[str] = None,
         es_compress_model_definition: bool = True,
+        inference_config: Optional[Dict[str, Dict[str, Any]]] = None
     ) -> "MLModel":
         """
         Transform and serialize a trained 3rd party model into Elasticsearch.
@@ -324,6 +325,10 @@ class MLModel:
             JSON instead of raw JSON to reduce the amount of data sent
             over the wire in HTTP requests. Defaults to 'True'.
 
+        inference_config: Dict[str, Dict]
+            Model inference configuration. Must contain a top-level property whose name is the same as the inference
+            task type.
+
         Examples
         --------
         >>> from sklearn import datasets
@@ -367,6 +372,7 @@ class MLModel:
         )
         serializer = transformer.transform()
         model_type = transformer.model_type
+        default_inference_config = {model_type: {}}
 
         if es_if_exists is None:
             es_if_exists = "fail"
@@ -389,14 +395,14 @@ class MLModel:
             ml_model._client.ml.put_trained_model(
                 model_id=model_id,
                 input={"field_names": feature_names},
-                inference_config={model_type: {}},
+                inference_config=inference_config or default_inference_config,
                 compressed_definition=serializer.serialize_and_compress_model(),
             )
         else:
             ml_model._client.ml.put_trained_model(
                 model_id=model_id,
                 input={"field_names": feature_names},
-                inference_config={model_type: {}},
+                inference_config=inference_config or default_inference_config,
                 definition=serializer.serialize_model(),
             )
 
