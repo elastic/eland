@@ -174,6 +174,7 @@ class MLModel:
                         "inference": {
                             "model_id": self._model_id,
                             "inference_config": {self.model_type: {}},
+                            # "inference_config": self.inference_config,
                             field_map_name: {},
                         }
                     }
@@ -215,7 +216,7 @@ class MLModel:
         inference_config = self._trained_model_config["inference_config"]
         if "classification" in inference_config:
             return TYPE_CLASSIFICATION
-        elif "regression" in inference_config:
+        elif "regression" in inference_config or "learning_to_rank" in inference_config:
             return TYPE_REGRESSION
         raise ValueError("Unable to determine 'model_type' for MLModel")
 
@@ -254,7 +255,7 @@ class MLModel:
         classification_weights: Optional[List[float]] = None,
         es_if_exists: Optional[str] = None,
         es_compress_model_definition: bool = True,
-        inference_config: Optional[Dict[str, Dict[str, Any]]] = None
+        inference_config: Optional[Dict[str, Dict[str, Any]]] = None,
     ) -> "MLModel":
         """
         Transform and serialize a trained 3rd party model into Elasticsearch.
@@ -372,7 +373,7 @@ class MLModel:
         )
         serializer = transformer.transform()
         model_type = transformer.model_type
-        default_inference_config = {model_type: {}}
+        default_inference_config: Dict[str, Any] = {model_type: {}}
 
         if es_if_exists is None:
             es_if_exists = "fail"
