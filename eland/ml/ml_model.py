@@ -23,7 +23,7 @@ import numpy as np
 from eland.common import ensure_es_client, es_version
 from eland.utils import deprecated_api
 
-from .common import TYPE_CLASSIFICATION, TYPE_REGRESSION
+from .common import TYPE_CLASSIFICATION, TYPE_LEARNING_TO_RANK, TYPE_REGRESSION
 from .transformers import get_model_transformer
 
 if TYPE_CHECKING:
@@ -130,6 +130,11 @@ class MLModel:
         >>> # Delete model from Elasticsearch
         >>> es_model.delete_model()
         """
+        if self.model_type not in (TYPE_CLASSIFICATION, TYPE_REGRESSION):
+            raise NotImplementedError(
+                f"Prediction for type {self.model_type} is not supported."
+            )
+
         docs: List[Mapping[str, Any]] = []
         if isinstance(X, np.ndarray):
 
@@ -215,7 +220,9 @@ class MLModel:
         inference_config = self._trained_model_config["inference_config"]
         if "classification" in inference_config:
             return TYPE_CLASSIFICATION
-        elif "regression" in inference_config or "learning_to_rank" in inference_config:
+        elif "learning_to_rank" in inference_config:
+            return TYPE_LEARNING_TO_RANK
+        elif "regression" in inference_config:
             return TYPE_REGRESSION
         raise ValueError("Unable to determine 'model_type' for MLModel")
 

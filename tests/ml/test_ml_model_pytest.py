@@ -16,6 +16,7 @@
 #  under the License.
 
 from operator import itemgetter
+from typing import Tuple
 
 import numpy as np
 import pytest
@@ -70,8 +71,15 @@ requires_no_ml_extras = pytest.mark.skipif(
 )
 
 requires_lightgbm = pytest.mark.skipif(
-    not HAS_LIGHTGBM, reason="This test requires 'lightgbm' package to run"
+    not HAS_LIGHTGBM, reason="This test requires 'lightgbm' package to run."
 )
+
+
+def requires_elasticsearch_version(minimum_version: Tuple[int, int, int]):
+    return pytest.mark.skipif(
+        ES_VERSION < minimum_version,
+        reason=f"This test requires Elasticsearch version {'.'.join(str(v) for v in minimum_version)} or later.",
+    )
 
 
 def skip_if_multiclass_classifition():
@@ -306,6 +314,7 @@ class TestMLModel:
         # Clean up
         es_model.delete_model()
 
+    @requires_elasticsearch_version((8, 12))
     @requires_sklearn
     @pytest.mark.parametrize("compress_model_definition", [True, False])
     def test_learning_to_rank(self, compress_model_definition):
@@ -364,6 +373,12 @@ class TestMLModel:
             item in saved_ltr_config.items()
             for item in inference_config["learning_to_rank"].items()
         )
+
+        # Verify prediction is not supported for LTR
+        try:
+            es_model.predict([0])
+        except NotImplementedError:
+            pass
 
         # Clean up
         es_model.delete_model()
