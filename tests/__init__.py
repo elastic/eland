@@ -163,6 +163,59 @@ ECOMMERCE_MAPPING = {
 ECOMMERCE_FILE_NAME = ROOT_DIR + "/ecommerce.json.gz"
 ECOMMERCE_DF_FILE_NAME = ROOT_DIR + "/ecommerce_df.json.gz"
 
+MOVIES_INDEX_NAME = "movies"
+MOVIES_FILE_NAME = ROOT_DIR + "/movies.json.gz"
+MOVIES_MAPPING = {
+    "mappings": {
+        "properties": {
+            "type": {"type": "keyword"},
+            "title": {"type": "text"},
+            "year": {"type": "integer"},
+            "rated": {"type": "keyword"},
+            "released": {"type": "date"},
+            "plot": {"type": "text"},
+            "awards": {"type": "text"},
+            "poster": {"type": "keyword"},
+            "id": {"type": "keyword"},
+            "metascore": {"type": "float"},
+            "imdbRating": {"type": "float"},
+            "imdbVotes": {"type": "integer"},
+            "language": {"type": "keyword"},
+            "runtime": {"type": "integer"},
+            "genres": {
+                "type": "text",
+                "fields": {
+                    "keyword": {"type": "keyword"},
+                },
+            },
+            "directors": {
+                "type": "text",
+                "fields": {
+                    "keyword": {"type": "keyword"},
+                },
+            },
+            "writers": {
+                "type": "text",
+                "fields": {
+                    "keyword": {"type": "keyword"},
+                },
+            },
+            "actors": {
+                "type": "text",
+                "fields": {
+                    "keyword": {"type": "keyword"},
+                },
+            },
+            "country": {
+                "type": "text",
+                "fields": {
+                    "keyword": {"type": "keyword"},
+                },
+            },
+        }
+    }
+}
+
 TEST_MAPPING1 = {
     "mappings": {
         "properties": {
