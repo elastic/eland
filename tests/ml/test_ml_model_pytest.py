@@ -23,7 +23,12 @@ import pytest
 
 import eland as ed
 from eland.ml import MLModel
-from tests import ES_TEST_CLIENT, ES_VERSION, FLIGHTS_SMALL_INDEX_NAME, MOVIES_INDEX_NAME
+from tests import (
+    ES_TEST_CLIENT,
+    ES_VERSION,
+    FLIGHTS_SMALL_INDEX_NAME,
+    MOVIES_INDEX_NAME,
+)
 
 try:
     from sklearn import datasets
@@ -329,7 +334,7 @@ class TestMLModel:
             {
                 "query_extractor": {
                     "feature_name": "title_bm25",
-                    "query": {"match": { "title": "{{query_string}}" } }
+                    "query": {"match": {"title": "{{query_string}}"}},
                 }
             },
             {
@@ -337,18 +342,19 @@ class TestMLModel:
                     "feature_name": "imdb_rating",
                     "query": {
                         "script_score": {
-                            "query": {"exists": { "field": "imdbRating" }},
+                            "query": {"exists": {"field": "imdbRating"}},
                             "script": {"source": 'return doc["imdbRating"].value;'},
                         }
-                    }
+                    },
                 }
-            }
+            },
         ]
-        feature_names = [extractor['query_extractor']['feature_name'] for extractor in feature_extractors]
+        feature_names = [
+            extractor["query_extractor"]["feature_name"]
+            for extractor in feature_extractors
+        ]
         inference_config = {
-            "learning_to_rank": {
-                "feature_extractors": feature_extractors
-            }
+            "learning_to_rank": {"feature_extractors": feature_extractors}
         }
 
         es_model = MLModel.import_model(
@@ -377,24 +383,24 @@ class TestMLModel:
 
         # Execute search with rescoring and verify document order
         search_result = ES_TEST_CLIENT.search(
-            index = MOVIES_INDEX_NAME,
-            query = {
-                "multi_match": { 
+            index=MOVIES_INDEX_NAME,
+            query={
+                "multi_match": {
                     "fields": ["title", "actors", "directors", "plot"],
-                    "query": "planet of the apes"
+                    "query": "planet of the apes",
                 }
             },
-            rescore = {
+            rescore={
                 "learning_to_rank": {
                     "model_id": model_id,
-                    "params": {"query_string": "planet of the apes"}
+                    "params": {"query_string": "planet of the apes"},
                 }
             },
         )
-        assert search_result['hits']['hits'][0]['_id'] == 'tt1318514'
-        assert search_result['hits']['hits'][1]['_id'] == 'tt0063442'
-        assert search_result['hits']['hits'][2]['_id'] == 'tt0214341'
-        
+        assert search_result["hits"]["hits"][0]["_id"] == "tt1318514"
+        assert search_result["hits"]["hits"][1]["_id"] == "tt0063442"
+        assert search_result["hits"]["hits"][2]["_id"] == "tt0214341"
+
         # Verify prediction is not supported for LTR
         try:
             es_model.predict([0])
