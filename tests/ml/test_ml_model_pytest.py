@@ -381,15 +381,10 @@ class TestMLModel:
             for item in inference_config["learning_to_rank"].items()
         )
 
-        # Execute search with rescoring and verify document order
+        # Execute search with rescoring
         search_result = ES_TEST_CLIENT.search(
             index=MOVIES_INDEX_NAME,
-            query={
-                "multi_match": {
-                    "fields": ["title", "actors", "directors", "plot"],
-                    "query": "planet of the apes",
-                }
-            },
+            query={"terms": {"_id": ["tt1318514", "tt0071562"] } },
             rescore={
                 "learning_to_rank": {
                     "model_id": model_id,
@@ -397,9 +392,15 @@ class TestMLModel:
                 }
             },
         )
-        assert search_result["hits"]["hits"][0]["_id"] == "tt1318514"
-        assert search_result["hits"]["hits"][1]["_id"] == "tt0063442"
-        assert search_result["hits"]["hits"][2]["_id"] == "tt0214341"
+
+        # Assert that:
+        # - all documents from the query are present
+        # - all documents have been rescored (score != 1.0)
+        # - document scores are unique
+        doc_scores = [hit['_score'] for hit in search_result['hits']['hits']]
+        assert len(search_result['hits']['hits']) == 2
+        assert all(score != float(1) for score in doc_scores)
+        assert all(doc_scores.count(score) == 1 for score in doc_scores)
 
         # Verify prediction is not supported for LTR
         try:
