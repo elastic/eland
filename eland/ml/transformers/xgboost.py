@@ -22,12 +22,12 @@ import pandas as pd  # type: ignore
 
 from .._model_serializer import Ensemble, Tree, TreeNode
 from .._optional import import_optional_dependency
-from ..common import TYPE_CLASSIFICATION, TYPE_REGRESSION
+from ..common import TYPE_CLASSIFICATION, TYPE_LEARNING_TO_RANK, TYPE_REGRESSION
 from .base import ModelTransformer
 
 import_optional_dependency("xgboost", on_version="warn")
 
-from xgboost import Booster, XGBClassifier, XGBModel, XGBRegressor  # type: ignore
+from xgboost import Booster, XGBClassifier, XGBModel, XGBRanker, XGBRegressor  # type: ignore
 
 
 class XGBoostForestTransformer(ModelTransformer):
@@ -182,6 +182,30 @@ class XGBoostForestTransformer(ModelTransformer):
         )
 
 
+class XGBoostRankerTransformer(XGBoostForestTransformer):
+    def __init__(self, model: XGBRanker, feature_names: List[str]):
+        super().__init__(
+            model.get_booster(), feature_names, model.base_score, model.objective
+        )
+    
+    def determine_target_type(self) -> str:
+        return "regression"
+    
+    def is_objective_supported(self) -> bool:
+        return self._objective in {
+            "rank:ndcg",
+            "rank:map",
+            "rank:pairwise",
+        }
+    
+    def build_aggregator_output(self) -> Dict[str, Any]:
+        return {"logistic_regression": {}}
+    
+    @property
+    def model_type(self) -> str:
+        return TYPE_LEARNING_TO_RANK
+
+
 class XGBoostRegressorTransformer(XGBoostForestTransformer):
     def __init__(self, model: XGBRegressor, feature_names: List[str]):
         # XGBRegressor.base_score defaults to 0.5.
@@ -264,5 +288,6 @@ class XGBoostClassifierTransformer(XGBoostForestTransformer):
 
 _MODEL_TRANSFORMERS: Dict[type, Type[ModelTransformer]] = {
     XGBRegressor: XGBoostRegressorTransformer,
+    XGBRanker: XGBoostRankerTransformer,
     XGBClassifier: XGBoostClassifierTransformer,
 }
