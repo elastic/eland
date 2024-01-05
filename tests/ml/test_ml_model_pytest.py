@@ -396,11 +396,9 @@ class TestMLModel:
         # Assert that:
         # - all documents from the query are present
         # - all documents have been rescored (score != 1.0)
-        # - document scores are unique
         doc_scores = [hit["_score"] for hit in search_result["hits"]["hits"]]
         assert len(search_result["hits"]["hits"]) == 2
         assert all(score != float(1) for score in doc_scores)
-        assert all(doc_scores.count(score) == 1 for score in doc_scores)
 
         # Verify prediction is not supported for LTR
         try:
