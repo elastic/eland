@@ -384,7 +384,7 @@ class TestMLModel:
         # Execute search with rescoring
         search_result = ES_TEST_CLIENT.search(
             index=MOVIES_INDEX_NAME,
-            query={"terms": {"_id": ["tt1318514", "tt0071562"] } },
+            query={"terms": {"_id": ["tt1318514", "tt0071562"]}},
             rescore={
                 "learning_to_rank": {
                     "model_id": model_id,
@@ -397,8 +397,8 @@ class TestMLModel:
         # - all documents from the query are present
         # - all documents have been rescored (score != 1.0)
         # - document scores are unique
-        doc_scores = [hit['_score'] for hit in search_result['hits']['hits']]
-        assert len(search_result['hits']['hits']) == 2
+        doc_scores = [hit["_score"] for hit in search_result["hits"]["hits"]]
+        assert len(search_result["hits"]["hits"]) == 2
         assert all(score != float(1) for score in doc_scores)
         assert all(doc_scores.count(score) == 1 for score in doc_scores)
 
