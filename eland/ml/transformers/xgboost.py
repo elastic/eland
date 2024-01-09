@@ -27,7 +27,13 @@ from .base import ModelTransformer
 
 import_optional_dependency("xgboost", on_version="warn")
 
-from xgboost import Booster, XGBClassifier, XGBModel, XGBRanker, XGBRegressor  # type: ignore
+from xgboost import (  # type: ignore
+    Booster,
+    XGBClassifier,
+    XGBModel,
+    XGBRanker,
+    XGBRegressor,
+)
 
 
 class XGBoostForestTransformer(ModelTransformer):
@@ -140,7 +146,7 @@ class XGBoostForestTransformer(ModelTransformer):
         if len(tree_nodes) > 0:
             transformed_trees.append(self.build_tree(tree_nodes))
         # We add this stump as XGBoost adds the base_score to the regression outputs
-        if self._objective.partition(":")[0] == "reg":
+        if self._objective.partition(":")[0] in ["reg", "rank"]:
             transformed_trees.append(self.build_base_score_stump())
         return transformed_trees
 
@@ -182,30 +188,6 @@ class XGBoostForestTransformer(ModelTransformer):
         )
 
 
-class XGBoostRankerTransformer(XGBoostForestTransformer):
-    def __init__(self, model: XGBRanker, feature_names: List[str]):
-        super().__init__(
-            model.get_booster(), feature_names, model.base_score, model.objective
-        )
-    
-    def determine_target_type(self) -> str:
-        return "regression"
-    
-    def is_objective_supported(self) -> bool:
-        return self._objective in {
-            "rank:ndcg",
-            "rank:map",
-            "rank:pairwise",
-        }
-    
-    def build_aggregator_output(self) -> Dict[str, Any]:
-        return {"logistic_regression": {}}
-    
-    @property
-    def model_type(self) -> str:
-        return TYPE_LEARNING_TO_RANK
-
-
 class XGBoostRegressorTransformer(XGBoostForestTransformer):
     def __init__(self, model: XGBRegressor, feature_names: List[str]):
         # XGBRegressor.base_score defaults to 0.5.
@@ -227,6 +209,9 @@ class XGBoostRegressorTransformer(XGBoostForestTransformer):
             "reg:pseudohubererror",
             "reg:linear",
             "reg:logistic",
+            "rank:pairwise",
+            "rank:ncdg",
+            "rank:map",
         }
 
     def build_aggregator_output(self) -> Dict[str, Any]:
@@ -288,6 +273,6 @@ class XGBoostClassifierTransformer(XGBoostForestTransformer):
 
 _MODEL_TRANSFORMERS: Dict[type, Type[ModelTransformer]] = {
     XGBRegressor: XGBoostRegressorTransformer,
-    XGBRanker: XGBoostRankerTransformer,
+    XGBRanker: XGBoostRegressorTransformer,
     XGBClassifier: XGBoostClassifierTransformer,
 }

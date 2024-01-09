@@ -45,7 +45,11 @@ if TYPE_CHECKING:
     except ImportError:
         pass
     try:
-        from xgboost import XGBClassifier, XGBRanker, XGBRegressor  # type: ignore # noqa: F401
+        from xgboost import (  # type: ignore # noqa: F401
+            XGBClassifier,
+            XGBRanker,
+            XGBRegressor,
+        )
     except ImportError:
         pass
     try:

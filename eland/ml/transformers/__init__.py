@@ -67,14 +67,12 @@ try:
     from .xgboost import (
         XGBoostClassifierTransformer,
         XGBoostForestTransformer,
-        XGBoostRankerTransformer,
         XGBoostRegressorTransformer,
     )
 
     __all__ += [
         "XGBoostClassifierTransformer",
         "XGBoostForestTransformer",
-        "XGBoostRankerTransformer",
         "XGBoostRegressorTransformer",
     ]
     _MODEL_TRANSFORMERS.update(_XGBOOST_MODEL_TRANSFORMERS)
