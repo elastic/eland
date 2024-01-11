@@ -16,5 +16,4 @@
 #  under the License.
 
 TYPE_CLASSIFICATION = "classification"
-TYPE_LEARNING_TO_RANK = "learning_to_rank"
 TYPE_REGRESSION = "regression"
