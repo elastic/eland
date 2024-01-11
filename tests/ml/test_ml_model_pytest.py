@@ -40,7 +40,7 @@ except ImportError:
     HAS_SKLEARN = False
 
 try:
-    from xgboost import XGBClassifier, XGBRegressor
+    from xgboost import XGBClassifier, XGBRanker, XGBRegressor
 
     HAS_XGBOOST = True
 except ImportError:
@@ -551,6 +551,45 @@ class TestMLModel:
         check_prediction_equality(
             es_model, classifier, random_rows(training_data[0], 20)
         )
+
+        # Clean up
+        es_model.delete_model()
+
+    @requires_xgboost
+    @pytest.mark.parametrize("compress_model_definition", [True, False])
+    @pytest.mark.parametrize(
+        "objective",
+        ["rank:ndcg", "rank:map", "rank:pairwise"],
+    )
+    def test_xgb_ranker(self, compress_model_definition, objective):
+        X, y = datasets.make_classification(n_features=5)
+        rng = np.random.default_rng()
+        qid = rng.integers(0, 3, size=X.shape[0])
+
+        # Sort the inputs based on query index
+        sorted_idx = np.argsort(qid)
+        X = X[sorted_idx, :]
+        y = y[sorted_idx]
+        qid = qid[sorted_idx]
+
+        ranker = XGBRanker(objective=objective)
+        ranker.fit(X, y, qid=qid)
+
+        # Serialise the models to Elasticsearch
+        feature_names = ["f0", "f1", "f2", "f3", "f4"]
+        model_id = "test_xgb_ranker"
+
+        es_model = MLModel.import_model(
+            ES_TEST_CLIENT,
+            model_id,
+            ranker,
+            feature_names,
+            es_if_exists="replace",
+            es_compress_model_definition=compress_model_definition,
+        )
+
+        # Get some test results
+        check_prediction_equality(es_model, ranker, random_rows(X, 20))
 
         # Clean up
         es_model.delete_model()
