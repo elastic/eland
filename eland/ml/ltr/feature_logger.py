@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING, Any, List, Mapping, Tuple, Union
 
 from eland.common import ensure_es_client
 
-from .ltr_model_config import LTRModelConfig
+from eland.ml.ltr.ltr_model_config import LTRModelConfig
 
 if TYPE_CHECKING:
     from elasticsearch import Elasticsearch
@@ -72,25 +72,26 @@ class FeatureLogger:
         -------
         >>> from eland.ml.ltr import FeatureLogger, LTRModelConfig, QueryFeatureExtractor
 
-        >>> feature_logger = FeatureLogger(
-        >>>     es_client='http://localhost:9200',
-        >>>     es_index='movies',
-        >>>     ltr_model_config=LTRModelConfig(
-        >>>         feature_extractors=[
-        >>>            QueryFeatureExtractor(
-        >>>                feature_name='title_bm25',
-        >>>                query={ "match": { "title": "{{query}}" } }
-        >>>            ),
-        >>>            QueryFeatureExtractor(
-        >>>                feature_name='descritption_bm25',
-        >>>                query={ "match": { "description": "{{query}}" } }
-        >>>            )
-        >>>         ]
-        >>>     )
-        >>> )
+        >>> ltr_model_config=LTRModelConfig(
+        ...     feature_extractors=[
+        ...        QueryFeatureExtractor(
+        ...            feature_name='title_bm25',
+        ...            query={ "match": { "title": "{{query}}" } }
+        ...        ),
+        ...        QueryFeatureExtractor(
+        ...            feature_name='descritption_bm25',
+        ...            query={ "match": { "description": "{{query}}" } }
+        ...        )
+        ...     ]
+        ... )
 
-        >>> feature_loggger.extract_features(query_params={"query": "star wars"}, "doc_ids"=["doc-1", "doc-2", "doc-3"])
-        { "doc-1": [0.3, 0.1], "doc-1": [0.0, 0.1], "doc-1": [0.2, 0.0] }
+        >>> feature_logger = FeatureLogger(
+        ...     es_client='http://localhost:9200',
+        ...     es_index='movies',
+        ...     ltr_model_config=ltr_model_config
+        ... )
+
+        >>> feature_logger.extract_features(query_params={"query": "star wars"}, doc_ids=["doc-1", "doc-2", "doc-3"])
         """
 
         doc_features = {

@@ -77,9 +77,9 @@ class QueryFeatureExtractor(FeatureExtractor):
         >>> from eland.ml.ltr import QueryFeatureExtractor
 
         >>> query_feature_extractor = QueryFeatureExtractor(
-        >>>     feature_name='title_bm25'
-        >>>     query={ "match": { "title": "{{query}}" } }
-        >>> )
+        ...    feature_name='title_bm25'
+        ...     query={ "match": { "title": "{{query}}" } }
+        ... )
         """
         super().__init__(feature_name=feature_name, type="query_extractor")
         self.query = query
@@ -103,17 +103,17 @@ class LTRModelConfig:
         >>> from eland.ml.ltr import LTRModelConfig, QueryFeatureExtractor
 
         >>> ltr_model_config = LTRModelConfig(
-        >>>     feature_extractors=[
-        >>>        QueryFeatureExtractor(
-        >>>            feature_name='title_bm25',
-        >>>            query={ "match": { "title": "{{query}}" } }
-        >>>        ),
-        >>>        QueryFeatureExtractor(
-        >>>            feature_name='descritption_bm25',
-        >>>            query={ "match": { "description": "{{query}}" } }
-        >>>        )
-        >>>     ]
-        >>> )
+        ...     feature_extractors=[
+        ...        QueryFeatureExtractor(
+        ...            feature_name='title_bm25',
+        ...            query={ "match": { "title": "{{query}}" } }
+        ...        ),
+        ...        QueryFeatureExtractor(
+        ...            feature_name='descritption_bm25',
+        ...            query={ "match": { "description": "{{query}}" } }
+        ...        )
+        ...     ]
+        ... )
         """
         self.feature_extractors = feature_extractors
 
