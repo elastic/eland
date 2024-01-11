@@ -16,12 +16,7 @@
 #  under the License.
 
 from eland.ml.ltr import FeatureLogger, LTRModelConfig, QueryFeatureExtractor
-from tests import (
-    ES_TEST_CLIENT,
-    ES_VERSION,
-    FLIGHTS_SMALL_INDEX_NAME,
-    MOVIES_INDEX_NAME,
-)
+from tests import ES_TEST_CLIENT, MOVIES_INDEX_NAME
 
 
 class TestFeatureLogger:

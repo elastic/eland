@@ -339,11 +339,11 @@ class TestMLModel:
             },
             {
                 "query_extractor": {
-                    "feature_name": "imdb_rating",
+                    "feature_name": "vote_average",
                     "query": {
                         "script_score": {
-                            "query": {"exists": {"field": "imdbRating"}},
-                            "script": {"source": 'return doc["imdbRating"].value;'},
+                            "query": {"exists": {"field": "vote_average"}},
+                            "script": {"source": 'return doc["vote_average"].value;'},
                         }
                     },
                 }
