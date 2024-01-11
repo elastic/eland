@@ -22,7 +22,7 @@ import pandas as pd  # type: ignore
 
 from .._model_serializer import Ensemble, Tree, TreeNode
 from .._optional import import_optional_dependency
-from ..common import TYPE_CLASSIFICATION, TYPE_LEARNING_TO_RANK, TYPE_REGRESSION
+from ..common import TYPE_CLASSIFICATION, TYPE_REGRESSION
 from .base import ModelTransformer
 
 import_optional_dependency("xgboost", on_version="warn")
