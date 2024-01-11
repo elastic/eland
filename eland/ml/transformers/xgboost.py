@@ -210,7 +210,7 @@ class XGBoostRegressorTransformer(XGBoostForestTransformer):
             "reg:linear",
             "reg:logistic",
             "rank:pairwise",
-            "rank:ncdg",
+            "rank:ndcg",
             "rank:map",
         }
 
