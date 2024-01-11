@@ -15,12 +15,11 @@
 #  specific language governing permissions and limitations
 #  under the License.
 
+from eland.ml.ltr.feature_logger import FeatureLogger
 from eland.ml.ltr.ltr_model_config import (
     FeatureExtractor,
     LTRModelConfig,
     QueryFeatureExtractor,
 )
 
-from eland.ml.ltr.feature_logger import FeatureLogger
-
-__all__ = [LTRModelConfig, QueryFeatureExtractor, FeatureExtractor, FeatureLogger]∂
+__all__ = [LTRModelConfig, QueryFeatureExtractor, FeatureExtractor, FeatureLogger]
