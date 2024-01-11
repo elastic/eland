@@ -301,6 +301,11 @@ class MLModel:
                     - "binary:logistic"
                     - "multi:softmax"
                     - "multi:softprob"
+            - xgboost.XGBRanker
+                - only the following objectives are supported:
+                    - "rank:map"
+                    - "rank:ndcg"
+                    - "rank:pairwise"
             - xgboost.XGBRegressor
                 - only the following objectives are supported:
                     - "reg:squarederror"
