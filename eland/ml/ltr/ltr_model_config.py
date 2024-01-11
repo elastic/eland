@@ -17,7 +17,7 @@
 
 from typing import Any, Dict, List, Mapping, Optional
 
-from eland.common import TYPE_LEARNING_TO_RANK
+from eland.ml.common import TYPE_LEARNING_TO_RANK
 
 
 class FeatureExtractor:

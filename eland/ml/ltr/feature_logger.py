@@ -175,7 +175,7 @@ class FeatureLogger:
         __body = {"source": script_source, "params": template_params}
 
         return {
-            hit["_id"]: hit["matched_queries"]
+            hit["_id"]: hit["matched_queries"] if "matched_queries" in hit else {}
             for hit in self._client.perform_request(
                 "GET", __path, params=__query, headers=__headers, body=__body
             )["hits"]["hits"]

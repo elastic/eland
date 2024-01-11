@@ -168,20 +168,15 @@ MOVIES_FILE_NAME = ROOT_DIR + "/movies.json.gz"
 MOVIES_MAPPING = {
     "mappings": {
         "properties": {
-            "type": {"type": "keyword"},
             "title": {"type": "text"},
             "year": {"type": "integer"},
-            "rated": {"type": "keyword"},
             "released": {"type": "date"},
             "plot": {"type": "text"},
-            "awards": {"type": "text"},
-            "poster": {"type": "keyword"},
             "id": {"type": "keyword"},
-            "metascore": {"type": "float"},
-            "imdbRating": {"type": "float"},
-            "imdbVotes": {"type": "integer"},
-            "language": {"type": "keyword"},
             "runtime": {"type": "integer"},
+            "popularity": {"type": "float"},
+            "vote_count": {"type": "integer"},
+            "vote_average": {"type": "float"},
             "genres": {
                 "type": "text",
                 "fields": {
@@ -194,19 +189,7 @@ MOVIES_MAPPING = {
                     "keyword": {"type": "keyword"},
                 },
             },
-            "writers": {
-                "type": "text",
-                "fields": {
-                    "keyword": {"type": "keyword"},
-                },
-            },
             "actors": {
-                "type": "text",
-                "fields": {
-                    "keyword": {"type": "keyword"},
-                },
-            },
-            "country": {
                 "type": "text",
                 "fields": {
                     "keyword": {"type": "keyword"},
