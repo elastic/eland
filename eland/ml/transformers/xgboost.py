@@ -190,6 +190,7 @@ class XGBoostForestTransformer(ModelTransformer):
 
 class XGBoostRegressorTransformer(XGBoostForestTransformer):
     def __init__(self, model: XGBRegressor, feature_names: List[str]):
+        self._regressor_model = model
         # XGBRegressor.base_score defaults to 0.5.
         base_score = model.base_score
         if base_score is None:
@@ -203,15 +204,19 @@ class XGBoostRegressorTransformer(XGBoostForestTransformer):
         return "regression"
 
     def is_objective_supported(self) -> bool:
+        if isinstance(self._regressor_model, XGBRanker):
+            return self._objective in {
+                "rank:pairwise",
+                "rank:ndcg",
+                "rank:map",
+            }
+
         return self._objective in {
             "reg:squarederror",
             "reg:squaredlogerror",
             "reg:pseudohubererror",
             "reg:linear",
             "reg:logistic",
-            "rank:pairwise",
-            "rank:ndcg",
-            "rank:map",
         }
 
     def build_aggregator_output(self) -> Dict[str, Any]:
