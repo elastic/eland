@@ -23,7 +23,7 @@ import numpy as np
 from eland.common import ensure_es_client, es_version
 from eland.utils import deprecated_api
 
-from .common import TYPE_CLASSIFICATION, TYPE_REGRESSION
+from .common import TYPE_CLASSIFICATION, TYPE_LEARNING_TO_RANK, TYPE_REGRESSION
 from .transformers import get_model_transformer
 
 if TYPE_CHECKING:
@@ -134,6 +134,11 @@ class MLModel:
         >>> # Delete model from Elasticsearch
         >>> es_model.delete_model()
         """
+        if self.model_type not in (TYPE_CLASSIFICATION, TYPE_REGRESSION):
+            raise NotImplementedError(
+                f"Prediction for type {self.model_type} is not supported."
+            )
+
         docs: List[Mapping[str, Any]] = []
         if isinstance(X, np.ndarray):
 
@@ -219,6 +224,8 @@ class MLModel:
         inference_config = self._trained_model_config["inference_config"]
         if "classification" in inference_config:
             return TYPE_CLASSIFICATION
+        elif "learning_to_rank" in inference_config:
+            return TYPE_LEARNING_TO_RANK
         elif "regression" in inference_config:
             return TYPE_REGRESSION
         raise ValueError("Unable to determine 'model_type' for MLModel")
@@ -259,6 +266,7 @@ class MLModel:
         classification_weights: Optional[List[float]] = None,
         es_if_exists: Optional[str] = None,
         es_compress_model_definition: bool = True,
+        inference_config: Optional[Mapping[str, Mapping[str, Any]]] = None,
     ) -> "MLModel":
         """
         Transform and serialize a trained 3rd party model into Elasticsearch.
@@ -334,6 +342,10 @@ class MLModel:
             JSON instead of raw JSON to reduce the amount of data sent
             over the wire in HTTP requests. Defaults to 'True'.
 
+        inference_config: Mapping[str, Mapping[str, Any]]
+            Model inference configuration. Must contain a top-level property whose name is the same as the inference
+            task type.
+
         Examples
         --------
         >>> from sklearn import datasets
@@ -377,6 +389,7 @@ class MLModel:
         )
         serializer = transformer.transform()
         model_type = transformer.model_type
+        default_inference_config: Mapping[str, Mapping[str, Any]] = {model_type: {}}
 
         if es_if_exists is None:
             es_if_exists = "fail"
@@ -399,14 +412,14 @@ class MLModel:
             ml_model._client.ml.put_trained_model(
                 model_id=model_id,
                 input={"field_names": feature_names},
-                inference_config={model_type: {}},
+                inference_config=inference_config or default_inference_config,
                 compressed_definition=serializer.serialize_and_compress_model(),
             )
         else:
             ml_model._client.ml.put_trained_model(
                 model_id=model_id,
                 input={"field_names": feature_names},
-                inference_config={model_type: {}},
+                inference_config=inference_config or default_inference_config,
                 definition=serializer.serialize_model(),
             )
 
