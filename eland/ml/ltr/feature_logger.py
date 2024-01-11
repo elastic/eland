@@ -19,7 +19,6 @@ import json
 from typing import TYPE_CHECKING, Any, List, Mapping, Tuple, Union
 
 from eland.common import ensure_es_client
-
 from eland.ml.ltr.ltr_model_config import LTRModelConfig
 
 if TYPE_CHECKING:
@@ -91,7 +90,7 @@ class FeatureLogger:
         ...     ltr_model_config=ltr_model_config
         ... )
 
-        >>> feature_logger.extract_features(query_params={"query": "star wars"}, doc_ids=["doc-1", "doc-2", "doc-3"])
+        >>> doc_features = feature_logger.extract_features(query_params={"query": "star wars"}, doc_ids=["doc-1", "doc-2", "doc-3"])
         """
 
         doc_features = {

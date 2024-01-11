@@ -77,8 +77,8 @@ class QueryFeatureExtractor(FeatureExtractor):
         >>> from eland.ml.ltr import QueryFeatureExtractor
 
         >>> query_feature_extractor = QueryFeatureExtractor(
-        ...    feature_name='title_bm25'
-        ...     query={ "match": { "title": "{{query}}" } }
+        ...    feature_name='title_bm25',
+        ...    query={ "match": { "title": "{{query}}" } }
         ... )
         """
         super().__init__(feature_name=feature_name, type="query_extractor")
