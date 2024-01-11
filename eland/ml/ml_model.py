@@ -45,7 +45,11 @@ if TYPE_CHECKING:
     except ImportError:
         pass
     try:
-        from xgboost import XGBClassifier, XGBRegressor  # type: ignore # noqa: F401
+        from xgboost import (  # type: ignore # noqa: F401
+            XGBClassifier,
+            XGBRanker,
+            XGBRegressor,
+        )
     except ImportError:
         pass
     try:
@@ -252,6 +256,7 @@ class MLModel:
             "RandomForestRegressor",
             "RandomForestClassifier",
             "XGBClassifier",
+            "XGBRanker",
             "XGBRegressor",
             "LGBMRegressor",
             "LGBMClassifier",
@@ -304,6 +309,11 @@ class MLModel:
                     - "binary:logistic"
                     - "multi:softmax"
                     - "multi:softprob"
+            - xgboost.XGBRanker
+                - only the following objectives are supported:
+                    - "rank:map"
+                    - "rank:ndcg"
+                    - "rank:pairwise"
             - xgboost.XGBRegressor
                 - only the following objectives are supported:
                     - "reg:squarederror"
