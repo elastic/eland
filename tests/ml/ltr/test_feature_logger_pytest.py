@@ -16,7 +16,7 @@
 #  under the License.
 
 from eland.ml.ltr import FeatureLogger, LTRModelConfig, QueryFeatureExtractor
-from tests import ES_TEST_CLIENT, MOVIES_INDEX_NAME
+from tests import ES_TEST_CLIENT, NATIONAL_PARKS_INDEX_NAME
 
 
 class TestFeatureLogger:
@@ -24,13 +24,13 @@ class TestFeatureLogger:
         # Create the feature logger and some document extract features for a query.
         ltr_model_config = self._ltr_model_config()
         feature_logger = FeatureLogger(
-            ES_TEST_CLIENT, MOVIES_INDEX_NAME, ltr_model_config
+            ES_TEST_CLIENT, NATIONAL_PARKS_INDEX_NAME, ltr_model_config
         )
 
-        doc_ids = ["tt0133093", "tt0068646", "tt0308090"]
+        doc_ids = ["park_yosemite", "park_hawaii-volcanoes", "park_death-valley"]
 
         doc_features = feature_logger.extract_features(
-            query_params={"query": "matrix"}, doc_ids=doc_ids
+            query_params={"query": "yosemite"}, doc_ids=doc_ids
         )
 
         # Assert all docs are presents.
@@ -43,15 +43,22 @@ class TestFeatureLogger:
             len(features) == len(ltr_model_config.feature_extractors)
             for features in doc_features.values()
         )
+        print(doc_features)
 
-        # Movie "tt0133093" (Matrix), matches for title and has value in the popularity field.
-        assert doc_features["tt0133093"][0] > 0 and doc_features["tt0133093"][1] > 0
+        # "park_yosemite" document matches for title and is a world heritage site
+        assert (
+            doc_features["park_yosemite"][0] > 0
+            and doc_features["park_yosemite"][1] > 1
+        )
 
-        # Movie "tt0133093" (The Godfather), does not match for title but has value in the popularity field.
-        assert doc_features["tt0068646"][0] == 0 and doc_features["tt0068646"][1] > 0
+        # "park_hawaii-volcanoes" document does not matches for title but is a world heritage site
+        assert (
+            doc_features["park_hawaii-volcanoes"][0] == 0
+            and doc_features["park_hawaii-volcanoes"][1] > 1
+        )
 
-        # Movie "tt0133093" (Autobonus), does not match for title but has value in the popularity field.
-        assert doc_features["tt0308090"] == [0, 0]
+        # "park_hawaii-volcanoes" document does not matches for title and is not a world heritage site
+        assert doc_features["park_death-valley"] == [0, 0]
 
     def _ltr_model_config(self):
         # Returns an LTR config with 2 query feature extractors:
@@ -63,13 +70,8 @@ class TestFeatureLogger:
                     feature_name="title_bm25", query={"match": {"title": "{{query}}"}}
                 ),
                 QueryFeatureExtractor(
-                    feature_name="popularity",
-                    query={
-                        "script_score": {
-                            "query": {"exists": {"field": "popularity"}},
-                            "script": {"source": "return doc['popularity'].value"},
-                        }
-                    },
+                    feature_name="world_heritage_site",
+                    query={"term": {"world_heritage_site": True}},
                 ),
             ]
         )

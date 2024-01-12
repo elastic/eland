@@ -27,7 +27,7 @@ from tests import (
     ES_TEST_CLIENT,
     ES_VERSION,
     FLIGHTS_SMALL_INDEX_NAME,
-    MOVIES_INDEX_NAME,
+    NATIONAL_PARKS_INDEX_NAME,
 )
 
 try:
@@ -339,11 +339,11 @@ class TestMLModel:
             },
             {
                 "query_extractor": {
-                    "feature_name": "vote_average",
+                    "feature_name": "visitors",
                     "query": {
                         "script_score": {
-                            "query": {"exists": {"field": "vote_average"}},
-                            "script": {"source": 'return doc["vote_average"].value;'},
+                            "query": {"exists": {"field": "visitors"}},
+                            "script": {"source": 'return doc["visitors"].value;'},
                         }
                     },
                 }
@@ -383,12 +383,12 @@ class TestMLModel:
 
         # Execute search with rescoring
         search_result = ES_TEST_CLIENT.search(
-            index=MOVIES_INDEX_NAME,
-            query={"terms": {"_id": ["tt1318514", "tt0071562"]}},
+            index=NATIONAL_PARKS_INDEX_NAME,
+            query={"terms": {"_id": ["park_yosemite", "park_everglades"]}},
             rescore={
                 "learning_to_rank": {
                     "model_id": model_id,
-                    "params": {"query_string": "planet of the apes"},
+                    "params": {"query_string": "yosemite"},
                 }
             },
         )
