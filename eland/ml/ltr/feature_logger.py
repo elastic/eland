@@ -87,7 +87,7 @@ class FeatureLogger:
 
         >>> feature_logger = FeatureLogger(
         ...     es_client='http://localhost:9200',
-        ...     es_index='national-parks',
+        ...     es_index='national_parks',
         ...     ltr_model_config=ltr_model_config
         ... )
 
