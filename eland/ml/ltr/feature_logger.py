@@ -87,11 +87,11 @@ class FeatureLogger:
 
         >>> feature_logger = FeatureLogger(
         ...     es_client='http://localhost:9200',
-        ...     es_index='movies',
+        ...     es_index='national-parks',
         ...     ltr_model_config=ltr_model_config
         ... )
 
-        >>> doc_features = feature_logger.extract_features(query_params={"query": "star wars"}, doc_ids=["doc-1", "doc-2", "doc-3"])
+        >>> doc_features = feature_logger.extract_features(query_params={"query": "yosemite"}, doc_ids=["park-yosemite", "park-everglade"])
         """
 
         doc_features = {
