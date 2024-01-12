@@ -15,6 +15,7 @@
 #  specific language governing permissions and limitations
 #  under the License.
 
+from functools import cached_property
 from typing import Any, Dict, List, Mapping, Optional
 
 from eland.ml.common import TYPE_LEARNING_TO_RANK
@@ -130,24 +131,26 @@ class LTRModelConfig:
             }
         }
 
+    @cached_property
     def feature_names(self) -> List[str]:
         """
         List of the feature names for the model.
         """
-        if not hasattr(self, "_feature_names"):
-            self._feature_names = [
-                extractor.feature_name for extractor in self.feature_extractors
-            ]
-        return self._feature_names
+
+        return [extractor.feature_name for extractor in self.feature_extractors]
+
+    @cached_property
+    def query_feature_extractors(self) -> List[QueryFeatureExtractor]:
+        """
+        List of query feature extractors for the model.
+        """
+        return [
+            extractor
+            for extractor in self.feature_extractors
+            if isinstance(extractor, QueryFeatureExtractor)
+        ]
 
     def feature_index(self, feature_name: str) -> int:
-        return self.feature_names().index(feature_name)
+        "Returns the index of the feature in the feature lists."
 
-    def query_feature_extractors(self) -> List[QueryFeatureExtractor]:
-        if not hasattr(self, "_query_feature_extractors"):
-            self._query_feature_extractors = [
-                extractor
-                for extractor in self.feature_extractors
-                if isinstance(extractor, QueryFeatureExtractor)
-            ]
-        return self._query_feature_extractors
+        return self.feature_names.index(feature_name)

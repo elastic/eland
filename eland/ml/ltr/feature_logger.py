@@ -16,6 +16,7 @@
 #  under the License.
 
 import json
+from functools import cached_property
 from typing import TYPE_CHECKING, Any, List, Mapping, Tuple, Union
 
 from eland.common import ensure_es_client
@@ -113,43 +114,41 @@ class FeatureLogger:
     ) -> Mapping[str, Mapping[str, any]]:
         return {"bool": {"must": query, "_name": query_name}}
 
+    @cached_property
     def _script_source(self) -> str:
-        if not hasattr(self, "_script_source_cache"):
-            query_extractors = self._model_config.query_feature_extractors()
-            queries = [
-                self._to_named_query(extractor.query, extractor.feature_name)
-                for extractor in query_extractors
-            ]
+        query_extractors = self._model_config.query_feature_extractors
+        queries = [
+            self._to_named_query(extractor.query, extractor.feature_name)
+            for extractor in query_extractors
+        ]
 
-            self._script_source_cache = (
-                json.dumps(
-                    {
-                        "query": {
-                            "bool": {
-                                "should": queries,
-                                "filter": {"ids": {"values": "##DOC_IDS_JSON##"}},
-                            }
-                        },
-                        "size": "##DOC_IDS_SIZE##",
-                        "_source": False,
-                    }
-                )
-                .replace('"##DOC_IDS_JSON##"', "{{#toJson}}__doc_ids{{/toJson}}")
-                .replace('"##DOC_IDS_SIZE##"', "{{__size}}")
+        return (
+            json.dumps(
+                {
+                    "query": {
+                        "bool": {
+                            "should": queries,
+                            "filter": {"ids": {"values": "##DOC_IDS_JSON##"}},
+                        }
+                    },
+                    "size": "##DOC_IDS_SIZE##",
+                    "_source": False,
+                }
             )
-
-        return self._script_source_cache
+            .replace('"##DOC_IDS_JSON##"', "{{#toJson}}__doc_ids{{/toJson}}")
+            .replace('"##DOC_IDS_SIZE##"', "{{__size}}")
+        )
 
     def _extract_query_features(
         self, query_params: Mapping[str, Any], doc_ids: List[str]
     ):
         default_query_scores = dict(
             (extractor.feature_name, extractor.default_score)
-            for extractor in self._model_config.query_feature_extractors()
+            for extractor in self._model_config.query_feature_extractors
         )
 
         matched_queries = self._execute_search_template_request(
-            script_source=self._script_source(),
+            script_source=self._script_source,
             template_params={
                 **query_params,
                 "__doc_ids": doc_ids,
