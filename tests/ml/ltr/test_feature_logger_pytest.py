@@ -15,6 +15,8 @@
 #  specific language governing permissions and limitations
 #  under the License.
 
+import math
+
 from eland.ml.ltr import FeatureLogger, LTRModelConfig, QueryFeatureExtractor
 from tests import ES_TEST_CLIENT, NATIONAL_PARKS_INDEX_NAME
 
@@ -53,12 +55,12 @@ class TestFeatureLogger:
 
         # "park_hawaii-volcanoes" document does not matches for title but is a world heritage site
         assert (
-            doc_features["park_hawaii-volcanoes"][0] == 0
+            math.isnan(doc_features["park_hawaii-volcanoes"][0])
             and doc_features["park_hawaii-volcanoes"][1] > 1
         )
 
         # "park_hawaii-volcanoes" document does not matches for title and is not a world heritage site
-        assert doc_features["park_death-valley"] == [0, 0]
+        assert all(math.isnan(feature) for feature in doc_features["park_death-valley"])
 
     def _ltr_model_config(self):
         # Returns an LTR config with 2 query feature extractors:
