@@ -405,7 +405,7 @@ class MLModel:
     ) -> "MLModel":
         """
         Transform and serialize a trained 3rd party model into Elasticsearch.
-        This model can then be used as an learning_to_rank rescorer in the Elastic Stack.
+        This model can then be used as a learning_to_rank rescorer in the Elastic Stack.
 
         Parameters
         ----------
@@ -438,7 +438,7 @@ class MLModel:
                     - "reg:pseudohubererror"
 
         ltr_model_config: LTRModelConfig
-            The LTR model configuration is used to configure features extractors for the LTR model.
+            The LTR model configuration is used to configure feature extractors for the LTR model.
             Feature names are automatically inferred from the feature extractors.
 
         es_if_exists: {'fail', 'replace'} default 'fail'
