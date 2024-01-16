@@ -385,6 +385,7 @@ class MLModel:
             classification_labels=classification_labels,
             classification_weights=classification_weights,
             es_if_exists=es_if_exists,
+            es_compress_model_definition=es_compress_model_definition,
         )
 
     @classmethod
@@ -419,11 +420,6 @@ class MLModel:
         model: An instance of a supported python model. We support the following model types for LTR prediction:
             - sklearn.tree.DecisionTreeRegressor
             - sklearn.ensemble.RandomForestRegressor
-            - xgboost.XGBClassifier
-                - only the following objectives are supported:
-                    - "binary:logistic"
-                    - "multi:softmax"
-                    - "multi:softprob"
             - xgboost.XGBRanker
                 - only the following objectives are supported:
                     - "rank:map"
@@ -436,6 +432,15 @@ class MLModel:
                     - "reg:squaredlogerror"
                     - "reg:logistic"
                     - "reg:pseudohubererror"
+            - lightgbm.LGBMRegressor
+                - Categorical fields are expected to already be processed
+                - Only the following objectives are supported
+                    - "regression"
+                    - "regression_l1"
+                    - "huber"
+                    - "fair"
+                    - "quantile"
+                    - "mape"
 
         ltr_model_config: LTRModelConfig
             The LTR model configuration is used to configure feature extractors for the LTR model.
