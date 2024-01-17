@@ -163,6 +163,31 @@ ECOMMERCE_MAPPING = {
 ECOMMERCE_FILE_NAME = ROOT_DIR + "/ecommerce.json.gz"
 ECOMMERCE_DF_FILE_NAME = ROOT_DIR + "/ecommerce_df.json.gz"
 
+NATIONAL_PARKS_INDEX_NAME = "national_parks"
+NATIONAL_PARKS_FILE_NAME = ROOT_DIR + "/national-parks.json.gz"
+NATIONAL_PARKS_MAPPING = {
+    "mappings": {
+        "properties": {
+            "id": {"type": "keyword"},
+            "title": {"type": "text"},
+            "description": {"type": "text"},
+            "nps_link": {"type": "text", "index": False},
+            "date_established": {"type": "date"},
+            "location": {"type": "geo_point"},
+            "states": {
+                "type": "text",
+                "fields": {
+                    "keyword": {"type": "keyword"},
+                },
+            },
+            "visitors": {"type": "integer"},
+            "world_heritage_site": {"type": "boolean"},
+            "acres": {"type": "float"},
+            "square_km": {"type": "float"},
+        }
+    }
+}
+
 TEST_MAPPING1 = {
     "mappings": {
         "properties": {

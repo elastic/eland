@@ -30,6 +30,9 @@ from tests import (
     FLIGHTS_MAPPING,
     FLIGHTS_SMALL_FILE_NAME,
     FLIGHTS_SMALL_INDEX_NAME,
+    NATIONAL_PARKS_FILE_NAME,
+    NATIONAL_PARKS_INDEX_NAME,
+    NATIONAL_PARKS_MAPPING,
     TEST_MAPPING1,
     TEST_MAPPING1_INDEX_NAME,
     TEST_NESTED_USER_GROUP_DOCS,
@@ -41,6 +44,7 @@ DATA_LIST = [
     (FLIGHTS_FILE_NAME, FLIGHTS_INDEX_NAME, FLIGHTS_MAPPING),
     (FLIGHTS_SMALL_FILE_NAME, FLIGHTS_SMALL_INDEX_NAME, FLIGHTS_MAPPING),
     (ECOMMERCE_FILE_NAME, ECOMMERCE_INDEX_NAME, ECOMMERCE_MAPPING),
+    (NATIONAL_PARKS_FILE_NAME, NATIONAL_PARKS_INDEX_NAME, NATIONAL_PARKS_MAPPING),
 ]
 
 
@@ -58,18 +62,20 @@ def _setup_data(es):
         es.indices.create(index=index_name, **mapping)
 
         df = pd.read_json(json_file_name, lines=True)
-
         actions = []
         n = 0
 
         print("Adding", df.shape[0], "items to index:", index_name)
         for index, row in df.iterrows():
-            values = row.to_dict()
+            values = row.dropna().to_dict()
             # make timestamp datetime 2018-01-01T12:09:35
             # values['timestamp'] = datetime.strptime(values['timestamp'], '%Y-%m-%dT%H:%M:%S')
 
-            # Use integer as id field for repeatable results
-            action = {"_index": index_name, "_source": values, "_id": str(n)}
+            # Use id field as document id from the row if the fiel exists.
+            # Else, use integer as id field for repeatable results
+            # document_id = values['id'] if 'id' in values else str(n)
+            document_id = values["id"] if "id" in values else str(n)
+            action = {"_index": index_name, "_source": values, "_id": document_id}
 
             actions.append(action)
 

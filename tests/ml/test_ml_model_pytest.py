@@ -16,13 +16,20 @@
 #  under the License.
 
 from operator import itemgetter
+from typing import Tuple
 
 import numpy as np
 import pytest
 
 import eland as ed
 from eland.ml import MLModel
-from tests import ES_TEST_CLIENT, ES_VERSION, FLIGHTS_SMALL_INDEX_NAME
+from eland.ml.ltr import LTRModelConfig, QueryFeatureExtractor
+from tests import (
+    ES_TEST_CLIENT,
+    ES_VERSION,
+    FLIGHTS_SMALL_INDEX_NAME,
+    NATIONAL_PARKS_INDEX_NAME,
+)
 
 try:
     from sklearn import datasets
@@ -34,7 +41,7 @@ except ImportError:
     HAS_SKLEARN = False
 
 try:
-    from xgboost import XGBClassifier, XGBRegressor
+    from xgboost import XGBClassifier, XGBRanker, XGBRegressor
 
     HAS_XGBOOST = True
 except ImportError:
@@ -70,8 +77,15 @@ requires_no_ml_extras = pytest.mark.skipif(
 )
 
 requires_lightgbm = pytest.mark.skipif(
-    not HAS_LIGHTGBM, reason="This test requires 'lightgbm' package to run"
+    not HAS_LIGHTGBM, reason="This test requires 'lightgbm' package to run."
 )
+
+
+def requires_elasticsearch_version(minimum_version: Tuple[int, int, int]):
+    return pytest.mark.skipif(
+        ES_VERSION < minimum_version,
+        reason=f"This test requires Elasticsearch version {'.'.join(str(v) for v in minimum_version)} or later.",
+    )
 
 
 def skip_if_multiclass_classifition():
@@ -306,6 +320,94 @@ class TestMLModel:
         # Clean up
         es_model.delete_model()
 
+    @requires_elasticsearch_version((8, 12))
+    @requires_sklearn
+    @pytest.mark.parametrize("compress_model_definition", [True, False])
+    def test_learning_to_rank(self, compress_model_definition):
+        # Train model
+        training_data = datasets.make_regression(n_features=2)
+        regressor = DecisionTreeRegressor()
+        regressor.fit(training_data[0], training_data[1])
+
+        # Serialise the models to Elasticsearch
+        model_id = "test_learning_to_rank"
+        ltr_model_config = LTRModelConfig(
+            feature_extractors=[
+                QueryFeatureExtractor(
+                    feature_name="title_bm25",
+                    query={"match": {"title": "{{query_string}}"}},
+                ),
+                QueryFeatureExtractor(
+                    feature_name="description_bm25",
+                    query={"match": {"description_bm25": "{{query_string}}"}},
+                ),
+                QueryFeatureExtractor(
+                    feature_name="visitors",
+                    query={
+                        "script_score": {
+                            "query": {"exists": {"field": "visitors"}},
+                            "script": {"source": 'return doc["visitors"].value;'},
+                        }
+                    },
+                ),
+            ]
+        )
+
+        es_model = MLModel.import_ltr_model(
+            ES_TEST_CLIENT,
+            model_id,
+            regressor,
+            ltr_model_config,
+            es_if_exists="replace",
+            es_compress_model_definition=compress_model_definition,
+        )
+
+        # Verify the saved inference config contains the passed LTR config
+        response = ES_TEST_CLIENT.ml.get_trained_models(model_id=model_id)
+        assert response.meta.status == 200
+        assert response.body["count"] == 1
+        saved_inference_config = response.body["trained_model_configs"][0][
+            "inference_config"
+        ]
+        assert "learning_to_rank" in saved_inference_config
+        assert "feature_extractors" in saved_inference_config["learning_to_rank"]
+        saved_feature_extractors = saved_inference_config["learning_to_rank"][
+            "feature_extractors"
+        ]
+
+        assert all(
+            feature_extractor.to_dict() in saved_feature_extractors
+            for feature_extractor in ltr_model_config.feature_extractors
+        )
+
+        # Execute search with rescoring
+        search_result = ES_TEST_CLIENT.search(
+            index=NATIONAL_PARKS_INDEX_NAME,
+            query={"terms": {"_id": ["park_yosemite", "park_everglades"]}},
+            rescore={
+                "learning_to_rank": {
+                    "model_id": model_id,
+                    "params": {"query_string": "yosemite"},
+                }
+            },
+        )
+
+        # Assert that:
+        # - all documents from the query are present
+        # - all documents have been rescored (score != 1.0)
+        doc_scores = [hit["_score"] for hit in search_result["hits"]["hits"]]
+        assert len(search_result["hits"]["hits"]) == 2
+        assert all(score != float(1) for score in doc_scores)
+
+        # Verify prediction is not supported for LTR
+        try:
+            es_model.predict([0])
+        except NotImplementedError:
+            pass
+
+        # Clean up
+        es_model.delete_model()
+
     @requires_sklearn
     @pytest.mark.parametrize("compress_model_definition", [True, False])
     def test_random_forest_classifier(self, compress_model_definition):
@@ -448,6 +550,45 @@ class TestMLModel:
         check_prediction_equality(
             es_model, classifier, random_rows(training_data[0], 20)
         )
+
+        # Clean up
+        es_model.delete_model()
+
+    @requires_xgboost
+    @pytest.mark.parametrize("compress_model_definition", [True, False])
+    @pytest.mark.parametrize(
+        "objective",
+        ["rank:ndcg", "rank:map", "rank:pairwise"],
+    )
+    def test_xgb_ranker(self, compress_model_definition, objective):
+        X, y = datasets.make_classification(n_features=5)
+        rng = np.random.default_rng()
+        qid = rng.integers(0, 3, size=X.shape[0])
+
+        # Sort the inputs based on query index
+        sorted_idx = np.argsort(qid)
+        X = X[sorted_idx, :]
+        y = y[sorted_idx]
+        qid = qid[sorted_idx]
+
+        ranker = XGBRanker(objective=objective)
+        ranker.fit(X, y, qid=qid)
+
+        # Serialise the models to Elasticsearch
+        feature_names = ["f0", "f1", "f2", "f3", "f4"]
+        model_id = "test_xgb_ranker"
+
+        es_model = MLModel.import_model(
+            ES_TEST_CLIENT,
+            model_id,
+            ranker,
+            feature_names,
+            es_if_exists="replace",
+            es_compress_model_definition=compress_model_definition,
+        )
+
+        # Get some test results
+        check_prediction_equality(es_model, ranker, random_rows(X, 20))
 
         # Clean up
         es_model.delete_model()

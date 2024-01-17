@@ -27,7 +27,13 @@ from .base import ModelTransformer
 
 import_optional_dependency("xgboost", on_version="warn")
 
-from xgboost import Booster, XGBClassifier, XGBModel, XGBRegressor  # type: ignore
+from xgboost import (  # type: ignore
+    Booster,
+    XGBClassifier,
+    XGBModel,
+    XGBRanker,
+    XGBRegressor,
+)
 
 
 class XGBoostForestTransformer(ModelTransformer):
@@ -140,7 +146,7 @@ class XGBoostForestTransformer(ModelTransformer):
         if len(tree_nodes) > 0:
             transformed_trees.append(self.build_tree(tree_nodes))
         # We add this stump as XGBoost adds the base_score to the regression outputs
-        if self._objective.partition(":")[0] == "reg":
+        if self._objective.partition(":")[0] in ["reg", "rank"]:
             transformed_trees.append(self.build_base_score_stump())
         return transformed_trees
 
@@ -184,6 +190,7 @@ class XGBoostForestTransformer(ModelTransformer):
 
 class XGBoostRegressorTransformer(XGBoostForestTransformer):
     def __init__(self, model: XGBRegressor, feature_names: List[str]):
+        self._regressor_model = model
         # XGBRegressor.base_score defaults to 0.5.
         base_score = model.base_score
         if base_score is None:
@@ -197,6 +204,13 @@ class XGBoostRegressorTransformer(XGBoostForestTransformer):
         return "regression"
 
     def is_objective_supported(self) -> bool:
+        if isinstance(self._regressor_model, XGBRanker):
+            return self._objective in {
+                "rank:pairwise",
+                "rank:ndcg",
+                "rank:map",
+            }
+
         return self._objective in {
             "reg:squarederror",
             "reg:squaredlogerror",
@@ -264,5 +278,6 @@ class XGBoostClassifierTransformer(XGBoostForestTransformer):
 
 _MODEL_TRANSFORMERS: Dict[type, Type[ModelTransformer]] = {
     XGBRegressor: XGBoostRegressorTransformer,
+    XGBRanker: XGBoostRegressorTransformer,
     XGBClassifier: XGBoostClassifierTransformer,
 }
