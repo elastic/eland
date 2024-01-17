@@ -59,7 +59,7 @@ class QueryFeatureExtractor(FeatureExtractor):
         self,
         feature_name: str,
         query: Mapping[str, Any],
-        default_score: Optional[float] = float(0),
+        default_score: Optional[float] = None,
     ):
         """
         Parameters

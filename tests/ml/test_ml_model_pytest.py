@@ -23,6 +23,7 @@ import pytest
 
 import eland as ed
 from eland.ml import MLModel
+from eland.ml.ltr import LTRModelConfig, QueryFeatureExtractor
 from tests import (
     ES_TEST_CLIENT,
     ES_VERSION,
@@ -330,41 +331,35 @@ class TestMLModel:
 
         # Serialise the models to Elasticsearch
         model_id = "test_learning_to_rank"
-        feature_extractors = [
-            {
-                "query_extractor": {
-                    "feature_name": "title_bm25",
-                    "query": {"match": {"title": "{{query_string}}"}},
-                }
-            },
-            {
-                "query_extractor": {
-                    "feature_name": "visitors",
-                    "query": {
+        ltr_model_config = LTRModelConfig(
+            feature_extractors=[
+                QueryFeatureExtractor(
+                    feature_name="title_bm25",
+                    query={"match": {"title": "{{query_string}}"}},
+                ),
+                QueryFeatureExtractor(
+                    feature_name="description_bm25",
+                    query={"match": {"description_bm25": "{{query_string}}"}},
+                ),
+                QueryFeatureExtractor(
+                    feature_name="visitors",
+                    query={
                         "script_score": {
                             "query": {"exists": {"field": "visitors"}},
                             "script": {"source": 'return doc["visitors"].value;'},
                         }
                     },
-                }
-            },
-        ]
-        feature_names = [
-            extractor["query_extractor"]["feature_name"]
-            for extractor in feature_extractors
-        ]
-        inference_config = {
-            "learning_to_rank": {"feature_extractors": feature_extractors}
-        }
+                ),
+            ]
+        )
 
-        es_model = MLModel.import_model(
+        es_model = MLModel.import_ltr_model(
             ES_TEST_CLIENT,
             model_id,
             regressor,
-            feature_names,
+            ltr_model_config,
             es_if_exists="replace",
             es_compress_model_definition=compress_model_definition,
-            inference_config=inference_config,
         )
 
         # Verify the saved inference config contains the passed LTR config
@@ -375,10 +370,14 @@ class TestMLModel:
             "inference_config"
         ]
         assert "learning_to_rank" in saved_inference_config
-        saved_ltr_config = saved_inference_config["learning_to_rank"]
+        assert "feature_extractors" in saved_inference_config["learning_to_rank"]
+        saved_feature_extractors = saved_inference_config["learning_to_rank"][
+            "feature_extractors"
+        ]
+
         assert all(
-            item in saved_ltr_config.items()
-            for item in inference_config["learning_to_rank"].items()
+            feature_extractor.to_dict() in saved_feature_extractors
+            for feature_extractor in ltr_model_config.feature_extractors
         )
 
         # Execute search with rescoring

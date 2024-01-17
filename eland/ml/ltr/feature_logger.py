@@ -95,7 +95,7 @@ class FeatureLogger:
         """
 
         doc_features = {
-            doc_id: [float(0)] * len(self._model_config.feature_extractors)
+            doc_id: [float("nan")] * len(self._model_config.feature_extractors)
             for doc_id in doc_ids
         }
 
@@ -142,28 +142,6 @@ class FeatureLogger:
     def _extract_query_features(
         self, query_params: Mapping[str, Any], doc_ids: List[str]
     ):
-        default_query_scores = dict(
-            (extractor.feature_name, extractor.default_score)
-            for extractor in self._model_config.query_feature_extractors
-        )
-
-        matched_queries = self._execute_search_template_request(
-            script_source=self._script_source,
-            template_params={
-                **query_params,
-                "__doc_ids": doc_ids,
-                "__size": len(doc_ids),
-            },
-        )
-
-        return {
-            hit_id: {**default_query_scores, **matched_queries_scores}
-            for hit_id, matched_queries_scores in matched_queries.items()
-        }
-
-    def _execute_search_template_request(
-        self, script_source: str, template_params: Mapping[str, any]
-    ):
         # When support for include_named_queries_score will be added,
         # this will be replaced by the call to the client search_template method.
         from elasticsearch._sync.client import _quote
@@ -171,7 +149,10 @@ class FeatureLogger:
         __path = f"/{_quote(self._index_name)}/_search/template"
         __query = {"include_named_queries_score": True}
         __headers = {"accept": "application/json", "content-type": "application/json"}
-        __body = {"source": script_source, "params": template_params}
+        __body = {
+            "source": self._script_source,
+            "params": {**query_params, "__doc_ids": doc_ids, "__size": len(doc_ids)},
+        }
 
         return {
             hit["_id"]: hit["matched_queries"] if "matched_queries" in hit else {}

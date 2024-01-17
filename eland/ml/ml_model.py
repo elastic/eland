@@ -24,6 +24,7 @@ from eland.common import ensure_es_client, es_version
 from eland.utils import deprecated_api
 
 from .common import TYPE_CLASSIFICATION, TYPE_LEARNING_TO_RANK, TYPE_REGRESSION
+from .ltr import LTRModelConfig
 from .transformers import get_model_transformer
 
 if TYPE_CHECKING:
@@ -266,7 +267,6 @@ class MLModel:
         classification_weights: Optional[List[float]] = None,
         es_if_exists: Optional[str] = None,
         es_compress_model_definition: bool = True,
-        inference_config: Optional[Mapping[str, Mapping[str, Any]]] = None,
     ) -> "MLModel":
         """
         Transform and serialize a trained 3rd party model into Elasticsearch.
@@ -342,10 +342,6 @@ class MLModel:
             JSON instead of raw JSON to reduce the amount of data sent
             over the wire in HTTP requests. Defaults to 'True'.
 
-        inference_config: Mapping[str, Mapping[str, Any]]
-            Model inference configuration. Must contain a top-level property whose name is the same as the inference
-            task type.
-
         Examples
         --------
         >>> from sklearn import datasets
@@ -380,6 +376,125 @@ class MLModel:
         >>> # Delete model from Elasticsearch
         >>> es_model.delete_model()
         """
+
+        return cls._import_model(
+            es_client=es_client,
+            model_id=model_id,
+            model=model,
+            feature_names=feature_names,
+            classification_labels=classification_labels,
+            classification_weights=classification_weights,
+            es_if_exists=es_if_exists,
+            es_compress_model_definition=es_compress_model_definition,
+        )
+
+    @classmethod
+    def import_ltr_model(
+        cls,
+        es_client: Union[str, List[str], Tuple[str, ...], "Elasticsearch"],
+        model_id: str,
+        model: Union[
+            "DecisionTreeRegressor",
+            "RandomForestRegressor",
+            "XGBRanker",
+            "XGBRegressor",
+            "LGBMRegressor",
+        ],
+        ltr_model_config: LTRModelConfig,
+        es_if_exists: Optional[str] = None,
+        es_compress_model_definition: bool = True,
+    ) -> "MLModel":
+        """
+        Transform and serialize a trained 3rd party model into Elasticsearch.
+        This model can then be used as a learning_to_rank rescorer in the Elastic Stack.
+
+        Parameters
+        ----------
+        es_client: Elasticsearch client argument(s)
+            - elasticsearch-py parameters or
+            - elasticsearch-py instance
+
+        model_id: str
+            The unique identifier of the trained inference model in Elasticsearch.
+
+        model: An instance of a supported python model. We support the following model types for LTR prediction:
+            - sklearn.tree.DecisionTreeRegressor
+            - sklearn.ensemble.RandomForestRegressor
+            - xgboost.XGBRanker
+                - only the following objectives are supported:
+                    - "rank:map"
+                    - "rank:ndcg"
+                    - "rank:pairwise"
+            - xgboost.XGBRegressor
+                - only the following objectives are supported:
+                    - "reg:squarederror"
+                    - "reg:linear"
+                    - "reg:squaredlogerror"
+                    - "reg:logistic"
+                    - "reg:pseudohubererror"
+            - lightgbm.LGBMRegressor
+                - Categorical fields are expected to already be processed
+                - Only the following objectives are supported
+                    - "regression"
+                    - "regression_l1"
+                    - "huber"
+                    - "fair"
+                    - "quantile"
+                    - "mape"
+
+        ltr_model_config: LTRModelConfig
+            The LTR model configuration is used to configure feature extractors for the LTR model.
+            Feature names are automatically inferred from the feature extractors.
+
+        es_if_exists: {'fail', 'replace'} default 'fail'
+            How to behave if model already exists
+
+            - fail: Raise a Value Error
+            - replace: Overwrite existing model
+
+        es_compress_model_definition: bool
+            If True will use 'compressed_definition' which uses gzipped
+            JSON instead of raw JSON to reduce the amount of data sent
+            over the wire in HTTP requests. Defaults to 'True'.
+        """
+
+        return cls._import_model(
+            es_client=es_client,
+            model_id=model_id,
+            model=model,
+            feature_names=ltr_model_config.feature_names,
+            inference_config=ltr_model_config.to_dict(),
+            es_if_exists=es_if_exists,
+            es_compress_model_definition=es_compress_model_definition,
+        )
+
+    @classmethod
+    def _import_model(
+        cls,
+        es_client: Union[str, List[str], Tuple[str, ...], "Elasticsearch"],
+        model_id: str,
+        model: Union[
+            "DecisionTreeClassifier",
+            "DecisionTreeRegressor",
+            "RandomForestRegressor",
+            "RandomForestClassifier",
+            "XGBClassifier",
+            "XGBRanker",
+            "XGBRegressor",
+            "LGBMRegressor",
+            "LGBMClassifier",
+        ],
+        feature_names: List[str],
+        classification_labels: Optional[List[str]] = None,
+        classification_weights: Optional[List[float]] = None,
+        es_if_exists: Optional[str] = None,
+        es_compress_model_definition: bool = True,
+        inference_config: Optional[Mapping[str, Mapping[str, Any]]] = None,
+    ) -> "MLModel":
+        """
+        Actual implementation of model import used by public API methods.
+        """
+
         es_client = ensure_es_client(es_client)
         transformer = get_model_transformer(
             model,
