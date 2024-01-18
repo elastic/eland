@@ -15,6 +15,12 @@
 #  specific language governing permissions and limitations
 #  under the License.
 
-TYPE_CLASSIFICATION = "classification"
-TYPE_LEARNING_TO_RANK = "learning_to_rank"
-TYPE_REGRESSION = "regression"
+from .feature_logger import FeatureLogger
+from .ltr_model_config import FeatureExtractor, LTRModelConfig, QueryFeatureExtractor
+
+__all__ = [
+    "LTRModelConfig",
+    "QueryFeatureExtractor",
+    "FeatureExtractor",
+    "FeatureLogger",
+]
