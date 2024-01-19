@@ -11,11 +11,13 @@ Added
 * Supported XGBRanker model (`#649`_)
 * Accepted LTR (Learning to rank) model config when importing model (`#645`_, `#651`_)
 * Added LTR feature logger (`#648`_)
+* Added ``prefix_string`` config option to the import model hub script (`#642`_)
 * Made online retail analysis notebook runnable in Colab (`#641`_)
 * Added new movie dataset to the tests (`#646`_)
 
 
 .. _#641: https://github.com/elastic/eland/pull/641
+.. _#642: https://github.com/elastic/eland/pull/642
 .. _#645: https://github.com/elastic/eland/pull/645
 .. _#646: https://github.com/elastic/eland/pull/646
 .. _#648: https://github.com/elastic/eland/pull/648
