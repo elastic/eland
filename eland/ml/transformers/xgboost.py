@@ -107,6 +107,7 @@ class XGBoostForestTransformer(ModelTransformer):
                 decision_type=self._node_decision_type,
                 left_child=self.extract_node_id(row["Yes"], curr_tree),
                 right_child=self.extract_node_id(row["No"], curr_tree),
+                default_left=row["Yes"] == row["Missing"],
                 threshold=float(row["Split"]),
                 split_feature=self.get_feature_id(row["Feature"]),
             )

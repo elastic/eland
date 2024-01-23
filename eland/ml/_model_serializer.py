@@ -96,6 +96,7 @@ class TreeNode:
             add_if_exists(d, "split_feature", self._split_feature)
             add_if_exists(d, "threshold", self._threshold)
             add_if_exists(d, "number_samples", self._number_samples)
+            add_if_exists(d, "default_left", self._default_left)
         else:
             if len(self._leaf_value) == 1:
                 # Support Elasticsearch 7.6 which only
