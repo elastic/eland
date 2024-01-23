@@ -328,7 +328,9 @@ class TestMLModel:
         ["rank:ndcg", "rank:map", "rank:pairwise"],
     )
     def test_learning_to_rank(self, objective, compress_model_definition):
-        X, y = datasets.make_classification(n_features=3, n_informative=2, n_redundant=1)
+        X, y = datasets.make_classification(
+            n_features=3, n_informative=2, n_redundant=1
+        )
         rng = np.random.default_rng()
         qid = rng.integers(0, 3, size=X.shape[0])
 
@@ -401,17 +403,21 @@ class TestMLModel:
                     "model_id": model_id,
                     "params": {"query_string": "yosemite"},
                 },
-                "window_size": 2
+                "window_size": 2,
             },
         )
 
         # Assert that rescored search result match predition.
         doc_scores = [hit["_score"] for hit in search_result["hits"]["hits"]]
 
-        feature_logger = FeatureLogger(ES_TEST_CLIENT, NATIONAL_PARKS_INDEX_NAME, ltr_model_config)
+        feature_logger = FeatureLogger(
+            ES_TEST_CLIENT, NATIONAL_PARKS_INDEX_NAME, ltr_model_config
+        )
         expected_scores = [
             ranker.predict(np.asarray([doc_features]))[0]
-            for _, doc_features in feature_logger.extract_features({"query_string": "yosemite"}, ["park_yosemite", "park_everglades"]).items()
+            for _, doc_features in feature_logger.extract_features(
+                {"query_string": "yosemite"}, ["park_yosemite", "park_everglades"]
+            ).items()
         ]
         np.testing.assert_almost_equal(expected_scores, doc_scores, decimal=2)
 
