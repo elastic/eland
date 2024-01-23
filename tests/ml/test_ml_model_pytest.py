@@ -413,12 +413,15 @@ class TestMLModel:
         feature_logger = FeatureLogger(
             ES_TEST_CLIENT, NATIONAL_PARKS_INDEX_NAME, ltr_model_config
         )
-        expected_scores = sorted([
-            ranker.predict(np.asarray([doc_features]))[0]
-            for _, doc_features in feature_logger.extract_features(
-                {"query_string": "yosemite"}, ["park_yosemite", "park_everglades"]
-            ).items()
-        ], reverse=True)
+        expected_scores = sorted(
+            [
+                ranker.predict(np.asarray([doc_features]))[0]
+                for _, doc_features in feature_logger.extract_features(
+                    {"query_string": "yosemite"}, ["park_yosemite", "park_everglades"]
+                ).items()
+            ],
+            reverse=True,
+        )
         np.testing.assert_almost_equal(expected_scores, doc_scores, decimal=2)
 
         # Verify prediction is not supported for LTR
