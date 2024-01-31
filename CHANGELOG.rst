@@ -8,9 +8,9 @@ Changelog
 Fixed
 ^^^^^
 
-* Fix missing value support for XGBRanker.
+* Fix missing value support for XGBRanker (`#654`_)
 
-.. _#649: https://github.com/elastic/eland/pull/654
+.. _#654: https://github.com/elastic/eland/pull/654
 
 
 8.12.0 (2024-01-18)
