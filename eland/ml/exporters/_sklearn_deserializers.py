@@ -169,9 +169,11 @@ class TargetMeanEncoder(FunctionTransformer):
         def func(column):
             return np.array(
                 [
-                    target_map[str(category)]
-                    if category in target_map
-                    else fallback_value
+                    (
+                        target_map[str(category)]
+                        if category in target_map
+                        else fallback_value
+                    )
                     for category in column
                 ]
             ).reshape(-1, 1)
@@ -197,9 +199,11 @@ class FrequencyEncoder(FunctionTransformer):
         def func(column):
             return np.array(
                 [
-                    frequency_map[str(category)]
-                    if category in frequency_map
-                    else fallback_value
+                    (
+                        frequency_map[str(category)]
+                        if category in frequency_map
+                        else fallback_value
+                    )
                     for category in column
                 ]
             ).reshape(-1, 1)
