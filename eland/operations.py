@@ -1156,9 +1156,11 @@ class Operations:
         # piggy-back on that single aggregation.
         if extended_stats_calls >= 2:
             es_aggs = [
-                ("extended_stats", es_agg)
-                if es_agg in extended_stats_es_aggs
-                else es_agg
+                (
+                    ("extended_stats", es_agg)
+                    if es_agg in extended_stats_es_aggs
+                    else es_agg
+                )
                 for es_agg in es_aggs
             ]
 

@@ -496,8 +496,7 @@ class _TransformerTraceableModel(TraceableModel):
         )
 
     @abstractmethod
-    def _prepare_inputs(self) -> transformers.BatchEncoding:
-        ...
+    def _prepare_inputs(self) -> transformers.BatchEncoding: ...
 
 
 class _TraceableClassificationModel(_TransformerTraceableModel, ABC):

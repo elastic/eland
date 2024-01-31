@@ -54,9 +54,13 @@ class TestDataFrameIterrowsItertuples(TestData):
             # Shim which uses pytest.approx() for floating point values inside tuples.
             assert len(left) == len(right)
             assert all(
-                (lt == rt)  # Not floats? Use ==
-                if not isinstance(lt, float) and not isinstance(rt, float)
-                else (lt == pytest.approx(rt))  # If both are floats use pytest.approx()
+                (
+                    # Not floats? Use ==
+                    (lt == rt)
+                    if not isinstance(lt, float) and not isinstance(rt, float)
+                    # If both are floats use pytest.approx()
+                    else (lt == pytest.approx(rt))
+                )
                 for lt, rt in zip(left, right)
             )
 

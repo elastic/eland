@@ -97,9 +97,11 @@ class LGBMForestTransformer(ModelTransformer):
         return TreeNode(
             node_idx=node_id,
             leaf_value=[float(tree_node_json_obj["leaf_value"])],
-            number_samples=int(tree_node_json_obj["leaf_count"])
-            if "leaf_count" in tree_node_json_obj
-            else None,
+            number_samples=(
+                int(tree_node_json_obj["leaf_count"])
+                if "leaf_count" in tree_node_json_obj
+                else None
+            ),
         )
 
     def build_tree(self, tree_id: int, tree_json_obj: Dict[str, Any]) -> Tree:
@@ -235,9 +237,11 @@ class LGBMClassifierTransformer(LGBMForestTransformer):
         return TreeNode(
             node_idx=node_id,
             leaf_value=leaf_val,
-            number_samples=int(tree_node_json_obj["leaf_count"])
-            if "leaf_count" in tree_node_json_obj
-            else None,
+            number_samples=(
+                int(tree_node_json_obj["leaf_count"])
+                if "leaf_count" in tree_node_json_obj
+                else None
+            ),
         )
 
     def check_model_booster(self) -> None:
