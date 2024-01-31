@@ -956,8 +956,10 @@ class DataFrame(NDFrame):
         elif verbose is False:  # specifically set to False, not nesc None
             _non_verbose_repr()
         else:
-            _non_verbose_repr() if exceeds_info_cols else _verbose_repr(
-                number_of_columns
+            (
+                _non_verbose_repr()
+                if exceeds_info_cols
+                else _verbose_repr(number_of_columns)
             )
 
         # pandas 0.25.1 uses get_dtype_counts() here. This
