@@ -65,6 +65,35 @@ class TestDataFrameToJSON(TestData):
                 orient="records",
             ),
         )
+    
+    def test_to_json_streaming_mode_pathlib(self):
+        root_dir = Path(ROOT_DIR)
+
+        ed_flights = self.ed_flights()
+        pd_flights = self.pd_flights()
+        ed_flights.to_json(
+            root_dir / "dataframe" / "results" / "pathlib_eland_to_json.jsonl",
+            lines=True,
+            orient="records",
+        )
+        pd_flights.to_json(
+            root_dir / "dataframe" / "results" / "pathlib_pandas_to_json.jsonl",
+            lines=True,
+            orient="records",
+        )
+
+        assert_frame_equal(
+            pandas.read_json(
+                root_dir / "dataframe" / "results" / "pathlib_eland_to_json.jsonl",
+                lines=True,
+                orient="records",
+            ),
+            pandas.read_json(
+                root_dir / "dataframe" / "results" / "pathlib_pandas_to_json.jsonl",
+                lines=True,
+                orient="records",
+            ),
+        )
 
     def test_to_json_with_other_buffer(self):
         root_dir = Path(ROOT_DIR)
