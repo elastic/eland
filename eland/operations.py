@@ -1262,7 +1262,7 @@ class Operations:
         if orient == "records" and lines is True and isinstance(path_or_buf, str):
             result = []
             processed = 0
-            with open(path_or_buf, 'w') as w:
+            with open(path_or_buf, "w") as w:
                 for i, df in enumerate(
                     self.search_yield_pandas_dataframes(query_compiler=query_compiler)
                 ):
@@ -1272,12 +1272,12 @@ class Operations:
                     ):
                         print(f"{datetime.now()}: read {processed} rows")
                     output = df.to_json(
-                            orient=orient,
-                            lines=lines,
-                            **kwargs,
-                        )
+                        orient=orient,
+                        lines=lines,
+                        **kwargs,
+                    )
                     w.write(output.strip())
-                    w.write('\n')
+                    w.write("\n")
             return "".join(result) or None
         else:
             self.to_pandas(
