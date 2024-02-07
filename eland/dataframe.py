@@ -1362,6 +1362,7 @@ class DataFrame(NDFrame):
         By setting the ``lines`` parameter to ``True``, and ``orient`` to ``'records'``,
         the entire DataFrame can be written in a streaming manner.
         Doing so avoids the need to have the entire DataFrame in memory.
+        This format is known as JSON lines and can use the file extension ``.jsonl``.
 
         See Also
         --------
