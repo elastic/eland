@@ -28,33 +28,29 @@ class TestDataFrameToJSON(TestData):
     def test_to_json_default_arguments(self):
         ed_flights = self.ed_flights()
         pd_flights = self.pd_flights()
-        ed_flights.to_json(ROOT_DIR / "dataframe" / "results" / "eland_to_json.json")
-        pd_flights.to_json(ROOT_DIR / "dataframe" / "results" / "pandas_to_json.json")
+        ed_flights.to_json(ROOT_DIR + "/dataframe/results/eland_to_json.jsonl")
+        pd_flights.to_json(ROOT_DIR + "/dataframe/results/pandas_to_json.jsonl")
 
         assert_frame_equal(
-            pandas.read_json(ROOT_DIR / "dataframe" / "results" / "eland_to_json.json"),
-            pandas.read_json(
-                ROOT_DIR / "dataframe" / "results" / "pandas_to_json.json"
-            ),
+            pandas.read_json(ROOT_DIR + "/dataframe/results/eland_to_json.jsonl"),
+            pandas.read_json(ROOT_DIR + "/dataframe/results/pandas_to_json.jsonl"),
         )
 
     def test_to_json_streaming_mode(self):
         ed_flights = self.ed_flights()
         pd_flights = self.pd_flights()
         ed_flights.to_json(
-            ROOT_DIR / "dataframe" / "results" / "streaming_eland_to_json.json",
+            ROOT_DIR + "/dataframe/results/streaming_eland_to_json.jsonl",
             lines=True,
             orient="records",
         )
         pd_flights.to_json(
-            ROOT_DIR / "dataframe" / "results" / "streaming_pandas_to_json.json",
+            ROOT_DIR + "/dataframe/results/streaming_pandas_to_json.jsonl",
             lines=True,
             orient="records",
         )
 
         assert_frame_equal(
-            pandas.read_json(ROOT_DIR / "dataframe" / "results" / "eland_to_json.json"),
-            pandas.read_json(
-                ROOT_DIR / "dataframe" / "results" / "pandas_to_json.json"
-            ),
+            pandas.read_json(ROOT_DIR + "/dataframe/results/streaming_eland_to_json.jsonl"),
+            pandas.read_json(ROOT_DIR + "/dataframe/results/streaming_pandas_to_json.jsonl"),
         )
