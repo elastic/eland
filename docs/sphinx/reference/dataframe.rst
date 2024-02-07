@@ -140,5 +140,6 @@ Serialization / IO / Conversion
    DataFrame.to_numpy
    DataFrame.to_csv
    DataFrame.to_html
+   DataFrame.to_json
    DataFrame.to_string
    DataFrame.to_pandas
