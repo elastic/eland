@@ -65,7 +65,7 @@ class TestDataFrameToJSON(TestData):
                 orient="records",
             ),
         )
-    
+
     def test_to_json_streaming_mode_pathlib(self):
         root_dir = Path(ROOT_DIR)
 
