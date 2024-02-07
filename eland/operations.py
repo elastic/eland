@@ -1253,36 +1253,40 @@ class Operations:
     def to_json(  # type: ignore
         self,
         query_compiler: "QueryCompiler",
-        show_progress=False,
         path_or_buf=None,
         orient=None,
         lines=False,
         **kwargs,
     ):
-        if orient == "records" and lines is True and isinstance(path_or_buf, str):
+        if orient == "records" and lines is True:
             result = []
             processed = 0
-            with open(path_or_buf, "w") as w:
-                for i, df in enumerate(
-                    self.search_yield_pandas_dataframes(query_compiler=query_compiler)
-                ):
-                    if (
-                        show_progress
-                        and processed % DEFAULT_PROGRESS_REPORTING_NUM_ROWS == 0
-                    ):
-                        print(f"{datetime.now()}: read {processed} rows")
-                    output = df.to_json(
-                        orient=orient,
-                        lines=lines,
-                        **kwargs,
-                    )
-                    w.write(output.strip())
-                    w.write("\n")
+            our_filehandle = False
+            if isinstance(path_or_buf, str):
+                buf = open(path_or_buf, "w")
+                our_filehandle = True
+            else:
+                buf = path_or_buf
+            for i, df in enumerate(
+                self.search_yield_pandas_dataframes(query_compiler=query_compiler)
+            ):
+                output = df.to_json(
+                    orient=orient,
+                    lines=lines,
+                    **kwargs,
+                )
+                if buf is None:
+                    result.append(output)
+                else:
+                    buf.write(output)
+            # If we opened the file ourselves, we should close it
+            if our_filehandle:
+                buf.close()
             return "".join(result) or None
         else:
-            self.to_pandas(
-                query_compiler=query_compiler, show_progress=show_progress
-            ).to_json(path_or_buf, orient=orient, lines=lines, **kwargs)
+            return self.to_pandas(query_compiler=query_compiler).to_json(
+                path_or_buf, orient=orient, lines=lines, **kwargs
+            )
 
     def to_pandas(
         self, query_compiler: "QueryCompiler", show_progress: bool = False
