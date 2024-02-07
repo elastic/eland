@@ -514,6 +514,14 @@ class QueryCompiler:
         """
         return self._operations.to_csv(query_compiler=self, **kwargs)
 
+    def to_json(self, **kwargs) -> Optional[str]:
+        """Serialises Eland Dataframe to CSV
+
+        Returns:
+            If path_or_buf is None, returns the resulting json as a string.
+        """
+        return self._operations.to_json(query_compiler=self, **kwargs)
+
     def search_yield_pandas_dataframes(self) -> Generator["pd.DataFrame", None, None]:
         return self._operations.search_yield_pandas_dataframes(self)
 

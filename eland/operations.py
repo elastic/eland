@@ -1250,6 +1250,43 @@ class Operations:
         if path_or_buf is None:
             return "".join(result)
 
+    def to_json(
+        self,
+        query_compiler: "QueryCompiler",
+        show_progress=False,
+        path_or_buf=None,
+        mode="w",
+        orient=None,
+        lines=False,
+        **kwargs,
+    ):
+        if orient == "records" and lines is True:
+            result = []
+            processed = 0
+            for i, df in enumerate(
+                self.search_yield_pandas_dataframes(query_compiler=query_compiler)
+            ):
+                if (
+                    show_progress
+                    and processed % DEFAULT_PROGRESS_REPORTING_NUM_ROWS == 0
+                ):
+                    print(f"{datetime.now()}: read {processed} rows")
+                result.append(
+                    df.to_json(
+                        path_or_buf=path_or_buf,
+                        # start appending after the first batch
+                        mode=mode if i == 0 else "a",
+                        orient=orient,
+                        lines=lines,
+                        **kwargs,
+                    )
+                )
+            return "".join(result)
+        else:
+            self.to_pandas(
+                query_compiler=query_compiler, show_progress=show_progress
+            ).to_json(path_or_buf, orient=orient, lines=lines, **kwargs)
+
     def to_pandas(
         self, query_compiler: "QueryCompiler", show_progress: bool = False
     ) -> pd.DataFrame:
