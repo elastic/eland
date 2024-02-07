@@ -1255,33 +1255,30 @@ class Operations:
         query_compiler: "QueryCompiler",
         show_progress=False,
         path_or_buf=None,
-        mode="w",
         orient=None,
         lines=False,
         **kwargs,
     ):
-        if orient == "records" and lines is True:
+        if orient == "records" and lines is True and isinstance(path_or_buf, str):
             result = []
             processed = 0
-            for i, df in enumerate(
-                self.search_yield_pandas_dataframes(query_compiler=query_compiler)
-            ):
-                if (
-                    show_progress
-                    and processed % DEFAULT_PROGRESS_REPORTING_NUM_ROWS == 0
+            with open(path_or_buf, 'w') as w:
+                for i, df in enumerate(
+                    self.search_yield_pandas_dataframes(query_compiler=query_compiler)
                 ):
-                    print(f"{datetime.now()}: read {processed} rows")
-                result.append(
-                    df.to_json(
-                        path_or_buf=path_or_buf,
-                        # start appending after the first batch
-                        mode=mode if i == 0 else "a",
-                        orient=orient,
-                        lines=lines,
-                        **kwargs,
-                    )
-                )
-            return "".join(result)
+                    if (
+                        show_progress
+                        and processed % DEFAULT_PROGRESS_REPORTING_NUM_ROWS == 0
+                    ):
+                        print(f"{datetime.now()}: read {processed} rows")
+                    output = df.to_json(
+                            orient=orient,
+                            lines=lines,
+                            **kwargs,
+                        )
+                    w.write(output.strip())
+                    w.write('\n')
+            return "".join(result) or None
         else:
             self.to_pandas(
                 query_compiler=query_compiler, show_progress=show_progress

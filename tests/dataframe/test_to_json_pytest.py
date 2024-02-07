@@ -51,6 +51,8 @@ class TestDataFrameToJSON(TestData):
         )
 
         assert_frame_equal(
-            pandas.read_json(ROOT_DIR + "/dataframe/results/streaming_eland_to_json.jsonl"),
-            pandas.read_json(ROOT_DIR + "/dataframe/results/streaming_pandas_to_json.jsonl"),
+            pandas.read_json(ROOT_DIR + "/dataframe/results/streaming_eland_to_json.jsonl",
+                             lines=True, orient="records"),
+            pandas.read_json(ROOT_DIR + "/dataframe/results/streaming_pandas_to_json.jsonl",
+                             lines=True, orient="records"),
         )

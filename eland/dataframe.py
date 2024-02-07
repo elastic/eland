@@ -1344,20 +1344,18 @@ class DataFrame(NDFrame):
 
     def to_json(
         self,
-        path_or_buf=None,
-        *,
-        orient=None,
-        date_format=None,
-        double_precision=10,
-        force_ascii=True,
-        date_unit="ms",
-        default_handler=None,
-        lines=False,
-        compression="infer",
-        index=None,
-        indent=None,
+        path_or_buf=None, 
+        orient=None, 
+        date_format=None, 
+        double_precision=10, 
+        force_ascii=True, 
+        date_unit='ms', 
+        default_handler=None, 
+        lines=False, 
+        compression='infer', 
+        index=True, 
+        indent=None, 
         storage_options=None,
-        mode="w",
     ):
         """Write Elasticsearch data to a json file.
 
@@ -1382,7 +1380,6 @@ class DataFrame(NDFrame):
             "index": index,
             "indent": indent,
             "storage_options": storage_options,
-            "mode": mode,
         }
         return self._query_compiler.to_json(**kwargs)
 
