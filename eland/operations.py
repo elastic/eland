@@ -1250,7 +1250,7 @@ class Operations:
         if path_or_buf is None:
             return "".join(result)
 
-    def to_json(
+    def to_json(  # type: ignore
         self,
         query_compiler: "QueryCompiler",
         show_progress=False,
