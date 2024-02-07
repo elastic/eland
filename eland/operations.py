@@ -16,6 +16,7 @@
 #  under the License.
 
 import copy
+import os
 import warnings
 from collections import defaultdict
 from datetime import datetime
@@ -1262,7 +1263,10 @@ class Operations:
             result = []
             processed = 0
             our_filehandle = False
-            if isinstance(path_or_buf, str):
+            if isinstance(path_or_buf, os.PathLike):
+                buf = open(path_or_buf, "w")
+                our_filehandle = True
+            elif isinstance(path_or_buf, str):
                 buf = open(path_or_buf, "w")
                 our_filehandle = True
             else:

@@ -17,6 +17,9 @@
 
 # File called _pytest for PyCharm compatibility
 
+from io import StringIO
+from pathlib import Path
+
 import pandas
 from pandas.testing import assert_frame_equal
 
@@ -58,6 +61,53 @@ class TestDataFrameToJSON(TestData):
             ),
             pandas.read_json(
                 ROOT_DIR + "/dataframe/results/streaming_pandas_to_json.jsonl",
+                lines=True,
+                orient="records",
+            ),
+        )
+    
+    def test_to_json_with_other_buffer(self):
+        root_dir = Path(ROOT_DIR)
+
+        ed_flights = self.ed_flights()
+        pd_flights = self.pd_flights()
+        output_buffer = StringIO()
+        ed_flights.to_json(output_buffer, lines=True, orient="records")
+        output_string = pd_flights.to_json(lines=True, orient="records")
+
+        output_buffer.seek(0)  # rewind our StringIO object
+
+        assert_frame_equal(
+            pandas.read_json(
+                output_buffer,
+                lines=True,
+                orient="records"
+            ),
+            pandas.read_json(
+                StringIO(output_string),
+                lines=True,
+                orient="records",
+            ),
+        )
+    
+        
+    def test_to_json_with_file_handle(self):
+        root_dir = Path(ROOT_DIR)
+
+        ed_flights = self.ed_flights()
+        pd_flights = self.pd_flights()
+        with open(root_dir / "dataframe" / "results" / "fh_eland_to_json.jsonl", 'w') as w:
+            ed_flights.to_json(w)
+        pd_flights.to_json(root_dir / "dataframe" / "results" / "check_pandas_to_json.jsonl")
+
+        assert_frame_equal(
+            pandas.read_json(
+                ROOT_DIR + "/dataframe/results/fh_eland_to_json.jsonl",
+                lines=True,
+                orient="records",
+            ),
+            pandas.read_json(
+                ROOT_DIR + "/dataframe/results/check_pandas_to_json.jsonl",
                 lines=True,
                 orient="records",
             ),
