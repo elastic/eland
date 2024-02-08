@@ -1261,7 +1261,6 @@ class Operations:
     ):
         if orient == "records" and lines is True:
             result = []
-            processed = 0
             our_filehandle = False
             if isinstance(path_or_buf, os.PathLike):
                 buf = open(path_or_buf, "w")
