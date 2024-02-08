@@ -2,6 +2,17 @@
 Changelog
 =========
 
+8.12.1 (2024-01-30)
+-------------------
+
+Fixed
+^^^^^
+
+* Fix missing value support for XGBRanker (`#654`_)
+
+.. _#654: https://github.com/elastic/eland/pull/654
+
+
 8.12.0 (2024-01-18)
 -------------------
 
