@@ -1260,7 +1260,7 @@ class Operations:
         **kwargs,
     ):
         if orient == "records" and lines is True:
-            result = []
+            result: List[str] = []
             our_filehandle = False
             if isinstance(path_or_buf, os.PathLike):
                 buf = open(path_or_buf, "w")
