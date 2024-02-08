@@ -96,7 +96,6 @@ class TestDataFrameToJSON(TestData):
         )
 
     def test_to_json_with_other_buffer(self):
-        root_dir = Path(ROOT_DIR)
 
         ed_flights = self.ed_flights()
         pd_flights = self.pd_flights()
