@@ -41,6 +41,8 @@ from eland.ndframe import NDFrame
 from eland.series import Series
 from eland.utils import is_valid_attr_name
 
+from kql import to_dsl
+
 if TYPE_CHECKING:
     from elasticsearch import Elasticsearch
 
@@ -789,6 +791,9 @@ class DataFrame(NDFrame):
         if tuple(query) == ("query",):
             query = query["query"]
         return DataFrame(_query_compiler=self._query_compiler.es_query(query))
+    
+    def kql_query(self, query):
+        return self.es_query(to_dsl(query))
 
     def _index_summary(self):
         # Print index summary e.g.

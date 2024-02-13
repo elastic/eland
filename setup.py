@@ -79,7 +79,7 @@ setup(
     license="Apache-2.0",
     classifiers=CLASSIFIERS,
     keywords="elastic eland pandas python",
-    packages=find_packages(include=["eland", "eland.*"]),
+    packages=find_packages(include=["eland", "eland.*", "kql"]),
     install_requires=[
         "elasticsearch>=8.3,<9",
         "pandas>=1.5,<2",
