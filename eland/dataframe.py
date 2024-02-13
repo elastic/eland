@@ -814,19 +814,19 @@ class DataFrame(NDFrame):
         >>> columns = ["OriginCityName", "DestCityName", "FlightTimeHour", "AvgTicketPrice"]
         >>> df = ed.DataFrame('http://localhost:9200', 'flights', columns=columns)
         >>> df.kql_query('OriginCityName:Milan and FlightTimeHour > 12').head(10)
-                 OriginCityName         DestCityName  FlightTimeHour  AvgTicketPrice
-            468           Milan  Chitose / Tomakomai       15.499956      646.162588
-            471           Milan                Tokyo       14.805640      933.586896
-            726           Milan               Sydney       14.552814      574.534422
-            886           Milan         Buenos Aires       16.938412      748.639741
-            1097          Milan               Sydney       25.469282      913.483049
-            1708          Milan         Buenos Aires       17.718905      975.483549
-            1865          Milan               Sydney       20.014910      956.411751
-            2410          Milan            Melbourne       15.988900      650.720199
-            2463          Milan               Sydney       13.166832      344.815508
-            2487          Milan         Buenos Aires       14.916122      684.506066
-            <BLANKLINE>
-            [10 rows x 4 columns]
+             OriginCityName         DestCityName  FlightTimeHour  AvgTicketPrice
+        468           Milan  Chitose / Tomakomai       15.499956      646.162588
+        471           Milan                Tokyo       14.805640      933.586896
+        726           Milan               Sydney       14.552814      574.534422
+        886           Milan         Buenos Aires       16.938412      748.639741
+        1097          Milan               Sydney       25.469282      913.483049
+        1708          Milan         Buenos Aires       17.718905      975.483549
+        1865          Milan               Sydney       20.014910      956.411751
+        2410          Milan            Melbourne       15.988900      650.720199
+        2463          Milan               Sydney       13.166832      344.815508
+        2487          Milan         Buenos Aires       14.916122      684.506066
+        <BLANKLINE>
+        [10 rows x 4 columns]
         """
         return self.es_query(to_dsl(query))
 
