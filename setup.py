@@ -105,7 +105,7 @@ setup(
         "typing-extensions==4.5.0 ; python_version<='3.11'",
         "typing-extensions==4.8.0 ; python_version>='3.12'",
         "XlsxWriter~=1.3.6",
-        "semver==3.0.0-dev.4"
+        "semver==3.0.0-dev.4",
     ],
     entry_points={
         "console_scripts": "eland_import_hub_model=eland.cli.eland_import_hub_model:main"

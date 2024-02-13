@@ -23,6 +23,7 @@ from typing import TYPE_CHECKING, Any, Iterable, List, Optional, Sequence, Tuple
 
 import numpy as np
 import pandas as pd  # type: ignore
+from kql import to_dsl
 from pandas.core.common import apply_if_callable, is_bool_indexer  # type: ignore
 from pandas.core.computation.eval import eval  # type: ignore
 from pandas.core.dtypes.common import is_list_like  # type: ignore
@@ -40,8 +41,6 @@ from eland.groupby import DataFrameGroupBy
 from eland.ndframe import NDFrame
 from eland.series import Series
 from eland.utils import is_valid_attr_name
-
-from kql import to_dsl
 
 if TYPE_CHECKING:
     from elasticsearch import Elasticsearch
@@ -791,7 +790,7 @@ class DataFrame(NDFrame):
         if tuple(query) == ("query",):
             query = query["query"]
         return DataFrame(_query_compiler=self._query_compiler.es_query(query))
-    
+
     def kql_query(self, query):
         """Applies a Kibana Query Language query (KQL / Kuery) to the DataFrame.
         The query is converted to Elasticsearch DSL.
