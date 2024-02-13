@@ -793,6 +793,30 @@ class DataFrame(NDFrame):
         return DataFrame(_query_compiler=self._query_compiler.es_query(query))
     
     def kql_query(self, query):
+        """Applies a Kibana Query Language query (KQL / Kuery) to the DataFrame.
+        The query is converted to Elasticsearch DSL.
+        Note that KQL can only be used to filter data.
+
+        Parameters
+        ----------
+        query:
+            KQL query as a string
+
+        Returns
+        -------
+        eland.DataFrame:
+            eland DataFrame with the query applied
+
+        Examples
+        --------
+
+        Apply a filtering to the flights dataset, flights from Milan that take longer than 12 hours.
+
+        >>> columns = ["OriginCityName", "DestCityName", "FlightTimeHour", "AvgTicketPrice"]
+        >>> df = ed.DataFrame('http://localhost:9200', 'flights', columns=columns)
+        >>> df.kql_query('OriginCityName:Milan and FlightTimeHour > 12').head(10)
+        # TODO output
+        """
         return self.es_query(to_dsl(query))
 
     def _index_summary(self):
