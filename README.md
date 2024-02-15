@@ -12,8 +12,7 @@
   <a href="https://pepy.tech/project/eland"><img src="https://static.pepy.tech/badge/eland" alt="Downloads"></a>
   <a href="https://pypi.org/project/eland"><img src="https://img.shields.io/pypi/status/eland.svg"
       alt="Package Status"></a>
-  <a href="https://clients-ci.elastic.co/job/elastic+eland+main"><img
-      src="https://clients-ci.elastic.co/buildStatus/icon?job=elastic%2Beland%2Bmain" alt="Build Status"></a>
+  <a href="https://buildkite.com/elastic/eland"><img src="https://badge.buildkite.com/d92340e800bc06a7c7c02a71b8d42fcb958bd18c25f99fe2d9.svg" alt="Build Status"></a>
   <a href="https://github.com/elastic/eland/blob/main/LICENSE.txt"><img src="https://img.shields.io/pypi/l/eland.svg"
       alt="License"></a>
   <a href="https://eland.readthedocs.io"><img
