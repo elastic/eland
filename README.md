@@ -12,8 +12,7 @@
   <a href="https://pepy.tech/project/eland"><img src="https://static.pepy.tech/badge/eland" alt="Downloads"></a>
   <a href="https://pypi.org/project/eland"><img src="https://img.shields.io/pypi/status/eland.svg"
       alt="Package Status"></a>
-  <a href="https://clients-ci.elastic.co/job/elastic+eland+main"><img
-      src="https://clients-ci.elastic.co/buildStatus/icon?job=elastic%2Beland%2Bmain" alt="Build Status"></a>
+  <a href="https://buildkite.com/elastic/eland"><img src="https://badge.buildkite.com/d92340e800bc06a7c7c02a71b8d42fcb958bd18c25f99fe2d9.svg" alt="Build Status"></a>
   <a href="https://github.com/elastic/eland/blob/main/LICENSE.txt"><img src="https://img.shields.io/pypi/l/eland.svg"
       alt="License"></a>
   <a href="https://eland.readthedocs.io"><img
@@ -278,3 +277,15 @@ Downloading: 100%|██████████| 249M/249M [00:23<00:00, 11.2MB
 >>> ptm.import_model(model_path=model_path, config_path=None, vocab_path=vocab_path, config=config)
 100%|██████████| 63/63 [00:12<00:00,  5.02it/s]
 ```
+
+## Feedback 🗣️
+
+The engineering team here at Elastic is looking for developers to participate in
+research and feedback sessions to learn more about how you use Eland and what
+improvements we can make to their design and your workflow. If you're interested
+in sharing your insights into developer experience and language client design,
+please fill out this [short form](https://forms.gle/bYZwDQXijfhfwshn9).
+Depending on the number of responses we get, we may either contact you for a 1:1
+conversation or a focus group with other developers who use the same client.
+Thank you in advance - your feedback is crucial to improving the user experience
+for all Elasticsearch developers!

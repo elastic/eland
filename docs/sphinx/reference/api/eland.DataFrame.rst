@@ -49,6 +49,7 @@
       ~DataFrame.tail
       ~DataFrame.to_csv
       ~DataFrame.to_html
+      ~DataFrame.to_json
       ~DataFrame.to_numpy
       ~DataFrame.to_pandas
       ~DataFrame.to_string

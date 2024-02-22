@@ -1382,6 +1382,48 @@ class DataFrame(NDFrame):
         }
         return self._query_compiler.to_csv(**kwargs)
 
+    def to_json(
+        self,
+        path_or_buf=None,
+        orient=None,
+        date_format=None,
+        double_precision=10,
+        force_ascii=True,
+        date_unit="ms",
+        default_handler=None,
+        lines=False,
+        compression="infer",
+        index=True,
+        indent=None,
+        storage_options=None,
+    ):
+        """Write Elasticsearch data to a json file.
+
+        By setting the ``lines`` parameter to ``True``, and ``orient`` to ``'records'``,
+        the entire DataFrame can be written in a streaming manner.
+        Doing so avoids the need to have the entire DataFrame in memory.
+        This format is known as JSON lines and can use the file extension ``.jsonl``.
+
+        See Also
+        --------
+        :pandas_api_docs:`pandas.DataFrame.to_json`
+        """
+        kwargs = {
+            "path_or_buf": path_or_buf,
+            "orient": orient,
+            "date_format": date_format,
+            "double_precision": double_precision,
+            "force_ascii": force_ascii,
+            "date_unit": date_unit,
+            "default_handler": default_handler,
+            "lines": lines,
+            "compression": compression,
+            "index": index,
+            "indent": indent,
+            "storage_options": storage_options,
+        }
+        return self._query_compiler.to_json(**kwargs)
+
     def to_pandas(self, show_progress: bool = False) -> pd.DataFrame:
         """
         Utility method to convert eland.Dataframe to pandas.Dataframe

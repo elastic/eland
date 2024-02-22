@@ -15,7 +15,7 @@
 #  specific language governing permissions and limitations
 #  under the License.
 
-# File called _pytest for PyCharm compatability
+# File called _pytest for PyCharm compatibility
 
 import ast
 import time
