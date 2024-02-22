@@ -50,10 +50,12 @@ class TraceableModel(ABC):
         return self._trace()
 
     @abstractmethod
-    def sample_output(self) -> torch.Tensor: ...
+    def sample_output(self) -> torch.Tensor:
+        ...
 
     @abstractmethod
-    def _trace(self) -> TracedModelTypes: ...
+    def _trace(self) -> TracedModelTypes:
+        ...
 
     def classification_labels(self) -> Optional[List[str]]:
         return None

@@ -58,8 +58,8 @@ from tests import ES_VERSION
 
 pytestmark = [
     pytest.mark.skipif(
-        ES_VERSION < (8, 7, 0),
-        reason="Eland uses Pytorch 1.13.1, versions of Elasticsearch prior to 8.7.0 are incompatible with PyTorch 1.13.1",
+        ES_VERSION < (8, 13, 0),
+        reason="Eland uses Pytorch 2.1.2, versions of Elasticsearch prior to 8.13.0 are incompatible with PyTorch 2.1.2",
     ),
     pytest.mark.skipif(
         not HAS_SKLEARN, reason="This test requires 'scikit-learn' package to run"
