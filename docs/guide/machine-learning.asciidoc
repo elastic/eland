@@ -192,3 +192,28 @@ eland_import_hub_model --es-api-key <api-key> --url https://<hostname>:<port> ..
 eland_import_hub_model --hub-access-token <access-token> ...
 --------------------------------------------------
 --
+
+[discrete]
+[[ml-nlp-pytorch-tls]]
+==== TLS/SSL
+
+The following TLS/SSL options for Elasticsearch are available when using the import script:
+
+
+* Specify alternate CA bundle to verify the cluster certificate:
++
+--
+[source,bash]
+--------------------------------------------------
+eland_import_hub_model --ca-certs CA_CERTS ...
+--------------------------------------------------
+--
+
+* Disable TLS/SSL verification altogether (strongly discouraged):
++
+--
+[source,bash]
+--------------------------------------------------
+eland_import_hub_model --insecure ...
+--------------------------------------------------
+--
