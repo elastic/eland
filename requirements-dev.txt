@@ -17,7 +17,7 @@ lightgbm>=2,<4
 
 # Elasticsearch uses v2.1.2 of PyTorch
 torch==2.1.2
-# Versions known to be compatible with PyTorch 1.13.1
+# Versions known to be compatible with PyTorch 2.1.2
 sentence-transformers>=2.1.0,<=2.3.1 
 transformers[torch]>=4.31.0,<=4.38.1
 #
