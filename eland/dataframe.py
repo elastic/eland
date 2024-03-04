@@ -1305,6 +1305,7 @@ class DataFrame(NDFrame):
         quoting=None,
         quotechar='"',
         line_terminator=None,
+        lineterminator=None,
         chunksize=None,
         tupleize_cols=None,
         date_format=None,
@@ -1319,6 +1320,13 @@ class DataFrame(NDFrame):
         --------
         :pandas_api_docs:`pandas.DataFrame.to_csv`
         """
+        if line_terminator:
+            warnings.warn(
+                "The line_terminator argument will be replaced by lineterminator",
+                PendingDeprecationWarning,
+                stacklevel=2,
+            )
+
         kwargs = {
             "path_or_buf": path_or_buf,
             "sep": sep,
@@ -1333,7 +1341,7 @@ class DataFrame(NDFrame):
             "compression": compression,
             "quoting": quoting,
             "quotechar": quotechar,
-            "line_terminator": line_terminator,
+            "lineterminator": lineterminator or line_terminator,
             "chunksize": chunksize,
             "date_format": date_format,
             "doublequote": doublequote,
