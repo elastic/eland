@@ -162,7 +162,7 @@ else:
     MODEL_CONFIGURATIONS = []
 
 
-class TestModelConfguration:    
+class TestModelConfguration:
     @pytest.mark.parametrize(
         "model_id,task_type,config_type,tokenizer_type,max_sequence_len,embedding_size",
         MODEL_CONFIGURATIONS,
