@@ -724,23 +724,23 @@ class TransformerModel:
         # Sometimes the max_... values are present but contain
         # a random or very large value.
         REASONABLE_MAX_LENGTH = 8192
-        max_len = getattr(self._tokenizer, "max_model_input_sizes", dict()).get(
-            self._model_id
-        )
-        if max_len is not None and max_len < REASONABLE_MAX_LENGTH:
-            return int(max_len)
-
         max_len = getattr(self._tokenizer, "model_max_length", None)
         if max_len is not None and max_len < REASONABLE_MAX_LENGTH:
             return int(max_len)
 
-        model_config = getattr(self._traceable_model._model, "config", None)
-        if model_config is None:
-            raise ValueError("Cannot determine model max input length")
-
-        max_len = getattr(model_config, "max_position_embeddings", None)
+        max_sizes = getattr(self._tokenizer, "max_model_input_sizes", dict())
+        max_len = max_sizes.get(self._model_id)
         if max_len is not None and max_len < REASONABLE_MAX_LENGTH:
             return int(max_len)
+        
+        if max_sizes:
+            # The model id wasn't found in the max sizes dict but 
+            # if all the values correspond then take that value
+            sizes = {size for size in max_sizes.values()}
+            if len(sizes) == 1: 
+                max_len = sizes.pop()
+                if max_len is not None and max_len < REASONABLE_MAX_LENGTH:
+                    return int(max_len)
 
         raise ValueError("Cannot determine model max input length")
 
