@@ -152,6 +152,7 @@ def get_arg_parser():
                 Face configuration. Max input length should never exceed the
                 model's true max length, setting a smaller max length is valid.
                 """,
+        type=int,
     )
 
     return parser
