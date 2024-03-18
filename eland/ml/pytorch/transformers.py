@@ -130,6 +130,10 @@ class TaskTypeError(Exception):
     pass
 
 
+class UnknownModelInputSizeError(Exception):
+    pass
+
+
 def task_type_from_model_config(model_config: PretrainedConfig) -> Optional[str]:
     if model_config.architectures is None:
         if model_config.name_or_path.startswith("sentence-transformers/"):
@@ -598,6 +602,7 @@ class TransformerModel:
         access_token: Optional[str] = None,
         ingest_prefix: Optional[str] = None,
         search_prefix: Optional[str] = None,
+        max_model_input_size: Optional[int] = None,
     ):
         """
         Loads a model from the Hugging Face repository or local file and creates
@@ -629,6 +634,12 @@ class TransformerModel:
 
         search_prefix: Optional[str]
             Prefix string to prepend to input at search
+
+        max_model_input_size: Optional[int]
+            The max model input size counted in tokens.
+            Usually this value should be extracted from the model configuration
+            but if that is not possible or the data is missing it can be
+            explicitly set with this parameter.
         """
 
         self._model_id = model_id
@@ -636,6 +647,7 @@ class TransformerModel:
         self._task_type = task_type.replace("-", "_")
         self._ingest_prefix = ingest_prefix
         self._search_prefix = search_prefix
+        self._max_model_input_size = max_model_input_size
 
         # load Hugging Face model and tokenizer
         # use padding in the tokenizer to ensure max length sequences are used for tracing (at call time)
@@ -685,7 +697,10 @@ class TransformerModel:
         return vocab_obj
 
     def _create_tokenization_config(self) -> NlpTokenizationConfig:
-        _max_sequence_length = self._find_max_sequence_length()
+        if self._max_model_input_size:
+            _max_sequence_length = self._max_model_input_size
+        else:
+            _max_sequence_length = self._find_max_sequence_length()
 
         if isinstance(self._tokenizer, transformers.MPNetTokenizer):
             return NlpMPNetTokenizationConfig(
@@ -732,17 +747,17 @@ class TransformerModel:
         max_len = max_sizes.get(self._model_id)
         if max_len is not None and max_len < REASONABLE_MAX_LENGTH:
             return int(max_len)
-        
+
         if max_sizes:
-            # The model id wasn't found in the max sizes dict but 
+            # The model id wasn't found in the max sizes dict but
             # if all the values correspond then take that value
             sizes = {size for size in max_sizes.values()}
-            if len(sizes) == 1: 
+            if len(sizes) == 1:
                 max_len = sizes.pop()
                 if max_len is not None and max_len < REASONABLE_MAX_LENGTH:
                     return int(max_len)
 
-        raise ValueError("Cannot determine model max input length")
+        raise UnknownModelInputSizeError("Cannot determine model max input length")
 
     def _create_config(
         self, es_version: Optional[Tuple[int, int, int]]

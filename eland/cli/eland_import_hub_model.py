@@ -141,6 +141,19 @@ def get_arg_parser():
         help="String to prepend to model input at search",
     )
 
+    parser.add_argument(
+        "--max-model-input-length",
+        required=False,
+        default=None,
+        help="""Set the model's max input length.
+                Usually the max input length is derived from the Hugging Face
+                model confifguation. Use this option to explicity set the model's
+                max input length if the value can not be found in the Hugging
+                Face configuration. Max input length should never exceed the
+                model's true max length, setting a smaller max length is valid.
+                """,
+    )
+
     return parser
 
 
@@ -220,6 +233,7 @@ def main():
             SUPPORTED_TASK_TYPES,
             TaskTypeError,
             TransformerModel,
+            UnknownModelInputSizeError,
         )
     except ModuleNotFoundError as e:
         logger.error(
@@ -259,11 +273,18 @@ def main():
                 quantize=args.quantize,
                 ingest_prefix=args.ingest_prefix,
                 search_prefix=args.search_prefix,
+                max_model_input_size=args.max_model_input_length,
             )
             model_path, config, vocab_path = tm.save(tmp_dir)
         except TaskTypeError as err:
             logger.error(
                 f"Failed to get model for task type, please provide valid task type via '--task-type' parameter. Caused by {err}"
+            )
+            exit(1)
+        except UnknownModelInputSizeError as err:
+            logger.error(
+                f"""Could not automatically determine the model's max input size from the model configuration.
+                Please provde the max input size via the --max-model-input-length parameter. Caused by {err}"""
             )
             exit(1)
 
