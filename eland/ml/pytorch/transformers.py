@@ -464,7 +464,7 @@ class _TransformerTraceableModel(TraceableModel):
 
     def _trace(self) -> TracedModelTypes:
         inputs = self._compatible_inputs()
-        return torch.jit.trace(self._model, inputs)
+        return torch.jit.trace(self._model, example_inputs=inputs)
 
     def sample_output(self) -> Tensor:
         inputs = self._compatible_inputs()
