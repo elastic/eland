@@ -320,6 +320,7 @@ class TestMLModel:
         # Clean up
         es_model.delete_model()
 
+    @pytest.mark.skip(reason="https://github.com/elastic/eland/issues/675")
     @requires_elasticsearch_version((8, 12))
     @requires_xgboost
     @pytest.mark.parametrize("compress_model_definition", [True, False])
