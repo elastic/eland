@@ -60,7 +60,7 @@ extras = {
     "pytorch": [
         "torch==2.1.2",
         "sentence-transformers>=2.1.0,<=2.3.1",
-        "transformers[torch]>=4.31.0,<=4.38.1",
+        "transformers[torch]>=4.31.0,<4.36.0",
     ],
 }
 extras["all"] = list({dep for deps in extras.values() for dep in deps})

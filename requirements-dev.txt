@@ -23,7 +23,7 @@ transformers[torch]>=4.31.0,<4.36.0
 #
 # Testing
 #
-pytest>=5.2.1,<8.1
+pytest>=5.2.1
 pytest-mock
 pytest-cov
 nbval
