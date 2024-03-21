@@ -58,8 +58,8 @@ $ conda install -c conda-forge eland
   If you are using the NLP with PyTorch feature make sure your Eland minor version matches the minor 
   version of your Elasticsearch cluster. For all other features it is sufficient for the major versions
   to match.
-- You need to use PyTorch `1.13.1` or earlier to import an NLP model. 
-  Run `pip install torch==1.13.1` to install the aproppriate version of PyTorch.
+- You need to install the appropriate version of PyTorch to import an NLP model. Run `python -m pip
+  install 'eland[pytorch]'` to install that version.
   
 
 ### Prerequisites
