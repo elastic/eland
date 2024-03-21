@@ -38,8 +38,8 @@ model in {es}.
 [[ml-nlp-pytorch]]
 === Natural language processing (NLP) with PyTorch
 
-IMPORTANT: You need to install the appropriate version of PyTorch to import an NLP model. Run
-`python -m pip install 'eland[pytorch]'` to install that version.
+IMPORTANT: You need to install the appropriate version of PyTorch to import an
+NLP model. Run `python -m pip install 'eland[pytorch]'` to install that version.
 
 For NLP tasks, Eland enables you to import PyTorch models into {es}. Use the 
 `eland_import_hub_model` script to download and install supported 
