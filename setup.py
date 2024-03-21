@@ -54,7 +54,7 @@ with open(path.join(here, "README.md"), "r", "utf-8") as f:
     long_description = "\n".join(lines[last_html_index:])
 
 extras = {
-    "xgboost": ["xgboost>=0.90,<2"],
+    "xgboost": ["xgboost>=0.90, <2.1"],
     "scikit-learn": ["scikit-learn>=1.3,<1.4"],
     "lightgbm": ["lightgbm>=2,<4"],
     "pytorch": [
