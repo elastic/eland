@@ -58,9 +58,9 @@ extras = {
     "scikit-learn": ["scikit-learn>=1.3,<1.4"],
     "lightgbm": ["lightgbm>=2,<4"],
     "pytorch": [
-        "torch>=1.13.1,<2.0",
-        "sentence-transformers>=2.1.0,<=2.2.2",
-        "transformers[torch]>=4.31.0,<=4.33.2",
+        "torch==2.1.2",
+        "sentence-transformers>=2.1.0,<=2.3.1",
+        "transformers[torch]>=4.31.0,<4.36.0",
     ],
 }
 extras["all"] = list({dep for deps in extras.values() for dep in deps})

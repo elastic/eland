@@ -209,13 +209,13 @@ def check_cluster_version(es_client, logger):
         )
         exit(1)
 
-    # PyTorch was upgraded to version 1.13.1 in 8.7.
+    # PyTorch was upgraded to version 2.1.2 in 8.13
     # and is incompatible with earlier versions
-    if major_version == 8 and minor_version < 7:
+    if major_version == 8 and minor_version < 13:
         import torch
 
         logger.error(
-            f"Eland uses PyTorch version {torch.__version__} which is incompatible with Elasticsearch versions prior to 8.7. Please upgrade Elasticsearch to at least version 8.7"
+            f"Eland uses PyTorch version {torch.__version__} which is incompatible with Elasticsearch versions prior to 8.13. Please upgrade Elasticsearch to at least version 8.13"
         )
         exit(1)
 
