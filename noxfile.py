@@ -103,9 +103,16 @@ def lint(session):
 @nox.session(python=["3.8", "3.9", "3.10", "3.11"])
 @nox.parametrize("pandas_version", ["1.5.0"])
 def test(session, pandas_version: str):
-    session.install("-r", "requirements-dev.txt", silent=False)
-    session.install(".", silent=False)
-    session.run("python", "-m", "pip", "install", f"pandas~={pandas_version}", silent=False)
+    session.install(
+        "--extra-index-url",
+        "https://download.pytorch.org/whl/torch_stable.html",
+        "torch==2.1.2+cpu",
+        ".",
+        "-r",
+        "requirements-dev.txt",
+        f"pandas~={pandas_version}",
+        silent=False,
+    )
     session.run("python", "-m", "tests.setup_tests")
 
     pytest_args = (
