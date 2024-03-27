@@ -41,6 +41,7 @@ CLASSIFIERS = [
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
     "Topic :: Scientific/Engineering",
 ]
 
@@ -90,7 +91,7 @@ setup(
     entry_points={
         "console_scripts": "eland_import_hub_model=eland.cli.eland_import_hub_model:main"
     },
-    python_requires=">=3.8",
+    python_requires=">=3.8,<3.12",
     package_data={"eland": ["py.typed"]},
     include_package_data=True,
     zip_safe=False,
