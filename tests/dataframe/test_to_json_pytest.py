@@ -27,7 +27,6 @@ from tests.common import ROOT_DIR, TestData
 
 
 class TestDataFrameToJSON(TestData):
-
     def test_to_json_default_arguments(self):
         ed_flights = self.ed_flights()
         pd_flights = self.pd_flights()
@@ -96,7 +95,6 @@ class TestDataFrameToJSON(TestData):
         )
 
     def test_to_json_with_other_buffer(self):
-
         ed_flights = self.ed_flights()
         pd_flights = self.pd_flights()
         output_buffer = StringIO()
