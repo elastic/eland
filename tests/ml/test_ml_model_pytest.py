@@ -204,7 +204,9 @@ def classification_model_id(request):
 
 
 def randomize_model_id(prefix, suffix_size=10):
-    import random, string
+    import random
+    import string
+
     return f"{prefix}-{''.join(random.choices(string.ascii_lowercase, k=suffix_size))}"
 
 
