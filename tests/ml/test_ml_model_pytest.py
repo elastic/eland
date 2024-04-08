@@ -203,6 +203,11 @@ def classification_model_id(request):
     yield from yield_model_id(analysis=analysis, analyzed_fields=analyzed_fields)
 
 
+def randomize_model_id(prefix, suffix_size=10):
+    import random, string
+    return f"{prefix}-{''.join(random.choices(string.ascii_lowercase, k=suffix_size))}"
+
+
 class TestMLModel:
     @requires_no_ml_extras
     def test_import_ml_model_when_dependencies_are_not_available(self):
@@ -320,7 +325,6 @@ class TestMLModel:
         # Clean up
         es_model.delete_model()
 
-    @pytest.mark.skip(reason="https://github.com/elastic/eland/issues/675")
     @requires_elasticsearch_version((8, 12))
     @requires_xgboost
     @pytest.mark.parametrize("compress_model_definition", [True, False])
@@ -345,7 +349,7 @@ class TestMLModel:
         ranker.fit(X, y, qid=qid)
 
         # Serialise the models to Elasticsearch
-        model_id = "test_learning_to_rank"
+        model_id = randomize_model_id("test_learning_to_rank")
         ltr_model_config = LTRModelConfig(
             feature_extractors=[
                 QueryFeatureExtractor(
