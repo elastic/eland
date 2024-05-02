@@ -161,13 +161,16 @@ underscores `__`.
 Behind the scenes, Eland uses the `requests` Python library, which
 https://requests.readthedocs.io/en/latest/user/advanced/#proxies[allows configuring
 proxies through an environment variable]. For example, to use an HTTP proxy to connect to
-an HTTPS Elasticsearch cluster, you would need to set the `HTTPS_PROXY` environment
-variable when invoking Eland:
+an HTTPS Elasticsearch cluster, you need to set the `HTTPS_PROXY` environment variable
+when invoking Eland:
 
 [source,bash]
 --------------------------------------------------
 HTTPS_PROXY=http://proxy-host:proxy-port eland_import_hub_model ...
 --------------------------------------------------
+
+If you disabled security on your Elasticsearch cluster, you should use `HTTP_PROXY`
+instead.
 
 [discrete]
 [[ml-nlp-pytorch-auth]]
