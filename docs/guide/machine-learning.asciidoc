@@ -60,6 +60,12 @@ $ eland_import_hub_model <authentication> \ <1>
 <4> Specify the type of NLP task. Supported values are `fill_mask`, `ner`,
 `question_answering`, `text_classification`, `text_embedding`, and `zero_shot_classification`.
 
+For more information about the available options, run `eland_import_hub_model` with the `--help` option.
+
+[source,bash]
+------------------------
+$ eland_import_hub_model --help
+------------------------
 
 [discrete]
 [[ml-nlp-pytorch-docker]]
