@@ -2,6 +2,29 @@
 Changelog
 =========
 
+8.13.0 (2024-03-27)
+-------------------
+
+Added
+^^^^^
+
+* Added support for Python 3.11 (`#681`_) 
+* Added ``eland.DataFrame.to_json`` function (`#661`_, contributed by `@bartbroere`_)
+* Added override option to specify the model's max input size (`#674`_)
+
+Changed
+^^^^^^^
+
+* Upgraded torch to 2.1.2 (`#671`_)
+* Mirrored pandas' ``lineterminator`` instead of ``line_terminator`` in ``to_csv`` (`#595`_, contributed by `@bartbroere`_)
+
+.. _#595: https://github.com/elastic/eland/pull/595
+.. _#661: https://github.com/elastic/eland/pull/661
+.. _#671: https://github.com/elastic/eland/pull/671
+.. _#674: https://github.com/elastic/eland/pull/674
+.. _#681: https://github.com/elastic/eland/pull/681
+
+
 8.12.1 (2024-01-30)
 -------------------
 

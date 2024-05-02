@@ -203,6 +203,13 @@ def classification_model_id(request):
     yield from yield_model_id(analysis=analysis, analyzed_fields=analyzed_fields)
 
 
+def randomize_model_id(prefix, suffix_size=10):
+    import random
+    import string
+
+    return f"{prefix}-{''.join(random.choices(string.ascii_lowercase, k=suffix_size))}"
+
+
 class TestMLModel:
     @requires_no_ml_extras
     def test_import_ml_model_when_dependencies_are_not_available(self):
@@ -344,7 +351,7 @@ class TestMLModel:
         ranker.fit(X, y, qid=qid)
 
         # Serialise the models to Elasticsearch
-        model_id = "test_learning_to_rank"
+        model_id = randomize_model_id("test_learning_to_rank")
         ltr_model_config = LTRModelConfig(
             feature_extractors=[
                 QueryFeatureExtractor(

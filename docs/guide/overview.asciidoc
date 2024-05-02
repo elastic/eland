@@ -61,7 +61,7 @@ You can also connect Eland to an Elasticsearch instance in Elastic Cloud:
 >>> from elasticsearch import Elasticsearch
 
 # First instantiate an 'Elasticsearch' instance connected to Elastic Cloud
->>> es = Elasticsearch(cloud_id="...", api_key=("...", "..."))
+>>> es = Elasticsearch(cloud_id="...", api_key="...")
 
 # then wrap the client in an Eland DataFrame:
 >>> df = ed.DataFrame(es, es_index_pattern="flights")

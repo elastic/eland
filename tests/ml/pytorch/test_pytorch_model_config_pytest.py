@@ -58,8 +58,8 @@ from tests import ES_VERSION
 
 pytestmark = [
     pytest.mark.skipif(
-        ES_VERSION < (8, 7, 0),
-        reason="Eland uses Pytorch 1.13.1, versions of Elasticsearch prior to 8.7.0 are incompatible with PyTorch 1.13.1",
+        ES_VERSION < (8, 13, 0),
+        reason="Eland uses Pytorch 2.1.2, versions of Elasticsearch prior to 8.13.0 are incompatible with PyTorch 2.1.2",
     ),
     pytest.mark.skipif(
         not HAS_SKLEARN, reason="This test requires 'scikit-learn' package to run"
@@ -149,6 +149,14 @@ if HAS_PYTORCH and HAS_SKLEARN and HAS_TRANSFORMERS:
             1024,
             None,
         ),
+        (
+            "cardiffnlp/twitter-roberta-base-sentiment",
+            "text_classification",
+            TextClassificationInferenceOptions,
+            NlpRobertaTokenizationConfig,
+            512,
+            None,
+        ),
     ]
 else:
     MODEL_CONFIGURATIONS = []
@@ -235,3 +243,16 @@ class TestModelConfguration:
                 ingest_prefix="INGEST:",
                 search_prefix="SEARCH:",
             )
+
+    def test_model_config_with_user_specified_input_length(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tm = TransformerModel(
+                model_id="sentence-transformers/all-distilroberta-v1",
+                task_type="text_embedding",
+                es_version=(8, 13, 0),
+                quantize=False,
+                max_model_input_size=213,
+            )
+            _, config, _ = tm.save(tmp_dir)
+            tokenization = config.inference_config.tokenization
+            assert tokenization.max_sequence_length == 213
