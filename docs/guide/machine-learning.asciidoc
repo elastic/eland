@@ -154,6 +154,20 @@ underscores `__`.
 
 --
 
+[discrete]
+[[ml-nlp-pytorch-proxy]]
+==== Connect to Elasticsearch through a proxy
+
+Behind the scenes, Eland uses the `requests` Python library, which
+https://requests.readthedocs.io/en/latest/user/advanced/#proxies[allows configuring
+proxies through an environment variable]. For example, to use an HTTP proxy to connect to
+an HTTPS Elasticsearch cluster, you would need to set the `HTTPS_PROXY` environment
+variable when invoking Eland:
+
+[source,bash]
+--------------------------------------------------
+HTTPS_PROXY=http://proxy-host:proxy-port eland_import_hub_model ...
+--------------------------------------------------
 
 [discrete]
 [[ml-nlp-pytorch-auth]]
