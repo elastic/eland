@@ -309,7 +309,11 @@ def ensure_es_client(
 ) -> Elasticsearch:
     if isinstance(es_client, tuple):
         es_client = list(es_client)
-    if not isinstance(es_client, Elasticsearch):
+    if (
+        isinstance(es_client, str)
+        or isinstance(es_client, list)
+        or isinstance(es_client, tuple)
+    ):
         es_client = Elasticsearch(es_client)
     return es_client
 
