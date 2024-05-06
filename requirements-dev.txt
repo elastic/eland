@@ -1,25 +1,8 @@
 #
-# Basic requirements
+# Basic requirements with extras
 #
-elasticsearch>=8.3,<9
-pandas>=1.5,<2
-matplotlib>=3.6
-numpy>=1.2.0,<2
-tqdm<5
+.[all]
 
-#
-# Extras
-#
-scikit-learn>=1.3,<1.4
-xgboost>=0.90,<2
-lightgbm>=2,<4
-
-# Elasticsearch uses PyTorch 2.1.2
-# Python 3.12 is not supported by PyTorch 2.1.2
-torch==2.1.2; python_version<'3.12'
-# Versions known to be compatible with PyTorch 2.1.2
-sentence-transformers>=2.1.0,<=2.3.1
-transformers[torch]>=4.31.0,<4.36.0
 #
 # Testing
 #

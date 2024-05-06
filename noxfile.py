@@ -56,7 +56,7 @@ TYPED_FILES = (
 )
 
 
-@nox.session(reuse_venv=True)
+@nox.session(reuse_venv=True, python="3.11")
 def format(session):
     session.install("black", "isort", "flynt")
     session.run("python", "utils/license-headers.py", "fix", *SOURCE_FILES)
@@ -66,12 +66,12 @@ def format(session):
     lint(session)
 
 
-@nox.session(reuse_venv=True)
+@nox.session(reuse_venv=True, python="3.11")
 def lint(session):
     # Install numpy to use its mypy plugin
     # https://numpy.org/devdocs/reference/typing.html#mypy-plugin
     session.install("black", "flake8", "mypy", "isort", "numpy")
-    session.install("--pre", "elasticsearch>=8.3,<9")
+    session.install(".")
     session.run("python", "utils/license-headers.py", "check", *SOURCE_FILES)
     session.run("black", "--check", "--target-version=py38", *SOURCE_FILES)
     session.run("isort", "--check", "--profile=black", *SOURCE_FILES)
@@ -150,8 +150,8 @@ def docs(session):
     # Run this so users get an error if they don't have Pandoc installed.
     session.run("pandoc", "--version", external=True)
 
-    session.install("-r", "docs/requirements-docs.txt")
     session.install(".")
+    session.install("-r", "docs/requirements-docs.txt")
 
     # See if we have an Elasticsearch cluster active
     # to rebuild the Jupyter notebooks with.
