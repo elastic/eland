@@ -7,5 +7,5 @@ build:
 
 python:
   install:
-    - requirements: docs/requirements-docs.txt
     - path: .
+    - requirements: docs/requirements-docs.txt
