@@ -1604,7 +1604,14 @@ def _search_yield_hits(
 
         while max_number_of_hits is None or hits_yielded < max_number_of_hits:
             resp = client.search(**body)
-            hits: List[Dict[str, Any]] = resp["hits"]["hits"]
+            hits = []
+            for hit in resp["hits"]["hits"]:
+                fields = hit['fields']
+                del hit['fields']
+                for k, v in fields.items():
+                    if k not in hit['_source']:
+                        hit['_source'][k] = v[0]
+                hits.append(hit)
 
             # The point in time ID can change between searches so we
             # need to keep the next search up-to-date
