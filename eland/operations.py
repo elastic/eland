@@ -1605,7 +1605,7 @@ def _search_yield_hits(
 
         while max_number_of_hits is None or hits_yielded < max_number_of_hits:
             resp = client.search(**body)
-            hits = []
+            hits: List[Dict[str, Any]] = []
             for hit in resp["hits"]["hits"]:
                 # Copy some of the fields to _source if they are missing there.
                 if "fields" in hit and "_source" in hit:
