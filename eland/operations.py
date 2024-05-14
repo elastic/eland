@@ -1600,6 +1600,7 @@ def _search_yield_hits(
 
         # Modify the search with the new point in time ID and keep-alive time.
         body["pit"] = {"id": pit_id, "keep_alive": DEFAULT_PIT_KEEP_ALIVE}
+        body["fields"] = body["_source"]
 
         while max_number_of_hits is None or hits_yielded < max_number_of_hits:
             resp = client.search(**body)
