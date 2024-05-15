@@ -1613,8 +1613,6 @@ def _search_yield_hits(
                     del hit["fields"]
                     for k, v in fields.items():
                         if k not in hit["_source"]:
-                            # TODO find out if they are always length one
-                            #      or if this is cutting corners
                             hit["_source"][k] = v
                 hits.append(hit)
 
