@@ -46,6 +46,8 @@ _pd_flights = pd.DataFrame.from_records(flight_records).reindex(
     _ed_flights.columns, axis=1
 )
 _pd_flights["timestamp"] = pd.to_datetime(_pd_flights["timestamp"])
+# Mimic what copy_to in an Elasticsearch mapping would do, combining the two fields in a list
+_pd_flights["Cities"] = _pd_flights.apply(lambda x: [x["OriginCityName"], x["DestCityName"]], axis=1)
 _pd_flights.index = _pd_flights.index.map(str)  # make index 'object' not int
 
 _pd_flights_small = _pd_flights.head(48)
