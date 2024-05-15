@@ -1615,7 +1615,7 @@ def _search_yield_hits(
                         if k not in hit["_source"]:
                             # TODO find out if they are always length one
                             #      or if this is cutting corners
-                            hit["_source"][k] = v[0]
+                            hit["_source"][k] = v
                 hits.append(hit)
 
             # The point in time ID can change between searches so we
