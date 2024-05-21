@@ -1623,7 +1623,10 @@ def _search_yield_hits(
                     del hit["fields"]
                     for k, v in fields.items():
                         if not is_field_already_present(k, hit["_source"]):
-                            hit["_source"][k] = v
+                            if isinstance(v, list):
+                                hit["_source"][k] = list(sorted(v))
+                            else:
+                                hit["_source"][k] = v
                 hits.append(hit)
 
             # The point in time ID can change between searches so we
