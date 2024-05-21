@@ -1061,7 +1061,7 @@ def elasticsearch_model_id(model_id: str) -> str:
     if id.startswith("__"):
         # This check is only needed as long as Eland supports Python 3.8
         # str.removeprefix was introduced in Python 3.9
-        if sys.version_info > (3, 9, 0):
+        if sys.version_info >= (3, 9, 0):
             id = id.removeprefix("__")
         else:
             id = id[2:]
