@@ -1546,7 +1546,9 @@ def quantile_to_percentile(quantile: Union[int, float]) -> float:
 def is_field_already_present(key, dictionary):
     if "." in key:
         splitted = key.split(".")
-        return is_field_already_present(".".join(splitted[1:]), dictionary.get(splitted[0], {}))
+        return is_field_already_present(
+            ".".join(splitted[1:]), dictionary.get(splitted[0], {})
+        )
     else:
         return key in dictionary
 
