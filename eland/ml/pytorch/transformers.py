@@ -1061,7 +1061,7 @@ def elasticsearch_model_id(model_id: str) -> str:
     id = re.sub(r"[\s\\/]", "__", model_id).lower()[-64:]
     if id.startswith("__"):
         # This check is only needed as long as Eland supports Python 3.8
-        # str.removeprefix was introduced in Python 3.9 and can be used 
+        # str.removeprefix was introduced in Python 3.9 and can be used
         # once 3.8 support is dropped
         id = id[2:]
     return id
