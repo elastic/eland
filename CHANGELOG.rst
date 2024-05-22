@@ -2,6 +2,16 @@
 Changelog
 =========
 
+8.13.1 (2024-05-03)
+-------------------
+
+Added
+^^^^^
+
+* Added support for HTTP proxies in eland_import_hub_model (`#688`_)
+
+.. _#688: https://github.com/elastic/eland/pull/688
+
 8.13.0 (2024-03-27)
 -------------------
 

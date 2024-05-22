@@ -164,6 +164,7 @@ def get_es_client(cli_args, logger):
             "request_timeout": 300,
             "verify_certs": cli_args.insecure,
             "ca_certs": cli_args.ca_certs,
+            "node_class": "requests",
         }
 
         # Deployment location
