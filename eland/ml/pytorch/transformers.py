@@ -24,7 +24,6 @@ import json
 import os.path
 import random
 import re
-import sys
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
