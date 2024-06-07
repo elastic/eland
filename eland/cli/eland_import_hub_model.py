@@ -32,6 +32,7 @@ import textwrap
 from elastic_transport.client_utils import DEFAULT
 from elasticsearch import AuthenticationException, Elasticsearch
 
+from eland._version import __version__
 from eland.common import parse_es_version
 
 MODEL_HUB_URL = "https://huggingface.co"
@@ -195,6 +196,17 @@ def get_es_client(cli_args, logger):
 
 def check_cluster_version(es_client, logger):
     es_info = es_client.info()
+
+    if (
+        "build_flavor" in es_info["version"]
+        and es_info["version"]["build_flavor"] == "serverless"
+    ):
+        logger.info(f"Connected to serverless cluster '{es_info['cluster_name']}'")
+        # Serverless is compatible
+        # Return the latest known semantic version, i.e. this version
+        return parse_es_version(__version__)
+
+    # check the semantic version for none serverless clusters
     logger.info(
         f"Connected to cluster named '{es_info['cluster_name']}' (version: {es_info['version']['number']})"
     )
