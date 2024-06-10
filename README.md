@@ -42,7 +42,7 @@ $ python -m pip install eland
 
 If using Eland to upload NLP models to Elasticsearch install the PyTorch extras:
 ```bash
-$ python -m pip install eland[pytorch]
+$ python -m pip install 'eland[pytorch]'
 ```
 
 Eland can also be installed from [Conda Forge](https://anaconda.org/conda-forge/eland) with Conda:
