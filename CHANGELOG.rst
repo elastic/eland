@@ -2,6 +2,26 @@
 Changelog
 =========
 
+8.14.0 (2024-06-10)
+-------------------
+
+Added
+^^^^^
+
+* Added Elasticsearch Serverless support in DataFrames (`#690`_, contributed by `@AshokChoudhary11`_) and eland_import_hub_model (`#698`_)
+
+Fixed
+^^^^^
+
+* Fixed Python 3.8 support (`#695`_, contributed by `@bartbroere`_)
+* Fixed non _source fields missing from the results hits (`#693`_, contributed by `@bartbroere`_)
+
+.. _@AshokChoudhary11: https://github.com/AshokChoudhary11
+.. _#690: https://github.com/elastic/eland/pull/690
+.. _#693: https://github.com/elastic/eland/pull/693
+.. _#695: https://github.com/elastic/eland/pull/695
+.. _#698: https://github.com/elastic/eland/pull/698
+
 8.13.1 (2024-05-03)
 -------------------
 
