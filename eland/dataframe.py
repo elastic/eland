@@ -83,7 +83,7 @@ class DataFrame(NDFrame):
     3      181.694216       True  ...         0 2018-01-01 10:33:28
     4      730.041778      False  ...         0 2018-01-01 05:13:00
     <BLANKLINE>
-    [5 rows x 27 columns]
+    [5 rows x 28 columns]
 
 
     Constructing DataFrame from an Elasticsearch client and an Elasticsearch index
@@ -173,13 +173,13 @@ class DataFrame(NDFrame):
         >>> df = ed.DataFrame('http://localhost:9200', 'flights')
         >>> assert isinstance(df.columns, pd.Index)
         >>> df.columns
-        Index(['AvgTicketPrice', 'Cancelled', 'Carrier', 'Dest', 'DestAirportID', 'DestCityName',
-        ...   'DestCountry', 'DestLocation', 'DestRegion', 'DestWeather', 'DistanceKilometers',
-        ...   'DistanceMiles', 'FlightDelay', 'FlightDelayMin', 'FlightDelayType', 'FlightNum',
-        ...   'FlightTimeHour', 'FlightTimeMin', 'Origin', 'OriginAirportID', 'OriginCityName',
-        ...   'OriginCountry', 'OriginLocation', 'OriginRegion', 'OriginWeather', 'dayOfWeek',
-        ...   'timestamp'],
-        ...   dtype='object')
+        Index(['AvgTicketPrice', 'Cancelled', 'Carrier', 'Cities', 'Dest', 'DestAirportID', 'DestCityName',
+               'DestCountry', 'DestLocation', 'DestRegion', 'DestWeather', 'DistanceKilometers',
+               'DistanceMiles', 'FlightDelay', 'FlightDelayMin', 'FlightDelayType', 'FlightNum',
+               'FlightTimeHour', 'FlightTimeMin', 'Origin', 'OriginAirportID', 'OriginCityName',
+               'OriginCountry', 'OriginLocation', 'OriginRegion', 'OriginWeather', 'dayOfWeek',
+               'timestamp'],
+              dtype='object')
         """
         return self._query_compiler.columns
 
@@ -2014,9 +2014,9 @@ class DataFrame(NDFrame):
         --------
         >>> df = ed.DataFrame('http://localhost:9200', 'flights')
         >>> df.shape
-        (13059, 27)
+        (13059, 28)
         >>> df.query('FlightDelayMin > 60').shape
-        (2730, 27)
+        (2730, 28)
         """
         if isinstance(expr, BooleanFilter):
             return DataFrame(

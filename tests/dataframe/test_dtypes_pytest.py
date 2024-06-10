@@ -43,6 +43,7 @@ class TestDataFrameDtypes:
                     "AvgTicketPrice": "float",
                     "Cancelled": "boolean",
                     "Carrier": "keyword",
+                    "Cities": "text",
                     "Dest": "keyword",
                     "DestAirportID": "keyword",
                     "DestCityName": "keyword",

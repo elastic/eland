@@ -41,8 +41,9 @@ class TestDataFrameToCSV(TestData):
             results_file,
             index_col=0,
             converters={
-                "DestLocation": lambda x: ast.literal_eval(x),
-                "OriginLocation": lambda x: ast.literal_eval(x),
+                "DestLocation": ast.literal_eval,
+                "OriginLocation": ast.literal_eval,
+                "Cities": ast.literal_eval,
             },
         )
         pd_from_csv.index = pd_from_csv.index.map(str)
@@ -63,8 +64,9 @@ class TestDataFrameToCSV(TestData):
             results_file,
             index_col=0,
             converters={
-                "DestLocation": lambda x: ast.literal_eval(x),
-                "OriginLocation": lambda x: ast.literal_eval(x),
+                "DestLocation": ast.literal_eval,
+                "OriginLocation": ast.literal_eval,
+                "Cities": ast.literal_eval,
             },
         )
         pd_from_csv.index = pd_from_csv.index.map(str)
@@ -112,8 +114,9 @@ class TestDataFrameToCSV(TestData):
             results,
             index_col=0,
             converters={
-                "DestLocation": lambda x: ast.literal_eval(x),
-                "OriginLocation": lambda x: ast.literal_eval(x),
+                "DestLocation": ast.literal_eval,
+                "OriginLocation": ast.literal_eval,
+                "Cities": ast.literal_eval,
             },
         )
         pd_from_csv.index = pd_from_csv.index.map(str)
