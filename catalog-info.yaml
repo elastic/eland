@@ -55,7 +55,7 @@ spec:
       repository: elastic/eland
       teams:
         ml-core: {}
-        clients-team: {}
+        devtools-team: {}
         es-docs: {}
         everyone:
           access_level: READ_ONLY
@@ -89,6 +89,6 @@ spec:
       repository: elastic/eland
       teams:
         ml-core: {}
-        clients-team: {}
+        devtools-team: {}
         everyone:
           access_level: READ_ONLY
