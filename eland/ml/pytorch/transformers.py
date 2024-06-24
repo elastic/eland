@@ -522,6 +522,14 @@ class _TraceableFillMaskModel(_TransformerTraceableModel):
         )
 
 
+class _TraceableTextExpansionModel(_TransformerTraceableModel):
+    def _prepare_inputs(self) -> transformers.BatchEncoding:
+        return self._tokenizer(
+            "This is an example sentence.",
+            padding="max_length",
+            return_tensors="pt",
+        )
+
 class _TraceableNerModel(_TraceableClassificationModel):
     def _prepare_inputs(self) -> transformers.BatchEncoding:
         return self._tokenizer(
@@ -974,6 +982,13 @@ class TransformerModel:
             )
             model = _DistilBertWrapper.try_wrapping(model)
             return _TraceableFillMaskModel(self._tokenizer, model)
+        
+        elif self._task_type == "text_expansion":
+            model = transformers.AutoModelForMaskedLM.from_pretrained(
+                self._model_id, token=self._access_token, torchscript=True
+            )
+            model = _DistilBertWrapper.try_wrapping(model)
+            return _TraceableTextExpansionModel(self._tokenizer, model)
 
         elif self._task_type == "ner":
             model = transformers.AutoModelForTokenClassification.from_pretrained(
