@@ -1042,7 +1042,7 @@ class TransformerModel:
 
         else:
             raise TypeError(
-                f"Unknown task type {self._task_type}, must be one of: {SUPPORTED_TASK_TYPES_NAMES}"
+                f"Task {self._task_type} is not supported, must be one of: {SUPPORTED_TASK_TYPES_NAMES}"
             )
 
     def elasticsearch_model_id(self) -> str:
