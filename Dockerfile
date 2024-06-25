@@ -1,7 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM --platform=$TARGETPLATFORM python:3.10-slim
-
-ARG TARGETPLATFORM
+FROM python:3.10-slim
 
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
@@ -10,28 +8,21 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
       pkg-config \
       cmake \
       libzip-dev \
-      libjpeg-dev \
-      git
+      libjpeg-dev
 
-# Clone your forked repository
-RUN git clone https://github.com/rohankshah04/eland.git /eland
+ADD . /eland
 WORKDIR /eland
 
+ARG TARGETPLATFORM
 RUN --mount=type=cache,target=/root/.cache/pip \
     if [ "$TARGETPLATFORM" = "linux/amd64" ]; then \
       python3 -m pip install \
         --no-cache-dir --disable-pip-version-check --extra-index-url https://download.pytorch.org/whl/cpu  \
         torch==2.1.2+cpu .[all]; \
-    elif [ "$TARGETPLATFORM" = "linux/arm64" ]; then \
+    else \
       python3 -m pip install \
         --no-cache-dir --disable-pip-version-check \
         .[all]; \
-    else \
-      echo "Unsupported platform: $TARGETPLATFORM" && exit 1; \
     fi
 
-# Set the entrypoint to eland_import_hub_model
-ENTRYPOINT ["eland_import_hub_model"]
-
-# Default command (can be overridden)
-CMD ["--help"]
+CMD ["/bin/sh"]
