@@ -77,7 +77,7 @@ SUPPORTED_TASK_TYPES = {
     "text_similarity",
 }
 ARCHITECTURE_TO_TASK_TYPE = {
-    "MaskedLM": ["fill_mask", "text_embedding"],
+    "MaskedLM": ["fill_mask", "text_embedding", "text_expansion"],
     "TokenClassification": ["ner"],
     "SequenceClassification": [
         "text_classification",
@@ -975,6 +975,13 @@ class TransformerModel:
                 )
             else:
                 self._task_type = maybe_task_type
+        
+        if self._task_type == "text_expansion":
+            model = transformers.AutoModelForMaskedLM.from_pretrained(
+                self._model_id, token=self._access_token, torchscript=True
+            )
+            model = _DistilBertWrapper.try_wrapping(model)
+            return _TraceableTextExpansionModel(self._tokenizer, model)
 
         if self._task_type == "fill_mask":
             model = transformers.AutoModelForMaskedLM.from_pretrained(
@@ -982,13 +989,6 @@ class TransformerModel:
             )
             model = _DistilBertWrapper.try_wrapping(model)
             return _TraceableFillMaskModel(self._tokenizer, model)
-        
-        elif self._task_type == "text_expansion":
-            model = transformers.AutoModelForMaskedLM.from_pretrained(
-                self._model_id, token=self._access_token, torchscript=True
-            )
-            model = _DistilBertWrapper.try_wrapping(model)
-            return _TraceableTextExpansionModel(self._tokenizer, model)
 
         elif self._task_type == "ner":
             model = transformers.AutoModelForTokenClassification.from_pretrained(
