@@ -1543,14 +1543,22 @@ def quantile_to_percentile(quantile: Union[int, float]) -> float:
     return float(min(100, max(0, quantile * 100)))
 
 
-def is_field_already_present(key: str, dictionary: Dict[str, Any]) -> bool:
+def is_field_already_present(
+    key: str, data: Union[Dict[str, Any], List[Dict[str, Any]]]
+) -> bool:
     if "." in key:
         splitted = key.split(".")
-        return is_field_already_present(
-            ".".join(splitted[1:]), dictionary.get(splitted[0], {})
-        )
+        if isinstance(data, dict):
+            return is_field_already_present(
+                ".".join(splitted[1:]), data.get(splitted[0], {})
+            )
+        if isinstance(data, list):
+            return any(
+                is_field_already_present(".".join(splitted[1:]), x.get(splitted[0], {}))
+                for x in data
+            )
     else:
-        return key in dictionary
+        return key in data
 
 
 def _search_yield_hits(
