@@ -394,9 +394,9 @@ class TestMLModel:
         assert "field_names" in saved_trained_model_config["input"]
 
         if ES_VERSION < (8, 15):
-            assert not len(saved_trained_model_config["input"]["field_names"])
-        else:
             assert len(saved_trained_model_config["input"]["field_names"]) == 3
+        else:
+            assert not len(saved_trained_model_config["input"]["field_names"])
 
         saved_inference_config = saved_trained_model_config["inference_config"]
 
