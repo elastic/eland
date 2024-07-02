@@ -387,9 +387,19 @@ class TestMLModel:
         response = ES_TEST_CLIENT.ml.get_trained_models(model_id=model_id)
         assert response.meta.status == 200
         assert response.body["count"] == 1
-        saved_inference_config = response.body["trained_model_configs"][0][
-            "inference_config"
-        ]
+
+        saved_trained_model_config = response.body["trained_model_configs"][0]
+
+        assert "input" in saved_trained_model_config
+        assert "field_names" in saved_trained_model_config["input"]
+
+        if ES_VERSION < (8, 15):
+            assert not len(saved_trained_model_config["input"]["field_names"])
+        else:
+            assert len(saved_trained_model_config["input"]["field_names"]) == 3
+
+        saved_inference_config = saved_trained_model_config["inference_config"]
+
         assert "learning_to_rank" in saved_inference_config
         assert "feature_extractors" in saved_inference_config["learning_to_rank"]
         saved_feature_extractors = saved_inference_config["learning_to_rank"][

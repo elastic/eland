@@ -523,22 +523,38 @@ class MLModel:
         elif es_if_exists == "replace":
             ml_model.delete_model()
 
+        trained_model_input = cls._trained_model_input(
+            es_client,
+            feature_names,
+            next(iter(inference_config)) if inference_config is not None else model_type
+        )
+
+        put_trained_model_kwargs = {
+            "model_id": model_id,
+            "inference_config": inference_config or default_inference_config,
+            "input": trained_model_input,
+        }
+
         if es_compress_model_definition:
-            ml_model._client.ml.put_trained_model(
-                model_id=model_id,
-                input={"field_names": feature_names},
-                inference_config=inference_config or default_inference_config,
-                compressed_definition=serializer.serialize_and_compress_model(),
-            )
+            put_trained_model_kwargs['compressed_definition'] = serializer.serialize_and_compress_model()
         else:
-            ml_model._client.ml.put_trained_model(
-                model_id=model_id,
-                input={"field_names": feature_names},
-                inference_config=inference_config or default_inference_config,
-                definition=serializer.serialize_model(),
-            )
+            put_trained_model_kwargs['definition'] = serializer.serialize_model()
+
+        ml_model._client.ml.put_trained_model(**put_trained_model_kwargs)
 
         return ml_model
+
+    @classmethod
+    def _trained_model_input(
+        cls,
+        es_client: Union[str, List[str], Tuple[str, ...], "Elasticsearch"],
+        feature_names: List[str],
+        model_type: str,
+    ) -> Optional[Mapping[str, Any]]:
+        if es_version(es_client) < (8, 15) or model_type is not TYPE_LEARNING_TO_RANK:
+            return { "field_names": feature_names }
+
+        return None
 
     def delete_model(self) -> None:
         """
