@@ -533,20 +533,20 @@ class MLModel:
             ),
         )
 
-        put_trained_model_kwargs = {
-            "model_id": model_id,
-            "inference_config": inference_config or default_inference_config,
-            "input": trained_model_input,
-        }
-
         if es_compress_model_definition:
-            put_trained_model_kwargs["compressed_definition"] = (
-                serializer.serialize_and_compress_model()
+            ml_model._client.ml.put_trained_model(
+                model_id=model_id,
+                inference_config=inference_config or default_inference_config,
+                input=trained_model_input,
+                compressed_definition=serializer.serialize_and_compress_model(),
             )
         else:
-            put_trained_model_kwargs["definition"] = serializer.serialize_model()
-
-        ml_model._client.ml.put_trained_model(**put_trained_model_kwargs)
+            ml_model._client.ml.put_trained_model(
+                model_id=model_id,
+                inference_config=inference_config or default_inference_config,
+                input=trained_model_input,
+                definition=serializer.serialize_model(),
+            )
 
         return ml_model
 
@@ -557,6 +557,7 @@ class MLModel:
         feature_names: List[str],
         model_type: str,
     ) -> Optional[Mapping[str, Any]]:
+        es_client = ensure_es_client(es_client)
         if es_version(es_client) < (8, 15) or model_type is not TYPE_LEARNING_TO_RANK:
             return {"field_names": feature_names}
 
