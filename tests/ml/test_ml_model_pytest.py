@@ -25,9 +25,9 @@ import eland as ed
 from eland.ml import MLModel
 from eland.ml.ltr import FeatureLogger, LTRModelConfig, QueryFeatureExtractor
 from tests import (
+    ES_IS_SERVERLESS,
     ES_TEST_CLIENT,
     ES_VERSION,
-    ES_IS_SERVERLESS,
     FLIGHTS_SMALL_INDEX_NAME,
     NATIONAL_PARKS_INDEX_NAME,
 )
