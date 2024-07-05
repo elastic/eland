@@ -27,6 +27,7 @@ from eland.ml.ltr import FeatureLogger, LTRModelConfig, QueryFeatureExtractor
 from tests import (
     ES_TEST_CLIENT,
     ES_VERSION,
+    ES_IS_SERVERLESS,
     FLIGHTS_SMALL_INDEX_NAME,
     NATIONAL_PARKS_INDEX_NAME,
 )
@@ -393,7 +394,7 @@ class TestMLModel:
         assert "input" in saved_trained_model_config
         assert "field_names" in saved_trained_model_config["input"]
 
-        if ES_VERSION < (8, 15):
+        if not ES_IS_SERVERLESS and ES_VERSION < (8, 15):
             assert len(saved_trained_model_config["input"]["field_names"]) == 3
         else:
             assert not len(saved_trained_model_config["input"]["field_names"])
@@ -448,7 +449,7 @@ class TestMLModel:
             pass
 
         # Clean up
-        ES_TEST_CLIENT.cluster.health(index='.ml-*', wait_for_active_shards='all')
+        ES_TEST_CLIENT.cluster.health(index=".ml-*", wait_for_active_shards="all")
         es_model.delete_model()
 
     @requires_sklearn

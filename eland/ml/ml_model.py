@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Tuple, Uni
 import elasticsearch
 import numpy as np
 
-from eland.common import ensure_es_client, es_version
+from eland.common import ensure_es_client, es_version, is_serverless_es
 from eland.utils import deprecated_api
 
 from .common import TYPE_CLASSIFICATION, TYPE_LEARNING_TO_RANK, TYPE_REGRESSION
@@ -527,7 +527,9 @@ class MLModel:
 
         trained_model_input = None
         is_ltr = next(iter(inference_config)) is TYPE_LEARNING_TO_RANK
-        if not is_ltr or es_version(es_client) < (8, 15):
+        if not is_ltr or (
+            es_version(es_client) < (8, 15) and not is_serverless_es(es_client)
+        ):
             trained_model_input = {"field_names": feature_names}
 
         if es_compress_model_definition:
