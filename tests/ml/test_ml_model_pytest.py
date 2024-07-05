@@ -25,6 +25,7 @@ import eland as ed
 from eland.ml import MLModel
 from eland.ml.ltr import FeatureLogger, LTRModelConfig, QueryFeatureExtractor
 from tests import (
+    ES_IS_SERVERLESS,
     ES_TEST_CLIENT,
     ES_VERSION,
     FLIGHTS_SMALL_INDEX_NAME,
@@ -379,7 +380,6 @@ class TestMLModel:
             model_id,
             ranker,
             ltr_model_config,
-            es_if_exists="replace",
             es_compress_model_definition=compress_model_definition,
         )
 
@@ -387,9 +387,19 @@ class TestMLModel:
         response = ES_TEST_CLIENT.ml.get_trained_models(model_id=model_id)
         assert response.meta.status == 200
         assert response.body["count"] == 1
-        saved_inference_config = response.body["trained_model_configs"][0][
-            "inference_config"
-        ]
+
+        saved_trained_model_config = response.body["trained_model_configs"][0]
+
+        assert "input" in saved_trained_model_config
+        assert "field_names" in saved_trained_model_config["input"]
+
+        if not ES_IS_SERVERLESS and ES_VERSION < (8, 15):
+            assert len(saved_trained_model_config["input"]["field_names"]) == 3
+        else:
+            assert not len(saved_trained_model_config["input"]["field_names"])
+
+        saved_inference_config = saved_trained_model_config["inference_config"]
+
         assert "learning_to_rank" in saved_inference_config
         assert "feature_extractors" in saved_inference_config["learning_to_rank"]
         saved_feature_extractors = saved_inference_config["learning_to_rank"][
@@ -438,6 +448,9 @@ class TestMLModel:
             pass
 
         # Clean up
+        ES_TEST_CLIENT.cluster.health(
+            index=".ml-*", wait_for_active_shards="all"
+        )  # Added to prevent flakiness in the test
         es_model.delete_model()
 
     @requires_sklearn
@@ -466,6 +479,7 @@ class TestMLModel:
         )
 
         # Clean up
+
         es_model.delete_model()
 
     @requires_sklearn
