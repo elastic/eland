@@ -449,7 +449,9 @@ class TestMLModel:
             pass
 
         # Clean up
-        ES_TEST_CLIENT.cluster.health(index=".ml-*", wait_for_active_shards="all")
+        ES_TEST_CLIENT.cluster.health(
+            index=".ml-*", wait_for_active_shards="all"
+        )  # Added to prevent flakiness in the test
         es_model.delete_model()
 
     @requires_sklearn
