@@ -448,6 +448,7 @@ class TestMLModel:
             pass
 
         # Clean up
+        ES_TEST_CLIENT.cluster.health(index='.ml-*', wait_for_active_shards='all')
         es_model.delete_model()
 
     @requires_sklearn
@@ -476,6 +477,7 @@ class TestMLModel:
         )
 
         # Clean up
+
         es_model.delete_model()
 
     @requires_sklearn
