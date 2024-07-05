@@ -380,7 +380,6 @@ class TestMLModel:
             model_id,
             ranker,
             ltr_model_config,
-            es_if_exists="replace",
             es_compress_model_definition=compress_model_definition,
         )
 
