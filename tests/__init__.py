@@ -20,7 +20,7 @@ import os
 import pandas as pd
 from elasticsearch import Elasticsearch
 
-from eland.common import es_version
+from eland.common import es_version, is_serverless_es
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -33,6 +33,7 @@ ELASTICSEARCH_HOST = os.environ.get(
 ES_TEST_CLIENT = Elasticsearch(ELASTICSEARCH_HOST)
 
 ES_VERSION = es_version(ES_TEST_CLIENT)
+ES_IS_SERVERLESS = is_serverless_es(ES_TEST_CLIENT)
 
 FLIGHTS_INDEX_NAME = "flights"
 FLIGHTS_MAPPING = {
