@@ -77,7 +77,7 @@ SUPPORTED_TASK_TYPES = {
     "text_similarity",
 }
 ARCHITECTURE_TO_TASK_TYPE = {
-    "MaskedLM": ["fill_mask", "text_embedding", "text_expansion"],
+    "MaskedLM": ["fill_mask", "text_embedding"],
     "TokenClassification": ["ner"],
     "SequenceClassification": [
         "text_classification",
