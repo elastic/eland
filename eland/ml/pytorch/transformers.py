@@ -770,6 +770,9 @@ class TransformerModel:
             tokenization_config.span = 128
             tokenization_config.truncate = "none"
 
+        if self._task_type == "text_similarity":
+            tokenization_config.truncate = "second"
+
         if self._traceable_model.classification_labels():
             inference_config = TASK_TYPE_TO_INFERENCE_CONFIG[self._task_type](
                 tokenization=tokenization_config,
