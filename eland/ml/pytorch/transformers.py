@@ -771,7 +771,6 @@ class TransformerModel:
             tokenization_config.truncate = "none"
 
         if self._task_type == "text_similarity":
-            print("is text sime")
             tokenization_config.truncate = "second"
 
         if self._traceable_model.classification_labels():
