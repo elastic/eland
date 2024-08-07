@@ -217,6 +217,9 @@ class TestModelConfguration:
                 assert isinstance(config.inference_config.classification_labels, list)
                 assert len(config.inference_config.classification_labels) > 0
 
+            if task_type == "text_similarity":
+                assert tokenization.truncate == "second"
+
             del tm
 
     def test_model_config_with_prefix_string(self):
