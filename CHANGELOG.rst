@@ -2,6 +2,14 @@
 Changelog
 =========
 
+8.15.0 (2024-08-12)
+-------------------
+
+* Added a default truncation of ``second`` for text similarity (`#713 <https://github.com/elastic/eland/pull/713>`_)
+* Added note about using text_similarity for rerank in the CLI (`#716 <https://github.com/elastic/eland/pull/716>`_)
+* Added support for lists in result hits (`#707 <https://github.com/elastic/eland/pull/707>`_)
+* Removed input fields from exported LTR models (`#708 <https://github.com/elastic/eland/pull/708>`_)
+
 8.14.0 (2024-06-10)
 -------------------
 
