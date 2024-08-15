@@ -60,10 +60,10 @@ extras = {
     "lightgbm": ["lightgbm>=2,<4"],
     "pytorch": [
         "requests<3",
-        "torch==2.1.2",
+        "torch==2.3.1",
         "tqdm",
-        "sentence-transformers>=2.1.0,<=2.3.1",
-        "transformers[torch]>=4.31.0,<4.36.0",
+        "sentence-transformers>=2.1.0,<=2.7.0",
+        "transformers[torch]>=4.31.0,<4.44.0",
     ],
 }
 extras["all"] = list({dep for deps in extras.values() for dep in deps})
