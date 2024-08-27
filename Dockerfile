@@ -1,17 +1,12 @@
 # syntax=docker/dockerfile:1
-FROM python:3.10-slim
+FROM docker.elastic.co/wolfi/python:3.10-dev AS builder
 
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt,sharing=locked \
-    apt-get update && apt-get install -y \
-      build-essential \
-      pkg-config \
-      cmake \
-      libzip-dev \
-      libjpeg-dev
+WORKDIR /eland
+ENV VIRTUAL_ENV=/eland/venv
+RUN python3 -m venv $VIRTUAL_ENV
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 ADD . /eland
-WORKDIR /eland
 
 ARG TARGETPLATFORM
 RUN --mount=type=cache,target=/root/.cache/pip \
@@ -25,4 +20,23 @@ RUN --mount=type=cache,target=/root/.cache/pip \
         .[all]; \
     fi
 
-CMD ["/bin/sh"]
+FROM docker.elastic.co/wolfi/python:3.10
+
+WORKDIR /eland
+ENV VIRTUAL_ENV=/eland/venv
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+
+COPY --from=builder /eland /eland
+
+# The eland_import_hub_model script is intended to be executed by a shell,
+# which will see its shebang line and then execute it with the Python
+# interpreter of the virtual environment. We want to keep this behavior even
+# with Wolfi so that users can use the image as before. To do that, we use two
+# tricks:
+#
+#  * copy /bin/sh (that is, busybox's ash) from the builder image
+#  * revert to Docker's the default entrypoint, which is the only way to pass
+#    parameters to `eland_import_hub_model` without needing quotes.
+#
+COPY --from=builder /bin/sh /bin/sh
+ENTRYPOINT []
