@@ -26,6 +26,7 @@ git --no-pager show
 docker buildx rm --force eland-multiarch-builder || true
 docker buildx create --name eland-multiarch-builder --bootstrap --use
 docker buildx build --push \
+  --file Dockerfile.wolfi \
   --tag "$docker_registry/eland/eland:$RELEASE_VERSION" \
   --tag "$docker_registry/eland/eland:latest" \
   --platform linux/amd64,linux/arm64 \
