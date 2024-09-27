@@ -31,7 +31,8 @@ steps:
           - '3.10'
           - '3.9'
           - '3.8'
-        stack:
-          - '8.15.0-SNAPSHOT'
+        stack:          
+          - '8.16.0-SNAPSHOT'
+          - '8.15.2'
           - '8.14.1'
     command: ./.buildkite/run-tests
