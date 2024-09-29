@@ -149,14 +149,6 @@ if HAS_PYTORCH and HAS_SKLEARN and HAS_TRANSFORMERS:
             1024,
             None,
         ),
-        (
-            "cardiffnlp/twitter-roberta-base-sentiment",
-            "text_classification",
-            TextClassificationInferenceOptions,
-            NlpRobertaTokenizationConfig,
-            512,
-            None,
-        ),
     ]
 else:
     MODEL_CONFIGURATIONS = []

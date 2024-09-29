@@ -36,6 +36,7 @@ from transformers import (
     AutoConfig,
     AutoModel,
     AutoModelForQuestionAnswering,
+    BertTokenizer,
     PretrainedConfig,
     PreTrainedModel,
     PreTrainedTokenizer,
@@ -756,6 +757,9 @@ class TransformerModel:
                 max_len = sizes.pop()
                 if max_len is not None and max_len < REASONABLE_MAX_LENGTH:
                     return int(max_len)
+
+        if isinstance(self._tokenizer, BertTokenizer):
+            return 512
 
         raise UnknownModelInputSizeError("Cannot determine model max input length")
 
