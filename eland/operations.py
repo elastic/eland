@@ -415,7 +415,7 @@ class Operations:
             fields=fields,
             es_aggs=es_aggs,
             pd_aggs=pd_aggs,
-            response=response,
+            response=response,  # type: ignore
             numeric_only=numeric_only,
             is_dataframe_agg=is_dataframe_agg,
             percentiles=percentiles,
@@ -452,7 +452,7 @@ class Operations:
             body.terms_aggs(field, func, field, es_size=es_size)
 
         response = query_compiler._client.search(
-            index=query_compiler._index_pattern, size=0, body=body.to_search_body()
+            index=query_compiler._index_pattern, size=0, **body.to_search_body()
         )
 
         results = {}
@@ -498,7 +498,7 @@ class Operations:
             body.hist_aggs(field, field, min_aggs[field], max_aggs[field], num_bins)
 
         response = query_compiler._client.search(
-            index=query_compiler._index_pattern, size=0, body=body.to_search_body()
+            index=query_compiler._index_pattern, size=0, **body.to_search_body()
         )
         # results are like
         # "aggregations" : {
@@ -1036,7 +1036,7 @@ class Operations:
             res = query_compiler._client.search(
                 index=query_compiler._index_pattern,
                 size=0,
-                body=body.to_search_body(),
+                **body.to_search_body(),
             )
 
             # Pagination Logic
@@ -1613,7 +1613,7 @@ def _search_yield_hits(
 
     try:
         pit_id = client.open_point_in_time(
-            index=query_compiler._index_pattern, keep_alive=DEFAULT_PIT_KEEP_ALIVE
+            index=query_compiler._index_pattern, keep_alive=DEFAULT_PIT_KEEP_ALIVE  # type: ignore
         )["id"]
 
         # Modify the search with the new point in time ID and keep-alive time.
