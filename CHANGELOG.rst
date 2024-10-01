@@ -2,6 +2,12 @@
 Changelog
 =========
 
+8.15.1 (2024-10-01)
+-------------------
+
+* Upgrade PyTorch to version 2.3.1, which is compatible with Elasticsearch 8.15.2 or above
+* Migrate to distroless Wolfi base Docker image
+
 8.15.0 (2024-08-12)
 -------------------
 
