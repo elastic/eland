@@ -9,8 +9,5 @@ docker buildx create --name eland-multiarch-builder --bootstrap --use
 
 for platform in linux/amd64 linux/arm64; do
   echo "--- Building $platform"
-  docker buildx build --push \
-    --file Dockerfile.wolfi \
-    --load --platform $platform \
-    .
+  docker buildx build --file Dockerfile.wolfi --load --platform $platform .
 done
