@@ -2,11 +2,17 @@
 Changelog
 =========
 
+8.15.2 (2024-10-02)
+-------------------
+
+* Fixed Docker image build (`#728 <https://github.com/elastic/eland/pull/728>`_)
+
 8.15.1 (2024-10-01)
 -------------------
 
-* Upgrade PyTorch to version 2.3.1, which is compatible with Elasticsearch 8.15.2 or above
-* Migrate to distroless Wolfi base Docker image
+* Upgraded PyTorch to version 2.3.1, which is compatible with Elasticsearch 8.15.2 or above (`#718 <https://github.com/elastic/eland/pull/718>`_)
+* Migrated to distroless Wolfi base Docker image (`#720 <https://github.com/elastic/eland/pull/720>`_)
+
 
 8.15.0 (2024-08-12)
 -------------------
