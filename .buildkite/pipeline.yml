@@ -15,12 +15,19 @@ steps:
       machineType: "n2-standard-2"
     commands:
       - ./.buildkite/build-documentation.sh
-  - label: ":docker: Build docker images"
+  - label: ":docker: Build docker image {{ matrix.platform }}"
     env:
       PYTHON_VERSION: 3.11-bookworm
     agents:
       provider: "gcp"
-      machineType: "n2-standard-2"
+      machineType: "n2-standard-4"
+    env:
+      PLATFORM: "{{ matrix.platform }}"
+    matrix:
+      setup:
+        platform:
+          - 'linux/arm64'
+          - 'linux/amd64'
     commands:
       - ./.buildkite/build-docker-images.sh
   - label: "Eland :python: {{ matrix.python }} :elasticsearch: {{ matrix.stack }}"
