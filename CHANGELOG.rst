@@ -2,6 +2,12 @@
 Changelog
 =========
 
+8.15.3 (2024-10-09)
+-------------------
+
+* Added support for DeBERTa-V2 tokenizer (`#717 <https://github.com/elastic/eland/pull/717>`_)
+* Fixed ``--ca-cert`` with a shared Elasticsearch Docker volume (`#732 <https://github.com/elastic/eland/pull/732>`_)
+
 8.15.2 (2024-10-02)
 -------------------
 
