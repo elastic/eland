@@ -262,7 +262,7 @@ def eland_to_pandas(ed_df: DataFrame, show_progress: bool = False) -> pd.DataFra
     3      181.694216       True  ...         0 2018-01-01 10:33:28
     4      730.041778      False  ...         0 2018-01-01 05:13:00
     <BLANKLINE>
-    [5 rows x 27 columns]
+    [5 rows x 28 columns]
 
     Convert `eland.DataFrame` to `pandas.DataFrame` (Note: this loads entire Elasticsearch index into core memory)
 
@@ -277,7 +277,7 @@ def eland_to_pandas(ed_df: DataFrame, show_progress: bool = False) -> pd.DataFra
     3      181.694216       True  ...         0 2018-01-01 10:33:28
     4      730.041778      False  ...         0 2018-01-01 05:13:00
     <BLANKLINE>
-    [5 rows x 27 columns]
+    [5 rows x 28 columns]
 
     Convert `eland.DataFrame` to `pandas.DataFrame` and show progress every 10000 rows
 

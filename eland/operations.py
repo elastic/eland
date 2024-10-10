@@ -1543,6 +1543,24 @@ def quantile_to_percentile(quantile: Union[int, float]) -> float:
     return float(min(100, max(0, quantile * 100)))
 
 
+def is_field_already_present(
+    key: str, data: Union[Dict[str, Any], List[Dict[str, Any]]]
+) -> bool:
+    if "." in key:
+        splitted = key.split(".")
+        if isinstance(data, dict):
+            return is_field_already_present(
+                ".".join(splitted[1:]), data.get(splitted[0], {})
+            )
+        if isinstance(data, list):
+            return any(
+                is_field_already_present(".".join(splitted[1:]), x.get(splitted[0], {}))
+                for x in data
+            )
+    else:
+        return key in data
+
+
 def _search_yield_hits(
     query_compiler: "QueryCompiler",
     body: Dict[str, Any],
@@ -1600,10 +1618,24 @@ def _search_yield_hits(
 
         # Modify the search with the new point in time ID and keep-alive time.
         body["pit"] = {"id": pit_id, "keep_alive": DEFAULT_PIT_KEEP_ALIVE}
+        if isinstance(body["_source"], list):
+            body["fields"] = body["_source"]
 
         while max_number_of_hits is None or hits_yielded < max_number_of_hits:
             resp = client.search(**body)
-            hits: List[Dict[str, Any]] = resp["hits"]["hits"]
+            hits: List[Dict[str, Any]] = []
+            for hit in resp["hits"]["hits"]:
+                # Copy some of the fields to _source if they are missing there.
+                if "fields" in hit and "_source" in hit:
+                    fields = hit["fields"]
+                    del hit["fields"]
+                    for k, v in fields.items():
+                        if not is_field_already_present(k, hit["_source"]):
+                            if isinstance(v, list):
+                                hit["_source"][k] = list(sorted(v))
+                            else:
+                                hit["_source"][k] = v
+                hits.append(hit)
 
             # The point in time ID can change between searches so we
             # need to keep the next search up-to-date

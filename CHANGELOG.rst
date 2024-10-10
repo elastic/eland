@@ -2,6 +2,52 @@
 Changelog
 =========
 
+8.15.3 (2024-10-09)
+-------------------
+
+* Added support for DeBERTa-V2 tokenizer (`#717 <https://github.com/elastic/eland/pull/717>`_)
+* Fixed ``--ca-cert`` with a shared Elasticsearch Docker volume (`#732 <https://github.com/elastic/eland/pull/732>`_)
+
+8.15.2 (2024-10-02)
+-------------------
+
+* Fixed Docker image build (`#728 <https://github.com/elastic/eland/pull/728>`_)
+
+8.15.1 (2024-10-01)
+-------------------
+
+* Upgraded PyTorch to version 2.3.1, which is compatible with Elasticsearch 8.15.2 or above (`#718 <https://github.com/elastic/eland/pull/718>`_)
+* Migrated to distroless Wolfi base Docker image (`#720 <https://github.com/elastic/eland/pull/720>`_)
+
+
+8.15.0 (2024-08-12)
+-------------------
+
+* Added a default truncation of ``second`` for text similarity (`#713 <https://github.com/elastic/eland/pull/713>`_)
+* Added note about using text_similarity for rerank in the CLI (`#716 <https://github.com/elastic/eland/pull/716>`_)
+* Added support for lists in result hits (`#707 <https://github.com/elastic/eland/pull/707>`_)
+* Removed input fields from exported LTR models (`#708 <https://github.com/elastic/eland/pull/708>`_)
+
+8.14.0 (2024-06-10)
+-------------------
+
+Added
+^^^^^
+
+* Added Elasticsearch Serverless support in DataFrames (`#690`_, contributed by `@AshokChoudhary11`_) and eland_import_hub_model (`#698`_)
+
+Fixed
+^^^^^
+
+* Fixed Python 3.8 support (`#695`_, contributed by `@bartbroere`_)
+* Fixed non _source fields missing from the results hits (`#693`_, contributed by `@bartbroere`_)
+
+.. _@AshokChoudhary11: https://github.com/AshokChoudhary11
+.. _#690: https://github.com/elastic/eland/pull/690
+.. _#693: https://github.com/elastic/eland/pull/693
+.. _#695: https://github.com/elastic/eland/pull/695
+.. _#698: https://github.com/elastic/eland/pull/698
+
 8.13.1 (2024-05-03)
 -------------------
 

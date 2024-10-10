@@ -32,7 +32,8 @@ import textwrap
 from elastic_transport.client_utils import DEFAULT
 from elasticsearch import AuthenticationException, Elasticsearch
 
-from eland.common import parse_es_version
+from eland._version import __version__
+from eland.common import is_serverless_es, parse_es_version
 
 MODEL_HUB_URL = "https://huggingface.co"
 
@@ -40,7 +41,9 @@ MODEL_HUB_URL = "https://huggingface.co"
 def get_arg_parser():
     from eland.ml.pytorch.transformers import SUPPORTED_TASK_TYPES
 
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        exit_on_error=False
+    )  # throw exception rather than exit
     location_args = parser.add_mutually_exclusive_group(required=True)
     location_args.add_argument(
         "--url",
@@ -96,7 +99,7 @@ def get_arg_parser():
         "--task-type",
         required=False,
         choices=SUPPORTED_TASK_TYPES,
-        help="The task type for the model usage. Will attempt to auto-detect task type for the model if not provided. "
+        help="The task type for the model usage. Use text_similarity for rerank tasks. Will attempt to auto-detect task type for the model if not provided. "
         "Default: auto",
         default="auto",
     )
@@ -158,6 +161,23 @@ def get_arg_parser():
     return parser
 
 
+def parse_args():
+    parser = get_arg_parser()
+    try:
+        return parser.parse_args()
+    except argparse.ArgumentError as argument_error:
+        if argument_error.argument_name == "--task-type":
+            message = (
+                argument_error.message
+                + "\n\nUse 'text_similarity' for rerank tasks in Elasticsearch"
+            )
+            parser.error(message=message)
+        else:
+            parser.error(message=argument_error.message)
+    except argparse.ArgumentTypeError as type_error:
+        parser.error(str(type_error))
+
+
 def get_es_client(cli_args, logger):
     try:
         es_args = {
@@ -195,13 +215,20 @@ def get_es_client(cli_args, logger):
 
 def check_cluster_version(es_client, logger):
     es_info = es_client.info()
+
+    if is_serverless_es(es_client):
+        logger.info(f"Connected to serverless cluster '{es_info['cluster_name']}'")
+        # Serverless is compatible
+        # Return the latest known semantic version, i.e. this version
+        return parse_es_version(__version__)
+
+    # check the semantic version for none serverless clusters
     logger.info(
         f"Connected to cluster named '{es_info['cluster_name']}' (version: {es_info['version']['number']})"
     )
 
     sem_ver = parse_es_version(es_info["version"]["number"])
     major_version = sem_ver[0]
-    minor_version = sem_ver[1]
 
     # NLP models added in 8
     if major_version < 8:
@@ -210,13 +237,13 @@ def check_cluster_version(es_client, logger):
         )
         exit(1)
 
-    # PyTorch was upgraded to version 2.1.2 in 8.13
+    # PyTorch was upgraded to version 2.3.1 in 8.15.2
     # and is incompatible with earlier versions
-    if major_version == 8 and minor_version < 13:
+    if sem_ver < (8, 15, 2):
         import torch
 
         logger.error(
-            f"Eland uses PyTorch version {torch.__version__} which is incompatible with Elasticsearch versions prior to 8.13. Please upgrade Elasticsearch to at least version 8.13"
+            f"Eland uses PyTorch version {torch.__version__} which is incompatible with Elasticsearch versions prior to 8.15.2. Please upgrade Elasticsearch to at least version 8.15.2"
         )
         exit(1)
 
@@ -253,7 +280,7 @@ def main():
     assert SUPPORTED_TASK_TYPES
 
     # Parse arguments
-    args = get_arg_parser().parse_args()
+    args = parse_args()
 
     # Connect to ES
     logger.info("Establishing connection to Elasticsearch")

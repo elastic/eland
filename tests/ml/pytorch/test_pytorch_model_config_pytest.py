@@ -58,8 +58,8 @@ from tests import ES_VERSION
 
 pytestmark = [
     pytest.mark.skipif(
-        ES_VERSION < (8, 13, 0),
-        reason="Eland uses Pytorch 2.1.2, versions of Elasticsearch prior to 8.13.0 are incompatible with PyTorch 2.1.2",
+        ES_VERSION < (8, 15, 1),
+        reason="Eland uses Pytorch 2.3.1, versions of Elasticsearch prior to 8.15.1 are incompatible with PyTorch 2.3.1",
     ),
     pytest.mark.skipif(
         not HAS_SKLEARN, reason="This test requires 'scikit-learn' package to run"
@@ -149,21 +149,12 @@ if HAS_PYTORCH and HAS_SKLEARN and HAS_TRANSFORMERS:
             1024,
             None,
         ),
-        (
-            "cardiffnlp/twitter-roberta-base-sentiment",
-            "text_classification",
-            TextClassificationInferenceOptions,
-            NlpRobertaTokenizationConfig,
-            512,
-            None,
-        ),
     ]
 else:
     MODEL_CONFIGURATIONS = []
 
 
 class TestModelConfguration:
-    @pytest.mark.skip(reason="https://github.com/elastic/eland/issues/633")
     @pytest.mark.parametrize(
         "model_id,task_type,config_type,tokenizer_type,max_sequence_len,embedding_size",
         MODEL_CONFIGURATIONS,
@@ -216,6 +207,9 @@ class TestModelConfguration:
             if task_type == "zero_shot_classification":
                 assert isinstance(config.inference_config.classification_labels, list)
                 assert len(config.inference_config.classification_labels) > 0
+
+            if task_type == "text_similarity":
+                assert tokenization.truncate == "second"
 
             del tm
 

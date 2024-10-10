@@ -58,7 +58,8 @@ $ eland_import_hub_model <authentication> \ <1>
 <2> The cluster URL. Alternatively, use `--cloud-id`.
 <3> Specify the identifier for the model in the Hugging Face model hub.
 <4> Specify the type of NLP task. Supported values are `fill_mask`, `ner`,
-`question_answering`, `text_classification`, `text_embedding`, and `zero_shot_classification`.
+`question_answering`, `text_classification`, `text_embedding`, `text_expansion`,
+`text_similarity` and `zero_shot_classification`.
 
 For more information about the available options, run `eland_import_hub_model` with the `--help` option.
 
@@ -139,10 +140,10 @@ the model directory, so the container can read the files:
 
 [source,bash]
 ----
-docker run --mount type=bind,source=/PATH/TO/MODELS,destination=/models,readonly -it --rm docker.elastic.co/eland/eland \
+docker run --mount type=bind,source=/PATH/TO/MODEL,destination=/model,readonly -it --rm docker.elastic.co/eland/eland \
     eland_import_hub_model \
       --url 'XXXX' \
-      --hub-model-id /models/bert-base-NER \
+      --hub-model-id /model \
       --task-type ner \
       --es-username elastic --es-password XXX \
       --es-model-id bert-base-ner

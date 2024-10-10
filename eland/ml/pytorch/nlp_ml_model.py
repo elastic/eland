@@ -86,6 +86,27 @@ class NlpXLMRobertaTokenizationConfig(NlpTokenizationConfig):
         )
 
 
+class DebertaV2Config(NlpTokenizationConfig):
+    def __init__(
+        self,
+        *,
+        do_lower_case: t.Optional[bool] = None,
+        with_special_tokens: t.Optional[bool] = None,
+        max_sequence_length: t.Optional[int] = None,
+        truncate: t.Optional[
+            t.Union["t.Literal['first', 'none', 'second']", str]
+        ] = None,
+        span: t.Optional[int] = None,
+    ):
+        super().__init__(
+            configuration_type="deberta_v2",
+            with_special_tokens=with_special_tokens,
+            max_sequence_length=max_sequence_length,
+            truncate=truncate,
+            span=span,
+        )
+
+
 class NlpBertTokenizationConfig(NlpTokenizationConfig):
     def __init__(
         self,
