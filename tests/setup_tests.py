@@ -68,9 +68,6 @@ def _setup_data(es):
         print("Adding", df.shape[0], "items to index:", index_name)
         for index, row in df.iterrows():
             values = row.dropna().to_dict()
-            # make timestamp datetime 2018-01-01T12:09:35
-            # values['timestamp'] = datetime.strptime(values['timestamp'], '%Y-%m-%dT%H:%M:%S')
-
             # Use id field as document id from the row if the fiel exists.
             # Else, use integer as id field for repeatable results
             # document_id = values['id'] if 'id' in values else str(n)
