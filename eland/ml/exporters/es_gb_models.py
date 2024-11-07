@@ -17,6 +17,7 @@
 
 from abc import ABC
 from typing import Any, List, Literal, Mapping, Optional, Set, Tuple, Union
+import warnings
 
 import numpy as np
 from elasticsearch import Elasticsearch
@@ -70,6 +71,10 @@ class ESGradientBoostingModel(ABC):
             The model is expected to be trained in Elastic Stack. Models initially imported
             from xgboost, lgbm, or sklearn are not supported.
         """
+        warnings.warn(
+            "Exporting data frame analytics models as ESGradientBoostingModel subclasses is deprecated and will be removed in version 9.0.0."
+            PendingDeprecationWarning,
+            stacklevel=3)
         self.es_client: Elasticsearch = ensure_es_client(es_client)
         self.model_id = model_id
 
