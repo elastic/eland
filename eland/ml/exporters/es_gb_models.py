@@ -37,7 +37,7 @@ from sklearn.ensemble._gb_losses import (
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from sklearn.utils.validation import check_array
 
-from eland.common import ensure_es_client
+from eland.common import ElandDeprecationWarning, ensure_es_client
 from eland.ml.common import TYPE_CLASSIFICATION, TYPE_REGRESSION
 
 from ._sklearn_deserializers import Tree
@@ -77,8 +77,8 @@ class ESGradientBoostingModel(ABC):
         """
         warnings.warn(
             "Exporting data frame analytics models as ESGradientBoostingModel subclasses is deprecated and will be removed in version 9.0.0.",
-            PendingDeprecationWarning,
-            stacklevel=3,
+            ElandDeprecationWarning,
+            stacklevel=2,
         )
         self.es_client: Elasticsearch = ensure_es_client(es_client)
         self.model_id = model_id
