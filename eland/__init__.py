@@ -15,6 +15,8 @@
 #  specific language governing permissions and limitations
 #  under the License.
 
+import warnings
+
 from ._version import (  # noqa: F401
     __author__,
     __author_email__,
@@ -25,12 +27,15 @@ from ._version import (  # noqa: F401
     __url__,
     __version__,
 )
-from .common import SortOrder
+from .common import ElandDeprecationWarning, SortOrder
 from .dataframe import DataFrame
 from .etl import csv_to_eland, eland_to_pandas, pandas_to_eland
 from .index import Index
 from .ndframe import NDFrame
 from .series import Series
+
+# Display Eland deprecation warnings by default
+warnings.simplefilter("default", category=ElandDeprecationWarning)
 
 __all__ = [
     "DataFrame",
