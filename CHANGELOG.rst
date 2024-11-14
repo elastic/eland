@@ -2,6 +2,11 @@
 Changelog
 =========
 
+8.16.0 (2024-11-13)
+-------------------
+
+* Add deprecation warning for ESGradientBoostingModel subclasses (`#738 <https://github.com/elastic/eland/pull/738>`_)
+
 8.15.4 (2024-10-17)
 -------------------
 
