@@ -530,6 +530,7 @@ class _TraceableTextExpansionModel(_TransformerTraceableModel):
             return_tensors="pt",
         )
 
+
 class _TraceableNerModel(_TraceableClassificationModel):
     def _prepare_inputs(self) -> transformers.BatchEncoding:
         return self._tokenizer(
@@ -978,7 +979,7 @@ class TransformerModel:
                 )
             else:
                 self._task_type = maybe_task_type
-        
+
         if self._task_type == "text_expansion":
             model = transformers.AutoModelForMaskedLM.from_pretrained(
                 self._model_id, token=self._access_token, torchscript=True
