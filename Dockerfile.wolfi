@@ -26,10 +26,6 @@ WORKDIR /eland
 ENV VIRTUAL_ENV=/eland/venv
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
-# Use the same `USER` instruction as Elasticsearch to make sure Eland can read
-# a volume with Elasticsearch data in it. This is useful for --ca-cert.
-USER 1000:0
-
 COPY --from=builder /eland /eland
 
 # The eland_import_hub_model script is intended to be executed by a shell,

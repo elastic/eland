@@ -15,6 +15,7 @@
 #  specific language governing permissions and limitations
 #  under the License.
 
+import warnings
 from abc import ABC
 from typing import Any, List, Literal, Mapping, Optional, Set, Tuple, Union
 
@@ -36,7 +37,7 @@ from sklearn.ensemble._gb_losses import (
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from sklearn.utils.validation import check_array
 
-from eland.common import ensure_es_client
+from eland.common import ElandDeprecationWarning, ensure_es_client
 from eland.ml.common import TYPE_CLASSIFICATION, TYPE_REGRESSION
 
 from ._sklearn_deserializers import Tree
@@ -62,6 +63,10 @@ class ESGradientBoostingModel(ABC):
         model_id : str
             The unique identifier of the trained inference model in Elasticsearch.
 
+        Deprecation Warning:
+        ------
+        Exporting data frame analytics models as ESGradientBoostingModel subclasses is deprecated and will be removed in version 9.0.0.
+
         Raises
         ------
         RuntimeError
@@ -70,6 +75,11 @@ class ESGradientBoostingModel(ABC):
             The model is expected to be trained in Elastic Stack. Models initially imported
             from xgboost, lgbm, or sklearn are not supported.
         """
+        warnings.warn(
+            "Exporting data frame analytics models as ESGradientBoostingModel subclasses is deprecated and will be removed in version 9.0.0.",
+            ElandDeprecationWarning,
+            stacklevel=2,
+        )
         self.es_client: Elasticsearch = ensure_es_client(es_client)
         self.model_id = model_id
 

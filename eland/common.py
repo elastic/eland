@@ -52,6 +52,10 @@ PANDAS_VERSION: Tuple[int, ...] = tuple(
 _ELAND_MAJOR_VERSION = int(_eland_version.split(".")[0])
 
 
+class ElandDeprecationWarning(DeprecationWarning):
+    """Warning for deprecation functionality in Eland"""
+
+
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
     EMPTY_SERIES_DTYPE = pd.Series().dtype
