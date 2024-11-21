@@ -36,6 +36,7 @@ from transformers import (
     AutoConfig,
     AutoModel,
     AutoModelForQuestionAnswering,
+    BertTokenizer,
     PretrainedConfig,
     PreTrainedModel,
     PreTrainedTokenizer,
@@ -43,6 +44,7 @@ from transformers import (
 )
 
 from eland.ml.pytorch.nlp_ml_model import (
+    DebertaV2Config,
     FillMaskInferenceOptions,
     NerInferenceOptions,
     NlpBertJapaneseTokenizationConfig,
@@ -115,6 +117,7 @@ SUPPORTED_TOKENIZERS = (
     transformers.BartTokenizer,
     transformers.SqueezeBertTokenizer,
     transformers.XLMRobertaTokenizer,
+    transformers.DebertaV2Tokenizer,
 )
 SUPPORTED_TOKENIZERS_NAMES = ", ".join(sorted([str(x) for x in SUPPORTED_TOKENIZERS]))
 
@@ -318,6 +321,7 @@ class _SentenceTransformerWrapperModule(nn.Module):  # type: ignore
                 transformers.MPNetTokenizer,
                 transformers.RobertaTokenizer,
                 transformers.XLMRobertaTokenizer,
+                transformers.DebertaV2Tokenizer,
             ),
         ):
             return _TwoParameterSentenceTransformerWrapper(model, output_key)
@@ -485,6 +489,7 @@ class _TransformerTraceableModel(TraceableModel):
                 transformers.MPNetTokenizer,
                 transformers.RobertaTokenizer,
                 transformers.XLMRobertaTokenizer,
+                transformers.DebertaV2Tokenizer,
             ),
         ):
             del inputs["token_type_ids"]
@@ -727,6 +732,11 @@ class TransformerModel:
             return NlpXLMRobertaTokenizationConfig(
                 max_sequence_length=_max_sequence_length
             )
+        elif isinstance(self._tokenizer, transformers.DebertaV2Tokenizer):
+            return DebertaV2Config(
+                max_sequence_length=_max_sequence_length,
+                do_lower_case=getattr(self._tokenizer, "do_lower_case", None),
+            )
         else:
             japanese_morphological_tokenizers = ["mecab"]
             if (
@@ -765,6 +775,9 @@ class TransformerModel:
                 max_len = sizes.pop()
                 if max_len is not None and max_len < REASONABLE_MAX_LENGTH:
                     return int(max_len)
+
+        if isinstance(self._tokenizer, BertTokenizer):
+            return 512
 
         raise UnknownModelInputSizeError("Cannot determine model max input length")
 
