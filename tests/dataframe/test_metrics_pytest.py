@@ -491,8 +491,13 @@ class TestDataFrameMetrics(TestData):
             ["AvgTicketPrice", "FlightDelayMin", "dayOfWeek"]
         )
 
-        pd_quantile = pd_flights.agg(["quantile", "min"], numeric_only=numeric_only)
-        ed_quantile = ed_flights.agg(["quantile", "min"], numeric_only=numeric_only)
+        if pd.__version__.split('.')[0] == '1':
+            pd_quantile = pd_flights.agg(["quantile", "min"], numeric_only=numeric_only)
+            ed_quantile = ed_flights.agg(["quantile", "min"], numeric_only=numeric_only)
+
+        else:  # numeric_only is no longer available for pandas > 2
+            pd_quantile = pd_flights.agg(["quantile", "min"])
+            ed_quantile = ed_flights.agg(["quantile", "min"])
 
         assert_frame_equal(
             pd_quantile, ed_quantile, check_exact=False, rtol=4, check_dtype=False
