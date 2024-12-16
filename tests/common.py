@@ -45,7 +45,10 @@ with gzip.open(FLIGHTS_FILE_NAME) as f:
 _pd_flights = pd.DataFrame.from_records(flight_records).reindex(
     _ed_flights.columns, axis=1
 )
-_pd_flights["timestamp"] = pd.to_datetime(_pd_flights["timestamp"], format="mixed")
+if pd.__version__.split('.')[0] == '2':
+    _pd_flights["timestamp"] = pd.to_datetime(_pd_flights["timestamp"], format="mixed")
+else:
+    _pd_flights["timestamp"] = pd.to_datetime(_pd_flights["timestamp"])
 # Mimic what copy_to in an Elasticsearch mapping would do, combining the two fields in a list
 _pd_flights["Cities"] = _pd_flights.apply(
     lambda x: list(sorted([x["OriginCityName"], x["DestCityName"]])), axis=1
