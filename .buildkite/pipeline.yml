@@ -35,10 +35,10 @@ steps:
     matrix:
       setup:
         python:
+          - '3.12'
           - '3.11'
           - '3.10'
           - '3.9'
-          - '3.8'
         stack:          
           - '8.16.0-SNAPSHOT'
           - '8.15.2'
