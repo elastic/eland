@@ -42,7 +42,7 @@ class TestSeriesMetrics(TestData):
         ed_flights = self.ed_flights()["AvgTicketPrice"]
 
         for func in self.all_funcs:
-            if pd.__version__.split('.')[0] != '1' and func == 'mad':
+            if pd.__version__.split(".")[0] != "1" and func == "mad":
                 continue
             pd_metric = getattr(pd_flights, func)()
             ed_metric = getattr(ed_flights, func)()
@@ -89,7 +89,7 @@ class TestSeriesMetrics(TestData):
             ed_ecommerce = self.ed_ecommerce()[column]
 
             for func in self.all_funcs:
-                if pd.__version__.split('.')[0] != '1' and func == 'mad':
+                if pd.__version__.split(".")[0] != "1" and func == "mad":
                     continue
                 pd_metric = getattr(pd_ecommerce, func)()
                 ed_metric = getattr(ed_ecommerce, func)(

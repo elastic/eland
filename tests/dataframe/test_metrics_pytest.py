@@ -74,7 +74,7 @@ class TestDataFrameMetrics(TestData):
         logger.setLevel(logging.DEBUG)
 
         for func in self.extended_funcs:
-            if pd.__version__.split('.')[0] != '1' and func == 'mad':
+            if pd.__version__.split(".")[0] != "1" and func == "mad":
                 continue
             pd_metric = getattr(pd_flights, func)(
                 **({"numeric_only": True} if func != "mad" else {})
@@ -94,7 +94,7 @@ class TestDataFrameMetrics(TestData):
         ed_flights_1 = ed_flights[ed_flights.FlightNum == "9HY9SWR"][["AvgTicketPrice"]]
 
         for func in self.extended_funcs:
-            if pd.__version__.split('.')[0] != '1' and func == 'mad':
+            if pd.__version__.split(".")[0] != "1" and func == "mad":
                 continue
             pd_metric = getattr(pd_flights_1, func)()
             ed_metric = getattr(ed_flights_1, func)(numeric_only=False)
@@ -495,7 +495,7 @@ class TestDataFrameMetrics(TestData):
             ["AvgTicketPrice", "FlightDelayMin", "dayOfWeek"]
         )
 
-        if pd.__version__.split('.')[0] == '1':
+        if pd.__version__.split(".")[0] == "1":
             pd_quantile = pd_flights.agg(["quantile", "min"], numeric_only=numeric_only)
             ed_quantile = ed_flights.agg(["quantile", "min"], numeric_only=numeric_only)
 

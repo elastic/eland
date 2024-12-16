@@ -36,7 +36,7 @@ class TestDataFrameDescribe(TestData):
         # Pandas >= 2 calculates aggregations such as min and max for timestamps too
         # This could be implemented in eland, but as of yet this is not the case
         # We therefore remove it before the comparison
-        if 'timestamp' in pd_describe.columns:
+        if "timestamp" in pd_describe.columns:
             pd_describe = pd_describe.drop(["timestamp"], axis="columns")
 
         # Pandas >= 2 orders the aggregations differently than Pandas < 2
