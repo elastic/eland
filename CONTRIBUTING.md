@@ -191,7 +191,7 @@ currently using a minimum version of PyCharm 2019.2.4.
 
     ``` bash
     > import eland as ed
-    > ed_df = ed.DataFrame('http://localhost:9200', 'flights')
+    > ed_df = ed.DataFrame('localhost', 'flights')
     ```
 
 * To run the automatic formatter and check for lint issues run

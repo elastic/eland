@@ -170,6 +170,7 @@ class Query:
         sort_order: str,
         size: int = 1,
     ) -> None:
+
         top_hits: Any = {}
         if sort_order:
             top_hits["sort"] = [{i: {"order": sort_order}} for i in source_columns]
