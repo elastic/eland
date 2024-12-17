@@ -144,7 +144,7 @@ def task_type_from_model_config(model_config: PretrainedConfig) -> Optional[str]
         return None
     potential_task_types: Set[str] = set()
     for architecture in model_config.architectures:
-        for substr, task_type in ARCHITECTURE_TO_TASK_TYPE.items():
+        for (substr, task_type) in ARCHITECTURE_TO_TASK_TYPE.items():
             if substr in architecture:
                 for t in task_type:
                     potential_task_types.add(t)
