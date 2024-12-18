@@ -85,16 +85,16 @@ class SymmetricAPIChecker:
 
         return f
 
-    def check_values(self, ed_obj, pd_obj):
+    def check_values(self, ed_obj, pd_obj, **kwargs):
         """Checks that any two values coming from eland and pandas are equal"""
         if isinstance(ed_obj, ed.DataFrame):
-            assert_pandas_eland_frame_equal(pd_obj, ed_obj)
+            assert_pandas_eland_frame_equal(pd_obj, ed_obj, **kwargs)
         elif isinstance(ed_obj, ed.Series):
-            assert_pandas_eland_series_equal(pd_obj, ed_obj)
+            assert_pandas_eland_series_equal(pd_obj, ed_obj, **kwargs)
         elif isinstance(ed_obj, pd.DataFrame):
-            assert_frame_equal(ed_obj, pd_obj)
+            assert_frame_equal(ed_obj, pd_obj, **kwargs)
         elif isinstance(ed_obj, pd.Series):
-            assert_series_equal(ed_obj, pd_obj)
+            assert_series_equal(ed_obj, pd_obj, **kwargs)
         elif isinstance(ed_obj, pd.Index):
             assert ed_obj.equals(pd_obj)
         else:
