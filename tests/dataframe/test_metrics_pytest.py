@@ -106,6 +106,8 @@ class TestDataFrameMetrics(TestData):
         ed_flights_0 = ed_flights[ed_flights.FlightNum == "XXX"][["AvgTicketPrice"]]
 
         for func in self.extended_funcs:
+            if pd.__version__.split(".")[0] != "1" and func == "mad":
+                continue
             pd_metric = getattr(pd_flights_0, func)()
             ed_metric = getattr(ed_flights_0, func)(numeric_only=False)
 
