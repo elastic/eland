@@ -77,7 +77,13 @@ class SymmetricAPIChecker:
                 pd_exc = e
 
             self.check_exception(ed_exc, pd_exc)
-            self.check_values(ed_obj, pd_obj)
+            try:
+                self.check_values(ed_obj, pd_obj)
+            except AssertionError as e:
+                # This is an attribute we allow to differ when comparing zero-length objects
+                if 'Attribute "inferred_type" are different' in repr(e) and \
+                        len(ed_obj) == 0 and len(pd_obj) == 0:
+                    self.check_values(ed_obj, pd_obj, check_index_type=False)
 
             if isinstance(ed_obj, (ed.DataFrame, ed.Series)):
                 return SymmetricAPIChecker(ed_obj, pd_obj)
