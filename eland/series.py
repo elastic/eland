@@ -40,6 +40,7 @@ from typing import TYPE_CHECKING, Any, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import pandas as pd  # type: ignore
+from pandas.core.indexes.frozen import FrozenList
 from pandas.io.common import _expand_user, stringify_path  # type: ignore
 
 import eland.plotting
@@ -303,7 +304,14 @@ class Series(NDFrame):
             raise TypeError("es_size must be a positive integer.")
         elif es_size <= 0:
             raise ValueError("es_size must be a positive integer.")
-        return self._query_compiler.value_counts(es_size)
+        value_counts = self._query_compiler.value_counts(es_size)
+        # https://pandas.pydata.org/docs/whatsnew/v2.0.0.html#value-counts-sets-the-resulting-name-to-count
+        if pd.__version__.split(".")[0] == "2":
+            value_counts.name = "count"
+            value_counts.index.names = FrozenList([self.es_field_name])
+            value_counts.index.name = self.es_field_name
+
+        return value_counts
 
     # dtype not implemented for Series as causes query to fail
     # in pandas.core.computation.ops.Term.type
