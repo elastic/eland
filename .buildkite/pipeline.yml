@@ -38,7 +38,7 @@ steps:
         # (in the decorators of the test method in noxfile.py)
         pandas:
           - '1.5.0'
-          - '2.2.2'
+          - '2.2.3'
         python:
           - '3.12'
           - '3.11'
