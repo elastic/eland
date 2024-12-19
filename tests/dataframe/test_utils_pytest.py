@@ -69,6 +69,12 @@ class TestDataFrameUtils(TestData):
         )
         ed_df_head = ed_df.head()
 
+        # https://pandas.pydata.org/docs/whatsnew/v2.0.0.html#construction-with-datetime64-or-timedelta64-dtype-with-unsupported-resolution
+        df["D"] = df["D"].astype("datetime64[ns]")
+        df["H"] = (
+            df["H"].dt.tz_localize(None).astype("datetime64[ns]").dt.tz_localize("UTC")
+        )
+
         assert_pandas_eland_frame_equal(df, ed_df_head)
 
         ES_TEST_CLIENT.indices.delete(index=index_name)
