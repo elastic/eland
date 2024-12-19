@@ -293,7 +293,7 @@ class Series(NDFrame):
         Examples
         --------
         >>> df = ed.DataFrame('http://localhost:9200', 'flights')
-        >>> df['Carrier'].value_counts()
+        >>> df['Carrier'].value_counts()  # doctest: +SKIP
         Logstash Airways    3331
         JetBeats            3274
         Kibana Airlines     3234

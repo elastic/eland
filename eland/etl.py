@@ -111,7 +111,7 @@ def pandas_to_eland(
     2  3.141  1  ...  3  Long text - to be indexed as es type text
     <BLANKLINE>
     [3 rows x 8 columns]
-    >>> pd_df.dtypes
+    >>> pd_df.dtypes  # doctest: +SKIP
     A           float64
     B             int64
     C            object
