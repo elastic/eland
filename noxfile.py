@@ -61,7 +61,7 @@ def format(session):
     session.install("black", "isort", "flynt")
     session.run("python", "utils/license-headers.py", "fix", *SOURCE_FILES)
     session.run("flynt", *SOURCE_FILES)
-    session.run("black", "--target-version=py38", *SOURCE_FILES)
+    session.run("black", "--target-version=py39", *SOURCE_FILES)
     session.run("isort", "--profile=black", *SOURCE_FILES)
     lint(session)
 
@@ -73,7 +73,7 @@ def lint(session):
     session.install("black", "flake8", "mypy", "isort", "numpy")
     session.install(".")
     session.run("python", "utils/license-headers.py", "check", *SOURCE_FILES)
-    session.run("black", "--check", "--target-version=py38", *SOURCE_FILES)
+    session.run("black", "--check", "--target-version=py39", *SOURCE_FILES)
     session.run("isort", "--check", "--profile=black", *SOURCE_FILES)
     session.run("flake8", "--extend-ignore=E203,E402,E501,E704,E712", *SOURCE_FILES)
 
@@ -100,8 +100,8 @@ def lint(session):
             session.error("\n" + "\n".join(sorted(set(errors))))
 
 
-@nox.session(python=["3.8", "3.9", "3.10", "3.11"])
-@nox.parametrize("pandas_version", ["1.5.0"])
+@nox.session(python=["3.9", "3.10", "3.11", "3.12"])
+@nox.parametrize("pandas_version", ["1.5.0", "2.2.3"])
 def test(session, pandas_version: str):
     session.install("-r", "requirements-dev.txt")
     session.install(".")

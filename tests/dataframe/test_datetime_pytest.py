@@ -87,6 +87,8 @@ class TestDataFrameDateTime(TestData):
             },
             index=["0", "1", "2"],
         )
+        # https://pandas.pydata.org/docs/whatsnew/v2.0.0.html#construction-with-datetime64-or-timedelta64-dtype-with-unsupported-resolution
+        df["D"] = df["D"].astype("datetime64[ns]")
 
         expected_mappings = {
             "mappings": {

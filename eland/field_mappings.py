@@ -712,7 +712,7 @@ class FieldMappings:
             capabilities, orient="index", columns=FieldMappings.column_labels
         )
 
-        self._mappings_capabilities = self._mappings_capabilities.append(
+        self._mappings_capabilities = self._mappings_capabilities._append(  # noqa
             capability_matrix_row
         )
 
