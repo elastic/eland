@@ -16,6 +16,7 @@
 #  under the License.
 
 import csv
+import warnings
 from collections import deque
 from typing import Any, Dict, Generator, List, Mapping, Optional, Tuple, Union
 
@@ -307,9 +308,9 @@ def csv_to_eland(  # type: ignore
     names=None,
     index_col=None,
     usecols=None,
-    squeeze=False,
+    squeeze=None,
     prefix=None,
-    mangle_dupe_cols=True,
+    mangle_dupe_cols=None,
     # General Parsing Configuration
     dtype=None,
     engine=None,
@@ -357,6 +358,7 @@ def csv_to_eland(  # type: ignore
     low_memory: bool = _DEFAULT_LOW_MEMORY,
     memory_map=False,
     float_precision=None,
+    **extra_kwargs,
 ) -> "DataFrame":
     """
     Read a comma-separated values (csv) file into eland.DataFrame (i.e. an Elasticsearch index).
@@ -485,7 +487,6 @@ def csv_to_eland(  # type: ignore
         "usecols": usecols,
         "verbose": verbose,
         "encoding": encoding,
-        "squeeze": squeeze,
         "memory_map": memory_map,
         "float_precision": float_precision,
         "na_filter": na_filter,
@@ -494,9 +495,9 @@ def csv_to_eland(  # type: ignore
         "error_bad_lines": error_bad_lines,
         "on_bad_lines": on_bad_lines,
         "low_memory": low_memory,
-        "mangle_dupe_cols": mangle_dupe_cols,
         "infer_datetime_format": infer_datetime_format,
         "skip_blank_lines": skip_blank_lines,
+        **extra_kwargs,
     }
 
     if chunksize is None:
@@ -524,6 +525,19 @@ def csv_to_eland(  # type: ignore
             kwargs["error_bad_lines"] = True
 
         kwargs.pop("on_bad_lines")
+
+    if "squeeze" in kwargs:
+        kwargs.pop("squeeze")
+        warnings.warn(
+            "This argument no longer works, use .squeeze('columns') on your DataFrame instead"
+        )
+
+    if "mangle_dupe_cols" in kwargs:
+        kwargs.pop("mangle_dupe_cols")
+        warnings.warn(
+            "This argument no longer works. Furthermore, "
+            "duplicate columns will automatically get a number suffix."
+        )
 
     # read csv in chunks to pandas DataFrame and dump to eland DataFrame (and Elasticsearch)
     reader = pd.read_csv(filepath_or_buffer, **kwargs)
