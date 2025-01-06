@@ -2,10 +2,10 @@
 Changelog
 =========
 
-8.17.0 (2025-01-06)
+8.17.0 (2025-01-07)
 -------------------
 
-* Add text_expansion support (`#740 <https://github.com/elastic/eland/pull/740>`_)
+* Support sparse embedding models such as SPLADE-v3-DistilBERT (`#740 <https://github.com/elastic/eland/pull/740>`_)
 
 8.16.0 (2024-11-13)
 -------------------
