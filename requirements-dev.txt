@@ -10,7 +10,6 @@ pytest>=5.2.1
 pytest-mock
 pytest-cov
 nbval
-shap==0.43.0
 
 #
 # Docs
