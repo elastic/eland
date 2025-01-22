@@ -53,8 +53,8 @@ $ conda install -c conda-forge eland
 
 ### Compatibility
 
-- Supports Python 3.8, 3.9, 3.10, 3.11 and Pandas 1.5
-- Supports Elasticsearch clusters that are 7.11+, recommended 8.13 or later for all features to work.
+- Supports Python 3.9, 3.10, 3.11, 3.12 and Pandas 1.5
+- Supports Elasticsearch 8+ clusters, recommended 8.16 or later for all features to work.
   If you are using the NLP with PyTorch feature make sure your Eland minor version matches the minor 
   version of your Elasticsearch cluster. For all other features it is sufficient for the major versions
   to match.

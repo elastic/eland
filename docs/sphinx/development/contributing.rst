@@ -200,7 +200,7 @@ Configuring PyCharm And Running Tests
 - To test specific versions of Python run
    .. code-block:: bash
 
-      nox -s test-3.8
+      nox -s test-3.12
 
 
 Documentation
