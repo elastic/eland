@@ -321,11 +321,11 @@ class Query:
             body["query"] = self._query.build()
         return body
 
-    def to_count_body(self) -> Optional[Dict[str, Any]]:
+    def to_count_body(self) -> Dict[str, Any]:
         if len(self._aggs) > 0:
             warnings.warn(f"Requesting count for agg query {self}")
         if self._query.empty():
-            return None
+            return {}
         else:
             return {"query": self._query.build()}
 
