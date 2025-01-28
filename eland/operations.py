@@ -42,6 +42,7 @@ from eland.common import (
     DEFAULT_PIT_KEEP_ALIVE,
     DEFAULT_PROGRESS_REPORTING_NUM_ROWS,
     DEFAULT_SEARCH_SIZE,
+    PANDAS_VERSION,
     SortOrder,
     build_pd_series,
     elasticsearch_date_to_pandas_date,
@@ -1273,7 +1274,7 @@ class Operations:
             for i, df in enumerate(
                 self.search_yield_pandas_dataframes(query_compiler=query_compiler)
             ):
-                if pd.__version__.split(".")[0] == "2":
+                if PANDAS_VERSION[0] == 2:
                     kwargs["index"] = False
                 output = df.to_json(
                     orient=orient,

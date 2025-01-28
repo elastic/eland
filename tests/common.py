@@ -24,6 +24,7 @@ import pandas as pd
 from pandas.testing import assert_frame_equal, assert_series_equal
 
 import eland as ed
+from eland.common import PANDAS_VERSION
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -45,7 +46,7 @@ with gzip.open(FLIGHTS_FILE_NAME) as f:
 _pd_flights = pd.DataFrame.from_records(flight_records).reindex(
     _ed_flights.columns, axis=1
 )
-if pd.__version__.split(".")[0] == "2":
+if PANDAS_VERSION[0] == 2:
     _pd_flights["timestamp"] = pd.to_datetime(_pd_flights["timestamp"], format="mixed")
 else:
     _pd_flights["timestamp"] = pd.to_datetime(_pd_flights["timestamp"])
