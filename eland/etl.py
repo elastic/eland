@@ -112,14 +112,14 @@ def pandas_to_eland(
     <BLANKLINE>
     [3 rows x 8 columns]
     >>> pd_df.dtypes  # doctest: +SKIP
-    A           float64
-    B             int64
-    C            object
-    D    datetime64[ns]
-    E           float64
-    F              bool
-    G             int64
-    H            object
+    A          float64
+    B            int64
+    C           object
+    D    datetime64[s]
+    E          float64
+    F             bool
+    G            int64
+    H           object
     dtype: object
 
     Convert `pandas.DataFrame` to `eland.DataFrame` - this creates an Elasticsearch index called `pandas_to_eland`.
