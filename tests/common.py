@@ -46,7 +46,7 @@ with gzip.open(FLIGHTS_FILE_NAME) as f:
 _pd_flights = pd.DataFrame.from_records(flight_records).reindex(
     _ed_flights.columns, axis=1
 )
-if PANDAS_VERSION[0] == 2:
+if PANDAS_VERSION[0] >= 2:
     _pd_flights["timestamp"] = pd.to_datetime(_pd_flights["timestamp"], format="mixed")
 else:
     _pd_flights["timestamp"] = pd.to_datetime(_pd_flights["timestamp"])

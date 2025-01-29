@@ -1274,7 +1274,7 @@ class Operations:
             for i, df in enumerate(
                 self.search_yield_pandas_dataframes(query_compiler=query_compiler)
             ):
-                if PANDAS_VERSION[0] == 2:
+                if PANDAS_VERSION[0] >= 2:
                     kwargs["index"] = False
                 output = df.to_json(
                     orient=orient,
