@@ -535,10 +535,9 @@ def csv_to_eland(  # type: ignore
     if "mangle_dupe_cols" in kwargs:
         kwargs.pop("mangle_dupe_cols")
         warnings.warn(
-            "This argument no longer works. Furthermore, "
+            "The mangle_dupe_cols argument no longer works. Furthermore, "
             "duplicate columns will automatically get a number suffix."
         )
-
     # read csv in chunks to pandas DataFrame and dump to eland DataFrame (and Elasticsearch)
     reader = pd.read_csv(filepath_or_buffer, **kwargs)
 
