@@ -24,6 +24,7 @@ import pandas as pd
 from pandas.testing import assert_frame_equal, assert_series_equal
 
 import eland as ed
+from eland.common import PANDAS_VERSION
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -45,7 +46,10 @@ with gzip.open(FLIGHTS_FILE_NAME) as f:
 _pd_flights = pd.DataFrame.from_records(flight_records).reindex(
     _ed_flights.columns, axis=1
 )
-_pd_flights["timestamp"] = pd.to_datetime(_pd_flights["timestamp"])
+if PANDAS_VERSION[0] >= 2:
+    _pd_flights["timestamp"] = pd.to_datetime(_pd_flights["timestamp"], format="mixed")
+else:
+    _pd_flights["timestamp"] = pd.to_datetime(_pd_flights["timestamp"])
 # Mimic what copy_to in an Elasticsearch mapping would do, combining the two fields in a list
 _pd_flights["Cities"] = _pd_flights.apply(
     lambda x: list(sorted([x["OriginCityName"], x["DestCityName"]])), axis=1
@@ -62,7 +66,7 @@ _pd_ecommerce["products.created_on"] = _pd_ecommerce["products.created_on"].appl
 )
 _pd_ecommerce.insert(2, "customer_birth_date", None)
 _pd_ecommerce.index = _pd_ecommerce.index.map(str)  # make index 'object' not int
-_pd_ecommerce["customer_birth_date"].astype("datetime64")
+_pd_ecommerce["customer_birth_date"].astype("datetime64[ns]")
 _ed_ecommerce = ed.DataFrame(ES_TEST_CLIENT, ECOMMERCE_INDEX_NAME)
 
 
