@@ -1375,7 +1375,7 @@ class DataFrame(NDFrame):
         :pandas_api_docs:`pandas.DataFrame.to_json`
         """
         if index is None and PANDAS_VERSION[0] == 1:
-            index = True
+            index = True  # switch to the pandas 1 default
         kwargs = {
             "path_or_buf": path_or_buf,
             "orient": orient,
