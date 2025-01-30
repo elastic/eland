@@ -712,7 +712,10 @@ class FieldMappings:
             capabilities, orient="index", columns=FieldMappings.column_labels
         )
 
-        self._mappings_capabilities = self._mappings_capabilities._append(  # noqa
+        self._mappings_capabilities = pd.concat(
+            self._mappings_capabilities, 
+            capability_matrix_row,
+        )
             capability_matrix_row
         )
 
