@@ -34,7 +34,7 @@ from pandas.io.formats.printing import pprint_thing  # type: ignore
 from pandas.util._validators import validate_bool_kwarg  # type: ignore
 
 import eland.plotting as gfx
-from eland.common import DEFAULT_NUM_ROWS_DISPLAYED, docstring_parameter
+from eland.common import DEFAULT_NUM_ROWS_DISPLAYED, PANDAS_VERSION, docstring_parameter
 from eland.filter import BooleanFilter
 from eland.groupby import DataFrameGroupBy
 from eland.ndframe import NDFrame
@@ -1359,7 +1359,7 @@ class DataFrame(NDFrame):
         default_handler=None,
         lines=False,
         compression="infer",
-        index=True,
+        index=None,
         indent=None,
         storage_options=None,
     ):
@@ -1374,6 +1374,8 @@ class DataFrame(NDFrame):
         --------
         :pandas_api_docs:`pandas.DataFrame.to_json`
         """
+        if index is None and PANDAS_VERSION[0] == 1:
+            index = True
         kwargs = {
             "path_or_buf": path_or_buf,
             "orient": orient,
