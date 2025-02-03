@@ -17,6 +17,7 @@
       ~MLModel.delete_model
       ~MLModel.exists_model
       ~MLModel.export_model
+      ~MLModel.import_ltr_model
       ~MLModel.import_model
       ~MLModel.predict
    

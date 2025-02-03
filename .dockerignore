@@ -1,5 +1,4 @@
 # docs and example
-docs/*
 example/*
 
 # Git
@@ -17,9 +16,6 @@ dist/
 
 # Build folder
 build/
-
-# docs
-docs/*
 
 # pytest results
 tests/dataframe/results/*csv
