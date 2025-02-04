@@ -309,7 +309,7 @@ def elasticsearch_date_to_pandas_date(
 
 
 def ensure_es_client(
-    es_client: Union[str, List[str], Tuple[str, ...], Elasticsearch]
+    es_client: Union[str, List[str], Tuple[str, ...], Elasticsearch],
 ) -> Elasticsearch:
     if isinstance(es_client, tuple):
         es_client = list(es_client)
