@@ -140,7 +140,6 @@ def test(session, pandas_version: str):
             "scikit-learn",
             "xgboost",
             "lightgbm",
-            "shap",
         )
         session.run("pytest", "tests/ml/")
 
