@@ -58,7 +58,9 @@ class TestSeriesFilter(TestData):
         ed_ser = ed_flights_small.filter(items=items, axis=0)
         pd_ser = pd_flights_small.filter(items=items, axis=0)
 
-        assert_pandas_eland_series_equal(pd_ser, ed_ser)
+        # For an empty Series, eland will say the datatype it knows from the Elastic index
+        # Pandas however will state empty as the datatype
+        assert_pandas_eland_series_equal(pd_ser, ed_ser, check_index_type=False)
 
     def test_flights_filter_index_like_and_regex(self):
         ed_flights_small = self.ed_flights_small()["FlightDelayType"]
