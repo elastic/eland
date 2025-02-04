@@ -15,7 +15,7 @@ steps:
       machineType: "n2-standard-2"
     commands:
       - ./.buildkite/build-documentation.sh
-  - label: ":docker: Build docker image {{ matrix.platform }}"
+  - label: ":docker: Build Wolfi image"
     env:
       PYTHON_VERSION: 3.11-bookworm
     agents:
