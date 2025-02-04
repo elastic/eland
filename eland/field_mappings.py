@@ -712,8 +712,11 @@ class FieldMappings:
             capabilities, orient="index", columns=FieldMappings.column_labels
         )
 
-        self._mappings_capabilities = self._mappings_capabilities.append(
-            capability_matrix_row
+        self._mappings_capabilities = pd.concat(
+            [
+                self._mappings_capabilities,
+                capability_matrix_row,
+            ]
         )
 
     def numeric_source_fields(self) -> List[str]:

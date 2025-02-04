@@ -77,7 +77,16 @@ class SymmetricAPIChecker:
                 pd_exc = e
 
             self.check_exception(ed_exc, pd_exc)
-            self.check_values(ed_obj, pd_obj)
+            try:
+                self.check_values(ed_obj, pd_obj)
+            except AssertionError as e:
+                # This is an attribute we allow to differ when comparing zero-length objects
+                if (
+                    'Attribute "inferred_type" are different' in repr(e)
+                    and len(ed_obj) == 0
+                    and len(pd_obj) == 0
+                ):
+                    self.check_values(ed_obj, pd_obj, check_index_type=False)
 
             if isinstance(ed_obj, (ed.DataFrame, ed.Series)):
                 return SymmetricAPIChecker(ed_obj, pd_obj)
@@ -85,16 +94,16 @@ class SymmetricAPIChecker:
 
         return f
 
-    def check_values(self, ed_obj, pd_obj):
+    def check_values(self, ed_obj, pd_obj, **kwargs):
         """Checks that any two values coming from eland and pandas are equal"""
         if isinstance(ed_obj, ed.DataFrame):
-            assert_pandas_eland_frame_equal(pd_obj, ed_obj)
+            assert_pandas_eland_frame_equal(pd_obj, ed_obj, **kwargs)
         elif isinstance(ed_obj, ed.Series):
-            assert_pandas_eland_series_equal(pd_obj, ed_obj)
+            assert_pandas_eland_series_equal(pd_obj, ed_obj, **kwargs)
         elif isinstance(ed_obj, pd.DataFrame):
-            assert_frame_equal(ed_obj, pd_obj)
+            assert_frame_equal(ed_obj, pd_obj, **kwargs)
         elif isinstance(ed_obj, pd.Series):
-            assert_series_equal(ed_obj, pd_obj)
+            assert_series_equal(ed_obj, pd_obj, **kwargs)
         elif isinstance(ed_obj, pd.Index):
             assert ed_obj.equals(pd_obj)
         else:

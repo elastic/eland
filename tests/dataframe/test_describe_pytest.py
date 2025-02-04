@@ -33,9 +33,17 @@ class TestDataFrameDescribe(TestData):
             ["Cancelled", "FlightDelay"], axis="columns"
         )
 
+        # Pandas >= 2 calculates aggregations such as min and max for timestamps too
+        # This could be implemented in eland, but as of yet this is not the case
+        # We therefore remove it before the comparison
+        if "timestamp" in pd_describe.columns:
+            pd_describe = pd_describe.drop(["timestamp"], axis="columns")
+
+        # Pandas >= 2 orders the aggregations differently than Pandas < 2
+        # A sort_index is applied so tests will succeed in both environments
         assert_frame_equal(
-            pd_describe.drop(["25%", "50%", "75%"], axis="index"),
-            ed_describe.drop(["25%", "50%", "75%"], axis="index"),
+            pd_describe.drop(["25%", "50%", "75%"], axis="index").sort_index(),
+            ed_describe.drop(["25%", "50%", "75%"], axis="index").sort_index(),
             check_exact=False,
             rtol=True,
         )
