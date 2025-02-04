@@ -42,7 +42,6 @@ from eland.common import (
     DEFAULT_PIT_KEEP_ALIVE,
     DEFAULT_PROGRESS_REPORTING_NUM_ROWS,
     DEFAULT_SEARCH_SIZE,
-    PANDAS_VERSION,
     SortOrder,
     build_pd_series,
     elasticsearch_date_to_pandas_date,
