@@ -570,7 +570,7 @@ class _TraceableTextEmbeddingModel(_TransformerTraceableModel):
     def _prepare_inputs(self) -> transformers.BatchEncoding:
         return self._tokenizer(
             "This is an example sentence.",
-            padding="max_length",
+            padding="longest",
             return_tensors="pt",
         )
 
@@ -759,7 +759,7 @@ class TransformerModel:
         # a random or very large value.
         REASONABLE_MAX_LENGTH = 8192
         max_len = getattr(self._tokenizer, "model_max_length", None)
-        if max_len is not None and max_len < REASONABLE_MAX_LENGTH:
+        if max_len is not None and max_len <= REASONABLE_MAX_LENGTH:
             return int(max_len)
 
         max_sizes = getattr(self._tokenizer, "max_model_input_sizes", dict())
