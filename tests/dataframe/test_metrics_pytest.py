@@ -22,6 +22,7 @@ import pandas as pd
 import pytest
 from pandas.testing import assert_frame_equal, assert_series_equal
 
+from eland.common import PANDAS_VERSION
 from tests.common import TestData, assert_almost_equal
 
 
@@ -74,6 +75,8 @@ class TestDataFrameMetrics(TestData):
         logger.setLevel(logging.DEBUG)
 
         for func in self.extended_funcs:
+            if PANDAS_VERSION[0] >= 2 and func == "mad":
+                continue
             pd_metric = getattr(pd_flights, func)(
                 **({"numeric_only": True} if func != "mad" else {})
             )
@@ -92,6 +95,8 @@ class TestDataFrameMetrics(TestData):
         ed_flights_1 = ed_flights[ed_flights.FlightNum == "9HY9SWR"][["AvgTicketPrice"]]
 
         for func in self.extended_funcs:
+            if PANDAS_VERSION[0] >= 2 and func == "mad":
+                continue
             pd_metric = getattr(pd_flights_1, func)()
             ed_metric = getattr(ed_flights_1, func)(numeric_only=False)
 
@@ -102,6 +107,8 @@ class TestDataFrameMetrics(TestData):
         ed_flights_0 = ed_flights[ed_flights.FlightNum == "XXX"][["AvgTicketPrice"]]
 
         for func in self.extended_funcs:
+            if PANDAS_VERSION[0] >= 2 and func == "mad":
+                continue
             pd_metric = getattr(pd_flights_0, func)()
             ed_metric = getattr(ed_flights_0, func)(numeric_only=False)
 
@@ -491,8 +498,13 @@ class TestDataFrameMetrics(TestData):
             ["AvgTicketPrice", "FlightDelayMin", "dayOfWeek"]
         )
 
-        pd_quantile = pd_flights.agg(["quantile", "min"], numeric_only=numeric_only)
-        ed_quantile = ed_flights.agg(["quantile", "min"], numeric_only=numeric_only)
+        if PANDAS_VERSION[0] == 1:
+            pd_quantile = pd_flights.agg(["quantile", "min"], numeric_only=numeric_only)
+            ed_quantile = ed_flights.agg(["quantile", "min"], numeric_only=numeric_only)
+
+        else:  # numeric_only is no longer available for pandas > 2
+            pd_quantile = pd_flights.agg(["quantile", "min"])
+            ed_quantile = ed_flights.agg(["quantile", "min"])
 
         assert_frame_equal(
             pd_quantile, ed_quantile, check_exact=False, rtol=4, check_dtype=False
