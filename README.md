@@ -53,8 +53,8 @@ $ conda install -c conda-forge eland
 
 ### Compatibility
 
-- Supports Python 3.8, 3.9, 3.10, 3.11 and Pandas 1.5
-- Supports Elasticsearch clusters that are 7.11+, recommended 8.13 or later for all features to work.
+- Supports Python 3.9, 3.10, 3.11, 3.12 and Pandas 1.5
+- Supports Elasticsearch 8+ clusters, recommended 8.16 or later for all features to work.
   If you are using the NLP with PyTorch feature make sure your Eland minor version matches the minor 
   version of your Elasticsearch cluster. For all other features it is sufficient for the major versions
   to match.
@@ -277,15 +277,3 @@ Downloading: 100%|██████████| 249M/249M [00:23<00:00, 11.2MB
 >>> ptm.import_model(model_path=model_path, config_path=None, vocab_path=vocab_path, config=config)
 100%|██████████| 63/63 [00:12<00:00,  5.02it/s]
 ```
-
-## Feedback 🗣️
-
-The engineering team here at Elastic is looking for developers to participate in
-research and feedback sessions to learn more about how you use Eland and what
-improvements we can make to their design and your workflow. If you're interested
-in sharing your insights into developer experience and language client design,
-please fill out this [short form](https://forms.gle/bYZwDQXijfhfwshn9).
-Depending on the number of responses we get, we may either contact you for a 1:1
-conversation or a focus group with other developers who use the same client.
-Thank you in advance - your feedback is crucial to improving the user experience
-for all Elasticsearch developers!

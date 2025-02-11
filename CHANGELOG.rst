@@ -2,11 +2,38 @@
 Changelog
 =========
 
+8.17.0 (2025-01-07)
+-------------------
+
+* Support sparse embedding models such as SPLADE-v3-DistilBERT (`#740 <https://github.com/elastic/eland/pull/740>`_)
+
+8.16.0 (2024-11-13)
+-------------------
+
+* Add deprecation warning for ESGradientBoostingModel subclasses (`#738 <https://github.com/elastic/eland/pull/738>`_)
+
+8.15.4 (2024-10-17)
+-------------------
+
+* Revert "Allow reading Elasticsearch certs in Wolfi image" (`#734 <https://github.com/elastic/eland/pull/734>`_)
+
+8.15.3 (2024-10-09)
+-------------------
+
+* Added support for DeBERTa-V2 tokenizer (`#717 <https://github.com/elastic/eland/pull/717>`_)
+* Fixed ``--ca-cert`` with a shared Elasticsearch Docker volume (`#732 <https://github.com/elastic/eland/pull/732>`_)
+
+8.15.2 (2024-10-02)
+-------------------
+
+* Fixed Docker image build (`#728 <https://github.com/elastic/eland/pull/728>`_)
+
 8.15.1 (2024-10-01)
 -------------------
 
-* Upgrade PyTorch to version 2.3.1, which is compatible with Elasticsearch 8.15.2 or above
-* Migrate to distroless Wolfi base Docker image
+* Upgraded PyTorch to version 2.3.1, which is compatible with Elasticsearch 8.15.2 or above (`#718 <https://github.com/elastic/eland/pull/718>`_)
+* Migrated to distroless Wolfi base Docker image (`#720 <https://github.com/elastic/eland/pull/720>`_)
+
 
 8.15.0 (2024-08-12)
 -------------------

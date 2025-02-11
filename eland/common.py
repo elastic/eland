@@ -52,6 +52,10 @@ PANDAS_VERSION: Tuple[int, ...] = tuple(
 _ELAND_MAJOR_VERSION = int(_eland_version.split(".")[0])
 
 
+class ElandDeprecationWarning(DeprecationWarning):
+    """Warning for deprecation functionality in Eland"""
+
+
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
     EMPTY_SERIES_DTYPE = pd.Series().dtype
@@ -305,7 +309,7 @@ def elasticsearch_date_to_pandas_date(
 
 
 def ensure_es_client(
-    es_client: Union[str, List[str], Tuple[str, ...], Elasticsearch]
+    es_client: Union[str, List[str], Tuple[str, ...], Elasticsearch],
 ) -> Elasticsearch:
     if isinstance(es_client, tuple):
         es_client = list(es_client)

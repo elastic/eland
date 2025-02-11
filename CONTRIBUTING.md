@@ -169,7 +169,7 @@ currently using a minimum version of PyCharm 2019.2.4.
 * Setup Elasticsearch instance with docker
 
     ``` bash
-    > ELASTICSEARCH_VERSION=elasticsearch:8.x-SNAPSHOT BUILDKITE=false .buildkite/run-elasticsearch.sh
+    > ELASTICSEARCH_VERSION=elasticsearch:8.17.0 BUILDKITE=false .buildkite/run-elasticsearch.sh
     ```
 
 * Now check `http://localhost:9200`
@@ -203,7 +203,7 @@ currently using a minimum version of PyCharm 2019.2.4.
 * To test specific versions of Python run
 
     ``` bash
-    > nox -s test-3.8
+    > nox -s test-3.12
     ```
 
 ### Documentation
