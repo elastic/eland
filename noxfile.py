@@ -58,7 +58,7 @@ TYPED_FILES = (
 
 @nox.session(reuse_venv=True, python="3.11")
 def format(session):
-    session.install("black", "isort", "flynt")
+    session.install("black ~= 25.0", "isort", "flynt")
     session.run("python", "utils/license-headers.py", "fix", *SOURCE_FILES)
     session.run("flynt", *SOURCE_FILES)
     session.run("black", "--target-version=py39", *SOURCE_FILES)
@@ -70,7 +70,7 @@ def format(session):
 def lint(session):
     # Install numpy to use its mypy plugin
     # https://numpy.org/devdocs/reference/typing.html#mypy-plugin
-    session.install("black", "flake8", "mypy", "isort", "numpy")
+    session.install("black ~= 25.0", "flake8", "mypy", "isort", "numpy")
     session.install(".")
     session.run("python", "utils/license-headers.py", "check", *SOURCE_FILES)
     session.run("black", "--check", "--target-version=py39", *SOURCE_FILES)
@@ -101,7 +101,7 @@ def lint(session):
 
 
 @nox.session(python=["3.9", "3.10", "3.11", "3.12"])
-@nox.parametrize("pandas_version", ["1.5.0"])
+@nox.parametrize("pandas_version", ["1.5.0", "2.2.3"])
 def test(session, pandas_version: str):
     session.install("-r", "requirements-dev.txt")
     session.install(".")
@@ -140,7 +140,6 @@ def test(session, pandas_version: str):
             "scikit-learn",
             "xgboost",
             "lightgbm",
-            "shap",
         )
         session.run("pytest", "tests/ml/")
 

@@ -29,11 +29,16 @@ steps:
       machineType: "n2-standard-4"
     env:
       PYTHON_VERSION: "{{ matrix.python }}"
-      PANDAS_VERSION: '1.5.0'
+      PANDAS_VERSION: "{{ matrix.pandas }}"
       TEST_SUITE: "xpack"
       ELASTICSEARCH_VERSION: "{{ matrix.stack }}"
     matrix:
       setup:
+        # Python and pandas versions need to be added to the nox configuration too
+        # (in the decorators of the test method in noxfile.py)
+        pandas:
+          - '1.5.0'
+          - '2.2.3'
         python:
           - '3.12'
           - '3.11'

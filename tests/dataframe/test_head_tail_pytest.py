@@ -99,7 +99,7 @@ class TestDataFrameHeadTail(TestData):
 
         ed_head_0 = ed_flights.head(0)
         pd_head_0 = pd_flights.head(0)
-        assert_pandas_eland_frame_equal(pd_head_0, ed_head_0)
+        assert_pandas_eland_frame_equal(pd_head_0, ed_head_0, check_index_type=False)
 
     def test_doc_test_tail(self):
         df = self.ed_flights()
