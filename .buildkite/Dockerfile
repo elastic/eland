@@ -4,6 +4,7 @@ FROM python:${PYTHON_VERSION}
 ENV FORCE_COLOR=1
 
 WORKDIR /code/eland
-RUN python -m pip install nox
+# https://github.com/wntrblm/nox/issues/930
+RUN python -m pip install nox==2024.10.09
 
 COPY . .
