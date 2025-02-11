@@ -23,7 +23,7 @@ steps:
       machineType: "n2-standard-2"
     commands:
       - ./.buildkite/build-docker-images.sh
-  - label: "Eland :python: {{ matrix.python }} :elasticsearch: {{ matrix.stack }}"
+  - label: "Eland :python: {{ matrix.python }} :elasticsearch: {{ matrix.stack }} :pandas: {{ matrix.pandas }}"
     agents:
       provider: "gcp"
       machineType: "n2-standard-4"
