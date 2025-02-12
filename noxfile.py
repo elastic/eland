@@ -16,7 +16,6 @@
 #  under the License.
 
 import os
-import subprocess
 from pathlib import Path
 
 import nox
@@ -78,26 +77,22 @@ def lint(session):
     session.run("flake8", "--extend-ignore=E203,E402,E501,E704,E712", *SOURCE_FILES)
 
     # TODO: When all files are typed we can change this to .run("mypy", "--strict", "eland/")
-    session.log("mypy --show-error-codes --strict eland/")
-    for typed_file in TYPED_FILES:
-        if not os.path.isfile(typed_file):
-            session.error(f"The file {typed_file!r} couldn't be found")
-        process = subprocess.run(
-            ["mypy", "--show-error-codes", "--strict", typed_file],
-            env=session.env,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-        )
-        # Ensure that mypy itself ran successfully
-        assert process.returncode in (0, 1)
+    stdout = session.run(
+        "mypy",
+        "--show-error-codes",
+        "--strict",
+        *TYPED_FILES,
+        success_codes=(0, 1),
+        silent=True,
+    )
 
-        errors = []
-        for line in process.stdout.decode().split("\n"):
-            filepath = line.partition(":")[0]
-            if filepath in TYPED_FILES:
-                errors.append(line)
-        if errors:
-            session.error("\n" + "\n".join(sorted(set(errors))))
+    errors = []
+    for line in stdout.splitlines():
+        filepath = line.partition(":")[0]
+        if filepath in TYPED_FILES:
+            errors.append(line)
+    if errors:
+        session.error("\n" + "\n".join(sorted(set(errors))))
 
 
 @nox.session(python=["3.9", "3.10", "3.11", "3.12"])
