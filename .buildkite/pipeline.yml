@@ -15,7 +15,7 @@ steps:
       machineType: "n2-standard-2"
     commands:
       - ./.buildkite/build-documentation.sh
-  - label: ":docker: Build docker image {{ matrix.platform }}"
+  - label: ":docker: Build Wolfi image"
     env:
       PYTHON_VERSION: 3.11-bookworm
     agents:
@@ -23,7 +23,7 @@ steps:
       machineType: "n2-standard-2"
     commands:
       - ./.buildkite/build-docker-images.sh
-  - label: "Eland :python: {{ matrix.python }} :elasticsearch: {{ matrix.stack }}"
+  - label: ":python: {{ matrix.python }} :elasticsearch: {{ matrix.stack }} :pandas: {{ matrix.pandas }}"
     agents:
       provider: "gcp"
       machineType: "n2-standard-4"
