@@ -187,7 +187,7 @@ class ESGradientBoostingModel(ABC):
             if field_name in feature_names and field_name not in input_field_names:
                 input_field_names.add(field_name)
 
-        return feature_names, input_field_names
+        return feature_names, list(input_field_names)
 
     @property
     def preprocessors(self) -> List[Any]:
