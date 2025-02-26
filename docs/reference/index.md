@@ -1,33 +1,36 @@
-[[overview]]
-== Overview
+---
+mapped_pages:
+  - https://www.elastic.co/guide/en/elasticsearch/client/eland/current/index.html
+  - https://www.elastic.co/guide/en/elasticsearch/client/eland/current/overview.html
+navigation_title: Eland
+---
 
-Eland is a Python client and toolkit for DataFrames and {ml} in {es}.
-Full documentation is available on https://eland.readthedocs.io[Read the Docs].
-Source code is available on https://github.com/elastic/eland[GitHub].
+# Eland Python client [overview]
 
-[discrete]
-=== Compatibility
+Eland is a Python client and toolkit for DataFrames and {{ml}} in {{es}}. Full documentation is available on [Read the Docs](https://eland.readthedocs.io). Source code is available on [GitHub](https://github.com/elastic/eland).
 
-- Supports Python 3.9+ and Pandas 1.5
-- Supports {es} 8+ clusters, recommended 8.16 or later for all features to work.
-  Make sure your Eland major version matches the major version of your Elasticsearch cluster.
 
-The recommended way to set your requirements in your `setup.py` or
-`requirements.txt` is::
+## Compatibility [_compatibility]
 
-    # Elasticsearch 8.x
-    eland>=8,<9
+* Supports Python 3.9+ and Pandas 1.5
+* Supports {{es}} 8+ clusters, recommended 8.16 or later for all features to work. Make sure your Eland major version matches the major version of your Elasticsearch cluster.
 
-    # Elasticsearch 7.x
-    eland>=7,<8
+The recommended way to set your requirements in your `setup.py` or `requirements.txt` is::
 
-[discrete]
-=== Getting Started
+```
+# Elasticsearch 8.x
+eland>=8,<9
+```
+```
+# Elasticsearch 7.x
+eland>=7,<8
+```
 
-Create a `DataFrame` object connected to an {es} cluster running on `http://localhost:9200`:
+## Getting Started [_getting_started]
 
-[source,python]
-------------------------------------
+Create a `DataFrame` object connected to an {{es}} cluster running on `http://localhost:9200`:
+
+```python
 >>> import eland as ed
 >>> df = ed.DataFrame(
 ...    es_client="http://localhost:9200",
@@ -48,15 +51,14 @@ Create a `DataFrame` object connected to an {es} cluster running on `http://loca
 13058      858.144337      False  ...         6 2018-02-11 14:54:34
 
 [13059 rows x 27 columns]
-------------------------------------
+```
 
-[discrete]
-==== Elastic Cloud
+
+### Elastic Cloud [_elastic_cloud]
 
 You can also connect Eland to an Elasticsearch instance in Elastic Cloud:
 
-[source,python]
-------------------------------------
+```python
 >>> import eland as ed
 >>> from elasticsearch import Elasticsearch
 
@@ -73,16 +75,16 @@ You can also connect Eland to an Elasticsearch instance in Elastic Cloud:
 3          181.694216       True  ...         0 2018-01-01 10:33:28
 4          730.041778      False  ...         0 2018-01-01 05:13:00
 [5 rows x 27 columns]
-------------------------------------
+```
 
 Eland can be used for complex queries and aggregations:
 
-[source,python]
-------------------------------------
+```python
 >>> df[df.Carrier != "Kibana Airlines"].groupby("Carrier").mean(numeric_only=False)
                   AvgTicketPrice  Cancelled                     timestamp
-Carrier                                                                  
+Carrier
 ES-Air                630.235816   0.129814 2018-01-21 20:45:00.200000000
 JetBeats              627.457373   0.134698 2018-01-21 14:43:18.112400635
 Logstash Airways      624.581974   0.125188 2018-01-21 16:14:50.711798340
-------------------------------------
+```
+
