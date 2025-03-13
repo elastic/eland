@@ -65,7 +65,7 @@ extras = {
         "sentence-transformers>=2.1.0,<=2.7.0",
         # sentencepiece is a required dependency for the slow tokenizers
         # https://huggingface.co/transformers/v4.4.2/migration.html#sentencepiece-is-removed-from-the-required-dependencies
-        "transformers[sentencepiece]>=4.31.0,<4.44.0",
+        "transformers[sentencepiece]>=4.47.0",
     ],
 }
 extras["all"] = list({dep for deps in extras.values() for dep in deps})
@@ -87,7 +87,7 @@ setup(
     packages=find_packages(include=["eland", "eland.*"]),
     install_requires=[
         "elasticsearch>=8.3,<9",
-        "pandas>=1.5,<2",
+        "pandas>=1.5,<3",
         "matplotlib>=3.6",
         "numpy>=1.2.0,<2",
         "packaging",
