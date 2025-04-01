@@ -1,6 +1,0 @@
-project: 'Eland reference'
-toc:
-  - file: index.md
-  - file: installation.md
-  - file: dataframes.md
-  - file: machine-learning.md

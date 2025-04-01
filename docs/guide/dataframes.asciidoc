@@ -1,16 +1,16 @@
----
-mapped_pages:
-  - https://www.elastic.co/guide/en/elasticsearch/client/eland/current/dataframes.html
----
+[[dataframes]]
+== Data Frames
 
-# Data Frames [dataframes]
+`eland.DataFrame` wraps an Elasticsearch index in a Pandas-like API
+and defers all processing and filtering of data to Elasticsearch
+instead of your local machine. This means you can process large
+amounts of data within Elasticsearch from a Jupyter Notebook
+without overloading your machine.
 
-`eland.DataFrame` wraps an Elasticsearch index in a Pandas-like API and defers all processing and filtering of data to Elasticsearch instead of your local machine. This means you can process large amounts of data within Elasticsearch from a Jupyter Notebook without overloading your machine.
-
-```python
+[source,python]
+-------------------------------------
 >>> import eland as ed
->>>
-# Connect to 'flights' index via localhost Elasticsearch node
+>>> # Connect to 'flights' index via localhost Elasticsearch node
 >>> df = ed.DataFrame('http://localhost:9200', 'flights')
 
 # eland.DataFrame instance has the same API as pandas.DataFrame
@@ -29,14 +29,14 @@ mapped_pages:
 <class 'eland.dataframe.DataFrame'>
 Index: 13059 entries, 0 to 13058
 Data columns (total 27 columns):
- #   Column              Non-Null Count  Dtype
----  ------              --------------  -----
- 0   AvgTicketPrice      13059 non-null  float64
- 1   Cancelled           13059 non-null  bool
- 2   Carrier             13059 non-null  object
-...
- 24  OriginWeather       13059 non-null  object
- 25  dayOfWeek           13059 non-null  int64
+ #   Column              Non-Null Count  Dtype         
+---  ------              --------------  -----         
+ 0   AvgTicketPrice      13059 non-null  float64       
+ 1   Cancelled           13059 non-null  bool          
+ 2   Carrier             13059 non-null  object        
+...      
+ 24  OriginWeather       13059 non-null  object        
+ 25  dayOfWeek           13059 non-null  int64         
  26  timestamp           13059 non-null  datetime64[ns]
 dtypes: bool(2), datetime64[ns](1), float64(5), int64(2), object(17)
 memory usage: 80.0 bytes
@@ -59,5 +59,4 @@ Elasticsearch storage usage: 5.043 MB
 sum        9.261629e+07    8.204365e+06
 min        0.000000e+00    1.000205e+02
 std        4.578263e+03    2.663867e+02
-```
-
+-------------------------------------
