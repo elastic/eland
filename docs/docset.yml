@@ -1,0 +1,8 @@
+project: 'Eland Python client'
+cross_links:
+  - docs-content
+toc:
+  - toc: reference
+subs:
+  es:   "Elasticsearch"
+  ml:   "machine learning"
