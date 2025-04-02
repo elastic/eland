@@ -45,10 +45,10 @@ You need to install the appropriate version of PyTorch to import an NLP model. R
 For NLP tasks, Eland enables you to import PyTorch models into {{es}}. Use the `eland_import_hub_model` script to download and install supported [transformer models](https://huggingface.co/transformers) from the [Hugging Face model hub](https://huggingface.co/models). For example:
 
 ```bash
-eland_import_hub_model <authentication> \<1>
-  --url http://localhost:9200/ \<2>
-  --hub-model-id elastic/distilbert-base-cased-finetuned-conll03-english \<3>
-  --task-type ner \<4>
+eland_import_hub_model <authentication> \ <1>
+  --url http://localhost:9200/ \ <2>
+  --hub-model-id elastic/distilbert-base-cased-finetuned-conll03-english \ <3>
+  --task-type ner \ <4>
   --start
 ```
 
