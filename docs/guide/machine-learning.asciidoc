@@ -5,7 +5,8 @@
 [[ml-trained-models]]
 === Trained models
 
-Eland allows transforming trained models from scikit-learn, XGBoost,
+Eland allows transforming *some* 
+https://eland.readthedocs.io/en/latest/reference/api/eland.ml.MLModel.import_model.html#parameters[trained models] from scikit-learn, XGBoost,
 and LightGBM libraries to be serialized and used as an inference
 model in {es}.
 
