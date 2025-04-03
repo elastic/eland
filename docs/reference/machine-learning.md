@@ -51,7 +51,7 @@ eland_import_hub_model <authentication> \ <1>
   --task-type ner \ <4>
   --start
 ```
-
+ 
 1. Use an authentication method to access your cluster. Refer to [Authentication methods](machine-learning.md#ml-nlp-pytorch-auth).
 2. The cluster URL. Alternatively, use `--cloud-id`.
 3. Specify the identifier for the model in the Hugging Face model hub.
