@@ -47,13 +47,13 @@ You need to install the appropriate version of PyTorch to import an NLP model. R
 For NLP tasks, Eland enables you to import PyTorch models into {{es}}. Use the `eland_import_hub_model` script to download and install supported [transformer models](https://huggingface.co/transformers) from the [Hugging Face model hub](https://huggingface.co/models). For example:
 
 ```bash
-$ eland_import_hub_model <authentication> \ <1>
+eland_import_hub_model <authentication> \ <1>
   --url http://localhost:9200/ \ <2>
   --hub-model-id elastic/distilbert-base-cased-finetuned-conll03-english \ <3>
   --task-type ner \ <4>
   --start
 ```
-
+ 
 1. Use an authentication method to access your cluster. Refer to [Authentication methods](machine-learning.md#ml-nlp-pytorch-auth).
 2. The cluster URL. Alternatively, use `--cloud-id`.
 3. Specify the identifier for the model in the Hugging Face model hub.
@@ -63,7 +63,7 @@ $ eland_import_hub_model <authentication> \ <1>
 For more information about the available options, run `eland_import_hub_model` with the `--help` option.
 
 ```bash
-$ eland_import_hub_model --help
+eland_import_hub_model --help
 ```
 
 
@@ -79,7 +79,7 @@ If you want to use Eland without installing it, you can use the Docker image:
 You can use the container interactively:
 
 ```bash
-$ docker run -it --rm --network host docker.elastic.co/eland/eland
+docker run -it --rm --network host docker.elastic.co/eland/eland
 ```
 
 Running installed scripts is also possible without an interactive shell, for example:
