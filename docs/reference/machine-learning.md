@@ -8,7 +8,9 @@ mapped_pages:
 
 ## Trained models [ml-trained-models]
 
-Eland allows transforming trained models from scikit-learn, XGBoost, and LightGBM libraries to be serialized and used as an inference model in {{es}}.
+Eland allows transforming *some* 
+[trained models](https://eland.readthedocs.io/en/latest/reference/api/eland.ml.MLModel.import_model.html#parameters) from scikit-learn, XGBoost, 
+and LightGBM libraries to be serialized and used as an inference model in {{es}}.
 
 ```python
 >>> from xgboost import XGBClassifier
