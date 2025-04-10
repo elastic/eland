@@ -67,6 +67,8 @@ TEXT_EMBEDDING_MODELS = [
     )
 ]
 
+TEXT_SIMILARITY_MODELS = ["mixedbread-ai/mxbai-rerank-xsmall-v1"]
+
 
 @pytest.fixture(scope="function", autouse=True)
 def setup_and_tear_down():
@@ -135,3 +137,22 @@ class TestPytorchModel:
                     )
                     > 0
                 )
+
+    @pytest.mark.parametrize("model_id", TEXT_SIMILARITY_MODELS)
+    def test_text_similarity(self, model_id):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            ptm = download_model_and_start_deployment(
+                tmp_dir, False, model_id, "text_similarity"
+            )
+            result = ptm.infer(
+                docs=[
+                    {
+                        "text_field": "The Amazon rainforest covers most of the Amazon basin in South America"
+                    },
+                    {"text_field": "Paris is the capital of France"},
+                ],
+                inference_config={"text_similarity": {"text": "France"}},
+            )
+
+            assert result.body["inference_results"][0]["predicted_value"] < 0
+            assert result.body["inference_results"][1]["predicted_value"] > 0
