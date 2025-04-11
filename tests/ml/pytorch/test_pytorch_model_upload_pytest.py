@@ -138,6 +138,9 @@ class TestPytorchModel:
                     > 0
                 )
 
+    @pytest.mark.skipif(
+        ES_VERSION < (8, 16, 0), reason="requires 8.16.0 for DeBERTa models"
+    )
     @pytest.mark.parametrize("model_id", TEXT_SIMILARITY_MODELS)
     def test_text_similarity(self, model_id):
         with tempfile.TemporaryDirectory() as tmp_dir:
