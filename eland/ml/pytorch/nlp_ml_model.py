@@ -86,7 +86,7 @@ class NlpXLMRobertaTokenizationConfig(NlpTokenizationConfig):
         )
 
 
-class DebertaV2Config(NlpTokenizationConfig):
+class NlpDebertaV2TokenizationConfig(NlpTokenizationConfig):
     def __init__(
         self,
         *,

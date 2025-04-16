@@ -39,6 +39,7 @@ try:
     from eland.ml.pytorch import (
         FillMaskInferenceOptions,
         NlpBertTokenizationConfig,
+        NlpDebertaV2TokenizationConfig,
         NlpMPNetTokenizationConfig,
         NlpRobertaTokenizationConfig,
         NlpXLMRobertaTokenizationConfig,
@@ -147,6 +148,14 @@ if HAS_PYTORCH and HAS_SKLEARN and HAS_TRANSFORMERS:
             ZeroShotClassificationInferenceOptions,
             NlpRobertaTokenizationConfig,
             1024,
+            None,
+        ),
+        (
+            "microsoft/deberta-v3-xsmall",
+            "fill_mask",
+            FillMaskInferenceOptions,
+            NlpDebertaV2TokenizationConfig,
+            512,
             None,
         ),
     ]
