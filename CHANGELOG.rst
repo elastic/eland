@@ -2,13 +2,6 @@
 Changelog
 =========
 
-8.18.0 (2025-04-15)
--------------------
-
-* Drop Python 3.8, Support Python 3.12 (`#743 <https://github.com/elastic/eland/pull/743>`_)
-* Support Pandas 2 (`#742 <https://github.com/elastic/eland/pull/742>`_)
-* Upgrade transformers to 4.47 (`#752 <https://github.com/elastic/eland/pull/752>`_)
-
 8.17.0 (2025-01-07)
 -------------------
 
