@@ -241,10 +241,9 @@ class TestMLModel:
             if "leaf" in dump:
                 # If the tree has at least one leaf
                 matches = re.finditer(r"\:leaf=(.*)$", dump, re.MULTILINE)
-                for _, match in enumerate(matches, start=1):
-                    for groupNum in range(0, len(match.groups())):
-                        groupNum = groupNum + 1
-                        all_scores.append(float(match.group(groupNum)))
+                found_matches = [m.groups()[0] for m in matches]
+                for this_value in found_matches:
+                    all_scores.append(float(this_value))
 
         return min(all_scores)
 
