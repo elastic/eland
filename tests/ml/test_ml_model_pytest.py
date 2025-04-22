@@ -330,11 +330,16 @@ class TestMLModel:
             ],
             reverse=True,
         )
-        min_expected_score = min(expected_scores)
-        if min_expected_score < 0:
-            # rewrite the scores if < 0, as we normalize the scores
-            # in LTR as lucene does not support negative scores
-            expected_scores = [score - min_expected_score for score in expected_scores]
+
+        if (ES_VERSION[0] == 8 and ES_VERSION >= (8, 19)) or (ES_VERSION >= (9, 1)):
+            # In 8.19 and 9.1, the scores are normalized if there are negative scores
+            min_expected_score = min(expected_scores)
+            if min_expected_score < 0:
+                # rewrite the scores if < 0, as we normalize the scores
+                # in LTR as lucene does not support negative scores
+                expected_scores = [
+                    score - min_expected_score for score in expected_scores
+                ]
 
         np.testing.assert_almost_equal(expected_scores, doc_scores, decimal=2)
 
