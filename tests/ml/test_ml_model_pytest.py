@@ -248,7 +248,7 @@ class TestMLModel:
 
             return branch_0 + branch_1
 
-    def _get_min_score_from_XGBRanker(self, ranker: XGBRanker) -> float:
+    def _get_min_score_from_XGBRanker(self, ranker):
         """Retrieve the minimum score from an XGBRanker model
 
         Parameters
