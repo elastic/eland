@@ -267,7 +267,10 @@ class TestMLModel:
         ]
 
         # Flatten the list of leaf scores and get the minimum score
-        min_score = min([leaf["leaf"] for tree in tree_leafs for leaf in tree])
+        flattened_lists = [
+            score for single_tree_leaves in tree_leafs for score in single_tree_leaves
+        ]
+        min_score = min(flattened_lists)
 
         return min_score
 
