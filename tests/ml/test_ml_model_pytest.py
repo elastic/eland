@@ -330,6 +330,12 @@ class TestMLModel:
             ],
             reverse=True,
         )
+        min_expected_score = min(expected_scores)
+        if min_expected_score < 0:
+            # rewrite the scores if < 0, as we normalize the scores
+            # in LTR as lucene does not support negative scores
+            expected_scores = [score - min_expected_score for score in expected_scores]
+
         np.testing.assert_almost_equal(expected_scores, doc_scores, decimal=2)
 
         # Verify prediction is not supported for LTR
