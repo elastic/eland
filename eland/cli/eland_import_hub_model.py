@@ -236,14 +236,9 @@ def check_cluster_version(es_client, logger):
             f"Elasticsearch version {major_version} does not support NLP models. Please upgrade Elasticsearch to the latest version"
         )
         exit(1)
-
-    # PyTorch was upgraded to version 2.3.1 in 8.15.2
-    # and is incompatible with earlier versions
-    if sem_ver < (8, 15, 2):
-        import torch
-
+   elif major_version < 9:
         logger.error(
-            f"Eland uses PyTorch version {torch.__version__} which is incompatible with Elasticsearch versions prior to 8.15.2. Please upgrade Elasticsearch to at least version 8.15.2"
+            "Eland 9.x does not support Elasticsearch 8.x. Please upgrade Elasticsearch first."
         )
         exit(1)
 
