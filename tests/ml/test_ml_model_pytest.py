@@ -23,6 +23,7 @@ import pytest
 
 from eland.ml import MLModel
 from eland.ml.ltr import FeatureLogger, LTRModelConfig, QueryFeatureExtractor
+from eland.ml.transformers import get_model_transformer
 from tests import (
     ES_IS_SERVERLESS,
     ES_TEST_CLIENT,
@@ -220,32 +221,38 @@ class TestMLModel:
         # Clean up
         es_model.delete_model()
 
-    def _get_min_score_from_XGBRanker(self, ranker):
-        """Retrieve the minimum score from an XGBRanker model
+    def _normalize_ltr_score_from_XGBRanker(self, ranker, ltr_model_config, scores):
+        """Normalize the scores of an XGBRanker model as ES implementation of LTR would do.
 
         Parameters
         ----------
         ranker : XGBRanker
             The XGBRanker model to retrieve the minimum score from.
 
+        ltr_model_config : LTRModelConfig
+            LTR model config.
+
         Returns
         -------
-        min_score : float
-            The minimum score from the XGBRanker model.
+        scores : List[float]
+            Normalized scores for the model.
         """
-        # Get the tree leaf scores for each tree in the ranker
-        tree_dump = ranker.get_booster().get_dump()
 
-        all_scores = []
-        for dump in tree_dump:
-            if "leaf" in dump:
-                # If the tree has at least one leaf
-                matches = re.finditer(r"\:leaf=(.*)$", dump, re.MULTILINE)
-                found_matches = [m.groups()[0] for m in matches]
-                for this_value in found_matches:
-                    all_scores.append(float(this_value))
+        if (ES_VERSION[0] == 8 and ES_VERSION >= (8, 19)) or (
+            ES_VERSION >= (9, 1) or ES_IS_SERVERLESS
+        ):
+            # In 8.19 and 9.1, the scores are normalized if there are negative scores
+            min_model_score, _ = (
+                get_model_transformer(
+                    ranker, feature_names=ltr_model_config.feature_names
+                )
+                .transform()
+                .bounds()
+            )
+            if min_model_score < 0:
+                scores = [score - min_model_score for score in scores]
 
-        return min(all_scores)
+        return scores
 
     @requires_elasticsearch_version((8, 12))
     @requires_xgboost
@@ -359,24 +366,9 @@ class TestMLModel:
             reverse=True,
         )
 
-        if (ES_VERSION[0] == 8 and ES_VERSION >= (8, 19)) or (ES_VERSION >= (9, 1)):
-            # In 8.19 and 9.1, the scores are normalized if there are negative scores
-            min_expected_score = self._get_min_score_from_XGBRanker(ranker)
-
-            # TEST - remove this
-            print(f"min_expected_score: {min_expected_score}")
-
-            if min_expected_score < 0:
-                # rewrite the scores if < 0, as we normalize the scores
-                # in LTR as lucene does not support negative scores
-                # TEST - remove this
-                print(f"original expected_scores: {expected_scores}")
-
-                expected_scores = [
-                    score - min_expected_score for score in expected_scores
-                ]
-                # TEST - remove this
-                print(f"re-written expected_scores: {expected_scores}")
+        expected_scores = self._normalize_ltr_score_from_XGBRanker(
+            ranker, ltr_model_config, expected_scores
+        )
 
         np.testing.assert_almost_equal(expected_scores, doc_scores, decimal=2)
 
