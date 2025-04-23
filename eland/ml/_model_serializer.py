@@ -171,4 +171,7 @@ class Ensemble(ModelSerializer):
         return {"ensemble": d}
 
     def bounds(self) -> Tuple[float, float]:
-        return tuple(map(sum, zip(*[model.bounds() for model in self._trained_models])))
+        min_bound, max_bound = tuple(
+            map(sum, zip(*[model.bounds() for model in self._trained_models]))
+        )
+        return min_bound, max_bound
