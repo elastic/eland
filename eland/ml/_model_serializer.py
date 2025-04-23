@@ -169,3 +169,9 @@ class Ensemble(ModelSerializer):
         add_if_exists(d, "classification_weights", self._classification_weights)
         add_if_exists(d, "aggregate_output", self._output_aggregator)
         return {"ensemble": d}
+
+    def bounds(self) -> Tuple[float, float]:
+        min_bound, max_bound = tuple(
+            map(sum, zip(*[model.bounds() for model in self._trained_models]))
+        )
+        return min_bound, max_bound
