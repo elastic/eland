@@ -236,7 +236,7 @@ def check_cluster_version(es_client, logger):
             f"Elasticsearch version {major_version} does not support NLP models. Please upgrade Elasticsearch to the latest version"
         )
         exit(1)
-   elif major_version < 9:
+    elif major_version < 9:
         logger.error(
             "Eland 9.x does not support Elasticsearch 8.x. Please upgrade Elasticsearch first."
         )
