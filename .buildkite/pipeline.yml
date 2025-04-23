@@ -48,4 +48,5 @@ steps:
           - '8.18.0'
           - '8.16.6'
           - '8.14.1'
+          - '8.19.0-SNAPSHOT'
     command: ./.buildkite/run-tests

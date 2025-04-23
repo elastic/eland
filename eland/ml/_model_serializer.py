@@ -19,7 +19,7 @@ import base64
 import gzip
 import json
 from abc import ABC
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 
 def add_if_exists(d: Dict[str, Any], k: str, v: Any) -> None:
@@ -57,6 +57,9 @@ class ModelSerializer(ABC):
         return base64.b64encode(gzip.compress(json_string.encode("utf-8"))).decode(
             "ascii"
         )
+
+    def bounds(self) -> Tuple[float, float]:
+        raise NotImplementedError
 
 
 class TreeNode:
@@ -128,6 +131,14 @@ class Tree(ModelSerializer):
         d = super().to_dict()
         add_if_exists(d, "tree_structure", [t.to_dict() for t in self._tree_structure])
         return {"tree": d}
+
+    def bounds(self) -> Tuple[float, float]:
+        leaf_values = [
+            tree_node._leaf_value[0]
+            for tree_node in self._tree_structure
+            if tree_node._leaf_value is not None
+        ]
+        return min(leaf_values), max(leaf_values)
 
 
 class Ensemble(ModelSerializer):
