@@ -126,6 +126,7 @@ class PyTorchModel:
     def infer(
         self,
         docs: List[Mapping[str, str]],
+        inference_config: Optional[Mapping[str, Any]] = None,
         timeout: str = DEFAULT_TIMEOUT,
     ) -> Any:
         if docs is None:
@@ -133,6 +134,8 @@ class PyTorchModel:
 
         __body: Dict[str, Any] = {}
         __body["docs"] = docs
+        if inference_config is not None:
+            __body["inference_config"] = inference_config
 
         __path = f"/_ml/trained_models/{_quote(self.model_id)}/_infer"
         __query: Dict[str, Any] = {}
