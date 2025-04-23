@@ -116,9 +116,6 @@ def test(session, pandas_version: str):
         "--nbval",
     )
 
-    # PyTorch 2.3.1 doesn't support Python 3.12
-    if session.python == "3.12":
-        pytest_args += ("--ignore=eland/ml/pytorch",)
     session.run(
         *pytest_args,
         *(session.posargs or ("eland/", "tests/")),
