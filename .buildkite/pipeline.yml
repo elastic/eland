@@ -45,5 +45,6 @@ steps:
           - '3.10'
           - '3.9'
         stack:          
-          - '9.0.0-SNAPSHOT'
+          - '9.0.0'
+          - '9.1.0-SNAPSHOT'
     command: ./.buildkite/run-tests
