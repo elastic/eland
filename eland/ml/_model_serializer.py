@@ -59,7 +59,7 @@ class ModelSerializer(ABC):
         )
 
     def bounds(self) -> Tuple[float, float]:
-        raise NotImplemented
+        raise NotImplementedError
 
 
 class TreeNode:

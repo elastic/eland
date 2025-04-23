@@ -15,7 +15,6 @@
 #  specific language governing permissions and limitations
 #  under the License.
 
-import re
 from typing import Tuple
 
 import numpy as np
