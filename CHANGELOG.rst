@@ -2,6 +2,12 @@
 Changelog
 =========
 
+9.0.1 (2025-04-25)
+------------------
+
+* Fix DeBERTa tokenization (`#769 <https://github.com/elastic/eland/pull/769>`_)
+* Upgrade PyTorch to 2.5.1 (`#785 <https://github.com/elastic/eland/pull/785>`_)
+
 9.0.0 (2025-04-15)
 ------------------
 
