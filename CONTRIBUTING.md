@@ -78,9 +78,15 @@ Once your changes and tests are ready to submit for review:
     # Run Auto-format, lint, mypy type checker for your changes
     $ nox -s format
 
-    # Run the test suite
-    $ pytest --doctest-modules eland/ tests/
-    $ pytest --nbval tests/notebook/
+    # Launch Elasticsearch with a trial licence and ML enabled
+    $ docker run --name elasticsearch -p 9200:9200 -e "discovery.type=single-node" -e "xpack.security.enabled=false" -e "xpack.license.self_generated.type=trial" docker.elastic.co/elasticsearch/elasticsearch:9.0.0
+
+    # See all test suites
+    $ nox -l
+    # Run a specific test suite
+    $ nox -rs "test-3.12(pandas_version='2.2.3')"
+    # Run a specific test
+    $ nox -rs "test-3.12(pandas_version='2.2.3')" -- -k test_learning_to_rank
 
     ```
 
