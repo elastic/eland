@@ -24,6 +24,7 @@ import pytest
 import eland as ed
 from eland.ml import MLModel
 from eland.ml.ltr import FeatureLogger, LTRModelConfig, QueryFeatureExtractor
+from eland.ml.transformers import get_model_transformer
 from tests import (
     ES_IS_SERVERLESS,
     ES_TEST_CLIENT,
@@ -328,6 +329,34 @@ class TestMLModel:
         # Clean up
         es_model.delete_model()
 
+    def _normalize_ltr_score_from_XGBRanker(self, ranker, ltr_model_config, scores):
+        """Normalize the scores of an XGBRanker model as ES implementation of LTR would do.
+        Parameters
+        ----------
+        ranker : XGBRanker
+            The XGBRanker model to retrieve the minimum score from.
+        ltr_model_config : LTRModelConfig
+            LTR model config.
+        Returns
+        -------
+        scores : List[float]
+            Normalized scores for the model.
+        """
+
+        if (ES_VERSION[0] == 8 and ES_VERSION >= (8, 19)) or ES_IS_SERVERLESS:
+            # In 8.19 and 9.1, the scores are normalized if there are negative scores
+            min_model_score, _ = (
+                get_model_transformer(
+                    ranker, feature_names=ltr_model_config.feature_names
+                )
+                .transform()
+                .bounds()
+            )
+            if min_model_score < 0:
+                scores = [score - min_model_score for score in scores]
+
+        return scores
+
     @requires_elasticsearch_version((8, 12))
     @requires_xgboost
     @pytest.mark.parametrize("compress_model_definition", [True, False])
@@ -439,6 +468,11 @@ class TestMLModel:
             ],
             reverse=True,
         )
+
+        expected_scores = self._normalize_ltr_score_from_XGBRanker(
+            ranker, ltr_model_config, expected_scores
+        )
+
         np.testing.assert_almost_equal(expected_scores, doc_scores, decimal=2)
 
         # Verify prediction is not supported for LTR
