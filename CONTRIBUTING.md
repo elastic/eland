@@ -78,7 +78,7 @@ Once your changes and tests are ready to submit for review:
     # Run Auto-format, lint, mypy type checker for your changes
     $ nox -s format
 
-    # Launch Elasticsearch with ML enabled
+    # Launch Elasticsearch with a trial licence and ML enabled
     $ docker run --name elasticsearch -p 9200:9200 -e "discovery.type=single-node" -e "xpack.security.enabled=false" -e "xpack.license.self_generated.type=trial" docker.elastic.co/elasticsearch/elasticsearch:9.0.0
 
     # See all test suites
