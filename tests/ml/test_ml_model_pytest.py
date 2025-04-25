@@ -237,10 +237,17 @@ class TestMLModel:
             Normalized scores for the model.
         """
 
-        if (ES_VERSION[0] == 8 and ES_VERSION >= (8, 19)) or (
-            ES_VERSION >= (9, 1) or ES_IS_SERVERLESS
-        ):
-            # In 8.19 and 9.1, the scores are normalized if there are negative scores
+        should_rescore = (
+            (ES_VERSION[0] == 8 and ES_VERSION >= (8, 19))
+            or (
+                ES_VERSION[0] == 9
+                and (ES_VERSION[1] >= 1 or (ES_VERSION[1] == 0 and ES_VERSION[2] >= 1))
+            )
+            or ES_IS_SERVERLESS
+        )
+
+        if should_rescore:
+            # In 8.19+, 9.0.1 and 9.1, the scores are normalized if there are negative scores
             min_model_score, _ = (
                 get_model_transformer(
                     ranker, feature_names=ltr_model_config.feature_names
