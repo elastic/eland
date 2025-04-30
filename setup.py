@@ -60,7 +60,7 @@ extras = {
     "lightgbm": ["lightgbm>=2,<4"],
     "pytorch": [
         "requests<3",
-        "torch==2.3.1",
+        "torch==2.5.1",
         "tqdm",
         "sentence-transformers>=2.1.0,<=2.7.0",
         # sentencepiece is a required dependency for the slow tokenizers
