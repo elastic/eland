@@ -50,10 +50,7 @@ class Index:
         # index_field.setter
         self._is_source_field = False
 
-        # The type:ignore is due to mypy not being smart enough
-        # to recognize the property.setter has a different type
-        # than the property.getter.
-        self.es_index_field = es_index_field  # type: ignore
+        self.es_index_field = es_index_field
 
     @property
     def sort_field(self) -> str:
