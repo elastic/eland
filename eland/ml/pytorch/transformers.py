@@ -552,6 +552,22 @@ class TransformerModel:
                     tokenization=tokenization_config,
                     embedding_size=embedding_size,
                 )
+        elif self._task_type == "text_expansion":
+            sample_embedding = self._traceable_model.sample_output()
+            if type(sample_embedding) is tuple:
+                text_embedding = sample_embedding[0]
+            else:
+                text_embedding = sample_embedding
+            shape = text_embedding.shape
+            token_window = shape[1]
+            if token_window > 1:
+                expansion_type = "splade"
+            else:
+                expansion_type = "elser" 
+            inference_config = TASK_TYPE_TO_INFERENCE_CONFIG[self._task_type](
+                tokenization=tokenization_config,
+                expansion_type=expansion_type,
+            )
         else:
             inference_config = TASK_TYPE_TO_INFERENCE_CONFIG[self._task_type](
                 tokenization=tokenization_config
