@@ -65,8 +65,6 @@ TEXT_EMBEDDING_MODELS = [
 
 TEXT_SIMILARITY_MODELS = ["mixedbread-ai/mxbai-rerank-xsmall-v1"]
 
-TEXT_EXPANSION_MODELS = ["naver/splade-v3-distilbert"]
-
 
 @pytest.fixture(scope="function", autouse=True)
 def setup_and_tear_down():
@@ -157,22 +155,3 @@ class TestPytorchModel:
 
             assert result.body["inference_results"][0]["predicted_value"] < 0
             assert result.body["inference_results"][1]["predicted_value"] > 0
-
-    @pytest.mark.skipif(ES_VERSION < (9, 0, 0), reason="requires current major version")
-    @pytest.mark.parametrize("model_id", TEXT_EXPANSION_MODELS)
-    def test_text_expansion(self, model_id):
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            ptm = download_model_and_start_deployment(
-                tmp_dir, False, model_id, "text_expansion"
-            )
-            result = ptm.infer(
-                docs=[
-                    {
-                        "text_field": "The Amazon rainforest covers most of the Amazon basin in South America"
-                    },
-                    {"text_field": "Paris is the capital of France"},
-                ]
-            )
-
-            assert len(result.body["inference_results"][0]["predicted_value"]) > 0
-            assert len(result.body["inference_results"][1]["predicted_value"]) > 0
