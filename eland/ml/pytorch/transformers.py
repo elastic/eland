@@ -32,7 +32,6 @@ import transformers  # type: ignore
 from torch import Tensor
 from torch.profiler import profile  # type: ignore
 from transformers import (
-    BertTokenizer,
     PretrainedConfig,
     PreTrainedModel,
     PreTrainedTokenizer,
@@ -509,7 +508,10 @@ class TransformerModel:
                 if max_len is not None and max_len < REASONABLE_MAX_LENGTH:
                     return int(max_len)
 
-        if isinstance(self._tokenizer, BertTokenizer):
+        # Known max input sizes for some tokenizers
+        if isinstance(self._tokenizer, transformers.BertTokenizer):
+            return 512
+        if isinstance(self._tokenizer, transformers.DebertaV2Tokenizer):
             return 512
 
         raise UnknownModelInputSizeError("Cannot determine model max input length")
