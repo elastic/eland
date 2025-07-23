@@ -554,7 +554,7 @@ class TransformerModel:
                     tokenization=tokenization_config,
                     embedding_size=embedding_size,
                 )
-        elif self._task_type == "text_expansion":
+        elif self._task_type == "text_expansion" and es_version >= (9, 2, 0):
             sample_embedding = self._traceable_model.sample_output()
             if type(sample_embedding) is tuple:
                 text_embedding = sample_embedding[0]
