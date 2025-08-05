@@ -395,7 +395,7 @@ class TransformerModel:
         # use padding in the tokenizer to ensure max length sequences are used for tracing (at call time)
         #  - see: https://huggingface.co/transformers/serialization.html#dummy-inputs-and-standard-lengths
         self._tokenizer = transformers.AutoTokenizer.from_pretrained(
-            self._model_id, token=self._access_token, use_fast=False
+            self._model_id, token=self._access_token, use_fast=True
         )
 
         # check for a supported tokenizer
