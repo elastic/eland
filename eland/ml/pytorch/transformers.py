@@ -24,7 +24,6 @@ import json
 import os.path
 import random
 import re
-from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Set, Tuple, Union
 
 import torch  # type: ignore
@@ -36,14 +35,7 @@ from transformers import PretrainedConfig
 from eland.ml.pytorch.nlp_ml_model import (
     FillMaskInferenceOptions,
     NerInferenceOptions,
-    NlpBertJapaneseTokenizationConfig,
-    NlpBertTokenizationConfig,
-    NlpDebertaV2TokenizationConfig,
-    NlpMPNetTokenizationConfig,
-    NlpRobertaTokenizationConfig,
-    NlpTokenizationConfig,
     NlpTrainedModelConfig,
-    NlpXLMRobertaTokenizationConfig,
     PassThroughInferenceOptions,
     PrefixStrings,
     QuestionAnsweringInferenceOptions,
@@ -53,6 +45,11 @@ from eland.ml.pytorch.nlp_ml_model import (
     TextSimilarityInferenceOptions,
     TrainedModelInput,
     ZeroShotClassificationInferenceOptions,
+)
+from eland.ml.pytorch.tokenizers import (
+    SUPPORTED_TOKENIZERS,
+    SUPPORTED_TOKENIZERS_NAMES,
+    create_tokenization_config,
 )
 from eland.ml.pytorch.traceable_model import (
     TraceableFillMaskModel,
@@ -109,23 +106,7 @@ TASK_TYPE_TO_INFERENCE_CONFIG = {
     "text_similarity": TextSimilarityInferenceOptions,
 }
 SUPPORTED_TASK_TYPES_NAMES = ", ".join(sorted(SUPPORTED_TASK_TYPES))
-SUPPORTED_TOKENIZERS = (
-    transformers.BertTokenizer,
-    transformers.BertJapaneseTokenizer,
-    transformers.MPNetTokenizer,
-    transformers.DPRContextEncoderTokenizer,
-    transformers.DPRQuestionEncoderTokenizer,
-    transformers.DistilBertTokenizer,
-    transformers.ElectraTokenizer,
-    transformers.MobileBertTokenizer,
-    transformers.RetriBertTokenizer,
-    transformers.RobertaTokenizer,
-    transformers.BartTokenizer,
-    transformers.SqueezeBertTokenizer,
-    transformers.XLMRobertaTokenizer,
-    transformers.DebertaV2Tokenizer,
-)
-SUPPORTED_TOKENIZERS_NAMES = ", ".join(sorted([str(x) for x in SUPPORTED_TOKENIZERS]))
+
 
 TracedModelTypes = Union[
     torch.nn.Module,
@@ -136,10 +117,6 @@ TracedModelTypes = Union[
 
 
 class TaskTypeError(Exception):
-    pass
-
-
-class UnknownModelInputSizeError(Exception):
     pass
 
 
@@ -240,7 +217,9 @@ class TransformerModel:
         # use padding in the tokenizer to ensure max length sequences are used for tracing (at call time)
         #  - see: https://huggingface.co/transformers/serialization.html#dummy-inputs-and-standard-lengths
         self._tokenizer = transformers.AutoTokenizer.from_pretrained(
-            self._model_id, token=self._access_token, use_fast=True
+            self._model_id,
+            token=self._access_token,
+            use_fast=True,  # TODO not all tokenizers support fast mode
         )
 
         # check for a supported tokenizer
@@ -288,81 +267,12 @@ class TransformerModel:
                 vocab_obj["scores"] = scores
         return vocab_obj
 
-    def _create_tokenization_config(self) -> NlpTokenizationConfig:
-        if self._max_model_input_size:
-            _max_sequence_length = self._max_model_input_size
-        else:
-            _max_sequence_length = self._find_max_sequence_length()
-
-        if isinstance(self._tokenizer, transformers.MPNetTokenizer):
-            return NlpMPNetTokenizationConfig(
-                do_lower_case=getattr(self._tokenizer, "do_lower_case", None),
-                max_sequence_length=_max_sequence_length,
-            )
-        elif isinstance(
-            self._tokenizer, (transformers.RobertaTokenizer, transformers.BartTokenizer)
-        ):
-            return NlpRobertaTokenizationConfig(
-                add_prefix_space=getattr(self._tokenizer, "add_prefix_space", None),
-                max_sequence_length=_max_sequence_length,
-            )
-        elif isinstance(self._tokenizer, transformers.XLMRobertaTokenizer):
-            return NlpXLMRobertaTokenizationConfig(
-                max_sequence_length=_max_sequence_length
-            )
-        elif isinstance(self._tokenizer, transformers.DebertaV2Tokenizer):
-            return NlpDebertaV2TokenizationConfig(
-                max_sequence_length=_max_sequence_length,
-                do_lower_case=getattr(self._tokenizer, "do_lower_case", None),
-            )
-        else:
-            japanese_morphological_tokenizers = ["mecab"]
-            if (
-                hasattr(self._tokenizer, "word_tokenizer_type")
-                and self._tokenizer.word_tokenizer_type
-                in japanese_morphological_tokenizers
-            ):
-                return NlpBertJapaneseTokenizationConfig(
-                    do_lower_case=getattr(self._tokenizer, "do_lower_case", None),
-                    max_sequence_length=_max_sequence_length,
-                )
-            else:
-                return NlpBertTokenizationConfig(
-                    do_lower_case=getattr(self._tokenizer, "do_lower_case", None),
-                    max_sequence_length=_max_sequence_length,
-                )
-
-    def _find_max_sequence_length(self) -> int:
-        # Sometimes the max_... values are present but contain
-        # a random or very large value.
-        REASONABLE_MAX_LENGTH = 8192
-        max_len = getattr(self._tokenizer, "model_max_length", None)
-        if max_len is not None and max_len <= REASONABLE_MAX_LENGTH:
-            return int(max_len)
-
-        max_sizes = getattr(self._tokenizer, "max_model_input_sizes", dict())
-        max_len = max_sizes.get(self._model_id)
-        if max_len is not None and max_len < REASONABLE_MAX_LENGTH:
-            return int(max_len)
-
-        if max_sizes:
-            # The model id wasn't found in the max sizes dict but
-            # if all the values correspond then take that value
-            sizes = {size for size in max_sizes.values()}
-            if len(sizes) == 1:
-                max_len = sizes.pop()
-                if max_len is not None and max_len < REASONABLE_MAX_LENGTH:
-                    return int(max_len)
-
-        if isinstance(self._tokenizer, transformers.BertTokenizer):
-            return 512
-
-        raise UnknownModelInputSizeError("Cannot determine model max input length")
-
     def _create_config(
         self, es_version: Optional[Tuple[int, int, int]]
     ) -> NlpTrainedModelConfig:
-        tokenization_config = self._create_tokenization_config()
+        tokenization_config = create_tokenization_config(
+            self._max_model_input_size, self._tokenizer
+        )
 
         # Set squad well known defaults
         if self._task_type == "question_answering":

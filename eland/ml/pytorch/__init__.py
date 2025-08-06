@@ -31,11 +31,9 @@ from eland.ml.pytorch.nlp_ml_model import (
     TextSimilarityInferenceOptions,
     ZeroShotClassificationInferenceOptions,
 )
+from eland.ml.pytorch.tokenizers import UnknownModelInputSizeError
 from eland.ml.pytorch.traceable_model import TraceableModel  # noqa: F401
-from eland.ml.pytorch.transformers import (
-    UnknownModelInputSizeError,
-    task_type_from_model_config,
-)
+from eland.ml.pytorch.transformers import task_type_from_model_config
 
 __all__ = [
     "PyTorchModel",

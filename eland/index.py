@@ -50,7 +50,7 @@ class Index:
         # index_field.setter
         self._is_source_field = False
 
-        self.es_index_field = es_index_field
+        self.es_index_field = es_index_field  # type: ignore
 
     @property
     def sort_field(self) -> str:
