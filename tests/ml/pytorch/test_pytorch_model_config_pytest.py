@@ -144,6 +144,14 @@ if HAS_PYTORCH and HAS_TRANSFORMERS:
             512,
             None,
         ),
+        (
+            "jinaai/jina-reranker-v2-base-multilingual",
+            "text_similarity",
+            TextSimilarityInferenceOptions,
+            NlpXLMRobertaTokenizationConfig,
+            1024,
+            None,
+        ),
     ]
 else:
     MODEL_CONFIGURATIONS = []

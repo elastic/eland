@@ -271,7 +271,7 @@ class TransformerModel:
         self, es_version: Optional[Tuple[int, int, int]]
     ) -> NlpTrainedModelConfig:
         tokenization_config = create_tokenization_config(
-            self._max_model_input_size, self._tokenizer
+            self._model_id, self._max_model_input_size, self._tokenizer
         )
 
         # Set squad well known defaults

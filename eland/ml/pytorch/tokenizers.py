@@ -92,13 +92,16 @@ def find_max_sequence_length(
             if max_len is not None and max_len < REASONABLE_MAX_LENGTH:
                 return int(max_len)
 
-    if isinstance(tokenizer, transformers.BertTokenizer):
+    if isinstance(
+        tokenizer, (transformers.BertTokenizer, transformers.BertTokenizerFast)
+    ):
         return 512
 
     raise UnknownModelInputSizeError("Cannot determine model max input length")
 
 
 def create_tokenization_config(
+    model_id: str,
     max_model_input_size: Optional[int],
     tokenizer: Union[
         transformers.PreTrainedTokenizer, transformers.PreTrainedTokenizerFast
@@ -107,23 +110,37 @@ def create_tokenization_config(
     if max_model_input_size is not None:
         _max_sequence_length = max_model_input_size
     else:
-        _max_sequence_length = find_max_sequence_length()
+        _max_sequence_length = find_max_sequence_length(model_id, tokenizer)
 
-    if isinstance(tokenizer, transformers.MPNetTokenizer):
+    if isinstance(
+        tokenizer, (transformers.MPNetTokenizer, transformers.MPNetTokenizerFast)
+    ):
         return NlpMPNetTokenizationConfig(
             do_lower_case=getattr(tokenizer, "do_lower_case", None),
             max_sequence_length=_max_sequence_length,
         )
     elif isinstance(
-        tokenizer, (transformers.RobertaTokenizer, transformers.BartTokenizer)
+        tokenizer,
+        (
+            transformers.RobertaTokenizer,
+            transformers.RobertaTokenizerFast,
+            transformers.BartTokenizer,
+            transformers.BartTokenizerFast,
+        ),
     ):
         return NlpRobertaTokenizationConfig(
             add_prefix_space=getattr(tokenizer, "add_prefix_space", None),
             max_sequence_length=_max_sequence_length,
         )
-    elif isinstance(tokenizer, transformers.XLMRobertaTokenizer):
+    elif isinstance(
+        tokenizer,
+        (transformers.XLMRobertaTokenizer, transformers.XLMRobertaTokenizerFast),
+    ):
         return NlpXLMRobertaTokenizationConfig(max_sequence_length=_max_sequence_length)
-    elif isinstance(tokenizer, transformers.DebertaV2Tokenizer):
+    elif isinstance(
+        tokenizer,
+        (transformers.DebertaV2Tokenizer, transformers.DebertaV2TokenizerFast),
+    ):
         return NlpDebertaV2TokenizationConfig(
             max_sequence_length=_max_sequence_length,
             do_lower_case=getattr(tokenizer, "do_lower_case", None),
