@@ -5,7 +5,6 @@ mapped_pages:
 
 # Machine Learning [machine-learning]
 
-
 ## Trained models [ml-trained-models]
 
 Eland allows transforming *some* 
@@ -36,7 +35,6 @@ and LightGBM libraries to be serialized and used as an inference model in {{es}}
 [0 1 1 0 1 0 0 0 1 0]
 ```
 
-
 ## Natural language processing (NLP) with PyTorch [ml-nlp-pytorch]
 
 ::::{important}
@@ -66,8 +64,14 @@ For more information about the available options, run `eland_import_hub_model` w
 eland_import_hub_model --help
 ```
 
-
 ### Import model with Docker [ml-nlp-pytorch-docker]
+
+::::{warning}
+Uploading and running untrusted models can expose your {es} cluster to remote code execution (RCE) vulnerabilities.
+NLP models are a mixture of code and data. If a malicious model is uploaded and used, the model can execute arbitrary code on the {es} server.
+
+**Upload and run models only from providers you trust. Do not upload models from unverified or unknown sources.**
+::::
 
 ::::{important}
 To use the Docker container, you need to clone the Eland repository: [https://github.com/elastic/eland](https://github.com/elastic/eland)
