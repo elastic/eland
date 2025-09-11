@@ -67,16 +67,10 @@ eland_import_hub_model --help
 ### Import model with Docker [ml-nlp-pytorch-docker]
 
 ::::{warning}
-Uploading and running untrusted models can expose your {es} cluster to remote code execution (RCE) vulnerabilities.
-NLP models are a mixture of code and data. If a malicious model is uploaded and used, the model can execute arbitrary code on the {es} server.
+Untrusted models can execute arbitrary code on your {{es}} server, exposing your cluster to remote code execution (RCE) vulnerabilities.
 
-**Upload and run models only from providers you trust. Do not upload models from unverified or unknown sources.**
+**Only use models from trusted sources and never use models from unverified or unknown providers.**
 ::::
-
-::::{important}
-To use the Docker container, you need to clone the Eland repository: [https://github.com/elastic/eland](https://github.com/elastic/eland)
-::::
-
 
 If you want to use Eland without installing it, you can use the Docker image:
 
