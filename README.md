@@ -62,7 +62,6 @@ $ conda install -c conda-forge eland
 - You need to install the appropriate version of PyTorch to import an NLP model. Run `python -m pip
   install 'eland[pytorch]'` to install that version.
   
-
 ### Prerequisites
 
 Users installing Eland on Debian-based distributions may need to install prerequisite packages for the transitive
@@ -98,7 +97,7 @@ $ docker run -it --rm --network host \
       --task-type ner
 ```
 
-### Connecting to Elasticsearch 
+### Connecting to Elasticsearch
 
 Eland uses the [Elasticsearch low level client](https://elasticsearch-py.readthedocs.io) to connect to Elasticsearch. 
 This client supports a range of [connection options and authentication options](https://elasticsearch-py.readthedocs.io/en/stable/api.html#elasticsearch). 
@@ -226,6 +225,10 @@ libraries to be serialized and used as an inference model in Elasticsearch.
 ```
 
 ### NLP with PyTorch
+
+> [!WARNING]  
+> PyTorch models can execute code on your Elasticsearch server, exposing your cluster to potential security vulnerabilities.
+> **Only use models from trusted sources and never use models from unverified or unknown providers.**
 
 For NLP tasks, Eland allows importing PyTorch trained BERT models into Elasticsearch. Models can be either plain PyTorch
 models, or supported [transformers](https://huggingface.co/transformers) models from the
