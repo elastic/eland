@@ -67,7 +67,7 @@ eland_import_hub_model --help
 ### Import model with Docker [ml-nlp-pytorch-docker]
 
 ::::{warning}
-Untrusted models can execute arbitrary code on your {{es}} server, exposing your cluster to remote code execution (RCE) vulnerabilities.
+PyTorch models can execute code on your {{es}} server, exposing your cluster to potential security vulnerabilities.
 
 **Only use models from trusted sources and never use models from unverified or unknown providers.**
 ::::

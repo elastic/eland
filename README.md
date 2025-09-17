@@ -227,7 +227,7 @@ libraries to be serialized and used as an inference model in Elasticsearch.
 ### NLP with PyTorch
 
 > [!WARNING]  
-> Untrusted models can execute arbitrary code on your {{es}} server, exposing your cluster to remote code execution (RCE) vulnerabilities.
+> PyTorch models can execute code on your Elasticsearch server, exposing your cluster to potential security vulnerabilities.
 > **Only use models from trusted sources and never use models from unverified or unknown providers.**
 
 For NLP tasks, Eland allows importing PyTorch trained BERT models into Elasticsearch. Models can be either plain PyTorch
