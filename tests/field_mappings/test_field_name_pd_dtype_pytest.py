@@ -16,7 +16,6 @@
 #  under the License.
 
 # File called _pytest for PyCharm compatability
-import pytest
 from pandas.testing import assert_series_equal
 
 from eland.field_mappings import FieldMappings
@@ -35,7 +34,7 @@ class TestFieldNamePDDType(TestData):
         assert_series_equal(pd_flights.dtypes, ed_field_mappings.dtypes())
 
         for es_field_name in FLIGHTS_MAPPING["mappings"]["properties"].keys():
-            pd_dtype = ed_field_mappings.field_name_pd_dtype(es_field_name)
+            _, pd_dtype = ed_field_mappings.field_name_pd_dtype(es_field_name)
 
             assert pd_flights[es_field_name].dtype == pd_dtype
 
@@ -44,5 +43,4 @@ class TestFieldNamePDDType(TestData):
             client=ES_TEST_CLIENT, index_pattern=FLIGHTS_INDEX_NAME
         )
 
-        with pytest.raises(KeyError):
-            ed_field_mappings.field_name_pd_dtype("unknown")
+        assert (False, "object") == ed_field_mappings.field_name_pd_dtype("unknown")
