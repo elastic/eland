@@ -9,6 +9,10 @@ navigation_title: Eland
 
 Eland is a Python client and toolkit for DataFrames and {{ml}} in {{es}}. Full documentation is available on [Read the Docs](https://eland.readthedocs.io). Source code is available on [GitHub](https://github.com/elastic/eland).
 
+## Compatibility [_compatibility]
+
+You can find detailed compatibility and setup information in the [Compatibility section](https://github.com/elastic/eland?tab=readme-ov-file#compatibility) of the GitHub README.
+
 ## Getting Started [_getting_started]
 
 Create a `DataFrame` object connected to an {{es}} cluster running on `http://localhost:9200`:
