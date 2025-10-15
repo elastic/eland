@@ -20,13 +20,6 @@ import tempfile
 import pytest
 
 try:
-    import sklearn  # noqa: F401
-
-    HAS_SKLEARN = True
-except ImportError:
-    HAS_SKLEARN = False
-
-try:
     from eland.ml.pytorch.transformers import TransformerModel
 
     HAS_TRANSFORMERS = True
@@ -59,9 +52,6 @@ from tests import ES_VERSION
 
 pytestmark = [
     pytest.mark.skipif(
-        not HAS_SKLEARN, reason="This test requires 'scikit-learn' package to run"
-    ),
-    pytest.mark.skipif(
         not HAS_TRANSFORMERS, reason="This test requires 'transformers' package to run"
     ),
     pytest.mark.skipif(
@@ -72,7 +62,7 @@ pytestmark = [
 # If the required imports are missing the test will be skipped.
 # Only define th test configurations if the referenced classes
 # have been imported
-if HAS_PYTORCH and HAS_SKLEARN and HAS_TRANSFORMERS:
+if HAS_PYTORCH and HAS_TRANSFORMERS:
     MODEL_CONFIGURATIONS = [
         (
             "sentence-transformers/all-distilroberta-v1",
@@ -152,6 +142,14 @@ if HAS_PYTORCH and HAS_SKLEARN and HAS_TRANSFORMERS:
             FillMaskInferenceOptions,
             NlpDebertaV2TokenizationConfig,
             512,
+            None,
+        ),
+        (
+            "jinaai/jina-reranker-v2-base-multilingual",
+            "text_similarity",
+            TextSimilarityInferenceOptions,
+            NlpXLMRobertaTokenizationConfig,
+            1024,
             None,
         ),
     ]
