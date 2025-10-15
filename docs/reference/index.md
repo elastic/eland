@@ -9,22 +9,9 @@ navigation_title: Eland
 
 Eland is a Python client and toolkit for DataFrames and {{ml}} in {{es}}. Full documentation is available on [Read the Docs](https://eland.readthedocs.io). Source code is available on [GitHub](https://github.com/elastic/eland).
 
-
 ## Compatibility [_compatibility]
 
-* Supports Python 3.9+ and Pandas 1.5
-* Supports {{es}} 8+ clusters, recommended 8.16 or later for all features to work. Make sure your Eland major version matches the major version of your Elasticsearch cluster.
-
-The recommended way to set your requirements in your `setup.py` or `requirements.txt` is::
-
-```
-# Elasticsearch 8.x
-eland>=8,<9
-```
-```
-# Elasticsearch 7.x
-eland>=7,<8
-```
+You can find detailed compatibility and setup information in the [Compatibility section](https://github.com/elastic/eland?tab=readme-ov-file#compatibility) of the GitHub README.
 
 ## Getting Started [_getting_started]
 
