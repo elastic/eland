@@ -98,9 +98,10 @@ def lint(session):
 @nox.session(python=["3.9", "3.10", "3.11", "3.12"])
 @nox.parametrize("pandas_version", ["1.5.0", "2.2.3"])
 def test(session, pandas_version: str):
-    session.install("-r", "requirements-dev.txt")
-    session.install(".")
-    session.run("python", "-m", "pip", "install", f"pandas~={pandas_version}")
+    args = []
+    if pandas_version[0] == "1":
+        args.append("numpy<2")
+    session.install("-r", "requirements-dev.txt", f"pandas~={pandas_version}", *args)
     session.run("python", "-m", "tests.setup_tests")
 
     pytest_args = (

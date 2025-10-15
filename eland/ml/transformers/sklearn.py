@@ -64,7 +64,7 @@ class SKLearnTransformer(ModelTransformer):
         self,
         node_index: int,
         node_data: Tuple[Union[int, float], ...],
-        value: np.ndarray,  # type: ignore
+        value: np.ndarray,
     ) -> TreeNode:
         """
         This builds out a TreeNode class given the sklearn tree node definition.

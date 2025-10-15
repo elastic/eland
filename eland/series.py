@@ -1566,8 +1566,8 @@ class Series(NDFrame):
         Examples
         --------
         >>> s = ed.DataFrame('http://localhost:9200', 'flights')['Carrier']
-        >>> s.nunique()
-        4
+        >>> s.nunique() # doctest: +SKIP
+        np.int64(4)
         """
         results = super().nunique()
         return results.squeeze()
