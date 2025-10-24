@@ -128,7 +128,7 @@ class Field(NamedTuple):
         """Returns NaN for any field except datetimes which use NaT"""
         if self.is_timestamp:
             return pd.NaT
-        return np.float64(np.NaN)
+        return np.float64(np.nan)
 
 
 class FieldMappings:

@@ -302,7 +302,7 @@ class Operations:
                     if isinstance(values[0], pd.Timestamp):
                         values.extend([pd.NaT] * row_diff)
                     else:
-                        values.extend([np.NaN] * row_diff)
+                        values.extend([np.nan] * row_diff)
                 pd_dict[key] = values
 
             return pd.DataFrame(pd_dict)
@@ -654,7 +654,7 @@ class Operations:
 
                         # All of the below calculations result in NaN if count<=1
                         if count <= 1:
-                            agg_value = np.NaN
+                            agg_value = np.nan
 
                         elif es_agg[1] == "std_deviation":
                             agg_value *= count / (count - 1.0)
@@ -704,16 +704,16 @@ class Operations:
                     agg_value is None or np.isnan(agg_value)
                 ):
                     if is_dataframe_agg and not numeric_only:
-                        agg_value = np.NaN
+                        agg_value = np.nan
                     elif not is_dataframe_agg and numeric_only is False:
-                        agg_value = np.NaN
+                        agg_value = np.nan
 
                 # Cardinality is always either NaN or integer.
                 elif pd_agg in ("nunique", "count"):
                     agg_value = (
                         int(agg_value)
                         if isinstance(agg_value, (int, float))
-                        else np.NaN
+                        else np.nan
                     )
 
                 # If this is a non-null timestamp field convert to a pd.Timestamp()

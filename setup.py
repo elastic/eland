@@ -89,7 +89,7 @@ setup(
         "elasticsearch>=9,<10",
         "pandas>=1.5,<3",
         "matplotlib>=3.6",
-        "numpy>=1.2.0,<2",
+        "numpy>=1.2.0,<3",
         "packaging",
     ],
     entry_points={
