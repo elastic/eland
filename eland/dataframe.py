@@ -1647,9 +1647,9 @@ class DataFrame(NDFrame):
             - True: returns all values with float64, NaN/NaT are ignored.
             - False: returns all values with float64.
             - None: returns all values with default datatype.
-        *args
+        args:
             Positional arguments to pass to `func`
-        **kwargs
+        kwargs:
             Keyword arguments to pass to `func`
 
         Returns

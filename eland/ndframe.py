@@ -202,6 +202,7 @@ class NDFrame(ABC):
             - True: Returns all values as float64, NaN/NaT values are removed
             - None: Returns all values as the same dtype where possible, NaN/NaT are removed
             - False: Returns all values as the same dtype where possible, NaN/NaT are preserved
+
         Returns
         -------
         pandas.Series
