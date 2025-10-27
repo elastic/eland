@@ -37,8 +37,8 @@ steps:
         # Python and pandas versions need to be added to the nox configuration too
         # (in the decorators of the test method in noxfile.py)
         pandas:
-          - '1.5.0'
-          - '2.2.3'
+          - '1.5.3'
+          - '2.3.3'
         python:
           - '3.13'
           - '3.12'
@@ -50,7 +50,7 @@ steps:
           - '9.3.0-SNAPSHOT'
       adjustments:
         - with:
-            pandas: '1.5.0'
+            pandas: '1.5.3'
             python: '3.13'
           skip: true
 

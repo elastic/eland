@@ -84,9 +84,9 @@ Once your changes and tests are ready to submit for review:
     # See all test suites
     $ nox -l
     # Run a specific test suite
-    $ nox -rs "test-3.13(pandas_version='2.2.3')"
+    $ nox -rs "test-3.13(pandas_version='2.3.3')"
     # Run a specific test
-    $ nox -rs "test-3.13(pandas_version='2.2.3')" -- -k test_learning_to_rank
+    $ nox -rs "test-3.13(pandas_version='2.3.3')" -- -k test_learning_to_rank
 
     ```
 

@@ -96,12 +96,12 @@ def lint(session):
 
 
 @nox.session(python=["3.10", "3.11", "3.12", "3.13"])
-@nox.parametrize("pandas_version", ["1.5.0", "2.2.3"])
+@nox.parametrize("pandas_version", ["1.5.3", "2.3.3"])
 def test(session, pandas_version: str):
     args = []
     if pandas_version[0] == "1":
         args.append("numpy<2")
-    if session.name == "3.13" and pandas_version == "1.5.0":
+    if session.name == "3.13" and pandas_version == "1.5.3":
         session.skip("Pandas 1.5 does not support Python 3.13")
 
     session.install("-r", "requirements-dev.txt", f"pandas~={pandas_version}", *args)
