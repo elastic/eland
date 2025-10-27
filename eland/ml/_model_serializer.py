@@ -19,10 +19,11 @@ import base64
 import gzip
 import json
 from abc import ABC
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from collections.abc import Sequence
+from typing import Any
 
 
-def add_if_exists(d: Dict[str, Any], k: str, v: Any) -> None:
+def add_if_exists(d: dict[str, Any], k: str, v: Any) -> None:
     if v is not None:
         d[k] = v
 
@@ -31,15 +32,15 @@ class ModelSerializer(ABC):
     def __init__(
         self,
         feature_names: Sequence[str],
-        target_type: Optional[str] = None,
-        classification_labels: Optional[Sequence[str]] = None,
+        target_type: str | None = None,
+        classification_labels: Sequence[str] | None = None,
     ):
         self._target_type = target_type
         self._feature_names = feature_names
         self._classification_labels = classification_labels
 
-    def to_dict(self) -> Dict[str, Any]:
-        d: Dict[str, Any] = {}
+    def to_dict(self) -> dict[str, Any]:
+        d: dict[str, Any] = {}
         add_if_exists(d, "target_type", self._target_type)
         add_if_exists(d, "feature_names", self._feature_names)
         add_if_exists(d, "classification_labels", self._classification_labels)
@@ -49,7 +50,7 @@ class ModelSerializer(ABC):
     def feature_names(self) -> Sequence[str]:
         return self._feature_names
 
-    def serialize_model(self) -> Dict[str, Any]:
+    def serialize_model(self) -> dict[str, Any]:
         return {"trained_model": self.to_dict()}
 
     def serialize_and_compress_model(self) -> str:
@@ -58,7 +59,7 @@ class ModelSerializer(ABC):
             "ascii"
         )
 
-    def bounds(self) -> Tuple[float, float]:
+    def bounds(self) -> tuple[float, float]:
         raise NotImplementedError
 
 
@@ -66,14 +67,14 @@ class TreeNode:
     def __init__(
         self,
         node_idx: int,
-        default_left: Optional[bool] = None,
-        decision_type: Optional[str] = None,
-        left_child: Optional[int] = None,
-        right_child: Optional[int] = None,
-        split_feature: Optional[int] = None,
-        threshold: Optional[float] = None,
-        leaf_value: Optional[List[float]] = None,
-        number_samples: Optional[int] = None,
+        default_left: bool | None = None,
+        decision_type: str | None = None,
+        left_child: int | None = None,
+        right_child: int | None = None,
+        split_feature: int | None = None,
+        threshold: float | None = None,
+        leaf_value: list[float] | None = None,
+        number_samples: int | None = None,
     ):
         self._node_idx = node_idx
         self._decision_type = decision_type
@@ -89,8 +90,8 @@ class TreeNode:
     def node_idx(self) -> int:
         return self._node_idx
 
-    def to_dict(self) -> Dict[str, Any]:
-        d: Dict[str, Any] = {}
+    def to_dict(self) -> dict[str, Any]:
+        d: dict[str, Any] = {}
         add_if_exists(d, "node_index", self._node_idx)
         add_if_exists(d, "decision_type", self._decision_type)
         if self._leaf_value is None:
@@ -114,9 +115,9 @@ class Tree(ModelSerializer):
     def __init__(
         self,
         feature_names: Sequence[str],
-        target_type: Optional[str] = None,
-        tree_structure: Optional[Sequence[TreeNode]] = None,
-        classification_labels: Optional[Sequence[str]] = None,
+        target_type: str | None = None,
+        tree_structure: Sequence[TreeNode] | None = None,
+        classification_labels: Sequence[str] | None = None,
     ):
         super().__init__(
             feature_names=feature_names,
@@ -127,12 +128,12 @@ class Tree(ModelSerializer):
             raise ValueError("regression does not support classification_labels")
         self._tree_structure = tree_structure or []
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         d = super().to_dict()
         add_if_exists(d, "tree_structure", [t.to_dict() for t in self._tree_structure])
         return {"tree": d}
 
-    def bounds(self) -> Tuple[float, float]:
+    def bounds(self) -> tuple[float, float]:
         leaf_values = [
             tree_node._leaf_value[0]
             for tree_node in self._tree_structure
@@ -146,10 +147,10 @@ class Ensemble(ModelSerializer):
         self,
         feature_names: Sequence[str],
         trained_models: Sequence[ModelSerializer],
-        output_aggregator: Dict[str, Any],
-        target_type: Optional[str] = None,
-        classification_labels: Optional[Sequence[str]] = None,
-        classification_weights: Optional[Sequence[float]] = None,
+        output_aggregator: dict[str, Any],
+        target_type: str | None = None,
+        classification_labels: Sequence[str] | None = None,
+        classification_weights: Sequence[float] | None = None,
     ):
         super().__init__(
             feature_names=feature_names,
@@ -160,7 +161,7 @@ class Ensemble(ModelSerializer):
         self._classification_weights = classification_weights
         self._output_aggregator = output_aggregator
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         d = super().to_dict()
         trained_models = None
         if self._trained_models:
@@ -170,7 +171,7 @@ class Ensemble(ModelSerializer):
         add_if_exists(d, "aggregate_output", self._output_aggregator)
         return {"ensemble": d}
 
-    def bounds(self) -> Tuple[float, float]:
+    def bounds(self) -> tuple[float, float]:
         min_bound, max_bound = tuple(
             map(sum, zip(*[model.bounds() for model in self._trained_models]))
         )

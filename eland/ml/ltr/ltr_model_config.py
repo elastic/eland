@@ -15,8 +15,9 @@
 #  specific language governing permissions and limitations
 #  under the License.
 
+from collections.abc import Mapping
 from functools import cached_property
-from typing import Any, Dict, List, Mapping, Optional
+from typing import Any
 
 from eland.ml.common import TYPE_LEARNING_TO_RANK
 
@@ -39,7 +40,7 @@ class FeatureExtractor:
         self.feature_name = feature_name
         self.type = type
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert the feature extractor into a dict that can be send to ES as part of the inference config."""
         return {
             self.type: {
@@ -59,7 +60,7 @@ class QueryFeatureExtractor(FeatureExtractor):
         self,
         feature_name: str,
         query: Mapping[str, Any],
-        default_score: Optional[float] = None,
+        default_score: float | None = None,
     ):
         """
         Parameters
@@ -92,7 +93,7 @@ class LTRModelConfig:
     A class representing LTR model configuration.
     """
 
-    def __init__(self, feature_extractors: List[FeatureExtractor]):
+    def __init__(self, feature_extractors: list[FeatureExtractor]):
         """
         Parameters
         ----------
@@ -132,7 +133,7 @@ class LTRModelConfig:
         }
 
     @cached_property
-    def feature_names(self) -> List[str]:
+    def feature_names(self) -> list[str]:
         """
         List of the feature names for the model.
         """
@@ -140,7 +141,7 @@ class LTRModelConfig:
         return [extractor.feature_name for extractor in self.feature_extractors]
 
     @cached_property
-    def query_feature_extractors(self) -> List[QueryFeatureExtractor]:
+    def query_feature_extractors(self) -> list[QueryFeatureExtractor]:
         """
         List of query feature extractors for the model.
         """

@@ -15,7 +15,6 @@
 #  specific language governing permissions and limitations
 #  under the License.
 
-from typing import Tuple
 
 import numpy as np
 import pytest
@@ -70,7 +69,7 @@ requires_lightgbm = pytest.mark.skipif(
 )
 
 
-def requires_elasticsearch_version(minimum_version: Tuple[int, int, int]):
+def requires_elasticsearch_version(minimum_version: tuple[int, int, int]):
     return pytest.mark.skipif(
         ES_VERSION < minimum_version,
         reason=f"This test requires Elasticsearch version {'.'.join(str(v) for v in minimum_version)} or later.",

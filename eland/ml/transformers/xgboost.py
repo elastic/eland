@@ -16,7 +16,7 @@
 #  under the License.
 
 import re
-from typing import Any, Dict, List, Optional, Type
+from typing import Any
 
 import pandas as pd  # type: ignore
 
@@ -46,11 +46,11 @@ class XGBoostForestTransformer(ModelTransformer):
     def __init__(
         self,
         model: Booster,
-        feature_names: List[str],
+        feature_names: list[str],
         base_score: float = 0.5,
         objective: str = "reg:squarederror",
-        classification_labels: Optional[List[str]] = None,
-        classification_weights: Optional[List[float]] = None,
+        classification_labels: list[str] | None = None,
+        classification_weights: list[float] | None = None,
     ):
         super().__init__(
             model, feature_names, classification_labels, classification_weights
@@ -112,7 +112,7 @@ class XGBoostForestTransformer(ModelTransformer):
                 split_feature=self.get_feature_id(row["Feature"]),
             )
 
-    def build_tree(self, nodes: List[TreeNode]) -> Tree:
+    def build_tree(self, nodes: list[TreeNode]) -> Tree:
         return Tree(
             feature_names=self._feature_names,
             tree_structure=nodes,
@@ -125,7 +125,7 @@ class XGBoostForestTransformer(ModelTransformer):
             tree_structure=[TreeNode(0, leaf_value=[self._base_score])],
         )
 
-    def build_forest(self) -> List[Tree]:
+    def build_forest(self) -> list[Tree]:
         """
         This builds out the forest of trees as described by XGBoost into a format
         supported by Elasticsearch
@@ -134,8 +134,8 @@ class XGBoostForestTransformer(ModelTransformer):
         """
         tree_table: pd.DataFrame = self._model.trees_to_dataframe()
         transformed_trees = []
-        curr_tree: Optional[Any] = None
-        tree_nodes: List[TreeNode] = []
+        curr_tree: Any | None = None
+        tree_nodes: list[TreeNode] = []
         for _, row in tree_table.iterrows():
             if row["Tree"] != curr_tree:
                 if len(tree_nodes) > 0:
@@ -151,7 +151,7 @@ class XGBoostForestTransformer(ModelTransformer):
             transformed_trees.append(self.build_base_score_stump())
         return transformed_trees
 
-    def build_aggregator_output(self) -> Dict[str, Any]:
+    def build_aggregator_output(self) -> dict[str, Any]:
         raise NotImplementedError("build_aggregator_output must be implemented")
 
     def determine_target_type(self) -> str:
@@ -190,7 +190,7 @@ class XGBoostForestTransformer(ModelTransformer):
 
 
 class XGBoostRegressorTransformer(XGBoostForestTransformer):
-    def __init__(self, model: XGBRegressor, feature_names: List[str]):
+    def __init__(self, model: XGBRegressor, feature_names: list[str]):
         self._regressor_model = model
         # XGBRegressor.base_score defaults to 0.5.
         base_score = model.base_score
@@ -220,7 +220,7 @@ class XGBoostRegressorTransformer(XGBoostForestTransformer):
             "reg:logistic",
         }
 
-    def build_aggregator_output(self) -> Dict[str, Any]:
+    def build_aggregator_output(self) -> dict[str, Any]:
         if self._objective == "reg:logistic":
             return {"logistic_regression": {}}
         return {"weighted_sum": {}}
@@ -234,8 +234,8 @@ class XGBoostClassifierTransformer(XGBoostForestTransformer):
     def __init__(
         self,
         model: XGBClassifier,
-        feature_names: List[str],
-        classification_labels: Optional[List[str]] = None,
+        feature_names: list[str],
+        classification_labels: list[str] | None = None,
     ):
         super().__init__(
             model.get_booster(),
@@ -269,7 +269,7 @@ class XGBoostClassifierTransformer(XGBoostForestTransformer):
             "multi:softprob",
         }
 
-    def build_aggregator_output(self) -> Dict[str, Any]:
+    def build_aggregator_output(self) -> dict[str, Any]:
         return {"logistic_regression": {}}
 
     @property
@@ -277,7 +277,7 @@ class XGBoostClassifierTransformer(XGBoostForestTransformer):
         return TYPE_CLASSIFICATION
 
 
-_MODEL_TRANSFORMERS: Dict[type, Type[ModelTransformer]] = {
+_MODEL_TRANSFORMERS: dict[type, type[ModelTransformer]] = {
     XGBRegressor: XGBoostRegressorTransformer,
     XGBRanker: XGBoostRegressorTransformer,
     XGBClassifier: XGBoostClassifierTransformer,

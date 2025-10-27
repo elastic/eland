@@ -17,16 +17,12 @@
 
 import re
 import warnings
+from collections.abc import Callable
 from enum import Enum
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
-    Dict,
-    List,
     Optional,
-    Tuple,
-    Union,
     cast,
 )
 
@@ -45,7 +41,7 @@ DEFAULT_PROGRESS_REPORTING_NUM_ROWS = 10000
 DEFAULT_SEARCH_SIZE = 5000
 DEFAULT_PIT_KEEP_ALIVE = "3m"
 DEFAULT_PAGINATION_SIZE = 5000  # for composite aggregations
-PANDAS_VERSION: Tuple[int, ...] = tuple(
+PANDAS_VERSION: tuple[int, ...] = tuple(
     int(part) for part in pd.__version__.split(".") if part.isdigit()
 )[:2]
 
@@ -62,7 +58,7 @@ with warnings.catch_warnings():
 
 
 def build_pd_series(
-    data: Dict[str, Any], dtype: Optional["DTypeLike"] = None, **kwargs: Any
+    data: dict[str, Any], dtype: Optional["DTypeLike"] = None, **kwargs: Any
 ) -> pd.Series:
     """Builds a pd.Series while squelching the warning
     for unspecified dtype on empty series
@@ -108,7 +104,7 @@ class SortOrder(Enum):
 
 
 def elasticsearch_date_to_pandas_date(
-    value: Union[int, str, float], date_format: Optional[str]
+    value: int | str | float, date_format: str | None
 ) -> pd.Timestamp:
     """
     Given a specific Elasticsearch format for a date datatype, returns the
@@ -309,7 +305,7 @@ def elasticsearch_date_to_pandas_date(
 
 
 def ensure_es_client(
-    es_client: Union[str, List[str], Tuple[str, ...], Elasticsearch],
+    es_client: str | list[str] | tuple[str, ...] | Elasticsearch,
 ) -> Elasticsearch:
     if isinstance(es_client, tuple):
         es_client = list(es_client)
@@ -322,11 +318,11 @@ def ensure_es_client(
     return es_client
 
 
-def es_version(es_client: Elasticsearch) -> Tuple[int, int, int]:
+def es_version(es_client: Elasticsearch) -> tuple[int, int, int]:
     """Tags the current ES client with a cached '_eland_es_version'
     property if one doesn't exist yet for the current Elasticsearch version.
     """
-    eland_es_version: Tuple[int, int, int]
+    eland_es_version: tuple[int, int, int]
     if not hasattr(es_client, "_eland_es_version"):
         version_info = es_client.info()["version"]["number"]
         eland_es_version = parse_es_version(version_info)
@@ -359,7 +355,7 @@ def is_serverless_es(es_client: Elasticsearch) -> bool:
     )
 
 
-def parse_es_version(version: str) -> Tuple[int, int, int]:
+def parse_es_version(version: str) -> tuple[int, int, int]:
     """
     Parse the semantic version from a string e.g. '8.8.0'
     Extensions such as '-SNAPSHOT' are ignored
@@ -369,4 +365,4 @@ def parse_es_version(version: str) -> Tuple[int, int, int]:
         raise ValueError(
             f"Unable to determine Elasticsearch version. " f"Received: {version}"
         )
-    return cast(Tuple[int, int, int], tuple(int(x) for x in match.groups()))
+    return cast(tuple[int, int, int], tuple(int(x) for x in match.groups()))

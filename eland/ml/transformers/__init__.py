@@ -16,12 +16,12 @@
 #  under the License.
 
 import inspect
-from typing import Any, Dict, Type
+from typing import Any
 
 from .base import ModelTransformer
 
 __all__ = ["get_model_transformer"]
-_MODEL_TRANSFORMERS: Dict[type, Type[ModelTransformer]] = {}
+_MODEL_TRANSFORMERS: dict[type, type[ModelTransformer]] = {}
 
 
 def get_model_transformer(model: Any, **kwargs: Any) -> ModelTransformer:

@@ -17,12 +17,12 @@
 
 # Originally based on code in MIT-licensed pandasticsearch filters
 
-from typing import Any, Dict, List, Optional, Union, cast
+from typing import Any, cast
 
 
 class BooleanFilter:
     def __init__(self) -> None:
-        self._filter: Dict[str, Any] = {}
+        self._filter: dict[str, Any] = {}
 
     def __and__(self, x: "BooleanFilter") -> "BooleanFilter":
         if tuple(self.subtree.keys()) == ("must",):
@@ -64,13 +64,13 @@ class BooleanFilter:
         return str(self.build())
 
     @property
-    def subtree(self) -> Dict[str, Any]:
+    def subtree(self) -> dict[str, Any]:
         if "bool" in self._filter:
-            return cast(Dict[str, Any], self._filter["bool"])
+            return cast(dict[str, Any], self._filter["bool"])
         else:
             return self._filter
 
-    def build(self) -> Dict[str, Any]:
+    def build(self) -> dict[str, Any]:
         return self._filter
 
 
@@ -125,7 +125,7 @@ class Equal(BooleanFilter):
 
 
 class IsIn(BooleanFilter):
-    def __init__(self, field: str, value: List[Any]) -> None:
+    def __init__(self, field: str, value: list[Any]) -> None:
         super().__init__()
         if field == "ids":
             self._filter = {"ids": {"values": value}}
@@ -167,11 +167,11 @@ class ScriptFilter(BooleanFilter):
     def __init__(
         self,
         inline: str,
-        lang: Optional[str] = None,
-        params: Optional[Dict[str, Any]] = None,
+        lang: str | None = None,
+        params: dict[str, Any] | None = None,
     ) -> None:
         super().__init__()
-        script: Dict[str, Union[str, Dict[str, Any]]] = {"source": inline}
+        script: dict[str, str | dict[str, Any]] = {"source": inline}
         if lang is not None:
             script["lang"] = lang
         if params is not None:
@@ -180,7 +180,7 @@ class ScriptFilter(BooleanFilter):
 
 
 class QueryFilter(BooleanFilter):
-    def __init__(self, query: Dict[str, Any]) -> None:
+    def __init__(self, query: dict[str, Any]) -> None:
         super().__init__()
         self._filter = query
 

@@ -18,8 +18,11 @@
 import functools
 import re
 import warnings
+from collections.abc import Callable
+from collections.abc import Collection
 from collections.abc import Collection as ABCCollection
-from typing import Any, Callable, Collection, Iterable, List, TypeVar, Union, cast
+from collections.abc import Iterable
+from typing import Any, TypeVar, cast
 
 import pandas as pd  # type: ignore
 
@@ -53,11 +56,11 @@ def is_valid_attr_name(s: str) -> bool:
     )
 
 
-def to_list(x: Union[Collection[Any], pd.Series]) -> List[Any]:
+def to_list(x: Collection[Any] | pd.Series) -> list[Any]:
     if isinstance(x, ABCCollection):
         return list(x)
     elif isinstance(x, pd.Series):
-        return cast(List[Any], x.to_list())
+        return cast(list[Any], x.to_list())
     raise NotImplementedError(f"Could not convert {type(x).__name__} into a list")
 
 

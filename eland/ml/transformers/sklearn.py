@@ -15,7 +15,8 @@
 #  specific language governing permissions and limitations
 #  under the License.
 import math
-from typing import Any, Dict, Optional, Sequence, Tuple, Type, Union
+from collections.abc import Sequence
+from typing import Any
 
 import numpy as np
 
@@ -44,8 +45,8 @@ class SKLearnTransformer(ModelTransformer):
         self,
         model: Any,
         feature_names: Sequence[str],
-        classification_labels: Optional[Sequence[str]] = None,
-        classification_weights: Optional[Sequence[float]] = None,
+        classification_labels: Sequence[str] | None = None,
+        classification_weights: Sequence[float] | None = None,
     ):
         """
         Base class for SKLearn transformations
@@ -63,7 +64,7 @@ class SKLearnTransformer(ModelTransformer):
     def build_tree_node(
         self,
         node_index: int,
-        node_data: Tuple[Union[int, float], ...],
+        node_data: tuple[int | float, ...],
         value: np.ndarray,
     ) -> TreeNode:
         """
@@ -117,9 +118,9 @@ class SKLearnDecisionTreeTransformer(SKLearnTransformer):
 
     def __init__(
         self,
-        model: Union[DecisionTreeRegressor, DecisionTreeClassifier],
+        model: DecisionTreeRegressor | DecisionTreeClassifier,
         feature_names: Sequence[str],
-        classification_labels: Optional[Sequence[str]] = None,
+        classification_labels: Sequence[str] | None = None,
     ):
         """
         Transforms a Decision Tree model (Regressor|Classifier) into a ES Supported Tree format
@@ -174,16 +175,16 @@ class SKLearnForestTransformer(SKLearnTransformer):
 
     def __init__(
         self,
-        model: Union[RandomForestClassifier, RandomForestRegressor],
+        model: RandomForestClassifier | RandomForestRegressor,
         feature_names: Sequence[str],
-        classification_labels: Optional[Sequence[str]] = None,
-        classification_weights: Optional[Sequence[float]] = None,
+        classification_labels: Sequence[str] | None = None,
+        classification_weights: Sequence[float] | None = None,
     ):
         super().__init__(
             model, feature_names, classification_labels, classification_weights
         )
 
-    def build_aggregator_output(self) -> Dict[str, Any]:
+    def build_aggregator_output(self) -> dict[str, Any]:
         raise NotImplementedError("build_aggregator_output must be implemented")
 
     def determine_target_type(self) -> str:
@@ -221,7 +222,7 @@ class SKLearnForestRegressorTransformer(SKLearnForestTransformer):
     def __init__(self, model: RandomForestRegressor, feature_names: Sequence[str]):
         super().__init__(model, feature_names)
 
-    def build_aggregator_output(self) -> Dict[str, Any]:
+    def build_aggregator_output(self) -> dict[str, Any]:
         return {
             "weighted_sum": {
                 "weights": [1.0 / len(self._model.estimators_)]
@@ -246,11 +247,11 @@ class SKLearnForestClassifierTransformer(SKLearnForestTransformer):
         self,
         model: RandomForestClassifier,
         feature_names: Sequence[str],
-        classification_labels: Optional[Sequence[str]] = None,
+        classification_labels: Sequence[str] | None = None,
     ):
         super().__init__(model, feature_names, classification_labels)
 
-    def build_aggregator_output(self) -> Dict[str, Any]:
+    def build_aggregator_output(self) -> dict[str, Any]:
         return {"weighted_mode": {"num_classes": len(self._model.classes_)}}
 
     def determine_target_type(self) -> str:
@@ -261,7 +262,7 @@ class SKLearnForestClassifierTransformer(SKLearnForestTransformer):
         return TYPE_CLASSIFICATION
 
 
-_MODEL_TRANSFORMERS: Dict[type, Type[ModelTransformer]] = {
+_MODEL_TRANSFORMERS: dict[type, type[ModelTransformer]] = {
     DecisionTreeRegressor: SKLearnDecisionTreeTransformer,
     DecisionTreeClassifier: SKLearnDecisionTreeTransformer,
     RandomForestRegressor: SKLearnForestRegressorTransformer,

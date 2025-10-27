@@ -15,7 +15,8 @@
 #  specific language governing permissions and limitations
 #  under the License.
 
-from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Tuple, Union, cast
+from collections.abc import Mapping
+from typing import TYPE_CHECKING, Any, Union, cast
 
 import elasticsearch
 import numpy as np
@@ -71,7 +72,7 @@ class MLModel:
 
     def __init__(
         self,
-        es_client: Union[str, List[str], Tuple[str, ...], "Elasticsearch"],
+        es_client: Union[str, list[str], tuple[str, ...], "Elasticsearch"],
         model_id: str,
     ):
         """
@@ -86,10 +87,10 @@ class MLModel:
         """
         self._client: Elasticsearch = ensure_es_client(es_client)
         self._model_id = model_id
-        self._trained_model_config_cache: Optional[Dict[str, Any]] = None
+        self._trained_model_config_cache: dict[str, Any] | None = None
 
     def predict(
-        self, X: Union["ArrayLike", List[float], List[List[float]]]
+        self, X: Union["ArrayLike", list[float], list[list[float]]]
     ) -> "ArrayLike":
         """
         Make a prediction using a trained model stored in Elasticsearch.
@@ -139,10 +140,10 @@ class MLModel:
                 f"Prediction for type {self.model_type} is not supported."
             )
 
-        docs: List[Mapping[str, Any]] = []
+        docs: list[Mapping[str, Any]] = []
         if isinstance(X, np.ndarray):
 
-            def to_list_or_float(x: Any) -> Union[List[Any], float]:
+            def to_list_or_float(x: Any) -> list[Any] | float:
                 if isinstance(x, np.ndarray):
                     return [to_list_or_float(i) for i in x.tolist()]
                 elif isinstance(x, list):
@@ -153,7 +154,7 @@ class MLModel:
 
         # Is it a list of floats?
         if isinstance(X, list) and all(isinstance(i, (float, int)) for i in X):
-            features = cast(List[List[float]], [X])
+            features = cast(list[list[float]], [X])
         # If not a list of lists of floats then we error out.
         elif isinstance(X, list) and all(
             [
@@ -161,7 +162,7 @@ class MLModel:
                 for i in X
             ]
         ):
-            features = cast(List[List[float]], X)
+            features = cast(list[list[float]], X)
         else:
             raise NotImplementedError(
                 f"Prediction for type {type(X)}, not supported: {X!r}"
@@ -231,7 +232,7 @@ class MLModel:
         raise ValueError("Unable to determine 'model_type' for MLModel")
 
     @property
-    def feature_names(self) -> List[str]:
+    def feature_names(self) -> list[str]:
         return list(self._trained_model_config["input"]["field_names"])
 
     @property
@@ -248,7 +249,7 @@ class MLModel:
     @classmethod
     def import_model(
         cls,
-        es_client: Union[str, List[str], Tuple[str, ...], "Elasticsearch"],
+        es_client: Union[str, list[str], tuple[str, ...], "Elasticsearch"],
         model_id: str,
         model: Union[
             "DecisionTreeClassifier",
@@ -261,10 +262,10 @@ class MLModel:
             "LGBMRegressor",
             "LGBMClassifier",
         ],
-        feature_names: List[str],
-        classification_labels: Optional[List[str]] = None,
-        classification_weights: Optional[List[float]] = None,
-        es_if_exists: Optional[str] = None,
+        feature_names: list[str],
+        classification_labels: list[str] | None = None,
+        classification_weights: list[float] | None = None,
+        es_if_exists: str | None = None,
         es_compress_model_definition: bool = True,
     ) -> "MLModel":
         """
@@ -390,7 +391,7 @@ class MLModel:
     @classmethod
     def import_ltr_model(
         cls,
-        es_client: Union[str, List[str], Tuple[str, ...], "Elasticsearch"],
+        es_client: Union[str, list[str], tuple[str, ...], "Elasticsearch"],
         model_id: str,
         model: Union[
             "DecisionTreeRegressor",
@@ -400,7 +401,7 @@ class MLModel:
             "LGBMRegressor",
         ],
         ltr_model_config: LTRModelConfig,
-        es_if_exists: Optional[str] = None,
+        es_if_exists: str | None = None,
         es_compress_model_definition: bool = True,
     ) -> "MLModel":
         """
@@ -470,7 +471,7 @@ class MLModel:
     @classmethod
     def _import_model(
         cls,
-        es_client: Union[str, List[str], Tuple[str, ...], "Elasticsearch"],
+        es_client: Union[str, list[str], tuple[str, ...], "Elasticsearch"],
         model_id: str,
         model: Union[
             "DecisionTreeClassifier",
@@ -483,12 +484,12 @@ class MLModel:
             "LGBMRegressor",
             "LGBMClassifier",
         ],
-        feature_names: List[str],
-        classification_labels: Optional[List[str]] = None,
-        classification_weights: Optional[List[float]] = None,
-        es_if_exists: Optional[str] = None,
+        feature_names: list[str],
+        classification_labels: list[str] | None = None,
+        classification_weights: list[float] | None = None,
+        es_if_exists: str | None = None,
         es_compress_model_definition: bool = True,
-        inference_config: Optional[Mapping[str, Mapping[str, Any]]] = None,
+        inference_config: Mapping[str, Mapping[str, Any]] | None = None,
     ) -> "MLModel":
         """
         Actual implementation of model import used by public API methods.
@@ -572,7 +573,7 @@ class MLModel:
         return True
 
     @property
-    def _trained_model_config(self) -> Dict[str, Any]:
+    def _trained_model_config(self) -> dict[str, Any]:
         """Lazily loads an ML models 'trained_model_config' information"""
         if self._trained_model_config_cache is None:
             resp = self._client.ml.get_trained_models(model_id=self._model_id)

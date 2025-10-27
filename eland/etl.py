@@ -18,7 +18,8 @@
 import csv
 import warnings
 from collections import deque
-from typing import Any, Dict, Generator, List, Mapping, Optional, Tuple, Union
+from collections.abc import Generator, Mapping
+from typing import Any
 
 import pandas as pd  # type: ignore
 from elasticsearch import Elasticsearch
@@ -38,15 +39,15 @@ _DEFAULT_LOW_MEMORY: bool = _c_parser_defaults["low_memory"]
 
 def pandas_to_eland(
     pd_df: pd.DataFrame,
-    es_client: Union[str, List[str], Tuple[str, ...], Elasticsearch],
+    es_client: str | list[str] | tuple[str, ...] | Elasticsearch,
     es_dest_index: str,
     es_if_exists: str = "fail",
     es_refresh: bool = False,
     es_dropna: bool = False,
-    es_type_overrides: Optional[Mapping[str, str]] = None,
+    es_type_overrides: Mapping[str, str] | None = None,
     es_verify_mapping_compatibility: bool = True,
     thread_count: int = 4,
-    chunksize: Optional[int] = None,
+    chunksize: int | None = None,
     use_pandas_index_for_es_ids: bool = True,
 ) -> DataFrame:
     """
@@ -194,7 +195,7 @@ def pandas_to_eland(
         es_dropna: bool,
         use_pandas_index_for_es_ids: bool,
         es_dest_index: str,
-    ) -> Generator[Dict[str, Any], None, None]:
+    ) -> Generator[dict[str, Any], None, None]:
         for row in pd_df.iterrows():
             if es_dropna:
                 values = row[1].dropna().to_dict()
@@ -295,12 +296,12 @@ def eland_to_pandas(ed_df: DataFrame, show_progress: bool = False) -> pd.DataFra
 
 def csv_to_eland(  # type: ignore
     filepath_or_buffer,
-    es_client: Union[str, List[str], Tuple[str, ...], Elasticsearch],
+    es_client: str | list[str] | tuple[str, ...] | Elasticsearch,
     es_dest_index: str,
     es_if_exists: str = "fail",
     es_refresh: bool = False,
     es_dropna: bool = False,
-    es_type_overrides: Optional[Mapping[str, str]] = None,
+    es_type_overrides: Mapping[str, str] | None = None,
     sep=",",
     delimiter=None,
     # Column and Index Locations and Names
@@ -448,7 +449,7 @@ def csv_to_eland(  # type: ignore
 
     TODO - currently the eland.DataFrame may not retain the order of the data in the csv.
     """
-    kwargs: Dict[str, Any] = {
+    kwargs: dict[str, Any] = {
         "sep": sep,
         "delimiter": delimiter,
         "engine": engine,

@@ -17,7 +17,7 @@
 
 import os.path
 from abc import ABC, abstractmethod
-from typing import List, Optional, Union
+from typing import Union
 
 import torch  # type: ignore
 from torch import nn
@@ -55,7 +55,7 @@ class TraceableModel(ABC):
     @abstractmethod
     def _trace(self) -> TracedModelTypes: ...
 
-    def classification_labels(self) -> Optional[List[str]]:
+    def classification_labels(self) -> list[str] | None:
         return None
 
     def save(self, path: str) -> str:

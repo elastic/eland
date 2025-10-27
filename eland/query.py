@@ -17,7 +17,7 @@
 
 import warnings
 from copy import deepcopy
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from eland.filter import BooleanFilter, IsIn, IsNull, NotNull, RandomScoreFilter, Rlike
 
@@ -30,8 +30,8 @@ class Query:
     def __init__(self, query: Optional["Query"] = None):
         # type defs
         self._query: BooleanFilter
-        self._aggs: Dict[str, Any]
-        self._composite_aggs: Dict[str, Any]
+        self._aggs: dict[str, Any]
+        self._composite_aggs: dict[str, Any]
 
         if query is None:
             self._query = BooleanFilter()
@@ -59,7 +59,7 @@ class Query:
             else:
                 self._query = self._query & IsNull(field)
 
-    def ids(self, items: List[Any], must: bool = True) -> None:
+    def ids(self, items: list[Any], must: bool = True) -> None:
         """
         Add ids query
         https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-ids-query.html
@@ -75,7 +75,7 @@ class Query:
             else:
                 self._query = self._query & ~(IsIn("ids", items))
 
-    def terms(self, field: str, items: List[str], must: bool = True) -> None:
+    def terms(self, field: str, items: list[str], must: bool = True) -> None:
         """
         Add ids query
         https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-terms-query.html
@@ -106,8 +106,8 @@ class Query:
         name: str,
         func: str,
         field: str,
-        es_size: Optional[int] = None,
-        missing: Optional[Any] = None,
+        es_size: int | None = None,
+        missing: Any | None = None,
     ) -> None:
         """
         Add terms agg e.g
@@ -145,7 +145,7 @@ class Query:
         agg = {func: {"field": field}}
         self._aggs[name] = agg
 
-    def percentile_agg(self, name: str, field: str, percents: List[float]) -> None:
+    def percentile_agg(self, name: str, field: str, percents: list[float]) -> None:
         """
 
         Ref: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-metrics-percentile-aggregation.html
@@ -166,7 +166,7 @@ class Query:
     def top_hits_agg(
         self,
         name: str,
-        source_columns: List[str],
+        source_columns: list[str],
         sort_order: str,
         size: int = 1,
     ) -> None:
@@ -196,8 +196,8 @@ class Query:
         self,
         name: str,
         field: str,
-        calendar_interval: Optional[str] = None,
-        fixed_interval: Optional[str] = None,
+        calendar_interval: str | None = None,
+        fixed_interval: str | None = None,
     ) -> None:
         if (calendar_interval is None) == (fixed_interval is None):
             raise ValueError(
@@ -250,7 +250,7 @@ class Query:
             TODO Not yet implemented
 
         """
-        sources: List[Dict[str, Dict[str, str]]] = []
+        sources: list[dict[str, dict[str, str]]] = []
 
         # Go through all composite source aggregations
         # and apply dropna if needed.
@@ -261,7 +261,7 @@ class Query:
             sources.append({bucket_agg_name: bucket_agg})
         self._composite_aggs.clear()
 
-        aggs: Dict[str, Dict[str, Any]] = {
+        aggs: dict[str, dict[str, Any]] = {
             "composite": {"size": size, "sources": sources}
         }
 
@@ -271,7 +271,7 @@ class Query:
         self._aggs.clear()
         self._aggs[name] = aggs
 
-    def composite_agg_after_key(self, name: str, after_key: Dict[str, Any]) -> None:
+    def composite_agg_after_key(self, name: str, after_key: dict[str, Any]) -> None:
         """
         Add's after_key to existing query to fetch next bunch of results
 
@@ -313,7 +313,7 @@ class Query:
             }
             self._aggs[name] = agg
 
-    def to_search_body(self) -> Dict[str, Any]:
+    def to_search_body(self) -> dict[str, Any]:
         body = {}
         if self._aggs:
             body["aggs"] = self._aggs
@@ -321,7 +321,7 @@ class Query:
             body["query"] = self._query.build()
         return body
 
-    def to_count_body(self) -> Optional[Dict[str, Any]]:
+    def to_count_body(self) -> dict[str, Any] | None:
         if len(self._aggs) > 0:
             warnings.warn(f"Requesting count for agg query {self}")
         if self._query.empty():

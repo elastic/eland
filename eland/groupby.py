@@ -15,7 +15,7 @@
 #  specific language governing permissions and limitations
 #  under the License.
 
-from typing import TYPE_CHECKING, List, Optional, Union
+from typing import TYPE_CHECKING
 
 from eland.query_compiler import QueryCompiler
 
@@ -30,13 +30,13 @@ class GroupBy:
 
     def __init__(
         self,
-        by: List[str],
+        by: list[str],
         query_compiler: "QueryCompiler",
         dropna: bool = True,
     ) -> None:
         self._query_compiler: "QueryCompiler" = QueryCompiler(to_copy=query_compiler)
         self._dropna: bool = dropna
-        self._by: List[str] = by
+        self._by: list[str] = by
 
 
 class DataFrameGroupBy(GroupBy):
@@ -504,7 +504,7 @@ class DataFrameGroupBy(GroupBy):
         )
 
     def quantile(
-        self, q: Union[int, float, List[int], List[float]] = 0.5
+        self, q: int | float | list[int] | list[float] = 0.5
     ) -> "pd.DataFrame":
         """
         Used to groupby and calculate quantile for a given DataFrame.
@@ -584,7 +584,7 @@ class DataFrameGroupBy(GroupBy):
         )
 
     def aggregate(
-        self, func: Union[str, List[str]], numeric_only: Optional[bool] = False
+        self, func: str | list[str], numeric_only: bool | None = False
     ) -> "pd.DataFrame":
         """
         Used to groupby and aggregate

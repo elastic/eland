@@ -19,16 +19,10 @@ import base64
 import json
 import math
 import os
+from collections.abc import Iterable, Mapping
 from typing import (
     TYPE_CHECKING,
     Any,
-    Dict,
-    Iterable,
-    List,
-    Mapping,
-    Optional,
-    Set,
-    Tuple,
     Union,
 )
 
@@ -57,14 +51,14 @@ class PyTorchModel:
 
     def __init__(
         self,
-        es_client: Union[str, List[str], Tuple[str, ...], "Elasticsearch"],
+        es_client: Union[str, list[str], tuple[str, ...], "Elasticsearch"],
         model_id: str,
     ):
         self._client: Elasticsearch = ensure_es_client(es_client)
         self.model_id = model_id
 
     def put_config(
-        self, path: Optional[str] = None, config: Optional[NlpTrainedModelConfig] = None
+        self, path: str | None = None, config: NlpTrainedModelConfig | None = None
     ) -> None:
         if path is not None and config is not None:
             raise ValueError("Only include path or config. Not both")
@@ -114,9 +108,9 @@ class PyTorchModel:
         self,
         *,
         model_path: str,
-        config_path: Optional[str],
+        config_path: str | None,
         vocab_path: str,
-        config: Optional[NlpTrainedModelConfig] = None,
+        config: NlpTrainedModelConfig | None = None,
         chunk_size: int = DEFAULT_CHUNK_SIZE,
     ) -> None:
         self.put_config(path=config_path, config=config)
@@ -125,20 +119,20 @@ class PyTorchModel:
 
     def infer(
         self,
-        docs: List[Mapping[str, str]],
-        inference_config: Optional[Mapping[str, Any]] = None,
+        docs: list[Mapping[str, str]],
+        inference_config: Mapping[str, Any] | None = None,
         timeout: str = DEFAULT_TIMEOUT,
     ) -> Any:
         if docs is None:
             raise ValueError("Empty value passed for parameter 'docs'")
 
-        __body: Dict[str, Any] = {}
+        __body: dict[str, Any] = {}
         __body["docs"] = docs
         if inference_config is not None:
             __body["inference_config"] = inference_config
 
         __path = f"/_ml/trained_models/{_quote(self.model_id)}/_infer"
-        __query: Dict[str, Any] = {}
+        __query: dict[str, Any] = {}
         __query["timeout"] = timeout
         __headers = {"accept": "application/json", "content-type": "application/json"}
 
@@ -161,14 +155,12 @@ class PyTorchModel:
 
     @classmethod
     def list(
-        cls, es_client: Union[str, List[str], Tuple[str, ...], "Elasticsearch"]
-    ) -> Set[str]:
+        cls, es_client: Union[str, list[str], tuple[str, ...], "Elasticsearch"]
+    ) -> set[str]:
         client = ensure_es_client(es_client)
         resp = client.ml.get_trained_models(model_id="*", allow_no_match=True)
-        return set(
-            [
-                model["model_id"]
-                for model in resp["trained_model_configs"]
-                if model["model_type"] == "pytorch"
-            ]
-        )
+        return {
+            model["model_id"]
+            for model in resp["trained_model_configs"]
+            if model["model_type"] == "pytorch"
+        }

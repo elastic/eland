@@ -15,7 +15,7 @@
 #  specific language governing permissions and limitations
 #  under the License.
 
-from typing import TYPE_CHECKING, Optional, TextIO
+from typing import TYPE_CHECKING, TextIO
 
 if TYPE_CHECKING:
     from .query_compiler import QueryCompiler
@@ -42,7 +42,7 @@ class Index:
     ID_SORT_FIELD = "_doc"  # if index field is _id, sort by _doc
 
     def __init__(
-        self, query_compiler: "QueryCompiler", es_index_field: Optional[str] = None
+        self, query_compiler: "QueryCompiler", es_index_field: str | None = None
     ):
         self._query_compiler = query_compiler
 
@@ -67,7 +67,7 @@ class Index:
         return self._index_field
 
     @es_index_field.setter
-    def es_index_field(self, index_field: Optional[str]) -> None:
+    def es_index_field(self, index_field: str | None) -> None:
         if index_field is None or index_field == Index.ID_INDEX_FIELD:
             self._index_field = Index.ID_INDEX_FIELD
             self._is_source_field = False

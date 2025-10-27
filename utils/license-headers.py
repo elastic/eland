@@ -23,8 +23,8 @@ error out if 'fix' would have changed the file.
 
 import os
 import sys
+from collections.abc import Iterator
 from itertools import chain
-from typing import Iterator, List
 
 lines_to_keep = ["# -*- coding: utf-8 -*-\n", "#!/usr/bin/env python\n"]
 license_header_lines = [
@@ -47,7 +47,7 @@ license_header_lines = [
 ]
 
 
-def find_files_to_fix(sources: List[str]) -> Iterator[str]:
+def find_files_to_fix(sources: list[str]) -> Iterator[str]:
     """Iterates over all files and dirs in 'sources' and returns
     only the filepaths that need fixing.
     """

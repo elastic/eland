@@ -22,7 +22,7 @@ is called with the same arguments the ml-cpp pytorch_inference process
 uses.
 """
 
-from typing import Any, Optional, Union
+from typing import Any
 
 import torch  # type: ignore
 import transformers  # type: ignore
@@ -56,7 +56,7 @@ class _QuestionAnsweringWrapperModule(nn.Module):  # type: ignore
         self.config = model.config
 
     @staticmethod
-    def from_pretrained(model_id: str, *, token: Optional[str] = None) -> Optional[Any]:
+    def from_pretrained(model_id: str, *, token: str | None = None) -> Any | None:
         model = AutoModelForQuestionAnswering.from_pretrained(
             model_id, token=token, torchscript=True
         )
@@ -137,7 +137,7 @@ class _DistilBertWrapper(nn.Module):  # type: ignore
         self.config = model.config
 
     @staticmethod
-    def try_wrapping(model: PreTrainedModel) -> Optional[Any]:
+    def try_wrapping(model: PreTrainedModel) -> Any | None:
         if isinstance(model.config, transformers.DistilBertConfig):
             return _DistilBertWrapper(model)
         else:
@@ -177,9 +177,9 @@ class _SentenceTransformerWrapperModule(nn.Module):  # type: ignore
         model_id: str,
         tokenizer: PreTrainedTokenizer,
         *,
-        token: Optional[str] = None,
+        token: str | None = None,
         output_key: str = DEFAULT_OUTPUT_KEY,
-    ) -> Optional[Any]:
+    ) -> Any | None:
         model = AutoModel.from_pretrained(model_id, token=token, torchscript=True)
         if isinstance(
             tokenizer,
@@ -269,18 +269,18 @@ class _DPREncoderWrapper(nn.Module):  # type: ignore
         transformers.DPRContextEncoder,
         transformers.DPRQuestionEncoder,
     }
-    _SUPPORTED_MODELS_NAMES = set([x.__name__ for x in _SUPPORTED_MODELS])
+    _SUPPORTED_MODELS_NAMES = {x.__name__ for x in _SUPPORTED_MODELS}
 
     def __init__(
         self,
-        model: Union[transformers.DPRContextEncoder, transformers.DPRQuestionEncoder],
+        model: transformers.DPRContextEncoder | transformers.DPRQuestionEncoder,
     ):
         super().__init__()
         self._model = model
         self.config = model.config
 
     @staticmethod
-    def from_pretrained(model_id: str, *, token: Optional[str] = None) -> Optional[Any]:
+    def from_pretrained(model_id: str, *, token: str | None = None) -> Any | None:
         config = AutoConfig.from_pretrained(model_id, token=token)
 
         def is_compatible() -> bool:
