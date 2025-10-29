@@ -17,7 +17,7 @@
 
 import sys
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, List, Optional, TextIO, Tuple, Union
+from typing import TYPE_CHECKING, TextIO, Union
 
 import pandas as pd  # type: ignore
 
@@ -57,13 +57,13 @@ only Elasticsearch aggregatable fields can be aggregated or grouped.
 class NDFrame(ABC):
     def __init__(
         self,
-        es_client: Optional[
-            Union[str, List[str], Tuple[str, ...], "Elasticsearch"]
-        ] = None,
-        es_index_pattern: Optional[str] = None,
-        columns: Optional[List[str]] = None,
-        es_index_field: Optional[str] = None,
-        _query_compiler: Optional[QueryCompiler] = None,
+        es_client: None | (
+            Union[str, list[str], tuple[str, ...], "Elasticsearch"]
+        ) = None,
+        es_index_pattern: str | None = None,
+        columns: list[str] | None = None,
+        es_index_field: str | None = None,
+        _query_compiler: QueryCompiler | None = None,
     ) -> None:
         """
         pandas.DataFrame/Series like API that proxies into Elasticsearch index(es).
@@ -189,7 +189,7 @@ class NDFrame(ABC):
     def _es_info(self, buf: TextIO) -> None:
         self._query_compiler.es_info(buf)
 
-    def mean(self, numeric_only: Optional[bool] = None) -> pd.Series:
+    def mean(self, numeric_only: bool | None = None) -> pd.Series:
         """
         Return mean value for each numeric column
 
@@ -238,7 +238,7 @@ class NDFrame(ABC):
         """
         return self._query_compiler.mean(numeric_only=numeric_only)
 
-    def sum(self, numeric_only: Optional[bool] = None) -> pd.Series:
+    def sum(self, numeric_only: bool | None = None) -> pd.Series:
         """
         Return sum for each numeric column
 
@@ -286,7 +286,7 @@ class NDFrame(ABC):
         """
         return self._query_compiler.sum(numeric_only=numeric_only)
 
-    def min(self, numeric_only: Optional[bool] = None) -> pd.Series:
+    def min(self, numeric_only: bool | None = None) -> pd.Series:
         """
         Return the minimum value for each numeric column
 
@@ -335,7 +335,7 @@ class NDFrame(ABC):
         """
         return self._query_compiler.min(numeric_only=numeric_only)
 
-    def var(self, numeric_only: Optional[bool] = None) -> pd.Series:
+    def var(self, numeric_only: bool | None = None) -> pd.Series:
         """
         Return variance for each numeric column
 
@@ -381,7 +381,7 @@ class NDFrame(ABC):
         """
         return self._query_compiler.var(numeric_only=numeric_only)
 
-    def std(self, numeric_only: Optional[bool] = None) -> pd.Series:
+    def std(self, numeric_only: bool | None = None) -> pd.Series:
         """
         Return standard deviation for each numeric column
 
@@ -427,7 +427,7 @@ class NDFrame(ABC):
         """
         return self._query_compiler.std(numeric_only=numeric_only)
 
-    def median(self, numeric_only: Optional[bool] = None) -> pd.Series:
+    def median(self, numeric_only: bool | None = None) -> pd.Series:
         """
         Return the median value for each numeric column
 
@@ -474,7 +474,7 @@ class NDFrame(ABC):
         """
         return self._query_compiler.median(numeric_only=numeric_only)
 
-    def max(self, numeric_only: Optional[bool] = None) -> pd.Series:
+    def max(self, numeric_only: bool | None = None) -> pd.Series:
         """
         Return the maximum value for each numeric column
 
@@ -605,7 +605,7 @@ class NDFrame(ABC):
         """
         return self._query_compiler.mad(numeric_only=numeric_only)
 
-    def _hist(self, num_bins: int) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    def _hist(self, num_bins: int) -> tuple[pd.DataFrame, pd.DataFrame]:
         return self._query_compiler._hist(num_bins)
 
     def describe(self) -> pd.DataFrame:
@@ -658,14 +658,14 @@ class NDFrame(ABC):
     @abstractmethod
     def sample(
         self,
-        n: Optional[int] = None,
-        frac: Optional[float] = None,
-        random_state: Optional[int] = None,
+        n: int | None = None,
+        frac: float | None = None,
+        random_state: int | None = None,
     ) -> "NDFrame":
         raise NotImplementedError
 
     @property
-    def shape(self) -> Tuple[int, ...]:
+    def shape(self) -> tuple[int, ...]:
         raise NotImplementedError
 
     @property

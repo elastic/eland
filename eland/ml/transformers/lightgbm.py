@@ -15,7 +15,7 @@
 #  specific language governing permissions and limitations
 #  under the License.
 
-from typing import Any, Dict, List, Optional, Type
+from typing import Any
 
 from .._model_serializer import Ensemble, Tree, TreeNode
 from .._optional import import_optional_dependency
@@ -63,9 +63,9 @@ class LGBMForestTransformer(ModelTransformer):
     def __init__(
         self,
         model: Booster,
-        feature_names: List[str],
-        classification_labels: Optional[List[str]] = None,
-        classification_weights: Optional[List[float]] = None,
+        feature_names: list[str],
+        classification_labels: list[str] | None = None,
+        classification_weights: list[float] | None = None,
     ):
         super().__init__(
             model, feature_names, classification_labels, classification_weights
@@ -76,7 +76,7 @@ class LGBMForestTransformer(ModelTransformer):
         self,
         tree_id: int,
         node_id: int,
-        tree_node_json_obj: Dict[str, Any],
+        tree_node_json_obj: dict[str, Any],
         left_child: int,
         right_child: int,
     ) -> TreeNode:
@@ -92,7 +92,7 @@ class LGBMForestTransformer(ModelTransformer):
         )
 
     def make_leaf_node(
-        self, tree_id: int, node_id: int, tree_node_json_obj: Dict[str, Any]
+        self, tree_id: int, node_id: int, tree_node_json_obj: dict[str, Any]
     ) -> TreeNode:
         return TreeNode(
             node_idx=node_id,
@@ -104,11 +104,11 @@ class LGBMForestTransformer(ModelTransformer):
             ),
         )
 
-    def build_tree(self, tree_id: int, tree_json_obj: Dict[str, Any]) -> Tree:
+    def build_tree(self, tree_id: int, tree_json_obj: dict[str, Any]) -> Tree:
         tree_nodes = list()
         next_id = Counter()
 
-        def add_tree_node(tree_node_json_obj: Dict[str, Any], counter: Counter) -> int:
+        def add_tree_node(tree_node_json_obj: dict[str, Any], counter: Counter) -> int:
             curr_id = counter.value()
             if "leaf_value" in tree_node_json_obj:
                 tree_nodes.append(
@@ -132,7 +132,7 @@ class LGBMForestTransformer(ModelTransformer):
             tree_structure=tree_nodes,
         )
 
-    def build_forest(self) -> List[Tree]:
+    def build_forest(self) -> list[Tree]:
         """
         This builds out the forest of trees as described by LightGBM into a format
         supported by Elasticsearch
@@ -143,7 +143,7 @@ class LGBMForestTransformer(ModelTransformer):
         json_dump = self._model.dump_model()
         return [self.build_tree(i, t) for i, t in enumerate(json_dump["tree_info"])]
 
-    def build_aggregator_output(self) -> Dict[str, Any]:
+    def build_aggregator_output(self) -> dict[str, Any]:
         raise NotImplementedError("build_aggregator_output must be implemented")
 
     def determine_target_type(self) -> str:
@@ -173,7 +173,7 @@ class LGBMForestTransformer(ModelTransformer):
 
 
 class LGBMRegressorTransformer(LGBMForestTransformer):
-    def __init__(self, model: LGBMRegressor, feature_names: List[str]):
+    def __init__(self, model: LGBMRegressor, feature_names: list[str]):
         super().__init__(model.booster_, feature_names)
         self.n_estimators = model.n_estimators
 
@@ -197,7 +197,7 @@ class LGBMRegressorTransformer(LGBMForestTransformer):
     def determine_target_type(self) -> str:
         return "regression"
 
-    def build_aggregator_output(self) -> Dict[str, Any]:
+    def build_aggregator_output(self) -> dict[str, Any]:
         if self._model.params["boosting_type"] == "rf":
             return {
                 "weighted_sum": {
@@ -215,9 +215,9 @@ class LGBMClassifierTransformer(LGBMForestTransformer):
     def __init__(
         self,
         model: LGBMClassifier,
-        feature_names: List[str],
-        classification_labels: List[str],
-        classification_weights: List[float],
+        feature_names: list[str],
+        classification_labels: list[str],
+        classification_weights: list[float],
     ):
         super().__init__(
             model.booster_, feature_names, classification_labels, classification_weights
@@ -228,7 +228,7 @@ class LGBMClassifierTransformer(LGBMForestTransformer):
             self._classification_labels = [str(x) for x in model.classes_]
 
     def make_leaf_node(
-        self, tree_id: int, node_id: int, tree_node_json_obj: Dict[str, Any]
+        self, tree_id: int, node_id: int, tree_node_json_obj: dict[str, Any]
     ) -> TreeNode:
         if self._objective == "binary":
             return super().make_leaf_node(tree_id, node_id, tree_node_json_obj)
@@ -254,7 +254,7 @@ class LGBMClassifierTransformer(LGBMForestTransformer):
     def determine_target_type(self) -> str:
         return "classification"
 
-    def build_aggregator_output(self) -> Dict[str, Any]:
+    def build_aggregator_output(self) -> dict[str, Any]:
         return {"logistic_regression": {}}
 
     @property
@@ -269,7 +269,7 @@ class LGBMClassifierTransformer(LGBMForestTransformer):
         }
 
 
-_MODEL_TRANSFORMERS: Dict[type, Type[ModelTransformer]] = {
+_MODEL_TRANSFORMERS: dict[type, type[ModelTransformer]] = {
     LGBMRegressor: LGBMRegressorTransformer,
     LGBMClassifier: LGBMClassifierTransformer,
 }

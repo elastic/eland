@@ -16,7 +16,7 @@
 #  under the License.
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, List, Tuple
+from typing import TYPE_CHECKING
 
 from eland import SortOrder
 from eland.actions import HeadAction, SortIndexAction, TailAction
@@ -29,7 +29,7 @@ if TYPE_CHECKING:
     from .operations import QueryParams  # noqa: F401
     from .query_compiler import QueryCompiler  # noqa: F401
 
-RESOLVED_TASK_TYPE = Tuple["QueryParams", List["PostProcessingAction"]]
+RESOLVED_TASK_TYPE = tuple["QueryParams", list["PostProcessingAction"]]
 
 
 class Task(ABC):
@@ -53,7 +53,7 @@ class Task(ABC):
     def resolve_task(
         self,
         query_params: "QueryParams",
-        post_processing: List["PostProcessingAction"],
+        post_processing: list["PostProcessingAction"],
         query_compiler: "QueryCompiler",
     ) -> RESOLVED_TASK_TYPE:
         pass
@@ -85,7 +85,7 @@ class HeadTask(SizeTask):
     def resolve_task(
         self,
         query_params: "QueryParams",
-        post_processing: List["PostProcessingAction"],
+        post_processing: list["PostProcessingAction"],
         query_compiler: "QueryCompiler",
     ) -> RESOLVED_TASK_TYPE:
         # head - sort asc, size n
@@ -129,7 +129,7 @@ class TailTask(SizeTask):
     def resolve_task(
         self,
         query_params: "QueryParams",
-        post_processing: List["PostProcessingAction"],
+        post_processing: list["PostProcessingAction"],
         query_compiler: "QueryCompiler",
     ) -> RESOLVED_TASK_TYPE:
         # tail - sort desc, size n, post-process sort asc
@@ -193,7 +193,7 @@ class SampleTask(SizeTask):
     def resolve_task(
         self,
         query_params: "QueryParams",
-        post_processing: List["PostProcessingAction"],
+        post_processing: list["PostProcessingAction"],
         query_compiler: "QueryCompiler",
     ) -> RESOLVED_TASK_TYPE:
         query_params.query.random_score(self._random_state)
@@ -221,7 +221,7 @@ class SampleTask(SizeTask):
 
 
 class QueryIdsTask(Task):
-    def __init__(self, must: bool, ids: List[str], sort_index_by_ids: bool = False):
+    def __init__(self, must: bool, ids: list[str], sort_index_by_ids: bool = False):
         """
         Parameters
         ----------
@@ -240,7 +240,7 @@ class QueryIdsTask(Task):
     def resolve_task(
         self,
         query_params: "QueryParams",
-        post_processing: List["PostProcessingAction"],
+        post_processing: list["PostProcessingAction"],
         query_compiler: "QueryCompiler",
     ) -> RESOLVED_TASK_TYPE:
         query_params.query.ids(self._ids, must=self._must)
@@ -253,7 +253,7 @@ class QueryIdsTask(Task):
 
 
 class QueryTermsTask(Task):
-    def __init__(self, must: bool, field: str, terms: List[str]):
+    def __init__(self, must: bool, field: str, terms: list[str]):
         """
         Parameters
         ----------
@@ -275,7 +275,7 @@ class QueryTermsTask(Task):
     def resolve_task(
         self,
         query_params: "QueryParams",
-        post_processing: List["PostProcessingAction"],
+        post_processing: list["PostProcessingAction"],
         query_compiler: "QueryCompiler",
     ) -> RESOLVED_TASK_TYPE:
         query_params.query.terms(self._field, self._terms, must=self._must)
@@ -307,7 +307,7 @@ class QueryRegexpTask(Task):
     def resolve_task(
         self,
         query_params: "QueryParams",
-        post_processing: List["PostProcessingAction"],
+        post_processing: list["PostProcessingAction"],
         query_compiler: "QueryCompiler",
     ) -> RESOLVED_TASK_TYPE:
         query_params.query.regexp(self._field, self._value)
@@ -334,7 +334,7 @@ class BooleanFilterTask(Task):
     def resolve_task(
         self,
         query_params: "QueryParams",
-        post_processing: List["PostProcessingAction"],
+        post_processing: list["PostProcessingAction"],
         query_compiler: "QueryCompiler",
     ) -> RESOLVED_TASK_TYPE:
         query_params.query.update_boolean_filter(self._boolean_filter)
@@ -361,7 +361,7 @@ class ArithmeticOpFieldsTask(Task):
     def resolve_task(
         self,
         query_params: "QueryParams",
-        post_processing: List["PostProcessingAction"],
+        post_processing: list["PostProcessingAction"],
         query_compiler: "QueryCompiler",
     ) -> RESOLVED_TASK_TYPE:
         # https://www.elastic.co/guide/en/elasticsearch/painless/current/painless-api-reference-shared-java-lang.html#painless-api-reference-shared-Math

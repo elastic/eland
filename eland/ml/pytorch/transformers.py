@@ -25,7 +25,7 @@ import os.path
 import random
 import re
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional, Set, Tuple, Union
+from typing import Union
 
 import torch  # type: ignore
 import transformers  # type: ignore
@@ -138,12 +138,12 @@ class UnknownModelInputSizeError(Exception):
     pass
 
 
-def task_type_from_model_config(model_config: PretrainedConfig) -> Optional[str]:
+def task_type_from_model_config(model_config: PretrainedConfig) -> str | None:
     if model_config.architectures is None:
         if model_config.name_or_path.startswith("sentence-transformers/"):
             return "text_embedding"
         return None
-    potential_task_types: Set[str] = set()
+    potential_task_types: set[str] = set()
     for architecture in model_config.architectures:
         for substr, task_type in ARCHITECTURE_TO_TASK_TYPE.items():
             if substr in architecture:
@@ -162,7 +162,7 @@ def task_type_from_model_config(model_config: PretrainedConfig) -> Optional[str]
     if len(potential_task_types) > 1:
         if "zero_shot_classification" in potential_task_types:
             if model_config.label2id:
-                labels = set([x.lower() for x in model_config.label2id.keys()])
+                labels = {x.lower() for x in model_config.label2id.keys()}
                 if len(labels.difference(ZERO_SHOT_LABELS)) == 0:
                     return "zero_shot_classification"
             return "text_classification"
@@ -178,15 +178,15 @@ class _TransformerTraceableModel(TraceableModel):
 
     def __init__(
         self,
-        tokenizer: Union[PreTrainedTokenizer, PreTrainedTokenizerFast],
-        model: Union[
-            PreTrainedModel,
-            _SentenceTransformerWrapperModule,
-            _DPREncoderWrapper,
-            _DistilBertWrapper,
-        ],
+        tokenizer: PreTrainedTokenizer | PreTrainedTokenizerFast,
+        model: (
+            PreTrainedModel
+            | _SentenceTransformerWrapperModule
+            | _DPREncoderWrapper
+            | _DistilBertWrapper
+        ),
     ):
-        super(_TransformerTraceableModel, self).__init__(model=model)
+        super().__init__(model=model)
         self._tokenizer = tokenizer
 
     def _trace(self) -> TracedModelTypes:
@@ -197,7 +197,7 @@ class _TransformerTraceableModel(TraceableModel):
         inputs = self._compatible_inputs()
         return self._model(*inputs)
 
-    def _compatible_inputs(self) -> Tuple[Tensor, ...]:
+    def _compatible_inputs(self) -> tuple[Tensor, ...]:
         inputs = self._prepare_inputs()
 
         # Add params when not provided by the tokenizer (e.g. DistilBERT), to conform to BERT interface
@@ -237,7 +237,7 @@ class _TransformerTraceableModel(TraceableModel):
 
 
 class _TraceableClassificationModel(_TransformerTraceableModel, ABC):
-    def classification_labels(self) -> Optional[List[str]]:
+    def classification_labels(self) -> list[str] | None:
         id_label_items = self._model.config.id2label.items()
         labels = [v for _, v in sorted(id_label_items, key=lambda kv: kv[0])]
 
@@ -339,12 +339,12 @@ class TransformerModel:
         *,
         model_id: str,
         task_type: str,
-        es_version: Optional[Tuple[int, int, int]] = None,
+        es_version: tuple[int, int, int] | None = None,
         quantize: bool = False,
-        access_token: Optional[str] = None,
-        ingest_prefix: Optional[str] = None,
-        search_prefix: Optional[str] = None,
-        max_model_input_size: Optional[int] = None,
+        access_token: str | None = None,
+        ingest_prefix: str | None = None,
+        search_prefix: str | None = None,
+        max_model_input_size: int | None = None,
     ):
         """
         Loads a model from the Hugging Face repository or local file and creates
@@ -410,7 +410,7 @@ class TransformerModel:
         self._vocab = self._load_vocab()
         self._config = self._create_config(es_version)
 
-    def _load_vocab(self) -> Dict[str, List[str]]:
+    def _load_vocab(self) -> dict[str, list[str]]:
         vocab_items = self._tokenizer.get_vocab().items()
         vocabulary = [k for k, _ in sorted(vocab_items, key=lambda kv: kv[1])]
         vocab_obj = {
@@ -515,7 +515,7 @@ class TransformerModel:
         raise UnknownModelInputSizeError("Cannot determine model max input length")
 
     def _create_config(
-        self, es_version: Optional[Tuple[int, int, int]]
+        self, es_version: tuple[int, int, int] | None
     ) -> NlpTrainedModelConfig:
         tokenization_config = self._create_tokenization_config()
 
@@ -608,7 +608,7 @@ class TransformerModel:
         return psize + bsize
 
     def _get_per_allocation_memory(
-        self, max_seq_length: Optional[int], batch_size: int
+        self, max_seq_length: int | None, batch_size: int
     ) -> float:
         """
         Returns the transient memory size of the model in bytes.
@@ -641,9 +641,9 @@ class TransformerModel:
 
     def _get_model_inputs(
         self,
-        max_length: Optional[int],
+        max_length: int | None,
         batch_size: int,
-    ) -> Tuple[Tensor, ...]:
+    ) -> tuple[Tensor, ...]:
         """
         Returns a random batch of inputs for the model.
 
@@ -678,7 +678,7 @@ class TransformerModel:
 
     def _make_inputs_compatible(
         self, inputs: transformers.BatchEncoding
-    ) -> Tuple[Tensor, ...]:
+    ) -> tuple[Tensor, ...]:
         """ "
         Make the input batch format compatible to the model's requirements.
 
@@ -798,7 +798,7 @@ class TransformerModel:
     def elasticsearch_model_id(self) -> str:
         return elasticsearch_model_id(self._model_id)
 
-    def save(self, path: str) -> Tuple[str, NlpTrainedModelConfig, str]:
+    def save(self, path: str) -> tuple[str, NlpTrainedModelConfig, str]:
         # save traced model
         model_path = self._traceable_model.save(path)
 

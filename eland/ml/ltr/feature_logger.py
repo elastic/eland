@@ -16,8 +16,9 @@
 #  under the License.
 
 import json
+from collections.abc import Mapping
 from functools import cached_property
-from typing import TYPE_CHECKING, Any, List, Mapping, Tuple, Union
+from typing import TYPE_CHECKING, Any, Union
 
 from eland.common import ensure_es_client
 from eland.ml.ltr.ltr_model_config import LTRModelConfig
@@ -33,7 +34,7 @@ class FeatureLogger:
 
     def __init__(
         self,
-        es_client: Union[str, List[str], Tuple[str, ...], "Elasticsearch"],
+        es_client: Union[str, list[str], tuple[str, ...], "Elasticsearch"],
         es_index: str,
         ltr_model_config: LTRModelConfig,
     ):
@@ -55,8 +56,8 @@ class FeatureLogger:
         self._index_name = es_index
 
     def extract_features(
-        self, query_params: Mapping[str, Any], doc_ids: List[str]
-    ) -> Mapping[str, List[float]]:
+        self, query_params: Mapping[str, Any], doc_ids: list[str]
+    ) -> Mapping[str, list[float]]:
         """
         Extract document features.
 
@@ -140,7 +141,7 @@ class FeatureLogger:
         )
 
     def _extract_query_features(
-        self, query_params: Mapping[str, Any], doc_ids: List[str]
+        self, query_params: Mapping[str, Any], doc_ids: list[str]
     ):
         # When support for include_named_queries_score will be added,
         # this will be replaced by the call to the client search_template method.

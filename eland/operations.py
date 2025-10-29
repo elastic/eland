@@ -19,17 +19,13 @@ import copy
 import os
 import warnings
 from collections import defaultdict
+from collections.abc import Generator, Sequence
 from datetime import datetime
 from typing import (
     TYPE_CHECKING,
     Any,
-    Dict,
-    Generator,
-    List,
     Optional,
-    Sequence,
     TextIO,
-    Tuple,
     Union,
 )
 
@@ -73,11 +69,11 @@ if TYPE_CHECKING:
 class QueryParams:
     def __init__(self) -> None:
         self.query: Query = Query()
-        self.sort_field: Optional[str] = None
-        self.sort_order: Optional[SortOrder] = None
-        self.size: Optional[int] = None
-        self.fields: Optional[List[str]] = None
-        self.script_fields: Optional[Dict[str, Dict[str, Any]]] = None
+        self.sort_field: str | None = None
+        self.sort_order: SortOrder | None = None
+        self.size: int | None = None
+        self.fields: list[str] | None = None
+        self.script_fields: dict[str, dict[str, Any]] | None = None
 
 
 class Operations:
@@ -95,10 +91,10 @@ class Operations:
 
     def __init__(
         self,
-        tasks: Optional[List["Task"]] = None,
+        tasks: list["Task"] | None = None,
         arithmetic_op_fields_task: Optional["ArithmeticOpFieldsTask"] = None,
     ) -> None:
-        self._tasks: List["Task"]
+        self._tasks: list["Task"]
         if tasks is None:
             self._tasks = []
         else:
@@ -142,7 +138,7 @@ class Operations:
         else:
             self._arithmetic_op_fields_task.update(display_name, arithmetic_series)
 
-    def get_arithmetic_op_fields(self) -> Optional[ArithmeticOpFieldsTask]:
+    def get_arithmetic_op_fields(self) -> ArithmeticOpFieldsTask | None:
         # get an ArithmeticOpFieldsTask if it exists
         return self._arithmetic_op_fields_task
 
@@ -180,8 +176,8 @@ class Operations:
     def _metric_agg_series(
         self,
         query_compiler: "QueryCompiler",
-        agg: List["str"],
-        numeric_only: Optional[bool] = None,
+        agg: list["str"],
+        numeric_only: bool | None = None,
     ) -> pd.Series:
         results = self._metric_aggs(query_compiler, agg, numeric_only=numeric_only)
         if numeric_only:
@@ -205,7 +201,7 @@ class Operations:
 
     def hist(
         self, query_compiler: "QueryCompiler", bins: int
-    ) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    ) -> tuple[pd.DataFrame, pd.DataFrame]:
         return self._hist_aggs(query_compiler, bins)
 
     def idx(
@@ -260,8 +256,8 @@ class Operations:
     def aggs(
         self,
         query_compiler: "QueryCompiler",
-        pd_aggs: List[str],
-        numeric_only: Optional[bool] = None,
+        pd_aggs: list[str],
+        numeric_only: bool | None = None,
     ) -> pd.DataFrame:
         results = self._metric_aggs(
             query_compiler, pd_aggs, numeric_only=numeric_only, is_dataframe_agg=True
@@ -273,12 +269,12 @@ class Operations:
     def mode(
         self,
         query_compiler: "QueryCompiler",
-        pd_aggs: List[str],
+        pd_aggs: list[str],
         is_dataframe: bool,
         es_size: int,
         numeric_only: bool = False,
         dropna: bool = True,
-    ) -> Union[pd.DataFrame, pd.Series]:
+    ) -> pd.DataFrame | pd.Series:
         results = self._metric_aggs(
             query_compiler,
             pd_aggs=pd_aggs,
@@ -287,8 +283,8 @@ class Operations:
             es_mode_size=es_size,
         )
 
-        pd_dict: Dict[str, Any] = {}
-        row_diff: Optional[int] = None
+        pd_dict: dict[str, Any] = {}
+        row_diff: int | None = None
 
         if is_dataframe:
             # If multiple values of mode is returned for a particular column
@@ -312,13 +308,13 @@ class Operations:
     def _metric_aggs(
         self,
         query_compiler: "QueryCompiler",
-        pd_aggs: List[str],
-        numeric_only: Optional[bool] = None,
+        pd_aggs: list[str],
+        numeric_only: bool | None = None,
         is_dataframe_agg: bool = False,
-        es_mode_size: Optional[int] = None,
+        es_mode_size: int | None = None,
         dropna: bool = True,
-        percentiles: Optional[List[float]] = None,
-    ) -> Dict[str, Any]:
+        percentiles: list[float] | None = None,
+    ) -> dict[str, Any]:
         """
         Used to calculate metric aggregations
         https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-metrics.html
@@ -465,7 +461,7 @@ class Operations:
 
         try:
             # get first value in dict (key is .keyword)
-            name: Optional[str] = list(aggregatable_field_names.values())[0]
+            name: str | None = list(aggregatable_field_names.values())[0]
         except IndexError:
             name = None
 
@@ -473,7 +469,7 @@ class Operations:
 
     def _hist_aggs(
         self, query_compiler: "QueryCompiler", num_bins: int
-    ) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    ) -> tuple[pd.DataFrame, pd.DataFrame]:
         # Get histogram bins and weights for numeric field_names
         query_params, post_processing = self._resolve_tasks(query_compiler)
 
@@ -514,8 +510,8 @@ class Operations:
         #         },
         #         ...
 
-        bins: Dict[str, List[int]] = {}
-        weights: Dict[str, List[int]] = {}
+        bins: dict[str, list[int]] = {}
+        weights: dict[str, list[int]] = {}
 
         # There is one more bin that weights
         # len(bins) = len(weights) + 1
@@ -561,15 +557,15 @@ class Operations:
 
     def _unpack_metric_aggs(
         self,
-        fields: List["Field"],
-        es_aggs: Union[List[str], List[Tuple[str, List[float]]]],
-        pd_aggs: List[str],
-        response: Dict[str, Any],
-        numeric_only: Optional[bool],
-        percentiles: Optional[Sequence[float]] = None,
+        fields: list["Field"],
+        es_aggs: list[str] | list[tuple[str, list[float]]],
+        pd_aggs: list[str],
+        response: dict[str, Any],
+        numeric_only: bool | None,
+        percentiles: Sequence[float] | None = None,
         is_dataframe_agg: bool = False,
         is_groupby: bool = False,
-    ) -> Dict[str, List[Any]]:
+    ) -> dict[str, list[Any]]:
         """
         This method unpacks metric aggregations JSON response.
         This can be called either directly on an aggs query
@@ -597,8 +593,8 @@ class Operations:
         -------
             a dictionary on which agg caluculations are done.
         """
-        results: Dict[str, Any] = {}
-        percentile_values: List[float] = []
+        results: dict[str, Any] = {}
+        percentile_values: list[float] = []
         agg_value: Any
 
         for field in fields:
@@ -764,11 +760,11 @@ class Operations:
     def quantile(
         self,
         query_compiler: "QueryCompiler",
-        pd_aggs: List[str],
-        quantiles: Union[int, float, List[int], List[float]],
+        pd_aggs: list[str],
+        quantiles: int | float | list[int] | list[float],
         is_dataframe: bool = True,
-        numeric_only: Optional[bool] = True,
-    ) -> Union[pd.DataFrame, pd.Series]:
+        numeric_only: bool | None = True,
+    ) -> pd.DataFrame | pd.Series:
         percentiles = [
             quantile_to_percentile(x)
             for x in (
@@ -814,7 +810,7 @@ class Operations:
         # Composite aggregation
         body.composite_agg_start(size=DEFAULT_PAGINATION_SIZE, name="unique_buckets")
 
-        unique_buckets: List[Any] = sum(
+        unique_buckets: list[Any] = sum(
             self.bucket_generator(query_compiler, body, agg_name="unique_buckets"), []  # type: ignore
         )
 
@@ -826,12 +822,12 @@ class Operations:
     def aggs_groupby(
         self,
         query_compiler: "QueryCompiler",
-        by: List[str],
-        pd_aggs: List[str],
+        by: list[str],
+        pd_aggs: list[str],
         dropna: bool = True,
-        quantiles: Optional[Union[int, float, List[int], List[float]]] = None,
+        quantiles: int | float | list[int] | list[float] | None = None,
         is_dataframe_agg: bool = False,
-        numeric_only: Optional[bool] = True,
+        numeric_only: bool | None = True,
     ) -> pd.DataFrame:
         """
         This method is used to construct groupby aggregation dataframe
@@ -869,7 +865,7 @@ class Operations:
         by_fields, agg_fields = query_compiler._mappings.groupby_source_fields(by=by)
 
         # Used defaultdict to avoid initialization of columns with lists
-        results: Dict[Any, List[Any]] = defaultdict(list)
+        results: dict[Any, list[Any]] = defaultdict(list)
 
         if numeric_only:
             agg_fields = [
@@ -881,7 +877,7 @@ class Operations:
         # To return for creating multi-index on columns
         headers = [agg_field.column for agg_field in agg_fields]
 
-        percentiles: Optional[List[float]] = None
+        percentiles: list[float] | None = None
         len_percentiles: int = 0
         if quantiles:
             percentiles = [
@@ -1010,7 +1006,7 @@ class Operations:
     @staticmethod
     def bucket_generator(
         query_compiler: "QueryCompiler", body: "Query", agg_name: str
-    ) -> Generator[Sequence[Dict[str, Any]], None, Sequence[Dict[str, Any]]]:
+    ) -> Generator[Sequence[dict[str, Any]], None, Sequence[dict[str, Any]]]:
         """
             This can be used for all groupby operations.
         e.g.
@@ -1040,12 +1036,10 @@ class Operations:
             )
 
             # Pagination Logic
-            composite_buckets: Dict[str, Any] = res["aggregations"][agg_name]
+            composite_buckets: dict[str, Any] = res["aggregations"][agg_name]
 
-            after_key: Optional[Dict[str, Any]] = composite_buckets.get(
-                "after_key", None
-            )
-            buckets: Sequence[Dict[str, Any]] = composite_buckets["buckets"]
+            after_key: dict[str, Any] | None = composite_buckets.get("after_key", None)
+            buckets: Sequence[dict[str, Any]] = composite_buckets["buckets"]
 
             if after_key:
                 # yield the bucket which contains the result
@@ -1060,8 +1054,8 @@ class Operations:
 
     @staticmethod
     def _map_pd_aggs_to_es_aggs(
-        pd_aggs: List[str], percentiles: Optional[List[float]] = None
-    ) -> Union[List[str], List[Tuple[str, List[float]]]]:
+        pd_aggs: list[str], percentiles: list[float] | None = None
+    ) -> list[str] | list[tuple[str, list[float]]]:
         """
         Args:
             pd_aggs - list of pandas aggs (e.g. ['mad', 'min', 'std'] etc.)
@@ -1099,7 +1093,7 @@ class Operations:
         extended_stats_es_aggs = {"avg", "min", "max", "sum"}
         extended_stats_calls = 0
 
-        es_aggs: List[Any] = []
+        es_aggs: list[Any] = []
         for pd_agg in pd_aggs:
             if pd_agg in extended_stats_pd_aggs:
                 extended_stats_calls += 1
@@ -1170,9 +1164,9 @@ class Operations:
     def filter(
         self,
         query_compiler: "QueryCompiler",
-        items: Optional[List[str]] = None,
-        like: Optional[str] = None,
-        regex: Optional[str] = None,
+        items: list[str] | None = None,
+        like: str | None = None,
+        regex: str | None = None,
     ) -> None:
         # This function is only called for axis='index',
         # DataFrame.filter(..., axis="columns") calls .drop()
@@ -1229,7 +1223,7 @@ class Operations:
         mode: str = "w",
         show_progress: bool = False,
         **kwargs,
-    ) -> Optional[str]:
+    ) -> str | None:
         result = []
         processed = 0
         for i, df in enumerate(
@@ -1260,7 +1254,7 @@ class Operations:
         **kwargs,
     ):
         if orient == "records" and lines is True:
-            result: List[str] = []
+            result: list[str] = []
             our_filehandle = False
             if isinstance(path_or_buf, os.PathLike):
                 buf = open(path_or_buf, "w")
@@ -1294,7 +1288,7 @@ class Operations:
     def to_pandas(
         self, query_compiler: "QueryCompiler", show_progress: bool = False
     ) -> pd.DataFrame:
-        df_list: List[pd.DataFrame] = []
+        df_list: list[pd.DataFrame] = []
         i = 0
         for df in self.search_yield_pandas_dataframes(query_compiler=query_compiler):
             if show_progress:
@@ -1362,7 +1356,7 @@ class Operations:
         return count
 
     def _validate_index_operation(
-        self, query_compiler: "QueryCompiler", items: List[str]
+        self, query_compiler: "QueryCompiler", items: list[str]
     ) -> RESOLVED_TASK_TYPE:
         if not isinstance(items, list):
             raise TypeError(f"list item required - not {type(items)}")
@@ -1381,7 +1375,7 @@ class Operations:
         return query_params, post_processing
 
     def index_matches_count(
-        self, query_compiler: "QueryCompiler", field: str, items: List[Any]
+        self, query_compiler: "QueryCompiler", field: str, items: list[Any]
     ) -> int:
         query_params, post_processing = self._validate_index_operation(
             query_compiler, items
@@ -1400,7 +1394,7 @@ class Operations:
         return count
 
     def drop_index_values(
-        self, query_compiler: "QueryCompiler", field: str, items: List[str]
+        self, query_compiler: "QueryCompiler", field: str, items: list[str]
     ) -> None:
         self._validate_index_operation(query_compiler, items)
 
@@ -1420,7 +1414,7 @@ class Operations:
         self._tasks.append(task)
 
     def filter_index_values(
-        self, query_compiler: "QueryCompiler", field: str, items: List[str]
+        self, query_compiler: "QueryCompiler", field: str, items: list[str]
     ) -> None:
         # Basically .drop_index_values() except with must=True on tasks.
         self._validate_index_operation(query_compiler, items)
@@ -1435,7 +1429,7 @@ class Operations:
     @staticmethod
     def _query_params_to_size_and_sort(
         query_params: QueryParams,
-    ) -> Tuple[Optional[int], Optional[Dict[str, str]]]:
+    ) -> tuple[int | None, dict[str, str] | None]:
         sort_params = None
         if query_params.sort_field and query_params.sort_order:
             sort_params = {
@@ -1446,8 +1440,8 @@ class Operations:
 
     @staticmethod
     def _count_post_processing(
-        post_processing: List["PostProcessingAction"],
-    ) -> Optional[int]:
+        post_processing: list["PostProcessingAction"],
+    ) -> int | None:
         size = None
         for action in post_processing:
             if isinstance(action, SizeTask):
@@ -1457,7 +1451,7 @@ class Operations:
 
     @staticmethod
     def _apply_df_post_processing(
-        df: "pd.DataFrame", post_processing: List["PostProcessingAction"]
+        df: "pd.DataFrame", post_processing: list["PostProcessingAction"]
     ) -> pd.DataFrame:
         for action in post_processing:
             df = action.resolve_action(df)
@@ -1470,7 +1464,7 @@ class Operations:
         # other operations require pre-queries and then combinations
         # other operations require in-core post-processing of results
         query_params = QueryParams()
-        post_processing: List["PostProcessingAction"] = []
+        post_processing: list["PostProcessingAction"] = []
 
         for task in self._tasks:
             query_params, post_processing = task.resolve_task(
@@ -1488,8 +1482,8 @@ class Operations:
         return query_params, post_processing
 
     def _size(
-        self, query_params: "QueryParams", post_processing: List["PostProcessingAction"]
-    ) -> Optional[int]:
+        self, query_params: "QueryParams", post_processing: list["PostProcessingAction"]
+    ) -> int | None:
         # Shrink wrap code around checking if size parameter is set
         size = query_params.size
 
@@ -1528,7 +1522,7 @@ class Operations:
         self._tasks.append(task)
 
 
-def quantile_to_percentile(quantile: Union[int, float]) -> float:
+def quantile_to_percentile(quantile: int | float) -> float:
     # To verify if quantile range falls between 0 to 1
     if isinstance(quantile, (int, float)):
         quantile = float(quantile)
@@ -1544,7 +1538,7 @@ def quantile_to_percentile(quantile: Union[int, float]) -> float:
 
 
 def is_field_already_present(
-    key: str, data: Union[Dict[str, Any], List[Dict[str, Any]]]
+    key: str, data: dict[str, Any] | list[dict[str, Any]]
 ) -> bool:
     if "." in key:
         splitted = key.split(".")
@@ -1563,9 +1557,9 @@ def is_field_already_present(
 
 def _search_yield_hits(
     query_compiler: "QueryCompiler",
-    body: Dict[str, Any],
-    max_number_of_hits: Optional[int],
-) -> Generator[List[Dict[str, Any]], None, None]:
+    body: dict[str, Any],
+    max_number_of_hits: int | None,
+) -> Generator[list[dict[str, Any]], None, None]:
     """
     This is a generator used to initialize point in time API and query the
     search API and return generator which yields batches of hits as they
@@ -1600,7 +1594,7 @@ def _search_yield_hits(
 
     client = query_compiler._client
     hits_yielded = 0  # Track the total number of hits yielded.
-    pit_id: Optional[str] = None
+    pit_id: str | None = None
 
     # Pagination with 'search_after' must have a 'sort' setting.
     # Using '_doc:asc' is the most efficient as reads documents
@@ -1623,7 +1617,7 @@ def _search_yield_hits(
 
         while max_number_of_hits is None or hits_yielded < max_number_of_hits:
             resp = client.search(**body)
-            hits: List[Dict[str, Any]] = []
+            hits: list[dict[str, Any]] = []
             for hit in resp["hits"]["hits"]:
                 # Copy some of the fields to _source if they are missing there.
                 if "fields" in hit and "_source" in hit:

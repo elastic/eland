@@ -15,7 +15,8 @@
 #  specific language governing permissions and limitations
 #  under the License.
 
-from typing import Any, Optional, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 from .._model_serializer import ModelSerializer
 
@@ -25,8 +26,8 @@ class ModelTransformer:
         self,
         model: Any,
         feature_names: Sequence[str],
-        classification_labels: Optional[Sequence[str]] = None,
-        classification_weights: Optional[Sequence[float]] = None,
+        classification_labels: Sequence[str] | None = None,
+        classification_weights: Sequence[float] | None = None,
     ):
         self._feature_names = feature_names
         self._model = model

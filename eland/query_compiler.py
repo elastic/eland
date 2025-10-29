@@ -16,16 +16,12 @@
 #  under the License.
 
 import copy
+from collections.abc import Generator, Sequence
 from typing import (
     TYPE_CHECKING,
     Any,
-    Dict,
-    Generator,
-    List,
     Optional,
-    Sequence,
     TextIO,
-    Tuple,
     Union,
 )
 
@@ -77,10 +73,8 @@ class QueryCompiler:
 
     def __init__(
         self,
-        client: Optional[
-            Union[str, List[str], Tuple[str, ...], "Elasticsearch"]
-        ] = None,
-        index_pattern: Optional[str] = None,
+        client: None | (Union[str, list[str], tuple[str, ...], "Elasticsearch"]) = None,
+        index_pattern: str | None = None,
         display_names=None,
         index_field=None,
         to_copy=None,
@@ -120,10 +114,10 @@ class QueryCompiler:
 
         return pd.Index(display_names)
 
-    def _set_display_names(self, display_names: List[str]) -> None:
+    def _set_display_names(self, display_names: list[str]) -> None:
         self._mappings.display_names = display_names
 
-    def get_field_names(self, include_scripted_fields: bool) -> List[str]:
+    def get_field_names(self, include_scripted_fields: bool) -> list[str]:
         return self._mappings.get_field_names(include_scripted_fields)
 
     def add_scripted_field(self, scripted_field_name, display_name, pd_dtype):
@@ -143,7 +137,7 @@ class QueryCompiler:
 
     def _es_results_to_pandas(
         self,
-        results: List[Dict[str, Any]],
+        results: list[dict[str, Any]],
     ) -> "pd.Dataframe":
         """
         Parameters
@@ -358,7 +352,7 @@ class QueryCompiler:
         """
         return self._operations.index_count(self, self.index.es_index_field)
 
-    def _index_matches_count(self, items: List[Any]) -> int:
+    def _index_matches_count(self, items: list[Any]) -> int:
         """
         Returns
         -------
@@ -403,7 +397,7 @@ class QueryCompiler:
         return result
 
     def sample(
-        self, n: Optional[int] = None, frac=None, random_state=None
+        self, n: int | None = None, frac=None, random_state=None
     ) -> "QueryCompiler":
         result = self.copy()
 
@@ -429,9 +423,9 @@ class QueryCompiler:
         *,
         match_phrase: bool = False,
         match_only_text_fields: bool = True,
-        multi_match_type: Optional[str] = None,
-        analyzer: Optional[str] = None,
-        fuzziness: Optional[Union[int, str]] = None,
+        multi_match_type: str | None = None,
+        analyzer: str | None = None,
+        fuzziness: int | str | None = None,
         **kwargs: Any,
     ) -> QueryFilter:
         if len(columns) < 1:
@@ -493,7 +487,7 @@ class QueryCompiler:
             query = {"multi_match": options}
         return QueryFilter(query)
 
-    def es_query(self, query: Dict[str, Any]) -> "QueryCompiler":
+    def es_query(self, query: dict[str, Any]) -> "QueryCompiler":
         return self._update_query(QueryFilter(query))
 
     # To/From Pandas
@@ -506,7 +500,7 @@ class QueryCompiler:
         return self._operations.to_pandas(self, show_progress)
 
     # To CSV
-    def to_csv(self, **kwargs) -> Optional[str]:
+    def to_csv(self, **kwargs) -> str | None:
         """Serialises Eland Dataframe to CSV
 
         Returns:
@@ -514,7 +508,7 @@ class QueryCompiler:
         """
         return self._operations.to_csv(query_compiler=self, **kwargs)
 
-    def to_json(self, **kwargs) -> Optional[str]:
+    def to_json(self, **kwargs) -> str | None:
         """Serialises Eland Dataframe to CSV
 
         Returns:
@@ -547,7 +541,7 @@ class QueryCompiler:
         return result
 
     def drop(
-        self, index: Optional[str] = None, columns: Optional[List[str]] = None
+        self, index: str | None = None, columns: list[str] | None = None
     ) -> "QueryCompiler":
         result = self.copy()
 
@@ -564,9 +558,9 @@ class QueryCompiler:
 
     def filter(
         self,
-        items: Optional[List[str]] = None,
-        like: Optional[str] = None,
-        regex: Optional[str] = None,
+        items: list[str] | None = None,
+        like: str | None = None,
+        regex: str | None = None,
     ) -> "QueryCompiler":
         # field will be es_index_field for DataFrames or the column for Series.
         # This function is only called for axis='index',
@@ -575,50 +569,48 @@ class QueryCompiler:
         result._operations.filter(self, items=items, like=like, regex=regex)
         return result
 
-    def aggs(
-        self, func: List[str], numeric_only: Optional[bool] = None
-    ) -> pd.DataFrame:
+    def aggs(self, func: list[str], numeric_only: bool | None = None) -> pd.DataFrame:
         return self._operations.aggs(self, func, numeric_only=numeric_only)
 
     def count(self) -> pd.Series:
         return self._operations.count(self)
 
-    def mean(self, numeric_only: Optional[bool] = None) -> pd.Series:
+    def mean(self, numeric_only: bool | None = None) -> pd.Series:
         return self._operations._metric_agg_series(
             self, ["mean"], numeric_only=numeric_only
         )
 
-    def var(self, numeric_only: Optional[bool] = None) -> pd.Series:
+    def var(self, numeric_only: bool | None = None) -> pd.Series:
         return self._operations._metric_agg_series(
             self, ["var"], numeric_only=numeric_only
         )
 
-    def std(self, numeric_only: Optional[bool] = None) -> pd.Series:
+    def std(self, numeric_only: bool | None = None) -> pd.Series:
         return self._operations._metric_agg_series(
             self, ["std"], numeric_only=numeric_only
         )
 
-    def mad(self, numeric_only: Optional[bool] = None) -> pd.Series:
+    def mad(self, numeric_only: bool | None = None) -> pd.Series:
         return self._operations._metric_agg_series(
             self, ["mad"], numeric_only=numeric_only
         )
 
-    def median(self, numeric_only: Optional[bool] = None) -> pd.Series:
+    def median(self, numeric_only: bool | None = None) -> pd.Series:
         return self._operations._metric_agg_series(
             self, ["median"], numeric_only=numeric_only
         )
 
-    def sum(self, numeric_only: Optional[bool] = None) -> pd.Series:
+    def sum(self, numeric_only: bool | None = None) -> pd.Series:
         return self._operations._metric_agg_series(
             self, ["sum"], numeric_only=numeric_only
         )
 
-    def min(self, numeric_only: Optional[bool] = None) -> pd.Series:
+    def min(self, numeric_only: bool | None = None) -> pd.Series:
         return self._operations._metric_agg_series(
             self, ["min"], numeric_only=numeric_only
         )
 
-    def max(self, numeric_only: Optional[bool] = None) -> pd.Series:
+    def max(self, numeric_only: bool | None = None) -> pd.Series:
         return self._operations._metric_agg_series(
             self, ["max"], numeric_only=numeric_only
         )
@@ -637,7 +629,7 @@ class QueryCompiler:
         numeric_only: bool = False,
         dropna: bool = True,
         is_dataframe: bool = True,
-    ) -> Union[pd.DataFrame, pd.Series]:
+    ) -> pd.DataFrame | pd.Series:
         return self._operations.mode(
             self,
             pd_aggs=["mode"],
@@ -649,10 +641,10 @@ class QueryCompiler:
 
     def quantile(
         self,
-        quantiles: Union[int, float, List[int], List[float]],
-        numeric_only: Optional[bool] = True,
+        quantiles: int | float | list[int] | list[float],
+        numeric_only: bool | None = True,
         is_dataframe: bool = True,
-    ) -> Union[pd.DataFrame, pd.Series, Any]:
+    ) -> pd.DataFrame | pd.Series | Any:
         """
         Holds quantile object for both DataFrame and Series
 
@@ -678,12 +670,12 @@ class QueryCompiler:
 
     def aggs_groupby(
         self,
-        by: List[str],
-        pd_aggs: List[str],
+        by: list[str],
+        pd_aggs: list[str],
         dropna: bool = True,
         is_dataframe_agg: bool = False,
-        numeric_only: Optional[bool] = True,
-        quantiles: Optional[Union[int, float, List[int], List[float]]] = None,
+        numeric_only: bool | None = True,
+        quantiles: int | float | list[int] | list[float] | None = None,
     ) -> pd.DataFrame:
         return self._operations.aggs_groupby(
             self,
@@ -711,7 +703,7 @@ class QueryCompiler:
     def describe(self) -> pd.DataFrame:
         return self._operations.describe(self)
 
-    def _hist(self, num_bins: int) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    def _hist(self, num_bins: int) -> tuple[pd.DataFrame, pd.DataFrame]:
         return self._operations.hist(self, num_bins)
 
     def _update_query(self, boolean_filter: "BooleanFilter") -> "QueryCompiler":
@@ -799,8 +791,8 @@ class FieldMappingCache:
     def __init__(self, mappings: "FieldMappings") -> None:
         self._mappings = mappings
 
-        self._field_name_pd_dtype: Dict[str, str] = dict()
-        self._date_field_format: Dict[str, str] = dict()
+        self._field_name_pd_dtype: dict[str, str] = dict()
+        self._date_field_format: dict[str, str] = dict()
 
     def field_name_pd_dtype(self, es_field_name: str) -> str:
         if es_field_name in self._field_name_pd_dtype:

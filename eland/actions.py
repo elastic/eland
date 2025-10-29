@@ -16,7 +16,7 @@
 #  under the License.
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Dict, List, Optional, Union
+from typing import TYPE_CHECKING
 
 from eland import SortOrder
 
@@ -50,7 +50,7 @@ class PostProcessingAction(ABC):
 
 
 class SortIndexAction(PostProcessingAction):
-    def __init__(self, items: Optional[Union[List[int], List[str]]] = None) -> None:
+    def __init__(self, items: list[int] | list[str] | None = None) -> None:
         super().__init__("sort_index")
         self._items = items
 
@@ -91,7 +91,7 @@ class TailAction(PostProcessingAction):
 
 
 class SortFieldAction(PostProcessingAction):
-    def __init__(self, sort_params: Dict[str, str]) -> None:
+    def __init__(self, sort_params: dict[str, str]) -> None:
         super().__init__("sort_field")
 
         if sort_params is None:

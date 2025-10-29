@@ -16,18 +16,12 @@
 #  under the License.
 
 import warnings
+from collections.abc import Mapping
 from typing import (
     TYPE_CHECKING,
     Any,
-    Dict,
-    List,
-    Mapping,
     NamedTuple,
-    Optional,
-    Set,
     TextIO,
-    Tuple,
-    Union,
 )
 
 import elasticsearch
@@ -50,9 +44,9 @@ if TYPE_CHECKING:
     from numpy.typing import DTypeLike
 
 
-ES_FLOAT_TYPES: Set[str] = {"double", "float", "half_float", "scaled_float"}
-ES_INTEGER_TYPES: Set[str] = {"long", "integer", "short", "byte"}
-ES_COMPATIBLE_TYPES: Dict[str, Set[str]] = {
+ES_FLOAT_TYPES: set[str] = {"double", "float", "half_float", "scaled_float"}
+ES_INTEGER_TYPES: set[str] = {"long", "integer", "short", "byte"}
+ES_COMPATIBLE_TYPES: dict[str, set[str]] = {
     "double": ES_FLOAT_TYPES,
     "scaled_float": ES_FLOAT_TYPES,
     "float": ES_FLOAT_TYPES,
@@ -74,7 +68,7 @@ class Field(NamedTuple):
     es_field_name: str
     is_source: bool
     es_dtype: str
-    es_date_format: Optional[str]
+    es_date_format: str | None
     pd_dtype: type
     is_searchable: bool
     is_aggregatable: bool
@@ -155,7 +149,7 @@ class FieldMappings:
                                       or es_field_name.keyword (if exists) or None
     """
 
-    ES_DTYPE_TO_PD_DTYPE: Dict[str, str] = {
+    ES_DTYPE_TO_PD_DTYPE: dict[str, str] = {
         "text": "object",
         "keyword": "object",
         "long": "int64",
@@ -173,7 +167,7 @@ class FieldMappings:
     }
 
     # the labels for each column (display_name is index)
-    column_labels: List[str] = [
+    column_labels: list[str] = [
         "es_field_name",
         "is_source",
         "es_dtype",
@@ -189,7 +183,7 @@ class FieldMappings:
         self,
         client: "Elasticsearch",
         index_pattern: str,
-        display_names: Optional[List[str]] = None,
+        display_names: list[str] | None = None,
     ):
         """
         Parameters
@@ -235,8 +229,8 @@ class FieldMappings:
 
     @staticmethod
     def _extract_fields_from_mapping(
-        mappings: Dict[str, Any], source_only: bool = False
-    ) -> Dict[str, str]:
+        mappings: dict[str, Any], source_only: bool = False
+    ) -> dict[str, str]:
         """
         Extract all field names and types from a mapping.
         ```
@@ -482,7 +476,7 @@ class FieldMappings:
         return cls.ES_DTYPE_TO_PD_DTYPE.get(es_dtype, "object")
 
     @staticmethod
-    def _pd_dtype_to_es_dtype(pd_dtype) -> Optional[str]:
+    def _pd_dtype_to_es_dtype(pd_dtype) -> str | None:
         """
         Mapping pandas dtypes to Elasticsearch dtype
         --------------------------------------------
@@ -498,7 +492,7 @@ class FieldMappings:
         category NA NA Finite list of text values
         ```
         """
-        es_dtype: Optional[str] = None
+        es_dtype: str | None = None
 
         # Map all to 64-bit - TODO map to specifics: int32 -> int etc.
         if is_float_dtype(pd_dtype):
@@ -522,8 +516,8 @@ class FieldMappings:
 
     @staticmethod
     def _generate_es_mappings(
-        dataframe: "pd.DataFrame", es_type_overrides: Optional[Mapping[str, str]] = None
-    ) -> Dict[str, Dict[str, Any]]:
+        dataframe: "pd.DataFrame", es_type_overrides: Mapping[str, str] | None = None
+    ) -> dict[str, dict[str, Any]]:
         """Given a pandas dataframe, generate the associated Elasticsearch mapping
 
         Parameters
@@ -538,12 +532,12 @@ class FieldMappings:
         -------
             mapping : str
         """
-        es_dtype: Union[str, Dict[str, Any]]
+        es_dtype: str | dict[str, Any]
 
-        mapping_props: Dict[str, Any] = {}
+        mapping_props: dict[str, Any] = {}
 
         if es_type_overrides is not None:
-            non_existing_columns: List[str] = [
+            non_existing_columns: list[str] = [
                 key for key in es_type_overrides.keys() if key not in dataframe.columns
             ]
             if non_existing_columns:
@@ -569,7 +563,7 @@ class FieldMappings:
 
         return {"mappings": {"properties": mapping_props}}
 
-    def aggregatable_field_name(self, display_name: str) -> Optional[str]:
+    def aggregatable_field_name(self, display_name: str) -> str | None:
         """
         Return a single aggregatable field_name from display_name
 
@@ -592,7 +586,7 @@ class FieldMappings:
 
         raise KeyError if the field_name doesn't exist in the mapping, or isn't aggregatable
         """
-        mapping: Optional[pd.Series] = None
+        mapping: pd.Series | None = None
 
         try:
             mapping = self._mappings_capabilities.loc[display_name]
@@ -606,7 +600,7 @@ class FieldMappings:
 
         return mapping.aggregatable_es_field_name
 
-    def aggregatable_field_names(self) -> Dict[str, str]:
+    def aggregatable_field_names(self) -> dict[str, str]:
         """
         Return a list of aggregatable Elasticsearch field_names for all display names.
         If field is not aggregatable_field_names, return nothing.
@@ -719,11 +713,11 @@ class FieldMappings:
             ]
         )
 
-    def numeric_source_fields(self) -> List[str]:
+    def numeric_source_fields(self) -> list[str]:
         _, es_field_names, _ = self.metric_source_fields()
         return es_field_names
 
-    def all_source_fields(self) -> List[Field]:
+    def all_source_fields(self) -> list[Field]:
         """
         This method is used to return all Field Mappings for fields
 
@@ -732,14 +726,14 @@ class FieldMappings:
         A list of Field Mappings
 
         """
-        source_fields: List[Field] = []
+        source_fields: list[Field] = []
         for column, row in self._mappings_capabilities.iterrows():
             row = row.to_dict()
             row["column"] = column
             source_fields.append(Field(**row))
         return source_fields
 
-    def groupby_source_fields(self, by: List[str]) -> Tuple[List[Field], List[Field]]:
+    def groupby_source_fields(self, by: list[str]) -> tuple[list[Field], list[Field]]:
         """
         This method returns all Field Mappings for groupby and non-groupby fields
 
@@ -753,8 +747,8 @@ class FieldMappings:
         A Tuple consisting of a list of field mappings for groupby and non-groupby fields
 
         """
-        groupby_fields: Dict[str, Field] = {}
-        aggregatable_fields: List[Field] = []
+        groupby_fields: dict[str, Field] = {}
+        aggregatable_fields: list[Field] = []
         for column, row in self._mappings_capabilities.iterrows():
             row = row.to_dict()
             row["column"] = column
@@ -768,7 +762,7 @@ class FieldMappings:
 
     def metric_source_fields(
         self, include_bool: bool = False, include_timestamp: bool = False
-    ) -> Tuple[List["DTypeLike"], List[str], Optional[List[str]]]:
+    ) -> tuple[list["DTypeLike"], list[str], list[str] | None]:
         """
         Returns
         -------
@@ -807,7 +801,7 @@ class FieldMappings:
         # return in display_name order
         return pd_dtypes, es_field_names, es_date_formats
 
-    def get_field_names(self, include_scripted_fields: bool = True) -> List[str]:
+    def get_field_names(self, include_scripted_fields: bool = True) -> list[str]:
         if include_scripted_fields:
             return self._mappings_capabilities.es_field_name.to_list()
 
@@ -818,7 +812,7 @@ class FieldMappings:
     def _get_display_names(self):
         return self._mappings_capabilities.index.to_list()
 
-    def _set_display_names(self, display_names: List[str]):
+    def _set_display_names(self, display_names: list[str]):
         if not is_list_like(display_names):
             raise ValueError(f"'{display_names}' is not list like")
 
@@ -898,7 +892,7 @@ class FieldMappings:
 def verify_mapping_compatibility(
     ed_mapping: Mapping[str, Mapping[str, Mapping[str, Mapping[str, str]]]],
     es_mapping: Mapping[str, Mapping[str, Mapping[str, Mapping[str, str]]]],
-    es_type_overrides: Optional[Mapping[str, str]] = None,
+    es_type_overrides: Mapping[str, str] | None = None,
 ) -> None:
     """Given a mapping generated by Eland and an existing ES index mapping
     attempt to see if the two are compatible. If not compatible raise ValueError
@@ -972,7 +966,7 @@ def _compat_field_caps(client, fields, index=None):
         __path = f"/{_quote(index)}/_field_caps"
     else:
         __path = "/_field_caps"
-    __query: Dict[str, Any] = {}
+    __query: dict[str, Any] = {}
     if fields is not None:
         __query["fields"] = fields
     return client.perform_request(

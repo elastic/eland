@@ -15,7 +15,7 @@
 #  specific language governing permissions and limitations
 #  under the License.
 
-from typing import Any, Dict
+from typing import Any
 
 import numpy as np
 import pandas as pd  # type: ignore
@@ -30,7 +30,7 @@ pd.set_option("display.width", 100)
 
 
 @pytest.fixture(autouse=True)
-def add_imports(doctest_namespace: Dict[str, Any]) -> None:
+def add_imports(doctest_namespace: dict[str, Any]) -> None:
     doctest_namespace["np"] = np
     doctest_namespace["pd"] = pd
     doctest_namespace["ed"] = ed

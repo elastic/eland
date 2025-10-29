@@ -17,7 +17,7 @@
 
 from abc import ABC, abstractmethod
 from io import StringIO
-from typing import TYPE_CHECKING, Any, List, Union
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
@@ -67,7 +67,7 @@ class ArithmeticString(ArithmeticObject):
 
 
 class ArithmeticNumber(ArithmeticObject):
-    def __init__(self, value: Union[int, float], dtype: "DTypeLike"):
+    def __init__(self, value: int | float, dtype: "DTypeLike"):
         self._value = value
         self._dtype = dtype
 
@@ -96,7 +96,7 @@ class ArithmeticSeries(ArithmeticObject):
     ) -> None:
         # type defs
         self._value: str
-        self._tasks: List["ArithmeticTask"]
+        self._tasks: list["ArithmeticTask"]
 
         task = query_compiler.get_arithmetic_op_fields()
 
