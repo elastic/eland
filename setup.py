@@ -38,10 +38,10 @@ CLASSIFIERS = [
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering",
 ]
 
@@ -60,7 +60,7 @@ extras = {
     "lightgbm": ["lightgbm>=3,<5"],
     "pytorch": [
         "requests<3",
-        "torch==2.5.1",
+        "torch==2.7.1",
         "tqdm",
         "sentence-transformers>=5.0.0,<6.0.0",
         # sentencepiece is a required dependency for the slow tokenizers
@@ -95,7 +95,7 @@ setup(
     entry_points={
         "console_scripts": "eland_import_hub_model=eland.cli.eland_import_hub_model:main"
     },
-    python_requires=">=3.9,<3.13",
+    python_requires=">=3.10,<3.14",
     package_data={"eland": ["py.typed"]},
     include_package_data=True,
     zip_safe=False,

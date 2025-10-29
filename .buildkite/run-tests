@@ -11,7 +11,7 @@ set -euxo pipefail
 
 TEST_SUITE=${TEST_SUITE-xpack}
 NODE_NAME=localhost
-PANDAS_VERSION=${PANDAS_VERSION-1.5.0}
+PANDAS_VERSION=${PANDAS_VERSION-1.5.3}
 
 elasticsearch_image=elasticsearch
 elasticsearch_url=http://elastic:changeme@${NODE_NAME}:9200

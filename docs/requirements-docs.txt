@@ -1,5 +1,5 @@
 matplotlib
 nbval
-sphinx==5.3.0
+sphinx
 nbsphinx
 furo
