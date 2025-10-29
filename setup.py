@@ -65,7 +65,7 @@ extras = {
         "sentence-transformers>=5.0.0,<6.0.0",
         # sentencepiece is a required dependency for the slow tokenizers
         # https://huggingface.co/transformers/v4.4.2/migration.html#sentencepiece-is-removed-from-the-required-dependencies
-        "transformers[sentencepiece]>=4.47.0,<4.50.3",
+        "transformers[sentencepiece]>=4.0.0,<5.0.0",
     ],
 }
 extras["all"] = list({dep for deps in extras.values() for dep in deps})
