@@ -19,6 +19,7 @@ import os
 from pathlib import Path
 
 import nox
+from packaging.version import Version
 
 BASE_DIR = Path(__file__).parent
 SOURCE_FILES = ("setup.py", "noxfile.py", "eland/", "docs/", "utils/", "tests/")
@@ -55,24 +56,24 @@ TYPED_FILES = (
 )
 
 
-@nox.session(reuse_venv=True, python="3.11")
+@nox.session(reuse_venv=True, python="3.13")
 def format(session):
     session.install("black ~= 25.0", "isort", "flynt")
     session.run("python", "utils/license-headers.py", "fix", *SOURCE_FILES)
     session.run("flynt", *SOURCE_FILES)
-    session.run("black", "--target-version=py39", *SOURCE_FILES)
+    session.run("black", "--target-version=py310", *SOURCE_FILES)
     session.run("isort", "--profile=black", *SOURCE_FILES)
     lint(session)
 
 
-@nox.session(reuse_venv=True, python="3.11")
+@nox.session(reuse_venv=True, python="3.13")
 def lint(session):
     # Install numpy to use its mypy plugin
     # https://numpy.org/devdocs/reference/typing.html#mypy-plugin
     session.install("black ~= 25.0", "flake8", "mypy", "isort", "numpy")
     session.install(".")
     session.run("python", "utils/license-headers.py", "check", *SOURCE_FILES)
-    session.run("black", "--check", "--target-version=py39", *SOURCE_FILES)
+    session.run("black", "--check", "--target-version=py310", *SOURCE_FILES)
     session.run("isort", "--check", "--profile=black", *SOURCE_FILES)
     session.run("flake8", "--extend-ignore=E203,E402,E501,E704,E712", *SOURCE_FILES)
 
@@ -95,12 +96,15 @@ def lint(session):
         session.error("\n" + "\n".join(sorted(set(errors))))
 
 
-@nox.session(python=["3.9", "3.10", "3.11", "3.12"])
-@nox.parametrize("pandas_version", ["1.5.0", "2.2.3"])
+@nox.session(python=["3.10", "3.11", "3.12", "3.13"])
+@nox.parametrize("pandas_version", ["1.5.3", "2.3.3"])
 def test(session, pandas_version: str):
     args = []
     if pandas_version[0] == "1":
         args.append("numpy<2")
+    if Version(session.python) >= Version("3.13") and pandas_version == "1.5.3":
+        session.skip("Pandas 1.5 does not support Python 3.13")
+
     session.install("-r", "requirements-dev.txt", f"pandas~={pandas_version}", *args)
     session.run("python", "-m", "tests.setup_tests")
 

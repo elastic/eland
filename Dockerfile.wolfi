@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM docker.elastic.co/wolfi/python:3.10-dev AS builder
+FROM docker.elastic.co/wolfi/python:3.13-dev AS builder
 
 WORKDIR /eland
 ENV VIRTUAL_ENV=/eland/venv
@@ -20,7 +20,7 @@ RUN --mount=type=cache,target=/root/.cache/pip \
         .[all]; \
     fi
 
-FROM docker.elastic.co/wolfi/python:3.10
+FROM docker.elastic.co/wolfi/python:3.13
 
 WORKDIR /eland
 ENV VIRTUAL_ENV=/eland/venv
