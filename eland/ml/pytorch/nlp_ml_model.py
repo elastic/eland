@@ -315,10 +315,12 @@ class TextExpansionInferenceOptions(InferenceConfig):
         *,
         tokenization: NlpTokenizationConfig,
         results_field: t.Optional[str] = None,
+        expansion_type: t.Optional[str] = "elser",
     ):
         super().__init__(configuration_type="text_expansion")
         self.tokenization = tokenization
         self.results_field = results_field
+        self.expansion_type = expansion_type
 
 
 class TrainedModelInput:
