@@ -155,3 +155,61 @@ class LTRModelConfig:
         "Returns the index of the feature in the feature lists."
 
         return self.feature_names.index(feature_name)
+
+    @classmethod
+    def from_dict(cls, d: Mapping[str, Any]) -> "LTRModelConfig":
+        """
+        Create an LTRModelConfig from a dict.
+
+        Parameters
+        ----------
+        d: Mapping[str, Any]
+            Dict representing the LTR model config.
+
+        Examples
+        --------
+        >>> from eland.ml.ltr import LTRModelConfig
+
+        >>> ltr_model_config_dict = {
+        ...     "learning_to_rank": {
+        ...         "feature_extractors": [
+        ...             {
+        ...                 "query_extractor": {
+        ...                     "feature_name": "title_bm25",
+        ...                     "query": { "match": { "title": "{{query}}" } }
+        ...                 }
+        ...             },
+        ...             {
+        ...                 "query_extractor": {
+        ...                     "feature_name": "description_bm25",
+        ...                     "query": { "match": { "description": "{{query}}" } }
+        ...                 }
+        ...             }
+        ...         ]
+        ...     }
+        ... }
+
+        >>> ltr_model_config = LTRModelConfig.from_dict(ltr_model_config_dict)
+        """
+        if TYPE_LEARNING_TO_RANK not in d:
+            raise ValueError(
+                f"Invalid LTR model config, missing '{TYPE_LEARNING_TO_RANK}' key"
+            )
+
+        feature_extractors = []
+        for feature_extractor in d[TYPE_LEARNING_TO_RANK]["feature_extractors"]:
+            if "query_extractor" in feature_extractor:
+                fe = feature_extractor["query_extractor"]
+                feature_extractors.append(
+                    QueryFeatureExtractor(
+                        feature_name=fe["feature_name"],
+                        query=fe["query"],
+                        default_score=fe.get("default_score"),
+                    )
+                )
+            else:
+                raise ValueError(
+                    f"Unknown feature extractor type: {list(feature_extractor.keys())}"
+                )
+
+        return cls(feature_extractors=feature_extractors)
