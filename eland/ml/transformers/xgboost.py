@@ -95,7 +95,11 @@ class XGBoostForestTransformer(ModelTransformer):
             )
 
     def build_leaf_node(self, row: pd.Series, curr_tree: int) -> TreeNode:
-        return TreeNode(node_idx=row["Node"], leaf_value=[float(row["Gain"])])
+        return TreeNode(
+            node_idx=row["Node"],
+            leaf_value=[float(row["Gain"])],
+            number_samples=int(row["Cover"]),
+        )
 
     def build_tree_node(self, row: pd.Series, curr_tree: int) -> TreeNode:
         node_index = row["Node"]
@@ -110,6 +114,7 @@ class XGBoostForestTransformer(ModelTransformer):
                 default_left=row["Yes"] == row["Missing"],
                 threshold=float(row["Split"]),
                 split_feature=self.get_feature_id(row["Feature"]),
+                number_samples=int(row["Cover"]),
             )
 
     def build_tree(self, nodes: list[TreeNode]) -> Tree:
@@ -257,7 +262,9 @@ class XGBoostClassifierTransformer(XGBoostForestTransformer):
             return super().build_leaf_node(row, curr_tree)
         leaf_val = [0.0] * self._num_classes
         leaf_val[curr_tree % self._num_classes] = float(row["Gain"])
-        return TreeNode(node_idx=row["Node"], leaf_value=leaf_val)
+        return TreeNode(
+            node_idx=row["Node"], leaf_value=leaf_val, number_samples=int(row["Cover"])
+        )
 
     def determine_target_type(self) -> str:
         return "classification"
