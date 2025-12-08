@@ -63,7 +63,7 @@ extras = {
         "torch==2.7.1",
         "tqdm",
         # not currently compatible with transformers v5
-        # "sentence-transformers>=5.0.0,<6.0.0",
+        "sentence-transformers @ git+https://github.com/huggingface/sentence-transformers.git@main",
         # sentencepiece is a required dependency for the slow tokenizers
         # https://huggingface.co/transformers/v4.4.2/migration.html#sentencepiece-is-removed-from-the-required-dependencies
         "transformers[sentencepiece]>=5.0.0rc0",
