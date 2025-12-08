@@ -104,23 +104,37 @@ TASK_TYPE_TO_INFERENCE_CONFIG = {
     "text_similarity": TextSimilarityInferenceOptions,
 }
 SUPPORTED_TASK_TYPES_NAMES = ", ".join(sorted(SUPPORTED_TASK_TYPES))
-SUPPORTED_TOKENIZERS = (
-    transformers.BertTokenizer,
-    transformers.BertJapaneseTokenizer,
-    transformers.MPNetTokenizer,
-    transformers.DPRContextEncoderTokenizer,
-    transformers.DPRQuestionEncoderTokenizer,
-    transformers.DistilBertTokenizer,
-    transformers.ElectraTokenizer,
-    transformers.MobileBertTokenizer,
-    transformers.RetriBertTokenizer,
-    transformers.RobertaTokenizer,
-    transformers.BartTokenizer,
-    transformers.SqueezeBertTokenizer,
-    transformers.XLMRobertaTokenizer,
-    transformers.DebertaV2Tokenizer,
-)
-SUPPORTED_TOKENIZERS_NAMES = ", ".join(sorted([str(x) for x in SUPPORTED_TOKENIZERS]))
+
+# Try to import tokenizer classes, but don't fail if they don't exist
+_SUPPORTED_TOKENIZER_NAMES = {
+    "BertTokenizer",
+    "BertJapaneseTokenizer",
+    "MPNetTokenizer",
+    "DPRContextEncoderTokenizer",
+    "DPRQuestionEncoderTokenizer",
+    "DistilBertTokenizer",
+    "ElectraTokenizer",
+    "MobileBertTokenizer",
+    "RetriBertTokenizer",  # May be deprecated but models still work
+    "RobertaTokenizer",
+    "BartTokenizer",
+    "SqueezeBertTokenizer",  # May be deprecated but models still work
+    "XLMRobertaTokenizer",
+    "DebertaV2Tokenizer",
+}
+
+# Try to build tuple of classes for backward compatibility where possible
+_SUPPORTED_TOKENIZER_CLASSES = []
+for name in _SUPPORTED_TOKENIZER_NAMES:
+    tokenizer_class = getattr(transformers, name, None)
+    if tokenizer_class is not None:
+        _SUPPORTED_TOKENIZER_CLASSES.append(tokenizer_class)
+
+SUPPORTED_TOKENIZERS = tuple(_SUPPORTED_TOKENIZER_CLASSES) if _SUPPORTED_TOKENIZER_CLASSES else (PreTrainedTokenizer,)
+SUPPORTED_TOKENIZERS_NAMES = ", ".join(sorted(_SUPPORTED_TOKENIZER_NAMES))
+
+
+from eland.ml.pytorch._utils import _is_tokenizer_type  # noqa: E402
 
 TracedModelTypes = Union[
     torch.nn.Module,
@@ -205,18 +219,13 @@ class _TransformerTraceableModel(TraceableModel):
             inputs["token_type_ids"] = torch.zeros(
                 inputs["input_ids"].size(1), dtype=torch.long
             )
-        if isinstance(
+        if _is_tokenizer_type(
             self._tokenizer,
-            (
-                transformers.BartTokenizer,
-                transformers.MPNetTokenizer,
-                transformers.RobertaTokenizer,
-                transformers.XLMRobertaTokenizer,
-            ),
+            ("BartTokenizer", "MPNetTokenizer", "RobertaTokenizer", "XLMRobertaTokenizer"),
         ):
             return (inputs["input_ids"], inputs["attention_mask"])
 
-        if isinstance(self._tokenizer, transformers.DebertaV2Tokenizer):
+        if _is_tokenizer_type(self._tokenizer, "DebertaV2Tokenizer"):
             return (
                 inputs["input_ids"],
                 inputs["attention_mask"],
@@ -399,9 +408,9 @@ class TransformerModel:
         )
 
         # check for a supported tokenizer
-        if not isinstance(self._tokenizer, SUPPORTED_TOKENIZERS):
+        if not _is_tokenizer_type(self._tokenizer, _SUPPORTED_TOKENIZER_NAMES):
             raise TypeError(
-                f"Tokenizer type {self._tokenizer} not supported, must be one of: {SUPPORTED_TOKENIZERS_NAMES}"
+                f"Tokenizer type {self._tokenizer.__class__.__name__} not supported, must be one of: {SUPPORTED_TOKENIZERS_NAMES}"
             )
 
         self._traceable_model = self._create_traceable_model()
@@ -423,10 +432,45 @@ class TransformerModel:
             ]
             vocab_obj["merges"] = merges
 
-        if isinstance(self._tokenizer, transformers.DebertaV2Tokenizer):
-            sp_model = self._tokenizer._tokenizer.spm
-        else:
-            sp_model = getattr(self._tokenizer, "sp_model", None)
+        # Try to extract scores from sentencepiece model or fast tokenizer backend
+        scores = self._extract_vocab_scores(vocabulary)
+        if scores:
+            vocab_obj["scores"] = scores
+
+        return vocab_obj
+
+    def _extract_vocab_scores(self, vocabulary: list[str]) -> list[float] | None:
+        """
+        Extract vocabulary scores from the tokenizer.
+
+        For slow tokenizers: uses sp_model.get_score()
+        For fast tokenizers: extracts from the tokenizers library JSON backend
+        """
+        # First, try to get scores from fast tokenizer backend (transformers v5)
+        if getattr(self._tokenizer, "is_fast", False):
+            backend = getattr(self._tokenizer, "_tokenizer", None)
+            if backend is not None:
+                try:
+                    import json
+
+                    tok_json = json.loads(backend.to_str())
+                    model_info = tok_json.get("model", {})
+                    # Unigram models store vocab as [[token, score], ...]
+                    if model_info.get("type") == "Unigram":
+                        backend_vocab = model_info.get("vocab", [])
+                        if backend_vocab:
+                            # Build a token->score map from backend vocab
+                            score_map = {
+                                token: score for token, score in backend_vocab
+                            }
+                            # Return scores in the same order as vocabulary
+                            scores = [score_map.get(token, 0.0) for token in vocabulary]
+                            return scores
+                except Exception:
+                    pass  # Fall through to sp_model approach
+
+        # Try legacy sp_model approach for slow tokenizers
+        sp_model = getattr(self._tokenizer, "sp_model", None)
 
         if sp_model:
             id_correction = getattr(self._tokenizer, "fairseq_offset", 0)
@@ -438,10 +482,10 @@ class TransformerModel:
                     scores.append(sp_model.get_score(token_id - id_correction))
                 except IndexError:
                     scores.append(0.0)
-                    pass
-            if len(scores) > 0:
-                vocab_obj["scores"] = scores
-        return vocab_obj
+            if scores:
+                return scores
+
+        return None
 
     def _create_tokenization_config(self) -> NlpTokenizationConfig:
         if self._max_model_input_size:
@@ -449,23 +493,21 @@ class TransformerModel:
         else:
             _max_sequence_length = self._find_max_sequence_length()
 
-        if isinstance(self._tokenizer, transformers.MPNetTokenizer):
+        if _is_tokenizer_type(self._tokenizer, "MPNetTokenizer"):
             return NlpMPNetTokenizationConfig(
                 do_lower_case=getattr(self._tokenizer, "do_lower_case", None),
                 max_sequence_length=_max_sequence_length,
             )
-        elif isinstance(
-            self._tokenizer, (transformers.RobertaTokenizer, transformers.BartTokenizer)
-        ):
+        elif _is_tokenizer_type(self._tokenizer, ("RobertaTokenizer", "BartTokenizer")):
             return NlpRobertaTokenizationConfig(
                 add_prefix_space=getattr(self._tokenizer, "add_prefix_space", None),
                 max_sequence_length=_max_sequence_length,
             )
-        elif isinstance(self._tokenizer, transformers.XLMRobertaTokenizer):
+        elif _is_tokenizer_type(self._tokenizer, "XLMRobertaTokenizer"):
             return NlpXLMRobertaTokenizationConfig(
                 max_sequence_length=_max_sequence_length
             )
-        elif isinstance(self._tokenizer, transformers.DebertaV2Tokenizer):
+        elif _is_tokenizer_type(self._tokenizer, "DebertaV2Tokenizer"):
             return NlpDebertaV2TokenizationConfig(
                 max_sequence_length=_max_sequence_length,
                 do_lower_case=getattr(self._tokenizer, "do_lower_case", None),
@@ -509,7 +551,7 @@ class TransformerModel:
                 if max_len is not None and max_len < REASONABLE_MAX_LENGTH:
                     return int(max_len)
 
-        if isinstance(self._tokenizer, BertTokenizer):
+        if _is_tokenizer_type(self._tokenizer, "BertTokenizer"):
             return 512
 
         raise UnknownModelInputSizeError("Cannot determine model max input length")
@@ -692,17 +734,19 @@ class TransformerModel:
             inputs["token_type_ids"] = torch.zeros(
                 inputs["input_ids"].size(1), dtype=torch.long
             )
-        if isinstance(
+        if _is_tokenizer_type(
             self._tokenizer,
-            (
-                transformers.BartTokenizer,
-                transformers.MPNetTokenizer,
-                transformers.RobertaTokenizer,
-                transformers.XLMRobertaTokenizer,
-            ),
+            ("BartTokenizer", "MPNetTokenizer", "RobertaTokenizer", "XLMRobertaTokenizer"),
         ):
             del inputs["token_type_ids"]
             return (inputs["input_ids"], inputs["attention_mask"])
+
+        if _is_tokenizer_type(self._tokenizer, "DebertaV2Tokenizer"):
+            return (
+                inputs["input_ids"],
+                inputs["attention_mask"],
+                inputs["token_type_ids"],
+            )
 
         position_ids = torch.arange(inputs["input_ids"].size(1), dtype=torch.long)
         inputs["position_ids"] = position_ids
@@ -716,7 +760,7 @@ class TransformerModel:
     def _create_traceable_model(self) -> _TransformerTraceableModel:
         if self._task_type == "auto":
             model = transformers.AutoModel.from_pretrained(
-                self._model_id, token=self._access_token, torchscript=True
+                self._model_id, token=self._access_token
             )
             maybe_task_type = task_type_from_model_config(model.config)
             if maybe_task_type is None:
@@ -728,28 +772,28 @@ class TransformerModel:
 
         if self._task_type == "text_expansion":
             model = transformers.AutoModelForMaskedLM.from_pretrained(
-                self._model_id, token=self._access_token, torchscript=True
+                self._model_id, token=self._access_token
             )
             model = _DistilBertWrapper.try_wrapping(model)
             return _TraceableTextExpansionModel(self._tokenizer, model)
 
         if self._task_type == "fill_mask":
             model = transformers.AutoModelForMaskedLM.from_pretrained(
-                self._model_id, token=self._access_token, torchscript=True
+                self._model_id, token=self._access_token
             )
             model = _DistilBertWrapper.try_wrapping(model)
             return _TraceableFillMaskModel(self._tokenizer, model)
 
         elif self._task_type == "ner":
             model = transformers.AutoModelForTokenClassification.from_pretrained(
-                self._model_id, token=self._access_token, torchscript=True
+                self._model_id, token=self._access_token
             )
             model = _DistilBertWrapper.try_wrapping(model)
             return _TraceableNerModel(self._tokenizer, model)
 
         elif self._task_type == "text_classification":
             model = transformers.AutoModelForSequenceClassification.from_pretrained(
-                self._model_id, token=self._access_token, torchscript=True
+                self._model_id, token=self._access_token
             )
             model = _DistilBertWrapper.try_wrapping(model)
             return _TraceableTextClassificationModel(self._tokenizer, model)
@@ -766,7 +810,7 @@ class TransformerModel:
 
         elif self._task_type == "zero_shot_classification":
             model = transformers.AutoModelForSequenceClassification.from_pretrained(
-                self._model_id, token=self._access_token, torchscript=True
+                self._model_id, token=self._access_token
             )
             model = _DistilBertWrapper.try_wrapping(model)
             return _TraceableZeroShotClassificationModel(self._tokenizer, model)
@@ -779,14 +823,14 @@ class TransformerModel:
 
         elif self._task_type == "text_similarity":
             model = transformers.AutoModelForSequenceClassification.from_pretrained(
-                self._model_id, token=self._access_token, torchscript=True
+                self._model_id, token=self._access_token
             )
             model = _DistilBertWrapper.try_wrapping(model)
             return _TraceableTextSimilarityModel(self._tokenizer, model)
 
         elif self._task_type == "pass_through":
             model = transformers.AutoModel.from_pretrained(
-                self._model_id, token=self._access_token, torchscript=True
+                self._model_id, token=self._access_token
             )
             return _TraceablePassThroughModel(self._tokenizer, model)
 
