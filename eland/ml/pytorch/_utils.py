@@ -20,8 +20,12 @@ Utility functions for PyTorch module that can be shared across modules
 without causing circular imports.
 """
 
+from typing import Any, Set, Tuple, Union
 
-def _is_tokenizer_type(tokenizer, tokenizer_class_names):
+
+def _is_tokenizer_type(
+    tokenizer: Any, tokenizer_class_names: Union[str, Tuple[str, ...], Set[str]]
+) -> bool:
     """
     Check if tokenizer is one of the specified types by class name.
     Works even if tokenizer classes are not directly importable.
@@ -37,4 +41,3 @@ def _is_tokenizer_type(tokenizer, tokenizer_class_names):
         tokenizer_class_names = (tokenizer_class_names,)
     tokenizer_class_name = tokenizer.__class__.__name__
     return tokenizer_class_name in tokenizer_class_names
-

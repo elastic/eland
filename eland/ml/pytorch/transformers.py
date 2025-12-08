@@ -32,7 +32,6 @@ import transformers  # type: ignore
 from torch import Tensor
 from torch.profiler import profile  # type: ignore
 from transformers import (
-    BertTokenizer,
     PretrainedConfig,
     PreTrainedModel,
     PreTrainedTokenizer,
@@ -130,7 +129,11 @@ for name in _SUPPORTED_TOKENIZER_NAMES:
     if tokenizer_class is not None:
         _SUPPORTED_TOKENIZER_CLASSES.append(tokenizer_class)
 
-SUPPORTED_TOKENIZERS = tuple(_SUPPORTED_TOKENIZER_CLASSES) if _SUPPORTED_TOKENIZER_CLASSES else (PreTrainedTokenizer,)
+SUPPORTED_TOKENIZERS = (
+    tuple(_SUPPORTED_TOKENIZER_CLASSES)
+    if _SUPPORTED_TOKENIZER_CLASSES
+    else (PreTrainedTokenizer,)
+)
 SUPPORTED_TOKENIZERS_NAMES = ", ".join(sorted(_SUPPORTED_TOKENIZER_NAMES))
 
 
@@ -221,7 +224,12 @@ class _TransformerTraceableModel(TraceableModel):
             )
         if _is_tokenizer_type(
             self._tokenizer,
-            ("BartTokenizer", "MPNetTokenizer", "RobertaTokenizer", "XLMRobertaTokenizer"),
+            (
+                "BartTokenizer",
+                "MPNetTokenizer",
+                "RobertaTokenizer",
+                "XLMRobertaTokenizer",
+            ),
         ):
             return (inputs["input_ids"], inputs["attention_mask"])
 
@@ -460,9 +468,7 @@ class TransformerModel:
                         backend_vocab = model_info.get("vocab", [])
                         if backend_vocab:
                             # Build a token->score map from backend vocab
-                            score_map = {
-                                token: score for token, score in backend_vocab
-                            }
+                            score_map = {token: score for token, score in backend_vocab}
                             # Return scores in the same order as vocabulary
                             scores = [score_map.get(token, 0.0) for token in vocabulary]
                             return scores
@@ -736,7 +742,12 @@ class TransformerModel:
             )
         if _is_tokenizer_type(
             self._tokenizer,
-            ("BartTokenizer", "MPNetTokenizer", "RobertaTokenizer", "XLMRobertaTokenizer"),
+            (
+                "BartTokenizer",
+                "MPNetTokenizer",
+                "RobertaTokenizer",
+                "XLMRobertaTokenizer",
+            ),
         ):
             del inputs["token_type_ids"]
             return (inputs["input_ids"], inputs["attention_mask"])

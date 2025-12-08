@@ -59,9 +59,7 @@ class _QuestionAnsweringWrapperModule(nn.Module):  # type: ignore
 
     @staticmethod
     def from_pretrained(model_id: str, *, token: str | None = None) -> Any | None:
-        model = AutoModelForQuestionAnswering.from_pretrained(
-            model_id, token=token
-        )
+        model = AutoModelForQuestionAnswering.from_pretrained(model_id, token=token)
         if isinstance(
             model.config,
             (
@@ -249,7 +247,13 @@ class _SentenceTransformerWrapperModule(nn.Module):  # type: ignore
         model = AutoModel.from_pretrained(model_id, token=token)
         if _is_tokenizer_type(
             tokenizer,
-            ("BartTokenizer", "MPNetTokenizer", "RobertaTokenizer", "XLMRobertaTokenizer", "DebertaV2Tokenizer"),
+            (
+                "BartTokenizer",
+                "MPNetTokenizer",
+                "RobertaTokenizer",
+                "XLMRobertaTokenizer",
+                "DebertaV2Tokenizer",
+            ),
         ):
             return _TwoParameterSentenceTransformerWrapper(model, output_key)
         else:
