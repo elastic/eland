@@ -189,7 +189,7 @@ class Operations:
         else:
             # If all results are float convert into float64
             if all(isinstance(i, float) for i in results.values()):
-                dtype: "DTypeLike" = np.float64
+                dtype: "DTypeLike | None" = np.float64
             # If all results are int convert into int64
             elif all(isinstance(i, int) for i in results.values()):
                 dtype = np.int64
