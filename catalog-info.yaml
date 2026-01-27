@@ -53,6 +53,9 @@ spec:
     spec:
       pipeline_file: .buildkite/pipeline.yml
       repository: elastic/eland
+      env:
+        ELASTIC_SLACK_NOTIFICATIONS_ENABLED: 'true'
+        SLACK_NOTIFICATIONS_CHANNEL: '#devtools-notify'
       teams:
         ml-core: {}
         devtools-team: {}
