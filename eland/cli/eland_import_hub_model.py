@@ -22,6 +22,7 @@ uploading to Elasticsearch. This will also check that the task type is supported
 as well as the model and tokenizer types. All necessary configuration is
 uploaded along with the model.
 """
+
 import argparse
 import logging
 import os
@@ -269,17 +270,13 @@ def main():
             UnknownModelInputSizeError,
         )
     except ModuleNotFoundError as e:
-        logger.error(
-            textwrap.dedent(
-                f"""\
+        logger.error(textwrap.dedent(f"""\
             \033[31mFailed to run because module '{e.name}' is not available.\033[0m
 
             This script requires PyTorch extras to run. You can install these by running:
 
                 \033[1m{sys.executable} -m pip install 'eland[pytorch]'
-            \033[0m"""
-            )
-        )
+            \033[0m"""))
         exit(1)
     assert SUPPORTED_TASK_TYPES
 

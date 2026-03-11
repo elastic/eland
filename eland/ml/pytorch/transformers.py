@@ -444,9 +444,7 @@ class TransformerModel:
             pass
 
         if tokenizer is None:
-            logger.info(
-                "Slow tokenizer not available, falling back to fast tokenizer"
-            )
+            logger.info("Slow tokenizer not available, falling back to fast tokenizer")
             tokenizer = transformers.AutoTokenizer.from_pretrained(
                 self._model_id, use_fast=True, **tokenizer_kwargs
             )
@@ -481,9 +479,7 @@ class TransformerModel:
         from huggingface_hub import snapshot_download
         from peft import PeftModel
 
-        logger.info(
-            "Loading Jina Embeddings v5 model with '%s' adapter", adapter_name
-        )
+        logger.info("Loading Jina Embeddings v5 model with '%s' adapter", adapter_name)
 
         # Load the base EuroBERT model directly
         base_model = transformers.AutoModel.from_pretrained(
