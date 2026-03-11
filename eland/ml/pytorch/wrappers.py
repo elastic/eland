@@ -25,6 +25,7 @@ uses.
 from typing import Any
 
 import torch  # type: ignore
+import torch.nn.functional as F
 import transformers  # type: ignore
 from sentence_transformers import SentenceTransformer  # type: ignore
 from torch import Tensor, nn
@@ -315,3 +316,30 @@ class _DPREncoderWrapper(nn.Module):  # type: ignore
             attention_mask=attention_mask,
             token_type_ids=token_type_ids,
         )
+
+
+class _JinaEmbeddingsV5WrapperModule(nn.Module):  # type: ignore
+    """
+    Wraps a EuroBERT base model (with merged LoRA weights) to produce
+    text embeddings using last-token pooling and L2 normalization.
+    This matches the inference behavior of JinaEmbeddingsV5Model.encode().
+    """
+
+    def __init__(self, model: PreTrainedModel):
+        super().__init__()
+        self._model = model
+        self.config = model.config
+        if hasattr(self._model, "pooler"):
+            self._model.pooler = None
+
+    def forward(self, input_ids: Tensor, attention_mask: Tensor) -> Tensor:
+        """Wrap the input and output to conform to the native process interface."""
+        outputs = self._model(input_ids=input_ids, attention_mask=attention_mask)
+        hidden = outputs[0] if isinstance(outputs, tuple) else outputs.last_hidden_state
+
+        # Last-token pooling: pick the hidden state at the last non-padding position
+        seq_lengths = attention_mask.sum(dim=1) - 1
+        batch_indices = torch.arange(hidden.shape[0], device=hidden.device)
+        pooled = hidden[batch_indices, seq_lengths]
+
+        return F.normalize(pooled, p=2, dim=-1)

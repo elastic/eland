@@ -21,6 +21,8 @@ libraries such as sentence-transformers.
 """
 
 import json
+import logging
+import os
 import os.path
 import random
 import re
@@ -32,6 +34,7 @@ import transformers  # type: ignore
 from torch import Tensor
 from torch.profiler import profile  # type: ignore
 from transformers import (
+    AutoConfig,
     BertTokenizer,
     PretrainedConfig,
     PreTrainedModel,
@@ -44,6 +47,7 @@ from eland.ml.pytorch.nlp_ml_model import (
     NerInferenceOptions,
     NlpBertJapaneseTokenizationConfig,
     NlpBertTokenizationConfig,
+    NlpByteLevelBPETokenizationConfig,
     NlpDebertaV2TokenizationConfig,
     NlpMPNetTokenizationConfig,
     NlpRobertaTokenizationConfig,
@@ -64,9 +68,12 @@ from eland.ml.pytorch.traceable_model import TraceableModel
 from eland.ml.pytorch.wrappers import (
     _DistilBertWrapper,
     _DPREncoderWrapper,
+    _JinaEmbeddingsV5WrapperModule,
     _QuestionAnsweringWrapperModule,
     _SentenceTransformerWrapperModule,
 )
+
+logger = logging.getLogger(__name__)
 
 SUPPORTED_TASK_TYPES = {
     "fill_mask",
@@ -90,6 +97,7 @@ ARCHITECTURE_TO_TASK_TYPE = {
     "QuestionAnswering": ["question_answering"],
     "DPRQuestionEncoder": ["text_embedding"],
     "DPRContextEncoder": ["text_embedding"],
+    "JinaEmbeddingsV5": ["text_embedding"],
 }
 ZERO_SHOT_LABELS = {"contradiction", "neutral", "entailment"}
 TASK_TYPE_TO_INFERENCE_CONFIG = {
@@ -128,6 +136,27 @@ TracedModelTypes = Union[
     torch.jit.ScriptModule,
     torch.jit.TopLevelTracedModule,
 ]
+
+_TWO_INPUT_SLOW_TOKENIZERS = (
+    transformers.BartTokenizer,
+    transformers.MPNetTokenizer,
+    transformers.RobertaTokenizer,
+    transformers.XLMRobertaTokenizer,
+)
+
+
+def _is_two_input_tokenizer(
+    tokenizer: PreTrainedTokenizer | PreTrainedTokenizerFast,
+) -> bool:
+    if isinstance(tokenizer, _TWO_INPUT_SLOW_TOKENIZERS):
+        return True
+    if isinstance(tokenizer, PreTrainedTokenizerFast) and not isinstance(
+        tokenizer, SUPPORTED_TOKENIZERS
+    ):
+        model_inputs = getattr(tokenizer, "model_input_names", [])
+        if set(model_inputs) == {"input_ids", "attention_mask"}:
+            return True
+    return False
 
 
 class TaskTypeError(Exception):
@@ -205,15 +234,7 @@ class _TransformerTraceableModel(TraceableModel):
             inputs["token_type_ids"] = torch.zeros(
                 inputs["input_ids"].size(1), dtype=torch.long
             )
-        if isinstance(
-            self._tokenizer,
-            (
-                transformers.BartTokenizer,
-                transformers.MPNetTokenizer,
-                transformers.RobertaTokenizer,
-                transformers.XLMRobertaTokenizer,
-            ),
-        ):
+        if _is_two_input_tokenizer(self._tokenizer):
             return (inputs["input_ids"], inputs["attention_mask"])
 
         if isinstance(self._tokenizer, transformers.DebertaV2Tokenizer):
@@ -345,6 +366,7 @@ class TransformerModel:
         ingest_prefix: str | None = None,
         search_prefix: str | None = None,
         max_model_input_size: int | None = None,
+        trust_remote_code: bool = False,
     ):
         """
         Loads a model from the Hugging Face repository or local file and creates
@@ -382,6 +404,10 @@ class TransformerModel:
             Usually this value should be extracted from the model configuration
             but if that is not possible or the data is missing it can be
             explicitly set with this parameter.
+
+        trust_remote_code: bool, default False
+            Trust remote code from HuggingFace model repos. Required for
+            models with custom modeling or tokenizer code (e.g. Jina v5).
         """
 
         self._model_id = model_id
@@ -390,19 +416,10 @@ class TransformerModel:
         self._ingest_prefix = ingest_prefix
         self._search_prefix = search_prefix
         self._max_model_input_size = max_model_input_size
+        self._trust_remote_code = trust_remote_code
 
-        # load Hugging Face model and tokenizer
-        # use padding in the tokenizer to ensure max length sequences are used for tracing (at call time)
-        #  - see: https://huggingface.co/transformers/serialization.html#dummy-inputs-and-standard-lengths
-        self._tokenizer = transformers.AutoTokenizer.from_pretrained(
-            self._model_id, token=self._access_token, use_fast=False
-        )
-
-        # check for a supported tokenizer
-        if not isinstance(self._tokenizer, SUPPORTED_TOKENIZERS):
-            raise TypeError(
-                f"Tokenizer type {self._tokenizer} not supported, must be one of: {SUPPORTED_TOKENIZERS_NAMES}"
-            )
+        self._tokenizer = self._load_tokenizer()
+        self._model_config = self._load_model_config()
 
         self._traceable_model = self._create_traceable_model()
         if quantize:
@@ -410,18 +427,121 @@ class TransformerModel:
         self._vocab = self._load_vocab()
         self._config = self._create_config(es_version)
 
+    def _load_tokenizer(self) -> PreTrainedTokenizer | PreTrainedTokenizerFast:
+        tokenizer_kwargs = {
+            "token": self._access_token,
+            "trust_remote_code": self._trust_remote_code,
+        }
+
+        tokenizer = None
+        try:
+            result = transformers.AutoTokenizer.from_pretrained(
+                self._model_id, use_fast=False, **tokenizer_kwargs
+            )
+            if isinstance(result, (PreTrainedTokenizer, PreTrainedTokenizerFast)):
+                tokenizer = result
+        except Exception:
+            pass
+
+        if tokenizer is None:
+            logger.info(
+                "Slow tokenizer not available, falling back to fast tokenizer"
+            )
+            tokenizer = transformers.AutoTokenizer.from_pretrained(
+                self._model_id, use_fast=True, **tokenizer_kwargs
+            )
+
+        if not isinstance(tokenizer, SUPPORTED_TOKENIZERS) and not isinstance(
+            tokenizer, PreTrainedTokenizerFast
+        ):
+            raise TypeError(
+                f"Tokenizer type {type(tokenizer).__name__} not supported, "
+                f"must be one of: {SUPPORTED_TOKENIZERS_NAMES} or PreTrainedTokenizerFast"
+            )
+        return tokenizer
+
+    def _load_model_config(self) -> PretrainedConfig:
+        return AutoConfig.from_pretrained(
+            self._model_id,
+            token=self._access_token,
+            trust_remote_code=self._trust_remote_code,
+        )
+
+    def _is_jina_v5(self) -> bool:
+        architectures = getattr(self._model_config, "architectures", None) or []
+        model_type = getattr(self._model_config, "model_type", "")
+        return (
+            "JinaEmbeddingsV5Model" in architectures
+            or model_type == "jina_embeddings_v5"
+        )
+
+    def _load_jina_v5_model(
+        self, adapter_name: str = "retrieval"
+    ) -> _JinaEmbeddingsV5WrapperModule:
+        from huggingface_hub import snapshot_download
+        from peft import PeftModel
+
+        logger.info(
+            "Loading Jina Embeddings v5 model with '%s' adapter", adapter_name
+        )
+
+        # Load the base EuroBERT model directly
+        base_model = transformers.AutoModel.from_pretrained(
+            self._model_id,
+            token=self._access_token,
+            trust_remote_code=True,
+            torchscript=True,
+        )
+
+        # For PeftMixedModel, unwrap to get the underlying base model
+        if hasattr(base_model, "base_model"):
+            unwrapped = base_model.base_model
+            if hasattr(unwrapped, "model"):
+                unwrapped = unwrapped.model
+            base_model = unwrapped
+
+        # Download and load the LoRA adapter
+        if os.path.isdir(self._model_id):
+            adapters_dir = os.path.join(self._model_id, "adapters")
+        else:
+            adapter_cache_path = snapshot_download(
+                repo_id=self._model_id,
+                token=self._access_token,
+                allow_patterns=[f"adapters/{adapter_name}/*"],
+            )
+            adapters_dir = os.path.join(adapter_cache_path, "adapters")
+
+        adapter_path = os.path.join(adapters_dir, adapter_name)
+        peft_model = PeftModel.from_pretrained(base_model, adapter_path)
+        merged_model = peft_model.merge_and_unload()
+        logger.info("Merged '%s' LoRA adapter into base model", adapter_name)
+
+        return _JinaEmbeddingsV5WrapperModule(merged_model)
+
     def _load_vocab(self) -> dict[str, list[str]]:
         vocab_items = self._tokenizer.get_vocab().items()
         vocabulary = [k for k, _ in sorted(vocab_items, key=lambda kv: kv[1])]
         vocab_obj = {
             "vocabulary": vocabulary,
         }
+
+        # Extract BPE merges: try slow tokenizer bpe_ranks first,
+        # then fall back to the fast tokenizer's backend model
         ranks = getattr(self._tokenizer, "bpe_ranks", {})
         if len(ranks) > 0:
             merges = [
                 " ".join(m) for m, _ in sorted(ranks.items(), key=lambda kv: kv[1])
             ]
             vocab_obj["merges"] = merges
+        elif isinstance(self._tokenizer, PreTrainedTokenizerFast):
+            try:
+                backend_str = self._tokenizer.backend_tokenizer.to_str()
+                tokenizer_data = json.loads(backend_str)
+                fast_merges = tokenizer_data.get("model", {}).get("merges", [])
+                if fast_merges:
+                    vocab_obj["merges"] = fast_merges
+            except Exception:
+                logger.warning("Could not extract BPE merges from fast tokenizer")
 
         if isinstance(self._tokenizer, transformers.DebertaV2Tokenizer):
             sp_model = self._tokenizer._tokenizer.spm
@@ -449,7 +569,11 @@ class TransformerModel:
         else:
             _max_sequence_length = self._find_max_sequence_length()
 
-        if isinstance(self._tokenizer, transformers.MPNetTokenizer):
+        if self._is_jina_v5():
+            return NlpByteLevelBPETokenizationConfig(
+                max_sequence_length=_max_sequence_length,
+            )
+        elif isinstance(self._tokenizer, transformers.MPNetTokenizer):
             return NlpMPNetTokenizationConfig(
                 do_lower_case=getattr(self._tokenizer, "do_lower_case", None),
                 max_sequence_length=_max_sequence_length,
@@ -469,6 +593,12 @@ class TransformerModel:
             return NlpDebertaV2TokenizationConfig(
                 max_sequence_length=_max_sequence_length,
                 do_lower_case=getattr(self._tokenizer, "do_lower_case", None),
+            )
+        elif isinstance(self._tokenizer, PreTrainedTokenizerFast) and not isinstance(
+            self._tokenizer, SUPPORTED_TOKENIZERS
+        ):
+            return NlpByteLevelBPETokenizationConfig(
+                max_sequence_length=_max_sequence_length,
             )
         else:
             japanese_morphological_tokenizers = ["mecab"]
@@ -508,6 +638,11 @@ class TransformerModel:
                 max_len = sizes.pop()
                 if max_len is not None and max_len < REASONABLE_MAX_LENGTH:
                     return int(max_len)
+
+        # Fall back to max_position_embeddings from the model config
+        max_pos = getattr(self._model_config, "max_position_embeddings", None)
+        if max_pos is not None and max_pos <= REASONABLE_MAX_LENGTH:
+            return int(max_pos)
 
         if isinstance(self._tokenizer, BertTokenizer):
             return 512
@@ -692,16 +827,8 @@ class TransformerModel:
             inputs["token_type_ids"] = torch.zeros(
                 inputs["input_ids"].size(1), dtype=torch.long
             )
-        if isinstance(
-            self._tokenizer,
-            (
-                transformers.BartTokenizer,
-                transformers.MPNetTokenizer,
-                transformers.RobertaTokenizer,
-                transformers.XLMRobertaTokenizer,
-            ),
-        ):
-            del inputs["token_type_ids"]
+        if _is_two_input_tokenizer(self._tokenizer):
+            inputs.pop("token_type_ids", None)
             return (inputs["input_ids"], inputs["attention_mask"])
 
         position_ids = torch.arange(inputs["input_ids"].size(1), dtype=torch.long)
@@ -715,10 +842,7 @@ class TransformerModel:
 
     def _create_traceable_model(self) -> _TransformerTraceableModel:
         if self._task_type == "auto":
-            model = transformers.AutoModel.from_pretrained(
-                self._model_id, token=self._access_token, torchscript=True
-            )
-            maybe_task_type = task_type_from_model_config(model.config)
+            maybe_task_type = task_type_from_model_config(self._model_config)
             if maybe_task_type is None:
                 raise TaskTypeError(
                     f"Unable to automatically determine task type for model {self._model_id}, please supply task type: {SUPPORTED_TASK_TYPES_NAMES}"
@@ -755,6 +879,10 @@ class TransformerModel:
             return _TraceableTextClassificationModel(self._tokenizer, model)
 
         elif self._task_type == "text_embedding":
+            if self._is_jina_v5():
+                model = self._load_jina_v5_model()
+                return _TraceableTextEmbeddingModel(self._tokenizer, model)
+
             model = _DPREncoderWrapper.from_pretrained(
                 self._model_id, token=self._access_token
             )
