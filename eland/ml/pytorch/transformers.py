@@ -213,6 +213,7 @@ class _TransformerTraceableModel(TraceableModel):
             | _SentenceTransformerWrapperModule
             | _DPREncoderWrapper
             | _DistilBertWrapper
+            | _JinaEmbeddingsV5WrapperModule
         ),
     ):
         super().__init__(model=model)

@@ -35,6 +35,7 @@ from transformers import (
     AutoModelForQuestionAnswering,
     PreTrainedModel,
     PreTrainedTokenizer,
+    PreTrainedTokenizerFast,
 )
 
 DEFAULT_OUTPUT_KEY = "sentence_embedding"
@@ -176,7 +177,7 @@ class _SentenceTransformerWrapperModule(nn.Module):  # type: ignore
     @staticmethod
     def from_pretrained(
         model_id: str,
-        tokenizer: PreTrainedTokenizer,
+        tokenizer: PreTrainedTokenizer | PreTrainedTokenizerFast,
         *,
         token: str | None = None,
         output_key: str = DEFAULT_OUTPUT_KEY,

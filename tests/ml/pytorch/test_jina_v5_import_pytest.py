@@ -38,6 +38,11 @@ pytestmark = [
     pytest.mark.skipif(
         not HAS_PYTORCH, reason="This test requires 'pytorch' package to run"
     ),
+    pytest.mark.skipif(
+        not os.environ.get("TEST_JINA_INTEGRATION"),
+        reason="Set TEST_JINA_INTEGRATION=1 to run Jina v5 integration tests "
+        "(downloads ~424 MB model from HuggingFace)",
+    ),
 ]
 
 MODEL_ID = "jinaai/jina-embeddings-v5-text-nano"
