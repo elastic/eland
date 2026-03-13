@@ -62,10 +62,11 @@ extras = {
         "requests<3",
         "torch==2.7.1",
         "tqdm",
-        "sentence-transformers>=5.0.0,<6.0.0",
+        # not currently compatible with transformers v5
+        "sentence-transformers @ git+https://github.com/huggingface/sentence-transformers.git@main",
         # sentencepiece is a required dependency for the slow tokenizers
         # https://huggingface.co/transformers/v4.4.2/migration.html#sentencepiece-is-removed-from-the-required-dependencies
-        "transformers[sentencepiece]>=4.0.0,<5.0.0",
+        "transformers[sentencepiece]>=5.0.0rc0",
     ],
 }
 extras["all"] = list({dep for deps in extras.values() for dep in deps})
