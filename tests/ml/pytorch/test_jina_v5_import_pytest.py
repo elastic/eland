@@ -61,6 +61,7 @@ def transformer_model():
         model_id=MODEL_ID,
         task_type="text_embedding",
         trust_remote_code=True,
+        es_version=(8, 8, 0),
     )
 
 
