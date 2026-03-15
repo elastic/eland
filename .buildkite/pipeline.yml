@@ -53,5 +53,9 @@ steps:
             pandas: '1.5.3'
             python: '3.13'
           skip: true
+        - with:
+            pandas: '1.5.3'
+            python: '3.12'
+          skip: true
 
     command: ./.buildkite/run-tests
