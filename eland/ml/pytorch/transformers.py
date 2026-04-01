@@ -47,7 +47,6 @@ from eland.ml.pytorch.nlp_ml_model import (
     NerInferenceOptions,
     NlpBertJapaneseTokenizationConfig,
     NlpBertTokenizationConfig,
-    NlpByteLevelBPETokenizationConfig,
     NlpDebertaV2TokenizationConfig,
     NlpMPNetTokenizationConfig,
     NlpRobertaTokenizationConfig,
@@ -441,11 +440,10 @@ class TransformerModel:
             )
             if isinstance(result, (PreTrainedTokenizer, PreTrainedTokenizerFast)):
                 tokenizer = result
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Failed to load slow tokenizer, falling back to fast tokenizer: %s", e)
 
         if tokenizer is None:
-            logger.info("Slow tokenizer not available, falling back to fast tokenizer")
             tokenizer = transformers.AutoTokenizer.from_pretrained(
                 self._model_id, use_fast=True, **tokenizer_kwargs
             )
@@ -567,7 +565,7 @@ class TransformerModel:
             _max_sequence_length = self._find_max_sequence_length()
 
         if self._is_jina_v5():
-            return NlpByteLevelBPETokenizationConfig(
+            return NlpRobertaTokenizationConfig(
                 max_sequence_length=_max_sequence_length,
             )
         elif isinstance(self._tokenizer, transformers.MPNetTokenizer):
@@ -594,7 +592,7 @@ class TransformerModel:
         elif isinstance(self._tokenizer, PreTrainedTokenizerFast) and not isinstance(
             self._tokenizer, SUPPORTED_TOKENIZERS
         ):
-            return NlpByteLevelBPETokenizationConfig(
+            return NlpRobertaTokenizationConfig(
                 max_sequence_length=_max_sequence_length,
             )
         else:

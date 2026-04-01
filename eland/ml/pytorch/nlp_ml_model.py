@@ -151,26 +151,6 @@ class NlpBertJapaneseTokenizationConfig(NlpTokenizationConfig):
         self.do_lower_case = do_lower_case
 
 
-class NlpByteLevelBPETokenizationConfig(NlpTokenizationConfig):
-    def __init__(
-        self,
-        *,
-        with_special_tokens: t.Optional[bool] = None,
-        max_sequence_length: t.Optional[int] = None,
-        truncate: t.Optional[
-            t.Union["t.Literal['first', 'none', 'second']", str]
-        ] = None,
-        span: t.Optional[int] = None,
-    ):
-        super().__init__(
-            configuration_type="byte_level_bpe",
-            with_special_tokens=with_special_tokens,
-            max_sequence_length=max_sequence_length,
-            truncate=truncate,
-            span=span,
-        )
-
-
 class NlpMPNetTokenizationConfig(NlpTokenizationConfig):
     def __init__(
         self,

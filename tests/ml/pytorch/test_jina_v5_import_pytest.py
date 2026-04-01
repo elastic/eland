@@ -116,7 +116,7 @@ class TestJinaV5Config:
         inference_config = config_dict["inference_config"]
         text_embedding = inference_config["text_embedding"]
         tokenization = text_embedding["tokenization"]
-        assert "byte_level_bpe" in tokenization
+        assert "roberta" in tokenization
 
     def test_config_has_embedding_size(self, saved_model):
         config = saved_model["config"]
