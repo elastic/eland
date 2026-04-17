@@ -441,7 +441,9 @@ class TransformerModel:
             if isinstance(result, (PreTrainedTokenizer, PreTrainedTokenizerFast)):
                 tokenizer = result
         except Exception as e:
-            logger.warning("Failed to load slow tokenizer, falling back to fast tokenizer: %s", e)
+            logger.warning(
+                "Failed to load slow tokenizer, falling back to fast tokenizer: %s", e
+            )
 
         if tokenizer is None:
             tokenizer = transformers.AutoTokenizer.from_pretrained(
