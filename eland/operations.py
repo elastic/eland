@@ -166,8 +166,11 @@ class Operations:
             body = Query(query_params.query)
             body.exists(field, must=True)
 
+            count_body = body.to_count_body()
+            if count_body is None:
+                raise ValueError("Invalid count query")
             field_exists_count = query_compiler._client.count(
-                index=query_compiler._index_pattern, **body.to_count_body()
+                index=query_compiler._index_pattern, **count_body
             )["count"]
             counts[field] = field_exists_count
 
@@ -1350,8 +1353,11 @@ class Operations:
         body = Query(query_params.query)
         body.exists(field, must=True)
 
+        count_body = body.to_count_body()
+        if count_body is None:
+            raise ValueError("Invalid count query")
         count: int = query_compiler._client.count(
-            index=query_compiler._index_pattern, **body.to_count_body()
+            index=query_compiler._index_pattern, **count_body
         )["count"]
         return count
 
@@ -1388,8 +1394,11 @@ class Operations:
         else:
             body.terms(field, items, must=True)
 
+        count_body = body.to_count_body()
+        if count_body is None:
+            raise ValueError("Invalid count query")
         count: int = query_compiler._client.count(
-            index=query_compiler._index_pattern, **body.to_count_body()
+            index=query_compiler._index_pattern, **count_body
         )["count"]
         return count
 
