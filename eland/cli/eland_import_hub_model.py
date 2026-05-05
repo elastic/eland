@@ -22,6 +22,7 @@ uploading to Elasticsearch. This will also check that the task type is supported
 as well as the model and tokenizer types. All necessary configuration is
 uploaded along with the model.
 """
+
 import argparse
 import logging
 import os
@@ -156,6 +157,15 @@ def get_arg_parser():
                 model's true max length, setting a smaller max length is valid.
                 """,
         type=int,
+    )
+
+    parser.add_argument(
+        "--trust-remote-code",
+        action="store_true",
+        default=False,
+        help="Trust remote code from the HuggingFace model repository. "
+        "Required for models that use custom modeling or tokenizer code "
+        "(e.g. jinaai/jina-embeddings-v5-text-nano). Default: False",
     )
 
     return parser
@@ -298,6 +308,7 @@ def main():
                 ingest_prefix=args.ingest_prefix,
                 search_prefix=args.search_prefix,
                 max_model_input_size=args.max_model_input_length,
+                trust_remote_code=args.trust_remote_code,
             )
             model_path, config, vocab_path = tm.save(tmp_dir)
         except TaskTypeError as err:
