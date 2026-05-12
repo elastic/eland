@@ -20,13 +20,6 @@ import tempfile
 import pytest
 
 try:
-    import sklearn  # noqa: F401
-
-    HAS_SKLEARN = True
-except ImportError:
-    HAS_SKLEARN = False
-
-try:
     from eland.ml.pytorch.transformers import TransformerModel
 
     HAS_TRANSFORMERS = True
@@ -46,6 +39,7 @@ try:
         QuestionAnsweringInferenceOptions,
         TextClassificationInferenceOptions,
         TextEmbeddingInferenceOptions,
+        TextExpansionInferenceOptions,
         TextSimilarityInferenceOptions,
         ZeroShotClassificationInferenceOptions,
     )
@@ -54,13 +48,9 @@ try:
 except ImportError:
     HAS_PYTORCH = False
 
-
 from tests import ES_VERSION
 
 pytestmark = [
-    pytest.mark.skipif(
-        not HAS_SKLEARN, reason="This test requires 'scikit-learn' package to run"
-    ),
     pytest.mark.skipif(
         not HAS_TRANSFORMERS, reason="This test requires 'transformers' package to run"
     ),
@@ -70,9 +60,9 @@ pytestmark = [
 ]
 
 # If the required imports are missing the test will be skipped.
-# Only define th test configurations if the referenced classes
+# Only define the test configurations if the referenced classes
 # have been imported
-if HAS_PYTORCH and HAS_SKLEARN and HAS_TRANSFORMERS:
+if HAS_PYTORCH and HAS_TRANSFORMERS:
     MODEL_CONFIGURATIONS = [
         (
             "sentence-transformers/all-distilroberta-v1",
@@ -154,6 +144,14 @@ if HAS_PYTORCH and HAS_SKLEARN and HAS_TRANSFORMERS:
             512,
             None,
         ),
+        (
+            "naver/splade-v3-distilbert",
+            "text_expansion",
+            TextExpansionInferenceOptions,
+            NlpBertTokenizationConfig,
+            512,
+            None,
+        ),
     ]
 else:
     MODEL_CONFIGURATIONS = []
@@ -215,6 +213,9 @@ class TestModelConfguration:
 
             if task_type == "text_similarity":
                 assert tokenization.truncate == "second"
+
+            if task_type == "text_expansion":
+                assert config.inference_config.expansion_type == "splade"
 
             del tm
 
