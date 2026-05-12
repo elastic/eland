@@ -36,6 +36,8 @@ from transformers import (
     PreTrainedTokenizer,
 )
 
+from eland.ml.pytorch._utils import _is_tokenizer_type
+
 DEFAULT_OUTPUT_KEY = "sentence_embedding"
 
 
@@ -57,9 +59,7 @@ class _QuestionAnsweringWrapperModule(nn.Module):  # type: ignore
 
     @staticmethod
     def from_pretrained(model_id: str, *, token: str | None = None) -> Any | None:
-        model = AutoModelForQuestionAnswering.from_pretrained(
-            model_id, token=token, torchscript=True
-        )
+        model = AutoModelForQuestionAnswering.from_pretrained(model_id, token=token)
         if isinstance(
             model.config,
             (
@@ -99,6 +99,9 @@ class _QuestionAnsweringWrapper(_QuestionAnsweringWrapperModule):
             del inputs["token_type_ids"]
             del inputs["position_ids"]
         response = self._hf_model(**inputs)
+        # In transformers v5, models return ModelOutput objects (dict-like)
+        if hasattr(response, "start_logits") and hasattr(response, "end_logits"):
+            return torch.stack([response.start_logits, response.end_logits], dim=0)
         if isinstance(response, tuple):
             return torch.stack(list(response), dim=0)
         return response
@@ -115,12 +118,74 @@ class _TwoParameterQuestionAnsweringWrapper(_QuestionAnsweringWrapperModule):
             "attention_mask": attention_mask,
         }
         response = self._hf_model(**inputs)
+        # In transformers v5, models return ModelOutput objects (dict-like)
+        if hasattr(response, "start_logits") and hasattr(response, "end_logits"):
+            return torch.stack([response.start_logits, response.end_logits], dim=0)
         if isinstance(response, tuple):
             return torch.stack(list(response), dim=0)
         return response
 
 
-class _DistilBertWrapper(nn.Module):  # type: ignore
+class _ModelOutputWrapper(nn.Module):  # type: ignore
+    """
+    A generic wrapper that extracts tensor outputs from transformers v5 ModelOutput objects.
+    In transformers v5, models return dict-like ModelOutput objects instead of tuples,
+    which torch.jit.trace cannot handle. This wrapper extracts the appropriate tensor.
+    """
+
+    def __init__(self, model: transformers.PreTrainedModel):
+        super().__init__()
+        self._model = model
+        self.config = model.config
+
+    def _extract_output(self, output: Any) -> Tensor:
+        """Extract tensor from ModelOutput or return as-is if already a tensor."""
+        # In transformers v5, models return ModelOutput objects (dict-like)
+        if hasattr(output, "logits"):
+            return output.logits
+        if hasattr(output, "last_hidden_state"):
+            return output.last_hidden_state
+        # Fallback for older versions or raw tensor output
+        return output[0] if isinstance(output, tuple) else output
+
+    def forward(
+        self,
+        input_ids: Tensor,
+        attention_mask: Tensor,
+        token_type_ids: Tensor,
+        position_ids: Tensor,
+    ) -> Tensor:
+        """Wrap the input and output to conform to the native process interface."""
+        output = self._model(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            token_type_ids=token_type_ids,
+            position_ids=position_ids,
+        )
+        return self._extract_output(output)
+
+
+class _DebertaV2Wrapper(_ModelOutputWrapper):
+    """
+    Wrapper for DebertaV2 models which take 3 inputs (no position_ids).
+    """
+
+    def forward(
+        self,
+        input_ids: Tensor,
+        attention_mask: Tensor,
+        token_type_ids: Tensor,
+    ) -> Tensor:
+        """Wrap the input and output to conform to the native process interface."""
+        output = self._model(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            token_type_ids=token_type_ids,
+        )
+        return self._extract_output(output)
+
+
+class _DistilBertWrapper(_ModelOutputWrapper):
     """
     In Elasticsearch the BERT tokenizer is used for DistilBERT models but
     the BERT tokenizer produces 4 inputs where DistilBERT models expect 2.
@@ -131,17 +196,15 @@ class _DistilBertWrapper(nn.Module):  # type: ignore
     function
     """
 
-    def __init__(self, model: transformers.PreTrainedModel):
-        super().__init__()
-        self._model = model
-        self.config = model.config
-
     @staticmethod
     def try_wrapping(model: PreTrainedModel) -> Any | None:
         if isinstance(model.config, transformers.DistilBertConfig):
             return _DistilBertWrapper(model)
+        elif isinstance(model.config, transformers.DebertaV2Config):
+            return _DebertaV2Wrapper(model)
         else:
-            return model
+            # Wrap all models to handle ModelOutput extraction in transformers v5
+            return _ModelOutputWrapper(model)
 
     def forward(
         self,
@@ -152,7 +215,8 @@ class _DistilBertWrapper(nn.Module):  # type: ignore
     ) -> Tensor:
         """Wrap the input and output to conform to the native process interface."""
 
-        return self._model(input_ids=input_ids, attention_mask=attention_mask)
+        output = self._model(input_ids=input_ids, attention_mask=attention_mask)
+        return self._extract_output(output)
 
 
 class _SentenceTransformerWrapperModule(nn.Module):  # type: ignore
@@ -180,15 +244,15 @@ class _SentenceTransformerWrapperModule(nn.Module):  # type: ignore
         token: str | None = None,
         output_key: str = DEFAULT_OUTPUT_KEY,
     ) -> Any | None:
-        model = AutoModel.from_pretrained(model_id, token=token, torchscript=True)
-        if isinstance(
+        model = AutoModel.from_pretrained(model_id, token=token)
+        if _is_tokenizer_type(
             tokenizer,
             (
-                transformers.BartTokenizer,
-                transformers.MPNetTokenizer,
-                transformers.RobertaTokenizer,
-                transformers.XLMRobertaTokenizer,
-                transformers.DebertaV2Tokenizer,
+                "BartTokenizer",
+                "MPNetTokenizer",
+                "RobertaTokenizer",
+                "XLMRobertaTokenizer",
+                "DebertaV2Tokenizer",
             ),
         ):
             return _TwoParameterSentenceTransformerWrapper(model, output_key)
@@ -295,7 +359,7 @@ class _DPREncoderWrapper(nn.Module):  # type: ignore
 
         if is_compatible():
             model = getattr(transformers, config.architectures[0]).from_pretrained(
-                model_id, torchscript=True
+                model_id
             )
             return _DPREncoderWrapper(model)
         else:
@@ -310,8 +374,12 @@ class _DPREncoderWrapper(nn.Module):  # type: ignore
     ) -> Tensor:
         """Wrap the input and output to conform to the native process interface."""
 
-        return self._model(
+        output = self._model(
             input_ids=input_ids,
             attention_mask=attention_mask,
             token_type_ids=token_type_ids,
         )
+        # In transformers v5, models return ModelOutput objects (dict-like)
+        if hasattr(output, "pooler_output"):
+            return output.pooler_output
+        return output[0] if isinstance(output, tuple) else output
