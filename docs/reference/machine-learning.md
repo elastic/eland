@@ -106,7 +106,7 @@ For an offline install of a Hugging Face model, the model first needs to be clon
     git clone https://huggingface.co/dslim/bert-base-NER
     ```
 
-    This command results in a local copy of of the model in the directory `bert-base-NER`.
+    This command results in a local copy of the model in the directory `bert-base-NER`.
 
 3. Use the `eland_import_hub_model` script with the `--hub-model-id` set to the directory of the cloned model to install it:
 
