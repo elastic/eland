@@ -90,7 +90,15 @@ class OrFilter(BooleanFilter):
 class NotFilter(BooleanFilter):
     def __init__(self, x: BooleanFilter) -> None:
         super().__init__()
+        self._x = x
         self._filter = {"bool": {"must_not": x.build()}}
+
+    def __invert__(self) -> "BooleanFilter":
+        # Double negation cancels out: ``~~filter`` is equivalent to ``filter``,
+        # so return the wrapped filter instead of nesting another ``must_not``.
+        # This only applies to ``NotFilter`` itself; leaf filters that merely
+        # use ``must_not`` internally (e.g. ``IsNull``) are unaffected.
+        return self._x
 
 
 # LeafBooleanFilter

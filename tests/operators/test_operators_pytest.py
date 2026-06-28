@@ -129,10 +129,21 @@ class TestOperators:
         assert exp.build() == {"bool": {"must_not": {"range": {"a": {"gte": 2}}}}}
 
     def test_not_not_filter(self):
+        # Double negation cancels out: ~~filter is equivalent to filter.
         exp = ~~GreaterEqual("a", 2)
+        assert exp.build() == {"range": {"a": {"gte": 2}}}
 
+    def test_not_not_not_filter(self):
+        # An odd number of negations collapses to a single negation.
+        exp = ~~~GreaterEqual("a", 2)
+        assert exp.build() == {"bool": {"must_not": {"range": {"a": {"gte": 2}}}}}
+
+    def test_not_isnull_not_collapsed(self):
+        # IsNull uses must_not internally but is not a NotFilter, so inverting
+        # it must not be treated as a double negation.
+        exp = ~IsNull("a")
         assert exp.build() == {
-            "bool": {"must_not": {"bool": {"must_not": {"range": {"a": {"gte": 2}}}}}}
+            "bool": {"must_not": {"bool": {"must_not": {"exists": {"field": "a"}}}}}
         }
 
     def test_not_and_filter(self):
