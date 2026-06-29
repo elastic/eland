@@ -138,6 +138,34 @@ class TestPandasToEland:
         pd_df3 = pd_df._append(pd_df2)
         assert_pandas_eland_frame_equal(pd_df3, df2)
 
+    def test_es_if_exists_append_to_alias(self):
+        # Regression for #747: appending through an alias used to fail with
+        # KeyError, because get_mapping keys its response by the concrete index
+        # name rather than by the alias passed as es_dest_index.
+        pandas_to_eland(
+            pd_df,
+            es_client=ES_TEST_CLIENT,
+            es_dest_index="test-index",
+            es_refresh=True,
+        )
+        ES_TEST_CLIENT.indices.put_alias(index="test-index", name="test-alias")
+
+        try:
+            df = pandas_to_eland(
+                pd_df,
+                es_client=ES_TEST_CLIENT,
+                es_dest_index="test-alias",
+                es_if_exists="append",
+                es_refresh=True,
+            )
+
+            # Both writes landed in the aliased index.
+            assert df.shape == (6, 4)
+        finally:
+            ES_TEST_CLIENT.indices.delete_alias(
+                index="test-index", name="test-alias", ignore=404
+            )
+
     def test_es_if_exists_append_mapping_mismatch_schema_enforcement(self):
         df1 = pandas_to_eland(
             pd_df,
