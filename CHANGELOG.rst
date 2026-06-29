@@ -2,6 +2,11 @@
 Changelog
 =========
 
+Unreleased
+----------
+
+* Fix ``pandas_to_eland`` failing to append to an aliased index (`#829 <https://github.com/elastic/eland/pull/829>`_)
+
 9.2.0 (2025-10-30)
 ------------------
 
