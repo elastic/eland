@@ -179,14 +179,18 @@ def pandas_to_eland(
             es_client.indices.create(index=es_dest_index, mappings=mapping["mappings"])
 
         elif es_if_exists == "append" and es_verify_mapping_compatibility:
-            dest_mapping = es_client.indices.get_mapping(index=es_dest_index)[
-                es_dest_index
-            ]
-            verify_mapping_compatibility(
-                ed_mapping=mapping,
-                es_mapping=dest_mapping,
-                es_type_overrides=es_type_overrides,
-            )
+            # get_mapping keys its response by concrete index name, which differs
+            # from es_dest_index when it is an alias. Verify against every index
+            # the name resolves to rather than assuming the response is keyed by
+            # es_dest_index (which raised KeyError for an alias, see #747).
+            for dest_mapping in es_client.indices.get_mapping(
+                index=es_dest_index
+            ).values():
+                verify_mapping_compatibility(
+                    ed_mapping=mapping,
+                    es_mapping=dest_mapping,
+                    es_type_overrides=es_type_overrides,
+                )
     else:
         es_client.indices.create(index=es_dest_index, mappings=mapping["mappings"])
 
