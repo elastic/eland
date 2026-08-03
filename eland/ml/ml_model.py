@@ -30,7 +30,7 @@ from .transformers import get_model_transformer
 
 if TYPE_CHECKING:
     from elasticsearch import Elasticsearch
-    from numpy.typing import ArrayLike, DTypeLike
+    from numpy.typing import ArrayLike
 
     # Try importing each ML lib separately so mypy users don't have to
     # have both installed to use type-checking.
@@ -105,7 +105,8 @@ class MLModel:
 
         Returns
         -------
-        y: np.ndarray of dtype float for regressors or int for classifiers
+        y: np.ndarray of dtype float32 for regressors, or int for classifiers with
+           numeric class labels, or str for classifiers with string class labels
 
         Examples
         --------
@@ -204,12 +205,20 @@ class MLModel:
 
             y.append(res["doc"]["_source"]["ml"]["inference"][self.results_field])
 
-        # Return results as np.ndarray of float32 or int (consistent with sklearn/xgboost)
+        # Return results as np.ndarray of float32 or int (consistent with sklearn/xgboost).
+        # Elasticsearch's inference results are always JSON values, and a classifier trained
+        # on numeric class labels can come back as either numbers or numeric-looking strings
+        # depending on how the model was serialized, so `np.int_` is still the right dtype to
+        # try first. But a classifier trained on non-numeric class labels (e.g. the standard
+        # iris dataset's species names) returns predictions that can't be cast to `np.int_` at
+        # all; in that case, fall back to letting numpy infer the dtype from the values
+        # themselves instead of raising.
         if self.model_type == TYPE_CLASSIFICATION:
-            dt: "DTypeLike" = np.int_
-        else:
-            dt = np.float32
-        return np.asarray(y, dtype=dt)
+            try:
+                return np.asarray(y, dtype=np.int_)
+            except ValueError:
+                return np.asarray(y)
+        return np.asarray(y, dtype=np.float32)
 
     @property
     def model_type(self) -> str:

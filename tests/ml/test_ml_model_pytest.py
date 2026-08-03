@@ -192,6 +192,38 @@ class TestMLModel:
         es_model.delete_model()
 
     @requires_sklearn
+    def test_decision_tree_classifier_string_class_labels(self):
+        # A classifier trained on non-numeric class labels (e.g. the standard iris
+        # dataset's species names) used to raise a `ValueError` from `predict()`, since
+        # results were always forced into an `np.int_` array. See #434.
+        iris = datasets.load_iris()
+        string_labels = np.asarray(iris.target_names)[iris.target]
+
+        classifier = DecisionTreeClassifier()
+        classifier.fit(iris.data, string_labels)
+
+        feature_names = ["f0", "f1", "f2", "f3"]
+        model_id = "test_decision_tree_classifier_string_class_labels"
+
+        es_model = MLModel.import_model(
+            ES_TEST_CLIENT,
+            model_id,
+            classifier,
+            feature_names,
+            es_if_exists="replace",
+        )
+
+        test_data = random_rows(iris.data, 20)
+        es_results = es_model.predict(test_data)
+        py_results = classifier.predict(test_data)
+
+        assert es_results.dtype.kind in ("U", "S")
+        np.testing.assert_array_equal(es_results, py_results)
+
+        # Clean up
+        es_model.delete_model()
+
+    @requires_sklearn
     @pytest.mark.parametrize("compress_model_definition", [True, False])
     def test_decision_tree_regressor(self, compress_model_definition):
         # Train model
