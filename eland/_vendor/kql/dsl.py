@@ -1,0 +1,192 @@
+# Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
+# or more contributor license agreements. Licensed under the Elastic License
+# 2.0; you may not use this file except in compliance with the Elastic License
+# 2.0.
+
+from collections import defaultdict
+from eql import Walker
+from .ast import Wildcard
+from .errors import KqlCompileError
+
+
+# Lucene `query_string` reserved characters. Mirrors Kibana's
+# `escapeQueryString` in src/plugins/data/common/es_query/kuery/node_types/wildcard.ts:
+#   /[+\-=&|><!(){}[\]^"~*?:\\/]/g
+# The leading `/` in particular must be escaped because Lucene treats `/.../`
+# as a regex delimiter (see https://github.com/elastic/detection-rules/issues/441).
+_LUCENE_QUERY_STRING_SPECIALS = set('+-=&|><!(){}[]^"~*?:\\/')
+
+
+def _escape_query_string_wildcard(value: str) -> str:
+    """Convert a KQL wildcard value into a Lucene query_string.query string."""
+    # Escapes Lucene specials while preserving `*` as the wildcard marker, mirroring
+    # Kibana's `toQueryStringQuery`. Only called for `Wildcard` nodes (always a string).
+    escaped = []
+    for char in value:
+        if char == '*':
+            escaped.append('*')
+        elif char in _LUCENE_QUERY_STRING_SPECIALS:
+            escaped.append('\\')
+            escaped.append(char)
+        else:
+            escaped.append(char)
+    return ''.join(escaped)
+
+
+def boolean(**kwargs):
+    """Wrap a query in a boolean term and optimize while building."""
+    assert len(kwargs) == 1
+    [(boolean_type, children)] = kwargs.items()
+
+    if not isinstance(children, list):
+        children = [children]
+
+    dsl = defaultdict(list)
+
+    if boolean_type in ("must", "filter"):
+        # safe to convert and(and(x), y) -> and(x, y)
+        for child in children:
+            if list(child) == ["bool"]:
+                for child_type, child_terms in child["bool"].items():
+                    if child_type in ("must", "filter"):
+                        dsl[child_type].extend(child_terms)
+                    elif child_type == "should":
+                        if "should" not in dsl:
+                            dsl[child_type].extend(child_terms)
+                        else:
+                            dsl[boolean_type].append(boolean(should=child_terms))
+                    elif child_type == "must_not":
+                        dsl[child_type].extend(child_terms)
+                    elif child_type != "minimum_should_match":
+                        raise ValueError("Unknown term {}: {}".format(child_type, child_terms))
+            else:
+                dsl[boolean_type].append(child)
+
+    elif boolean_type == "should":
+        # can flatten `should` of `should`
+        for child in children:
+            if list(child) == ["bool"] and set(child["bool"]).issubset({"should", "minimum_should_match"}):
+                dsl["should"].extend(child["bool"]["should"])
+            else:
+                dsl[boolean_type].append(child)
+
+    elif boolean_type == "must_not" and len(children) == 1:
+        # must_not: [{bool: {must: x}}] -> {must_not: x}
+        # optimize can only occur with one term
+        # e.g. the following would not be valid
+        # must_not: [{bool: {must: x} and {bool: {must: y} }] -> {must_not: x} {must_not: y}
+        child = children[0]
+        is_bool = list(child) == ["bool"]
+        bool_keys = list(child.get("bool", {}))
+        has_valid_keys = bool_keys in (["filter"], ["must"])
+        has_single_filter = len(child.get("bool", {}).get("filter", [])) == 1
+        has_single_must = len(child.get("bool", {}).get("must", [])) == 1
+
+        if is_bool and has_valid_keys and (has_single_filter or has_single_must):
+            (negated,) = child["bool"].values()
+            dsl = {"must_not": negated}
+        else:
+            dsl = {"must_not": children}
+
+    else:
+        dsl = dict(kwargs)
+
+    if "should" in dsl:
+        dsl.update(minimum_should_match=1)
+
+    dsl = {"bool": dict(dsl)}
+    return dsl
+
+
+class ToDsl(Walker):
+    def __init__(self):
+        super().__init__()
+        # Stack of absolute nested field paths currently in scope. Leaf field names
+        # inside a `nested` query are relative, so they must be prefixed with the
+        # enclosing nested path to build valid Elasticsearch `nested` queries.
+        self._nested_stack = []
+
+    def _walk_default(self, node, *args, **kwargs):
+        raise KqlCompileError("Unable to convert {}".format(node))
+
+    def _walk_exists(self, _):
+        return lambda field: {"exists": {"field": field}}
+
+    def _walk_wildcard(self, tree):
+        query = _escape_query_string_wildcard(tree.value)
+        return lambda field: {"query_string": {"fields": [field], "query": query}}
+
+    def _walk_value(self, tree):
+        return lambda field: {"match": {field: tree.value}}
+
+    def _walk_field(self, field):
+        if self._nested_stack:
+            return self._nested_stack[-1] + "." + field.name
+        return field.name
+
+    def _walk_nested_query(self, tree):
+        prefix = (self._nested_stack[-1] + ".") if self._nested_stack else ""
+        full_path = prefix + tree.field.name
+
+        self._nested_stack.append(full_path)
+        try:
+            inner = self.walk(tree.expr)
+        finally:
+            self._nested_stack.pop()
+
+        return {"nested": {"path": full_path, "query": inner, "score_mode": "none"}}
+
+    def _walk_field_range(self, tree):
+        operator_map = {"<": "lt", "<=": "lte", ">=": "gte", ">": "gt"}
+        field = self.walk(tree.field)
+        return {"range": {field: {operator_map[tree.operator]: tree.value.value}}}
+
+    def _walk_not_expr(self, tree):
+        return boolean(must_not=[self.walk(tree.expr)])
+
+    def _walk_and_expr(self, tree):
+        return boolean(filter=[self.walk(node) for node in tree.items])
+
+    def _walk_or_expr(self, tree):
+        return boolean(should=[self.walk(node) for node in tree.items])
+
+    def _walk_and_values(self, tree):
+        children = [self.walk(node) for node in tree.items]
+        return lambda field: boolean(filter=[child(field) for child in children])
+
+    def _walk_or_values(self, tree):
+        children = [self.walk(node) for node in tree.items]
+        return lambda field: boolean(should=[child(field) for child in children])
+
+    def _walk_not_value(self, tree):
+        child = self.walk(tree.value)
+        return lambda field: boolean(must_not=[child(field)])
+
+    def _walk_free_text(self, tree):
+        # Mirrors Kibana's `is` function with a null field (kbn-es-query is.ts): a wildcard
+        # becomes a query_string; any other value a lenient multi_match so non-text fields
+        # are skipped instead of erroring. Neither names `fields`, so Elasticsearch falls
+        # back to the `index.query.default_field` setting (`*` by default) — same as Kibana.
+        if isinstance(tree.value, Wildcard):
+            return {"query_string": {"query": _escape_query_string_wildcard(tree.value.value)}}
+        value = tree.value.value
+        if not isinstance(value, str):
+            # Bare unquoted terms can parse as numbers/booleans/null, but `multi_match.query`
+            # must be text (a JSON null is rejected outright), so send the KQL token text
+            # back instead (`1`, `true`, `null`).
+            value = tree.value.render()
+        # Kibana: `const type = valueArg.isQuoted ? 'phrase' : 'best_fields'`. A quoted value
+        # must match as a phrase; `best_fields` would instead OR the analyzed terms together
+        # and match far more broadly.
+        match_type = "phrase" if tree.is_quoted else "best_fields"
+        return {"multi_match": {"type": match_type, "query": value, "lenient": True}}
+
+    def _walk_field_comparison(self, tree):
+        field = self.walk(tree.field)
+        value_fn = self.walk(tree.value)
+
+        return value_fn(field)
+
+    @classmethod
+    def convert(cls, tree):
+        return boolean(filter=[cls().walk(tree)])

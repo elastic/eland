@@ -91,12 +91,17 @@ setup(
         "matplotlib>=3.6",
         "numpy>=1.2.0,<3",
         "packaging",
+        "eql==1.0.1",
+        "lark>=1.3.1",
     ],
     entry_points={
         "console_scripts": "eland_import_hub_model=eland.cli.eland_import_hub_model:main"
     },
     python_requires=">=3.10,<3.14",
-    package_data={"eland": ["py.typed"]},
+    package_data={
+        "eland": ["py.typed"],
+        "eland._vendor.kql": ["*.g", "LICENSE.txt", "README.md"],
+    },
     include_package_data=True,
     zip_safe=False,
     extras_require=extras,

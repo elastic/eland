@@ -23,6 +23,8 @@ from packaging.version import Version
 
 BASE_DIR = Path(__file__).parent
 SOURCE_FILES = ("setup.py", "noxfile.py", "eland/", "docs/", "utils/", "tests/")
+# Vendored third-party code keeps its upstream formatting and license headers
+VENDORED_FILES = "eland/_vendor/kql/"
 
 # Whenever type-hints are completed on a file it should
 # be added here so that this file will continue to be checked
@@ -61,8 +63,18 @@ def format(session):
     session.install("black ~= 25.0", "isort", "flynt")
     session.run("python", "utils/license-headers.py", "fix", *SOURCE_FILES)
     session.run("flynt", *SOURCE_FILES)
-    session.run("black", "--target-version=py310", *SOURCE_FILES)
-    session.run("isort", "--profile=black", *SOURCE_FILES)
+    session.run(
+        "black",
+        "--target-version=py310",
+        f"--extend-exclude={VENDORED_FILES}",
+        *SOURCE_FILES,
+    )
+    session.run(
+        "isort",
+        "--profile=black",
+        f"--extend-skip-glob={VENDORED_FILES}*",
+        *SOURCE_FILES,
+    )
     lint(session)
 
 
@@ -73,9 +85,26 @@ def lint(session):
     session.install("black ~= 25.0", "flake8", "mypy", "isort", "numpy")
     session.install(".")
     session.run("python", "utils/license-headers.py", "check", *SOURCE_FILES)
-    session.run("black", "--check", "--target-version=py310", *SOURCE_FILES)
-    session.run("isort", "--check", "--profile=black", *SOURCE_FILES)
-    session.run("flake8", "--extend-ignore=E203,E402,E501,E704,E712", *SOURCE_FILES)
+    session.run(
+        "black",
+        "--check",
+        "--target-version=py310",
+        f"--extend-exclude={VENDORED_FILES}",
+        *SOURCE_FILES,
+    )
+    session.run(
+        "isort",
+        "--check",
+        "--profile=black",
+        f"--extend-skip-glob={VENDORED_FILES}*",
+        *SOURCE_FILES,
+    )
+    session.run(
+        "flake8",
+        "--extend-ignore=E203,E402,E501,E704,E712",
+        f"--extend-exclude={VENDORED_FILES}",
+        *SOURCE_FILES,
+    )
 
     # TODO: When all files are typed we can change this to .run("mypy", "--strict", "eland/")
     stdout = session.run(

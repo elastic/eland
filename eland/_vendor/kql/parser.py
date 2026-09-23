@@ -1,0 +1,516 @@
+# Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
+# or more contributor license agreements. Licensed under the Elastic License
+# 2.0; you may not use this file except in compliance with the Elastic License
+# 2.0.
+
+import contextlib
+import os
+import re
+from typing import Optional, Set
+
+import eql
+from lark import Token  # noqa: F401
+from lark import Tree, Lark
+from lark.exceptions import LarkError, UnexpectedEOF
+from lark.visitors import Interpreter
+
+from .errors import KqlParseError
+from .ast import *  # noqa: F403
+from .utils import check_whitespace, collect_token_positions
+
+
+STRING_FIELDS = ("keyword", "text")
+
+
+class KvTree(Tree):
+    """Lark tree with position helpers compatible with lark>=1.3 meta API."""
+
+    @property
+    def child_trees(self):
+        return [child for child in self.children if isinstance(child, KvTree)]
+
+    @property
+    def child_tokens(self):
+        return [child for child in self.children if isinstance(child, Token)]
+
+    @property
+    def line(self):
+        """Get line number from meta or fallback to first token."""
+        if hasattr(self, "meta") and self.meta and hasattr(self.meta, "line"):
+            return self.meta.line
+        for child in self.children:
+            if isinstance(child, Token) and hasattr(child, "line"):
+                return child.line
+        return 1
+
+    @property
+    def end_line(self):
+        """Get end line number from meta or fallback to last token."""
+        if hasattr(self, "meta") and self.meta and hasattr(self.meta, "end_line"):
+            return self.meta.end_line
+        for child in reversed(self.children):
+            if isinstance(child, Token) and hasattr(child, "end_line"):
+                return child.end_line
+        return self.line
+
+    @property
+    def column(self):
+        """Get column number from meta or fallback to first token."""
+        if hasattr(self, "meta") and self.meta and hasattr(self.meta, "column"):
+            return self.meta.column
+        for child in self.children:
+            if isinstance(child, Token) and hasattr(child, "column"):
+                return child.column
+        return 1
+
+    @property
+    def end_column(self):
+        """Get end column number from meta or fallback to last token."""
+        if hasattr(self, "meta") and self.meta and hasattr(self.meta, "end_column"):
+            return self.meta.end_column
+        for child in reversed(self.children):
+            if isinstance(child, Token) and hasattr(child, "end_column"):
+                return child.end_column
+        return self.column
+
+
+grammar_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "kql.g")
+
+with open(grammar_file, "rt") as f:
+    grammar = f.read()
+
+lark_parser = Lark(grammar, propagate_positions=True, tree_class=KvTree, start=['query'], parser='lalr')
+
+
+def is_ipaddress(value: str) -> bool:
+    """Check if a value is an ip address."""
+    try:
+        eql.utils.get_ipaddress(value)
+        return True
+    except ValueError:
+        return False
+
+
+def wildcard2regex(wc: str) -> re.Pattern:
+    parts = wc.split("*")
+    return re.compile("^{regex}$".format(regex=".*?".join(re.escape(w) for w in parts)))
+
+
+# https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-types.html
+ELASTICSEARCH_TYPE_FAMILIES = {
+    # range types
+    "long_range": "range",
+    "double_range": "range",
+    "date_range": "range",
+    "ip_range": "range",
+
+    # text search types
+    "annotated-text": "text",
+    "completion": "text",
+    "match_only_text": "text",
+    "search-as_you_type": "text",
+
+    # keyword
+    "constant_keyword": "keyword",
+    "wildcard": "keyword",
+
+    # date
+    "date_nanos": "date",
+
+    # integer
+    "token_count": "integer",
+    "long": "integer",
+    "short": "integer",
+    "byte": "integer",
+    "unsigned_long": "integer",
+
+    # float
+    "double": "float",
+    "half_float": "float",
+    "scaled_float": "float",
+}
+
+
+def elasticsearch_type_family(mapping_type: str) -> str:
+    """Get the family of type for an Elasticsearch mapping type."""
+    return ELASTICSEARCH_TYPE_FAMILIES.get(mapping_type, mapping_type)
+
+
+class BaseKqlParser(Interpreter):
+    NON_SPACE_WS = re.compile(r"[^\S ]+")
+    unquoted_escapes = {"\\t": "\t", "\\r": "\r", "\\n": "\n"}
+
+    for special in "\\():<>\"*{}]":
+        unquoted_escapes["\\" + special] = special
+
+    unquoted_regex = re.compile("(" + "|".join(re.escape(e) for e in sorted(unquoted_escapes)) + ")")
+
+    quoted_escapes = {"\\t": "\t", "\\r": "\r", "\\n": "\n", "\\\\": "\\", "\\\"": "\""}
+    quoted_regex = re.compile("(" + "|".join(re.escape(e) for e in sorted(quoted_escapes)) + ")")
+
+    def __init__(self, text: str, schema: dict = None, normalize_kql_keywords: bool = True) -> None:
+        """Initialize the parser. Defaults to normalizing KQL keywords to lowercase."""
+        self.text = text
+        self.lines = [t.rstrip("\r\n") for t in self.text.splitlines(True)]
+        self.scoped_field = None
+        self.mapping_schema = schema
+        self.star_fields = []
+        self.normalize_kql_keywords = normalize_kql_keywords
+        # Stack of nested field paths currently in scope. Field references inside a
+        # `nested:{ ... }` block are relative to the enclosing nested path, so schema
+        # lookups must resolve them against the (flat) dotted mapping schema.
+        self.nested_path = []
+
+        if schema:
+            for field, field_type in schema.items():
+                if "*" in field:
+                    self.star_fields.append(wildcard2regex(field))
+
+    def assert_lower_token(self, *tokens: Token) -> None:
+        """Assert that the token is lowercase and converts token if not."""
+        for token in tokens:
+            lower_token = str(token).lower()
+            if str(token) != lower_token:
+                if self.normalize_kql_keywords:
+                    token.value = lower_token
+                else:
+                    raise self.error(token, f"Expected '{lower_token}' but got '{token}'")
+
+    def error(self, node, message, end=False, cls=KqlParseError, width=None, **kwargs):
+        """Generate an error exception but dont raise it."""
+        if kwargs:
+            message = message.format(**kwargs)
+
+        line_number = node.line - 1
+        column = node.column - 1
+
+        # get more lines for more informative error messages. three before + two after
+        before = self.lines[:line_number + 1][-3:]
+        after = self.lines[line_number + 1:][:3]
+
+        source = '\n'.join(b for b in before)
+        trailer = '\n'.join(a for a in after)
+
+        # Determine if the error message can easily look like this
+        #                                                     ^^^^
+        if width is None and not end and node.line == node.end_line:
+            if not self.NON_SPACE_WS.search(self.lines[line_number][column:node.end_column]):
+                width = node.end_column - node.column
+
+        if width is None:
+            width = 1
+
+        return cls(message, line_number, column, source, width=width, trailer=trailer)
+
+    def __default__(self, tree):
+        raise NotImplementedError("Unable to visit tree {} of type: {}".format(tree, tree.data))
+
+    def unescape_literal(self, token):  # type: (Token) -> (int|float|str|bool)
+        if token.type == "QUOTED_STRING":
+            return self.convert_quoted_string(token.value)
+        else:
+            return self.convert_unquoted_literal(token.value)
+
+    @contextlib.contextmanager
+    def scope(self, field):
+        # with self.scope(field) as field:
+        #   ...
+        self.scoped_field = field
+        yield field
+        self.scoped_field = None
+
+    def resolve_nested_path(self, dotted_path):
+        """Resolve a nesting-relative field path to its absolute dotted path."""
+        if self.nested_path:
+            return ".".join(self.nested_path) + "." + dotted_path
+        return dotted_path
+
+    def get_field_type(self, dotted_path, lark_tree=None):
+        dotted_path = self.resolve_nested_path(dotted_path)
+        matches_pattern = any(regex.match(dotted_path) for regex in self.star_fields)
+
+        if self.mapping_schema is not None:
+            if lark_tree is not None and dotted_path not in self.mapping_schema and not matches_pattern:
+                raise self.error(lark_tree, "Unknown field")
+
+            return self.mapping_schema.get(dotted_path)
+
+    def get_field_types(self, wildcard_dotted_path, lark_tree=None) -> Optional[Set[str]]:
+        if "*" not in wildcard_dotted_path:
+            field_type = self.get_field_type(wildcard_dotted_path, lark_tree=lark_tree)
+            return {field_type} if field_type is not None else None
+
+        if self.mapping_schema is not None:
+            regex = wildcard2regex(self.resolve_nested_path(wildcard_dotted_path))
+            field_types = set()
+
+            for field, field_type in self.mapping_schema.items():
+                if regex.fullmatch(field) is not None:
+                    field_types.add(field_type)
+
+            if len(field_types) == 0:
+                raise self.error(lark_tree, "Unknown field")
+
+            return field_types
+
+    @staticmethod
+    def has_unescaped_wildcard(text):
+        """Return True if the raw literal contains an unescaped `*` wildcard."""
+        # A `*` preceded by an odd number of backslashes is escaped (a literal
+        # asterisk), so it must not be treated as a wildcard.
+        escaped = False
+        for char in text:
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == "*":
+                return True
+        return False
+
+    @staticmethod
+    def get_literal_type(literal_value):
+        if isinstance(literal_value, bool):
+            return "boolean"
+        elif isinstance(literal_value, float):
+            return "float"
+        elif isinstance(literal_value, int):
+            return "long"
+        elif eql.utils.is_string(literal_value):
+            # this will be converted when compared to the field
+            return "keyword"
+        elif literal_value is None:
+            return "null"
+        else:
+            raise NotImplementedError("Unknown literal type: {}".format(type(literal_value).__name__))
+
+    def convert_value(self, field_name, python_value, value_tree):
+        field_type = None
+        field_types = self.get_field_types(field_name)
+        value_type = self.get_literal_type(python_value)
+
+        if field_types is not None:
+            if len(field_types) == 1:
+                field_type = list(field_types)[0]
+            elif len(field_types) > 1:
+                raise self.error(value_tree,
+                                 f"{field_name} has multiple types {', '.join(field_types)}")
+
+        if field_type is not None and field_type != value_type:
+            field_type_family = elasticsearch_type_family(field_type)
+
+            if field_type_family in STRING_FIELDS:
+                return eql.utils.to_unicode(python_value)
+            elif field_type_family in ("float", "integer"):
+                try:
+                    return float(python_value) if field_type_family == "float" else int(python_value)
+                except ValueError:
+                    pass
+            elif field_type_family == "ip" and value_type == "keyword":
+                if "::" in python_value or is_ipaddress(python_value) or eql.utils.is_cidr_pattern(python_value):
+                    return python_value
+            elif field_type_family == 'date' and value_type in STRING_FIELDS:
+                # this will not validate datemath syntax
+                return python_value
+
+            raise self.error(value_tree, "Value doesn't match {field}'s type: {type}",
+                             field=field_name, type=field_type)
+
+        # otherwise, there's nothing to convert
+        return python_value
+
+    @classmethod
+    def convert_unquoted_literal(cls, text):
+        if text == "true":
+            return True
+        elif text == "false":
+            return False
+        elif text == "null":
+            return None
+        else:
+            for numeric in (int, float):
+                try:
+                    return numeric(text)
+                except ValueError:
+                    pass
+
+        text = cls.unquoted_regex.sub(lambda r: cls.unquoted_escapes[r.group()], text)
+        return text
+
+    @classmethod
+    def convert_quoted_string(cls, text):
+        inner_text = text[1:-1]
+        unescaped = cls.quoted_regex.sub(lambda r: cls.quoted_escapes[r.group()], inner_text)
+        return unescaped
+
+
+class KqlParser(BaseKqlParser):
+    def or_query(self, tree):
+        self.assert_lower_token(*tree.child_tokens)
+        terms = [self.visit(t) for t in tree.child_trees]
+        return OrExpr(terms)
+
+    def and_query(self, tree):
+        self.assert_lower_token(*tree.child_tokens)
+        terms = [self.visit(t) for t in tree.child_trees]
+        return AndExpr(terms)
+
+    def not_query(self, tree):
+        self.assert_lower_token(*tree.child_tokens)
+        return NotExpr(self.visit(tree.children[-1]))
+
+    @contextlib.contextmanager
+    def nest(self, lark_tree):
+        # The path is relative to any enclosing nested block; `field` keeps that
+        # relative form (which is the absolute path at the top level) while the schema
+        # is validated against the resolved absolute path.
+        field = self.visit(lark_tree)
+        dotted_path = field.name
+
+        if self.mapping_schema is not None and self.get_field_type(dotted_path, lark_tree) != "nested":
+            raise self.error(lark_tree, "Expected a nested field")
+
+        # Store the relative segment; `resolve_nested_path` joins the whole stack so
+        # deeply nested field references resolve to their absolute dotted path.
+        self.nested_path.append(dotted_path)
+        try:
+            yield field
+        finally:
+            self.nested_path.pop()
+
+    def nested_query(self, tree):
+        field_tree, query_tree = tree.child_trees
+
+        with self.nest(field_tree) as field:
+            return NestedQuery(field, self.visit(query_tree))
+
+    def field_value_expression(self, tree):
+        field_tree, expr = tree.child_trees
+
+        with self.scope(self.visit(field_tree)) as field:
+            # check the field against the schema
+            self.get_field_types(field.name, field_tree)
+            return FieldComparison(field, self.visit(expr))
+
+    def field_range_expression(self, tree):
+        field_tree, operator, literal = tree.children
+        with self.scope(self.visit(field_tree)) as field:
+            value = self.convert_value(field.name, self.visit(literal), literal)
+            return FieldRange(field, operator, Value.from_python(value))
+
+    def or_list_of_values(self, tree):
+        self.assert_lower_token(*tree.child_tokens)
+        return OrValues([self.visit(t) for t in tree.child_trees])
+
+    def and_list_of_values(self, tree):
+        self.assert_lower_token(*tree.child_tokens)
+        return AndValues([self.visit(t) for t in tree.child_trees])
+
+    def not_list_of_values(self, tree):
+        self.assert_lower_token(*tree.child_tokens)
+        return NotValue(self.visit(tree.children[-1]))
+
+    def list_of_values(self, tree):
+        if len(tree.children) == 2:
+            # optional_not value
+            opt_not_tree, value_tree = tree.children
+            not_count = self.visit(opt_not_tree)
+            value = self.visit(value_tree)
+            for _ in range(not_count):
+                value = NotValue(value)
+            return value
+        else:
+            # "(" or_list_of_values ")"
+            return self.visit(tree.children[1])
+
+    def optional_not(self, tree):
+        count = 0
+        for child in tree.children:
+            if hasattr(child, "type") and child.type == "NOT":
+                count += 1
+            else:
+                count += self.visit(child)
+        return count
+
+    def literal(self, tree):
+        return self.unescape_literal(tree.children[0])
+
+    def field(self, tree):
+        literal = self.visit(tree.children[0])
+        return Field(eql.utils.to_unicode(literal))
+
+    def value(self, tree):
+        token = tree.children[0]
+        value = self.unescape_literal(token)
+
+        if self.scoped_field is None:
+            # A value with no field (e.g. `"Accepted password for root"`) is a free-text
+            # search: Kibana runs it against the index's default fields. There is no field
+            # to type-check or convert the value against, so it is used as-is. Quoted
+            # strings stay literal; an unescaped `*` elsewhere makes the value a wildcard.
+            is_quoted = token.type == "QUOTED_STRING"
+
+            if not is_quoted and self.has_unescaped_wildcard(token.value):
+                # a wildcard compiles to a `query_string`, which has no phrase/best_fields
+                # distinction, so `is_quoted` is irrelevant here (and always False)
+                return FreeText(Wildcard(eql.utils.to_unicode(value)))
+            if eql.utils.is_string(value):
+                return FreeText(String(eql.utils.to_unicode(value)), is_quoted=is_quoted)
+            # bare numbers/booleans/null are never quoted
+            return FreeText(Value.from_python(value))
+
+        field_name = self.scoped_field.name
+
+        # Handle wildcard literals (may contain spaces) and unquoted literals with an
+        # *unescaped* wildcard. An escaped `\*` is a literal asterisk, not a wildcard, so
+        # it must not enter this branch (see issue #441 discussion) — otherwise the DSL
+        # would turn the literal `*` into a match-all wildcard.
+        if token.type == "WILDCARD_LITERAL" or (token.type == "UNQUOTED_LITERAL"
+                                                and self.has_unescaped_wildcard(token.value)):
+            field_type = self.get_field_type(field_name)
+
+            if len(token.value.replace("*", "").strip()) == 0:
+                return Exists()
+
+            if field_type is not None and field_type not in ("keyword", "wildcard"):
+                raise self.error(tree, "Unable to perform wildcard on field {field} of {type}",
+                                 field=field_name, type=field_type)
+
+            # Store the unescaped Python literal (consistent with eql2kql/Value.from_python)
+            # so downstream consumers (DSL, evaluator, renderer) see a canonical value.
+            return Wildcard(value)
+
+        # Quoted strings, and unquoted literals whose only `*` are escaped, are literal
+        # values (wildcards in quotes / escaped wildcards are literal in Kibana). Returning
+        # a String bypasses Value.from_python's wildcard conversion so a literal `*` does
+        # not get treated as a wildcard downstream.
+        if token.type == "QUOTED_STRING" or (token.type == "UNQUOTED_LITERAL"
+                                             and eql.utils.is_string(value) and "*" in value):
+            value = self.convert_value(field_name, value, tree)
+            return String(eql.utils.to_unicode(value)) if eql.utils.is_string(value) else Value.from_python(value)
+
+        # try to convert the value to the appropriate type
+        # example: 1 -> "1" if the field is actually keyword
+        value = self.convert_value(field_name, value, tree)
+        return Value.from_python(value)
+
+
+def lark_parse(text):
+    if not text.strip():
+        raise KqlParseError("No query provided", 0, 0, "")
+
+    walker = BaseKqlParser(text)
+
+    try:
+        tree = lark_parser.parse(text)
+
+        # Check for whitespace around "and" and "or" tokens
+        lines = text.split('\n')
+        check_whitespace(collect_token_positions(tree, ["and", "or"]), lines)
+
+        return tree
+    except UnexpectedEOF:
+        raise KqlParseError("Unexpected EOF", len(walker.lines), len(walker.lines[-1].strip()), walker.lines[-1])
+    except LarkError as exc:
+        raise KqlParseError("Invalid syntax", exc.line - 1, exc.column - 1,
+                            '\n'.join(walker.lines[exc.line - 2:exc.line]))

@@ -65,6 +65,9 @@ def find_files_to_fix(sources: list[str]) -> Iterator[str]:
 def does_file_need_fix(filepath: str) -> bool:
     if not filepath.endswith(".py"):
         return False
+    # Vendored third-party code keeps its upstream license header
+    if os.path.join("eland", "_vendor", "kql") in filepath:
+        return False
     with open(filepath) as f:
         first_license_line = None
         for line in f:
