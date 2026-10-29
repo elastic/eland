@@ -17,6 +17,8 @@
 
 from typing import TYPE_CHECKING, TextIO
 
+import pandas as pd
+
 if TYPE_CHECKING:
     from .query_compiler import QueryCompiler
 
@@ -85,6 +87,21 @@ class Index:
 
     def __iter__(self) -> "Index":
         return self
+
+    def to_pandas(self, show_progress: bool = False) -> pd.Index:
+        """Convert the Eland Index to a pandas Index.
+
+        Parameters
+        ----------
+        show_progress:
+            Display a progress bar while retrieving data.
+
+        Returns
+        -------
+        pandas.Index
+            Index values loaded into memory.
+        """
+        return self._query_compiler.to_pandas(show_progress=show_progress).index
 
     def es_info(self, buf: TextIO) -> None:
         buf.write("Index:\n")
